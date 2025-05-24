@@ -14,6 +14,7 @@
     @include('commons.header')
 
     <div class="container mt-4">
+        @include('commons.messages')
         @yield('content')
     </div>
 

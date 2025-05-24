@@ -19,7 +19,7 @@
                     </li>
                 @else
                     <li class="nav-item"><a class="nav-link" href="">ログイン</a></li>
-                    <li class="nav-item"><a class="nav-link" href="">登録</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('register.showForm') }}">登録</a></li>
                 @endauth
             </ul>
         </div>
