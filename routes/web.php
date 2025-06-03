@@ -32,7 +32,6 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
 });
 
-Route::middleware(['auth', 'role:general'])->group(function () {
-    Route::get('/general/dashboard', [UsersController::class, 'dashboard'])->name('general.dashboard');
+Route::middleware(['auth', 'role:general|admin'])->group(function () {
+    //
 });
-
