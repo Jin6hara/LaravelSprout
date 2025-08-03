@@ -19,7 +19,8 @@ class CheckRole
         $roles = explode('|', $role); // 'admin|general' → ['admin', 'general']
 
         if (!Auth::check() || !in_array(Auth::user()->role, $roles)) {
-            abort(403); // または redirect('/unauthorized')
+            return redirect()->route('welcome')->with('status', '指定されたページにアクセスする権限がありません。');
+            //abort(403); // または redirect('/unauthorized')
         }
 
         return $next($request);
