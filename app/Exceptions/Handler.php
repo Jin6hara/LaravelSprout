@@ -4,7 +4,7 @@ namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Throwable;
-
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Session\TokenMismatchException;
 use Illuminate\Auth\Access\AuthorizationException;
 
@@ -34,10 +34,15 @@ class Handler extends ExceptionHandler
     public function render($request, Throwable $exception)
     {
         if ($exception instanceof TokenMismatchException) {
-            // セッション切れなどでCSRFエラーが出た場合はホームにリダイレクト
-            return redirect()->route('welcome')->with('status', 'すでにログアウトしています。');
+            if (Auth::check()) {
+                // 既にログイン済み → ダブルログインでトークン無効になったケース
+                return redirect()->route('welcome')->with('status', 'すでにログインしています。');
+            } else {
+                // 通常のセッション切れ
+                return redirect()->route('welcome')->with('status', 'すでにログアウトしています。');
+            }
         }
-        
+
         if ($exception instanceof AuthorizationException) {
             // もともとroleチェックに使う予定だった。とりあえず残しておく。
             return redirect()->route('home')->with('message', 'アクセス権限がありません。');
