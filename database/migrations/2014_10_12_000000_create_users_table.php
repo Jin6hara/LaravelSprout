@@ -24,6 +24,10 @@ return new class extends Migration
             $table->string('profile_picture')->nullable();
             $table->text('self_introduction')->nullable();
             $table->softDeletes();
+            // 交通費精算に関連する最低限の情報
+            $table->string('employee_code', 5)->unique();// 社員コード
+            $table->string('address')->nullable(); // 自宅など出発地の参考に
+            $table->string('phone_number')->nullable(); // 緊急連絡や照会用
         });
     }
 

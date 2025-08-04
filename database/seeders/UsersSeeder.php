@@ -16,12 +16,12 @@ class UsersSeeder extends Seeder
      */
     public function run(): void
     {
-        for ($i = 1; $i <= 9; $i++) {
+        for ($i = 1; $i <= 19; $i++) {
 
-            if ($i === 1 || $i === 2) {
+            if ($i >= 1 && $i <= 4) {
                 $gender = "other";
                 $role = "general";
-            } else if ($i === 3 || $i === 4) {
+            } else if ($i >= 7 && $i <= 10) {
                 $gender = "female";
                 $role = "general";
             } else if ($i === 5 || $i === 6) {
@@ -32,7 +32,7 @@ class UsersSeeder extends Seeder
                 $role = "general";
             }
 
-            $timestamp = now()->addMinutes(10*$i);
+            $timestamp = now()->addMinutes(10 * $i);
 
             User::create([
                 'name' => "{$i}hara",
@@ -40,10 +40,16 @@ class UsersSeeder extends Seeder
                 'password' => Hash::make('laravel'),
                 'created_at' => $timestamp,
                 'updated_at' => $timestamp,
-                'gender' => "{$gender}",
-                'role' => "{$role}",
+                'gender' => $gender,
+                'role' => $role,
                 'profile_picture' => "default_{$gender}.png",
-                'self_introduction' => "私の名前は{$i}haraです。"
+                'self_introduction' => "私の名前は{$i}haraです。",
+
+                // 🔽 追加項目
+                'employee_code' => str_pad($i, 5, '0', STR_PAD_LEFT), // 00001〜、5桁
+                'address' => "大阪府大阪市テスト区ララベル{$i}丁目",
+                'phone_number' => str_pad("0901234" . $i, 11, '0', STR_PAD_RIGHT)//11桁
+
             ]);
         }
     }
