@@ -3,7 +3,7 @@
 @section('content')
 <!-- サイトの代表的なシンボル -->
 <div class="text-center my-5">
-    <img src="{{ asset('image/RouteHub1.png') }}" alt="ミチログ" class="img-fluid img-thumbnail" style="max-width: auto; height: auto;">
+    <img src="{{ asset('image/RouteHub1.png') }}" alt="ルートハブ" class="img-fluid img-thumbnail" style="max-width: auto; height: auto;">
     <h2 class="mt-3">ようこそルートハブへ</h2>
     <p class="text-muted">講師と本部をつなぐ、交通費と社内連携のポータルです。</p>
 </div>

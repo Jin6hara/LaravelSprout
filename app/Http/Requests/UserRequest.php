@@ -26,6 +26,17 @@ class UserRequest extends FormRequest
             'email'    => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
             'gender'   => 'required|in:male,female,other,unknown',
+            'employee_code' => 'required|digits:5|unique:users',
+        ];
+    }
+
+    //これは追加のカスタマイズメッセージ
+    public function messages()
+    {
+        return [
+        'employee_code.required' => 'Employee code is required.',
+        'employee_code.digits'   => 'Employee code must be exactly 5 digits.',
+        'employee_code.unique'   => 'This employee code is already in use.',
         ];
     }
 }

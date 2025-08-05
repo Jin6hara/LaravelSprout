@@ -22,18 +22,17 @@ class RegisterController extends Controller
 
         $defaultPictures = config('user.default_profile_pictures');
 
-        $user = User::create([
+        User::create([
             'name'              => $request->name,
             'email'             => $request->email,
+            'employee_code'     => $request->employee_code,
             'password'          => Hash::make($request->password),
             'gender'            => $request->gender,
-            'role'              => 'general',
+            'role'              => 'general',//登録時の誤設定を防ぐ目的で、権限は後から変更できる仕様としています。
             'profile_picture'   => $defaultPictures[$request->gender],
             'self_introduction' => 'こんにちは、' . $request->name . 'です。',
         ]);
 
-        Auth::login($user);
-
-        return redirect()->route('welcome');
+        return redirect()->route('admin.dashboard')->with("status", "登録成功");
     }
 }
