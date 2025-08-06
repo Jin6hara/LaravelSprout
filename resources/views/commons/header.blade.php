@@ -7,7 +7,7 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto">
                 @auth
-                <a class="nav-link" href="">マイページ</a>
+                <a class="nav-link" href="{{route('user.profile')}}">マイページ</a>
                 <li class="nav-item"><a class="nav-link" href="">交通費精算</a></li>
                 <li class="nav-item"><a class="nav-link" href="">お問い合わせ</a></li>
                 <li class="nav-item">

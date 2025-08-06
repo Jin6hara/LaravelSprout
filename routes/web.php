@@ -31,4 +31,5 @@ Route::middleware(['auth', 'role:general|admin'])->group(function () {
         return view('welcome');
     })->name('welcome');
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+    Route::get('/profile', [UsersController::class, 'showProfile'])->name('user.profile');
 });
