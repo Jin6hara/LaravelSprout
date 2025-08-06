@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\RegisterController;
+
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\UsersController;
@@ -21,8 +21,8 @@ Route::get('/login', [LoginController::class, 'showForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
 
 Route::middleware(['auth', 'role:admin'])->group(function () {
-    Route::get('/register', [RegisterController::class, 'showForm'])->name('register.showForm');
-    Route::post('/register', [RegisterController::class, 'register'])->name('register.submit');
+    Route::get('/admin/register', [AdminController::class, 'showForm'])->name('register.showForm');
+    Route::post('/admin/register', [AdminController::class, 'register'])->name('register.submit');
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
 });
 

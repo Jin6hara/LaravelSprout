@@ -11,35 +11,43 @@
             <div class="mb-3">
                 <label class="form-label">名前</label>
                 <input type="text" name="name" class="form-control @error('name') is-invalid @enderror"
-                       value="{{ old('name') }}">
+                    value="{{ old('name') }}">
                 @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>
 
             <div class="mb-3">
                 <label class="form-label">メールアドレス</label>
                 <input type="email" name="email" class="form-control @error('email') is-invalid @enderror"
-                       value="{{ old('email') }}">
+                    value="{{ old('email') }}">
                 @error('email') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>
 
             <div class="mb-3">
+                <label class="form-label">社員番号</label>
+                <input type="text" name="employee_code" class="form-control @error('employee_code') is-invalid @enderror"
+                    value="{{ old('employee_code') }}">
+                @error('employee_code') <div class="invalid-feedback">{{ $message }}</div> @enderror
+            </div>
+
+
+            <div class="mb-3">
                 <label class="form-label">パスワード</label>
-                <input type="password" name="password" class="form-control @error('password') is-invalid @enderror">
+                <input type="password" name="password" autocomplete="new-password" class="form-control @error('password') is-invalid @enderror">
                 @error('password') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>
 
             <div class="mb-3">
                 <label class="form-label">パスワード（確認）</label>
-                <input type="password" name="password_confirmation" class="form-control">
+                <input type="password" name="password_confirmation" autocomplete="new-password" class="form-control">
             </div>
 
             <div class="mb-4">
                 <label class="form-label">性別</label>
                 <select name="gender" class="form-select @error('gender') is-invalid @enderror">
+                    <option value="unknown" {{ old('gender') == 'unknown' ? 'selected' : '' }}>未選択</option>
                     <option value="male" {{ old('gender') == 'male' ? 'selected' : '' }}>男性</option>
                     <option value="female" {{ old('gender') == 'female' ? 'selected' : '' }}>女性</option>
                     <option value="other" {{ old('gender') == 'other' ? 'selected' : '' }}>その他</option>
-                    <option value="unknown" {{ old('gender') == 'unknown' ? 'selected' : '' }}>不明</option>
                 </select>
                 @error('gender') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>
