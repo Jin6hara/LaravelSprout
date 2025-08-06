@@ -21,7 +21,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
-        'employee_code', 
+        'employee_code',
         'password',
         'email_verified_at',
         'gender',
@@ -50,4 +50,9 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    public function getRouteKeyName()
+    {
+        return 'employee_code';
+    }
 }
