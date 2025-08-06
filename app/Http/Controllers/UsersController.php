@@ -26,4 +26,28 @@ class UsersController extends Controller
 
         return view('user.profile', ['user' => $targetUser]);
     }
+
+    /**
+     * @property int $id
+     * @property string $name
+     * @method bool save()
+     */
+    public function updateField(Request $request)
+    {
+        $user = auth()->user();
+
+        $field = $request->input('field');
+        $value = $request->input('value');
+
+        $allowedFields = ['email', 'phone_number', 'address', 'self_introduction'];
+
+        if (!in_array($field, $allowedFields)) {
+            return response()->json(['error' => '更新できません'], 400);
+        }
+
+        $user->$field = $value;
+        $user->save();
+
+        return response()->json(['message' => '更新完了']);
+    }
 }

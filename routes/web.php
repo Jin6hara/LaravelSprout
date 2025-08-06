@@ -43,11 +43,14 @@ Route::prefix('profile')->group(function () {
     // general: 自分のプロフィール
     Route::middleware(['auth'])->group(function () {
         Route::get('/', [UsersController::class, 'showProfile'])->name('user.profile');
+        Route::patch('/update-field', [UsersController::class, 'updateField'])->name('user.updateField');
+
     });
 
     // admin: 他人のプロフィール
     Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::get('{user}', [UsersController::class, 'showProfile'])->name('admin.user.profile');
+        
     });
 });
 
