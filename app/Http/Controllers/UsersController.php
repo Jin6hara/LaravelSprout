@@ -4,17 +4,26 @@ namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use App\Models\User;
+
 
 class UsersController extends Controller
 {
-    public function showProfile()
+    public function showProfile(?User $user = null)
     {
-        $user = Auth::user(); // ログインユーザーを取得
+        $currentUser = Auth::user();
 
+        // userがnull → 自分のプロフィール（一般ユーザー）
+        $targetUser = $user ?? $currentUser;
+
+        // 権限チェック
+        $this->authorize('view', $targetUser);
+
+        // プロフィール画像取得ロジック
         $defaultPictures = config('user.default_profile_pictures');
-        $gender = $user->gender;
-        $user->profile_picture = $user->profile_picture ?? $defaultPictures[$gender];
+        $gender = $targetUser->gender;
+        $targetUser->profile_picture = $targetUser->profile_picture ?? $defaultPictures[$gender];
 
-        return view('user.profile', compact('user'));
+        return view('user.profile', ['user' => $targetUser]);
     }
 }

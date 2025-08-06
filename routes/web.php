@@ -15,21 +15,39 @@ use App\Http\Controllers\UsersController;
 | routes are loaded by the RouteServiceProvider and all of them will
 | be assigned to the "web" middleware group. Make something great!
 |
+| 機能ごとに整理。機能によってはアクセスが同じでもroleによってRouteを分ける場合がある。
+|
 */
 
+//ログイン
 Route::get('/login', [LoginController::class, 'showForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
+Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
+//共通
+Route::middleware(['auth', 'role:general|admin'])->group(function () {
+    Route::get('/', function () {
+        return view('welcome');
+    })->name('welcome');
+});
+
+//登録
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/register', [AdminController::class, 'showForm'])->name('register.showForm');
     Route::post('/admin/register', [AdminController::class, 'register'])->name('register.submit');
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
 });
 
-Route::middleware(['auth', 'role:general|admin'])->group(function () {
-    Route::get('/', function () {
-        return view('welcome');
-    })->name('welcome');
-    Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
-    Route::get('/profile', [UsersController::class, 'showProfile'])->name('user.profile');
+//プロファイル関連
+Route::prefix('profile')->group(function () {
+    // general: 自分のプロフィール
+    Route::middleware(['auth'])->group(function () {
+        Route::get('/', [UsersController::class, 'showProfile'])->name('user.profile');
+    });
+
+    // admin: 他人のプロフィール
+    Route::middleware(['auth', 'role:admin'])->group(function () {
+        Route::get('{user}', [UsersController::class, 'showProfile'])->name('admin.user.profile');
+    });
 });
+

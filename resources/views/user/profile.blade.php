@@ -9,11 +9,11 @@
             </div>
             <div class="card-body text-center">
                 <img class="rounded-circle img-fluid"
-                     src="{{ asset('image/' . $user->profile_picture) }}"
-                     alt="{{ $user->name }}のプロフィール画像">
+                    src="{{ asset('image/' . $user->profile_picture) }}"
+                    alt="{{ $user->name }}のプロフィール画像">
 
                 <div class="mt-3">
-                    <a href="" class="btn btn-primary btn-block">ユーザ情報の編集</a>
+                    <a href="" class="btn btn-primary btn-block">写真の編集</a>
                 </div>
             </div>
         </div>
@@ -22,13 +22,19 @@
     <div class="col-sm-8">
         <ul class="nav nav-tabs nav-justified mb-3">
             <li class="nav-item">
-                <a href="#" class="nav-link {{ Request::is('profile') ? 'active' : '' }}">基本情報</a>
+                <a href="#" class="nav-link {{ Request::is('profile') || Request::is('profile/*') ? 'active' : '' }}">
+                    基本情報
+                </a>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link">スケジュール</a>
+                <a href="#" class="nav-link {{ Request::is('schedule') || Request::is('schedule/*') ? 'active' : '' }}">
+                    スケジュール
+                </a>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link">各種申請</a>
+                <a href="#" class="nav-link">
+                    各種申請
+                </a>
             </li>
         </ul>
 
@@ -62,7 +68,14 @@
                         <th>住所</th>
                         <td>{{ $user->address }}</td>
                     </tr>
+                    <tr>
+                        <th>自己紹介</th>
+                        <td>{{ $user->self_introduction }}</td>
+                    </tr>
                 </table>
+                <div class="mt-3">
+                    <a href="" class="btn btn-primary btn-block">情報の編集</a>
+                </div>
             </div>
         </div>
     </div>
