@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Validation\ValidationException;
 
 
 class UsersController extends Controller
@@ -43,7 +44,6 @@ class UsersController extends Controller
         $this->authorize('view', $targetUser);
 
         $field = $request->input('field');
-        $value = $request->input('value');
 
         $allowedFields = ['email', 'phone_number', 'address', 'self_introduction'];
 
@@ -51,7 +51,26 @@ class UsersController extends Controller
             return response()->json(['error' => '更新できません'], 400);
         }
 
-        $targetUser->$field = $value;
+        $rules = match ($field) {
+            'email' => ['value' => "required|email|max:255|unique:users,email,{$targetUser->id}"],
+            'phone_number' => ['value' => 'nullable|numeric|digits_between:10,11'],
+            'address' => ['value' => 'nullable|string|max:255'],
+            'self_introduction' => ['value' => 'nullable|string|max:1000'],
+        };
+
+        // 以前はバリデーションせずに直接取得していた：$value = $request->input('value');
+        // → バリデーションエラーをJSON形式で返すよう、try-catch + validate() に変更
+        try {
+            $validated = $request->validate($rules);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'error' => $e->errors()['value'][0] ?? '不正な値です'
+            ], 422);
+        }
+
+        // 以前は $targetUser->$field = $value; のように使っていたが、
+        // validate() で取得した値を使用するため $validated['value'] に変更
+        $targetUser->$field = $validated['value']; // ※ $validated は ['value' => 入力値] の形
         $targetUser->save();
 
         return response()->json(['message' => '更新完了']);
