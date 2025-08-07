@@ -113,6 +113,17 @@
     </div>
 </div>
 
+@php
+    $updateFieldUrl = (Auth::user()->role === 'admin' && isset($user))
+        ? route('admin.user.updateField', ['user' => $user])
+        : route('user.updateField');
+@endphp
+
+<script>
+    const updateFieldUrl = @json($updateFieldUrl);
+</script>
+
+
 <script>
 function editField(field) {
     document.getElementById(`${field}_display`).classList.add('d-none');
@@ -129,7 +140,7 @@ function editField(field) {
 function saveField(field) {
     const value = document.getElementById(`${field}_input`).value;
 
-    fetch("{{ route('user.updateField') }}", {
+    fetch(updateFieldUrl, {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json',

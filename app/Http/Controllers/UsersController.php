@@ -32,9 +32,15 @@ class UsersController extends Controller
      * @property string $name
      * @method bool save()
      */
-    public function updateField(Request $request)
+    public function updateField(Request $request, ?User $user = null)
     {
-        $user = auth()->user();
+        $currentUser = Auth::user();
+
+        // userがnull → 自分のプロフィール（一般ユーザー）
+        $targetUser = $user ?? $currentUser;
+
+        // 権限チェック
+        $this->authorize('view', $targetUser);
 
         $field = $request->input('field');
         $value = $request->input('value');
@@ -45,8 +51,8 @@ class UsersController extends Controller
             return response()->json(['error' => '更新できません'], 400);
         }
 
-        $user->$field = $value;
-        $user->save();
+        $targetUser->$field = $value;
+        $targetUser->save();
 
         return response()->json(['message' => '更新完了']);
     }

@@ -50,7 +50,7 @@ Route::prefix('profile')->group(function () {
     // admin: 他人のプロフィール
     Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::get('{user}', [UsersController::class, 'showProfile'])->name('admin.user.profile');
-        
+        Route::patch('/update-field/{user}', [UsersController::class, 'updateField'])->name('admin.user.updateField');
     });
 });
 
