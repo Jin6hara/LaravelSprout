@@ -37,7 +37,7 @@ class UpdateUserFieldRequest extends FormRequest
         };
     }
 
-    //コントローラーのtry catchをここに移した結果
+    ///コントローラーでの try-catch バリデーション処理を、FormRequest 側に移動したもの
     public function failedValidation(Validator $validator)
     {
         throw new HttpResponseException(response()->json([
