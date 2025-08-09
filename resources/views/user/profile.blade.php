@@ -11,7 +11,6 @@
                 <img class="rounded-circle img-fluid"
                     src="{{ asset('image/' . $user->profile_picture) }}"
                     alt="{{ $user->name }}のプロフィール画像">
-
                 <div class="mt-3">
                     <a href="" class="btn btn-primary btn-block">写真の編集</a>
                 </div>
@@ -46,27 +45,77 @@
                 <table class="table table-bordered">
                     <tr>
                         <th>社員コード</th>
-                        <td>{{ $user->employee_code }}</td><td></td>
+                        <td>
+                            <span id="employee_code_display">{{ $user->employee_code }}</span>
+                            <input type="text" id="employee_code_input" class="form-control d-none" value="{{ $user->employee_code }}">
+                        </td>
+                        @if(auth()->user()->role === 'admin')
+                        <td style="width: 100px; text-align: center;">
+                            <button class="btn btn-sm btn-outline-secondary" id="employee_code_edit" onclick="editField('employee_code')">✏️</button>
+                            <button class="btn btn-sm btn-primary d-none" id="employee_code_save" onclick="saveField('employee_code')">✅</button>
+                            <button class="btn btn-sm btn-danger d-none" id="employee_code_cancel" onclick="cancelField('employee_code')">❌</button>
+                        </td>
+                        @else
+                        <td></td>
+                        @endif
                     </tr>
                     <tr>
                         <th>名前</th>
-                        <td>{{ $user->name }}</td><td></td>
+                        <td>
+                            <span id="name_display">{{ $user->name }}</span>
+                            <input type="text" id="name_input" class="form-control d-none" value="{{ $user->name }}">
+                        </td>
+                        @if(auth()->user()->role === 'admin')
+                        <td style="width: 100px; text-align: center;">
+                            <button class="btn btn-sm btn-outline-secondary" id="name_edit" onclick="editField('name')">✏️</button>
+                            <button class="btn btn-sm btn-primary d-none" id="name_save" onclick="saveField('name')">✅</button>
+                            <button class="btn btn-sm btn-danger d-none" id="name_cancel" onclick="cancelField('name')">❌</button>
+                        </td>
+                        @else
+                        <td></td>
+                        @endif
                     </tr>
                     <tr>
                         <th>性別</th>
-                        <td>{{ ucfirst($user->gender) }}</td><td></td>
-                    </tr>
-                    <tr>
-                        <th>Email</th>
+                        @php
+                        $genderLabels = [
+                        'unknown' => '未選択',
+                        'male' => '男性',
+                        'female' => '女性',
+                        'other' => 'その他',
+                        ];
+                        @endphp
                         <td>
-                            <span id="email_display">{{ $user->email }}</span>
-                            <input type="text" id="email_input" class="form-control d-none" value="{{ $user->email }}">
+                            {{-- 表示用（日本語ラベル） --}}
+                            <span id="gender_display">{{ $genderLabels[$user->gender] ?? '未選択' }}</span>
+                            {{-- 編集用（セレクト） --}}
+                            <select id="gender_input" class="form-select d-none">
+                                <option value="unknown" {{ $user->gender === 'unknown' ? 'selected' : '' }}>未選択</option>
+                                <option value="male" {{ $user->gender === 'male'    ? 'selected' : '' }}>男性</option>
+                                <option value="female" {{ $user->gender === 'female'  ? 'selected' : '' }}>女性</option>
+                                <option value="other" {{ $user->gender === 'other'   ? 'selected' : '' }}>その他</option>
+                            </select>
                         </td>
+                        @if(auth()->user()->role === 'admin')
                         <td style="width: 100px; text-align: center;">
-                            <button class="btn btn-sm btn-outline-secondary" id="email_edit" onclick="editField('email')">✏️</button>
-                            <button class="btn btn-sm btn-primary d-none" id="email_save" onclick="saveField('email')">✅</button>  
-                            <button class="btn btn-sm btn-danger d-none" id="email_cancel" onclick="cancelField('email')">❌</button>                         
+                            <button class="btn btn-sm btn-outline-secondary" id="gender_edit" onclick="editField('gender')">✏️</button>
+                            <button class="btn btn-sm btn-primary d-none" id="gender_save" onclick="saveField('gender')">✅</button>
+                            <button class="btn btn-sm btn-danger d-none" id="gender_cancel" onclick="cancelField('gender')">❌</button>
                         </td>
+                        @else
+                        <td></td>
+                        @endif
+                    </tr>
+                    <th>Email</th>
+                    <td>
+                        <span id="email_display">{{ $user->email }}</span>
+                        <input type="text" id="email_input" class="form-control d-none" value="{{ $user->email }}">
+                    </td>
+                    <td style="width: 100px; text-align: center;">
+                        <button class="btn btn-sm btn-outline-secondary" id="email_edit" onclick="editField('email')">✏️</button>
+                        <button class="btn btn-sm btn-primary d-none" id="email_save" onclick="saveField('email')">✅</button>
+                        <button class="btn btn-sm btn-danger d-none" id="email_cancel" onclick="cancelField('email')">❌</button>
+                    </td>
                     </tr>
                     <tr>
                         <th>電話番号</th>
@@ -82,7 +131,7 @@
                     </tr>
                     <tr>
                         <th>住所</th>
-                            <td>
+                        <td>
                             <span id="address_display">{{ $user->address }}</span>
                             <input type="text" id="address_input" class="form-control d-none" value="{{ $user->address }}">
                         </td>
@@ -94,7 +143,7 @@
                     </tr>
                     <tr>
                         <th>自己紹介</th>
-                            <td>
+                        <td>
                             <span id="self_introduction_display">{{ $user->self_introduction }}</span>
                             <input type="text" id="self_introduction_input" class="form-control d-none" value="{{ $user->self_introduction }}">
                         </td>
@@ -106,7 +155,7 @@
                     </tr>
                 </table>
                 <div class="mt-3">
-                    <a href="" class="btn btn-primary btn-block">情報の編集</a>
+                    <a href="" class="btn btn-primary btn-block">情報の一括編集</a>
                 </div>
             </div>
         </div>
@@ -114,73 +163,82 @@
 </div>
 
 @php
-    $updateFieldUrl = (Auth::user()->role === 'admin' && isset($user))
-        ? route('admin.user.updateField', ['user' => $user])
-        : route('user.updateField');
+$updateFieldUrl = (Auth::user()->role === 'admin' && isset($user))
+? route('admin.user.updateField', ['user' => $user])
+: route('user.updateField');
 @endphp
 
 <script>
     const updateFieldUrl = @json($updateFieldUrl);
 </script>
 
-
 <script>
-function editField(field) {
-    document.getElementById(`${field}_display`).classList.add('d-none');
-    document.getElementById(`${field}_input`).classList.remove('d-none');
-    document.getElementById(`${field}_edit`).classList.add('d-none');
-    document.getElementById(`${field}_save`).classList.remove('d-none');
-    document.getElementById(`${field}_cancel`).classList.remove('d-none');
+    function editField(field) {
+        document.getElementById(`${field}_display`).classList.add('d-none');
+        document.getElementById(`${field}_input`).classList.remove('d-none');
+        document.getElementById(`${field}_edit`).classList.add('d-none');
+        document.getElementById(`${field}_save`).classList.remove('d-none');
+        document.getElementById(`${field}_cancel`).classList.remove('d-none');
 
-    // 編集前の値を保持（キャンセル時に使う）
-    const input = document.getElementById(`${field}_input`);
-    input.setAttribute('data-original', input.value);
-}
+        // 編集前の値を保持（キャンセル時に使う）
+        const input = document.getElementById(`${field}_input`);
+        input.setAttribute('data-original', input.value);
+    }
 
-function saveField(field) {
-    const value = document.getElementById(`${field}_input`).value;
+    function saveField(field) {
+        const value = document.getElementById(`${field}_input`).value;
 
-    fetch(updateFieldUrl, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-        },
-        body: JSON.stringify({ field, value })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.message) {
-            document.getElementById(`${field}_display`).textContent = value;
-            document.getElementById(`${field}_display`).classList.remove('d-none');
-            document.getElementById(`${field}_input`).classList.add('d-none');
-            document.getElementById(`${field}_edit`).classList.remove('d-none');
-            document.getElementById(`${field}_save`).classList.add('d-none');
-            document.getElementById(`${field}_cancel`).classList.add('d-none');
-        } else {
-            alert(data.error || '更新に失敗しました');
+        const confirmFields = ['employee_code', 'name', 'gender'];
+        if (confirmFields.includes(field)) {
+            if (!confirm("重要な情報です。本当に更新しますか？")) {
+                return; // キャンセルしたら終了
+            }
         }
-    });
-}
 
-function cancelField(field) {
-    const display = document.getElementById(`${field}_display`);
-    const input = document.getElementById(`${field}_input`);
-    const editBtn = document.getElementById(`${field}_edit`);
-    const saveBtn = document.getElementById(`${field}_save`);
-    const cancelBtn = document.getElementById(`${field}_cancel`);
+        fetch(updateFieldUrl, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    field,
+                    value
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.message) {
+                    document.getElementById(`${field}_display`).textContent = value;
+                    document.getElementById(`${field}_display`).classList.remove('d-none');
+                    document.getElementById(`${field}_input`).classList.add('d-none');
+                    document.getElementById(`${field}_edit`).classList.remove('d-none');
+                    document.getElementById(`${field}_save`).classList.add('d-none');
+                    document.getElementById(`${field}_cancel`).classList.add('d-none');
+                } else {
+                    alert(data.error || '更新に失敗しました');
+                }
+            });
+    }
 
-    // 入力値を元に戻す
-    const originalValue = input.getAttribute('data-original');
-    input.value = originalValue;
+    function cancelField(field) {
+        const display = document.getElementById(`${field}_display`);
+        const input = document.getElementById(`${field}_input`);
+        const editBtn = document.getElementById(`${field}_edit`);
+        const saveBtn = document.getElementById(`${field}_save`);
+        const cancelBtn = document.getElementById(`${field}_cancel`);
 
-    // 表示切り替え
-    display.classList.remove('d-none');
-    input.classList.add('d-none');
-    saveBtn.classList.add('d-none');
-    cancelBtn.classList.add('d-none');
-    editBtn.classList.remove('d-none');
-}
+        // 入力値を元に戻す
+        const originalValue = input.getAttribute('data-original');
+        input.value = originalValue;
+
+        // 表示切り替え
+        display.classList.remove('d-none');
+        input.classList.add('d-none');
+        saveBtn.classList.add('d-none');
+        cancelBtn.classList.add('d-none');
+        editBtn.classList.remove('d-none');
+    }
 </script>
 
 @endsection

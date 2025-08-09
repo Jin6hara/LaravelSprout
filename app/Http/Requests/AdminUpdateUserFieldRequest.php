@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
-class UpdateUserFieldRequest extends FormRequest
+class AdminUpdateUserFieldRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -28,6 +28,9 @@ class UpdateUserFieldRequest extends FormRequest
         $targetUser = $this->route('user') ?? Auth::user(); // ルートモデル or 自分
 
         return match ($field) {
+            'employee_code' => ['value' => "required|digits:5|unique:users,employee_code,{$targetUser->id}"],
+            'name'     => ['value' => 'required|string|max:255'],
+            'gender'   => ['value' => 'required|in:male,female,other,unknown'],
             'email' => ['value' => "required|email|max:255|ascii|unique:users,email,{$targetUser->id}"],
             'phone_number' => ['value' => 'nullable|numeric|digits_between:10,11'],
             'address' => ['value' => 'nullable|string|max:255'],
