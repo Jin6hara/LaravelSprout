@@ -1,6 +1,13 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+$defaultPictures = config('user.default_profile_pictures');
+$currentUrl = $user->profile_picture
+? asset('image/' . $user->profile_picture)
+: asset('image/' . $defaultPictures[$user->gender]);
+$defaultUrl = asset('image/' . $defaultPictures[$user->gender]);
+@endphp
 <div class="row">
     <aside class="col-sm-4 mb-5">
         <div class="card bg-info">
@@ -8,21 +15,156 @@
                 <h3 class="card-title text-light">{{ $user->name }}</h3>
             </div>
             <div class="card-body text-center">
-                @php
-                $defaultPictures = config('user.default_profile_pictures');
-                $profilePicture = $user->profile_picture
-                ? asset('image/' . $user->profile_picture)
-                : asset('image/' . $defaultPictures[$user->gender]);
-                @endphp
-                <img class="rounded-circle img-fluid"
-                    src="{{ $profilePicture }}"
+                <img id="profileImg" class="rounded-circle img-fluid"
+                    src="{{ $currentUrl }}"
                     alt="{{ $user->name }}のプロフィール画像">
                 <div class="mt-3">
-                    <a href="" class="btn btn-primary btn-block">写真の編集</a>
+                    <button class="btn btn-primary btn-block"
+                        data-bs-toggle="modal"
+                        data-bs-target="#photoEditModal">写真の編集</button>
                 </div>
             </div>
         </div>
     </aside>
+
+    <!-- 写真編集モーダル -->
+    <div class="modal fade" id="photoEditModal" tabindex="-1" aria-labelledby="photoEditModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title" id="photoEditModalLabel">プロフィール写真の編集</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+                </div>
+
+                <div class="modal-body text-center">
+                    <img id="previewImg" src="{{ $currentUrl }}" alt="プレビュー"
+                        class="rounded-circle img-fluid mb-3" style="max-width: 240px;">
+
+                    <input type="file" id="photoInput" accept="image/*" class="d-none">
+                    <p class="small text-muted mb-0">JPEG/PNG/WEBP/GIF（2MBまで）</p>
+                </div>
+
+                <div class="modal-footer justify-content-between">
+                    <div class="d-flex gap-2">
+                        <button type="button" id="btnSelect" class="btn btn-outline-secondary">選択</button>
+                        <!-- 要件4: profile_picture が null でも、押せる（保存でNULL確定→デフォルト表示） -->
+                        <button type="button" id="btnMarkDelete" class="btn btn-outline-danger">今の写真を削除</button>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">キャンセル</button>
+                        <button type="button" id="btnSave" class="btn btn-primary" disabled>保存</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    {{-- JS（プレビュー、保存、削除） --}}
+    <script>
+        (() => {
+            const profileImg = document.getElementById('profileImg');
+            const previewImg = document.getElementById('previewImg');
+            const photoInput = document.getElementById('photoInput');
+            const btnSelect = document.getElementById('btnSelect');
+            const btnMarkDelete = document.getElementById('btnMarkDelete');
+            const btnSave = document.getElementById('btnSave');
+
+            const CURRENT_URL = @json($currentUrl);
+            const DEFAULT_URL = @json($defaultUrl);
+
+            let selectedFile = null; // 仮アップロード用ファイル
+            let pendingDelete = false; // 仮削除フラグ（保存でNULLにする）
+
+            // 「選択」→ ファイルダイアログ
+            btnSelect.addEventListener('click', () => photoInput.click());
+
+            // ファイル選択 → その場で仮プレビュー
+            photoInput.addEventListener('change', (e) => {
+                const file = e.target.files?.[0] || null;
+                if (!file) return;
+                selectedFile = file;
+                pendingDelete = false; // 新規選択したので削除フラグは下ろす
+
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    previewImg.src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+
+                btnSave.disabled = false; // 保存可能
+            });
+
+            // 「今の写真を削除」→ 仮状態：デフォルト画像をプレビューし、保存でNULL確定
+            btnMarkDelete.addEventListener('click', () => {
+                selectedFile = null; // アップロードはしない
+                pendingDelete = true; // 削除確定を希望
+                previewImg.src = DEFAULT_URL; // 仮プレビューはデフォルト画像
+                btnSave.disabled = false; // 保存可能
+            });
+
+            // 「保存」→ _method=PATCH でPOST送信（multipart/form-data）
+            btnSave.addEventListener('click', async () => {
+                const form = new FormData();
+                form.append('_method', 'PATCH'); // メソッド偽装（POSTで送る）
+                if (pendingDelete && !selectedFile) {
+                    form.append('delete', '1');
+                }
+                if (selectedFile) {
+                    form.append('photo', selectedFile);
+                }
+
+                btnSave.disabled = true;
+
+                try {
+                    const res = await fetch('{{ route("profile.photo.apply") }}', {
+                        method: 'POST', // ★ここはPOST
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        },
+                        body: form
+                    });
+
+                    const data = await res.json().catch(() => null);
+                    if (!res.ok) {
+                        alert((data && data.message) || '保存に失敗しました。');
+                        btnSave.disabled = false;
+                        return;
+                    }
+
+                    // 反映：一覧側もプレビュー側も置き換え
+                    profileImg.src = data.url;
+                    previewImg.src = data.url;
+
+                    // 仮状態をクリア
+                    selectedFile = null;
+                    pendingDelete = false;
+                    btnSave.disabled = true;
+
+                    // モーダルを閉じる
+                    const modalEl = document.getElementById('photoEditModal');
+                    const modal = bootstrap.Modal.getInstance(modalEl);
+                    modal.hide();
+
+                } catch (e) {
+                    alert('ネットワークエラーが発生しました。');
+                    btnSave.disabled = false;
+                }
+            });
+
+            // キャンセル/閉じる → 仮状態を破棄
+            document.getElementById('photoEditModal').addEventListener('hidden.bs.modal', () => {
+                selectedFile = null;
+                pendingDelete = false;
+                btnSave.disabled = true;
+                previewImg.src = profileImg.src; // 画面実体に戻す
+                photoInput.value = ''; // クリア
+            });
+        })();
+    </script>
 
     <div class="col-sm-8">
         <ul class="nav nav-tabs nav-justified mb-3">
