@@ -48,7 +48,7 @@ class AdminController extends Controller
         $targetUser = $user;
 
         // 権限チェック
-        $this->authorize('view', $targetUser);
+        $this->authorize('update', $targetUser);
 
         $field = $request->input('field');
         $validated = $request->validated(); // バリデーション通過後のデータ

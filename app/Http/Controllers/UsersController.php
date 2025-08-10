@@ -38,7 +38,7 @@ class UsersController extends Controller
         $targetUser = Auth::user();
 
         // 権限チェック
-        $this->authorize('view', $targetUser);
+        $this->authorize('update', $targetUser);
 
         $field = $request->input('field');
         $validated = $request->validated(); // バリデーション通過後のデータ

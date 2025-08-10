@@ -10,7 +10,7 @@ $defaultUrl = asset('image/' . $defaultPictures[$user->gender]);
 @endphp
 <div class="row">
     <aside class="col-sm-4 mb-5">
-        <div class="card bg-info">
+        <div class="card bg-secondary">
             <div class="card-header">
                 <h3 class="card-title text-light">{{ $user->name }}</h3>
             </div>
@@ -19,7 +19,7 @@ $defaultUrl = asset('image/' . $defaultPictures[$user->gender]);
                     src="{{ $currentUrl }}"
                     alt="{{ $user->name }}のプロフィール画像">
                 <div class="mt-3">
-                    <button class="btn btn-primary btn-block"
+                    <button class="btn bg-white btn-block"
                         data-bs-toggle="modal"
                         data-bs-target="#photoEditModal">写真の編集</button>
                 </div>
@@ -303,7 +303,7 @@ $defaultUrl = asset('image/' . $defaultPictures[$user->gender]);
                     </tr>
                 </table>
                 <div class="mt-3">
-                    <a href="" class="btn btn-primary btn-block">情報の一括編集</a>
+                    <a href="" class="btn btn-secondary btn-block">情報の一括編集</a>
                 </div>
             </div>
         </div>

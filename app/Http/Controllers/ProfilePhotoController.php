@@ -35,7 +35,7 @@ class ProfilePhotoController extends Controller
         }
 
         $targetUser = $user;
-        $this->authorize('view', $targetUser);
+        $this->authorize('update', $targetUser);
         $old  = $targetUser->profile_picture;
 
         if ($wantDelete && !$hasFile) {
