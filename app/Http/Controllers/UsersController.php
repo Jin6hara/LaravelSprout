@@ -33,12 +33,9 @@ class UsersController extends Controller
      * @property string $name
      * @method bool save()
      */
-    public function updateField(UpdateUserFieldRequest $request, ?User $user = null)
+    public function updateField(UpdateUserFieldRequest $request)
     {
-        $currentUser = Auth::user();
-
-        // userがnull → 自分のプロフィール（一般ユーザー）
-        $targetUser = $user ?? $currentUser;
+        $targetUser = Auth::user();
 
         // 権限チェック
         $this->authorize('view', $targetUser);
