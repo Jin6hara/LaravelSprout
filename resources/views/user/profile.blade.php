@@ -8,8 +8,14 @@
                 <h3 class="card-title text-light">{{ $user->name }}</h3>
             </div>
             <div class="card-body text-center">
+                @php
+                $defaultPictures = config('user.default_profile_pictures');
+                $profilePicture = $user->profile_picture
+                ? asset('image/' . $user->profile_picture)
+                : asset('image/' . $defaultPictures[$user->gender]);
+                @endphp
                 <img class="rounded-circle img-fluid"
-                    src="{{ asset('image/' . $user->profile_picture) }}"
+                    src="{{ $profilePicture }}"
                     alt="{{ $user->name }}のプロフィール画像">
                 <div class="mt-3">
                     <a href="" class="btn btn-primary btn-block">写真の編集</a>
