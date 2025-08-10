@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
+use App\Models\User;
 
 class ProfilePhotoController extends Controller
 {
@@ -16,7 +17,7 @@ class ProfilePhotoController extends Controller
      * - photo: file|null（仮アップロードの確定）
      * - delete: '1' or '0'（今の写真を削除してNULLにする）
      */
-    public function apply(Request $request)
+    public function apply(Request $request, User $user)
     {
         // ファイルがあるときだけ画像バリデーション。無ければスキップ可（nullable）。
         $request->validate([
@@ -33,13 +34,14 @@ class ProfilePhotoController extends Controller
             return response()->json(['message' => '画像を選択するか、削除を選んでください。'], 422);
         }
 
-        $user = Auth::user();
-        $old  = $user->profile_picture;
+        $targetUser = $user;
+        $this->authorize('view', $targetUser);
+        $old  = $targetUser->profile_picture;
 
         if ($wantDelete && !$hasFile) {
             // 削除確定（DBをNULLにし、旧ファイルがあれば物理削除）
-            $user->profile_picture = null;
-            $user->save();
+            $targetUser->profile_picture = null;
+            $targetUser->save();
 
             // 旧物理ファイル（カスタムのみ）削除
             if ($old) {
@@ -51,7 +53,7 @@ class ProfilePhotoController extends Controller
 
             // 返却URL：この時点で表示されるデフォルト画像
             $defaultPictures = config('user.default_profile_pictures');
-            $fallback = asset('image/' . $defaultPictures[$user->gender]);
+            $fallback = asset('image/' . $defaultPictures[$targetUser->gender]);
 
             return response()->json([
                 'message' => 'プロフィール写真をデフォルトに戻しました。',
@@ -63,14 +65,14 @@ class ProfilePhotoController extends Controller
         // ここからはアップロード確定
         $file = $request->file('photo'); // nullではない
         $ext  = $file->getClientOriginalExtension();
-        $filename = 'user_' . $user->id . '_' . Str::random(10) . '.' . $ext;
+        $filename = 'user_' . $targetUser->id . '_' . Str::random(10) . '.' . $ext;
 
         // public/image に保存
         $file->move(public_path('image'), $filename);
 
         // DB更新
-        $user->profile_picture = $filename;
-        $user->save();
+        $targetUser->profile_picture = $filename;
+        $targetUser->save();
 
         // 旧物理ファイル（カスタムのみ）削除
         if ($old) {

@@ -119,7 +119,7 @@ $defaultUrl = asset('image/' . $defaultPictures[$user->gender]);
                 btnSave.disabled = true;
 
                 try {
-                    const res = await fetch('{{ route("profile.photo.apply") }}', {
+                    const res = await fetch('{{ route("profile.photo.apply", $user) }}', {
                         method: 'POST', // ★ここはPOST
                         headers: {
                             'X-CSRF-TOKEN': '{{ csrf_token() }}',

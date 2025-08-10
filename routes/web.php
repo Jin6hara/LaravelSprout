@@ -45,7 +45,7 @@ Route::prefix('profile')->group(function () {
     Route::middleware(['auth'])->group(function () {
         Route::get('/', [UsersController::class, 'showProfile'])->name('user.profile');
         Route::patch('/update-field', [UsersController::class, 'updateField'])->name('user.updateField');
-        Route::patch('/profile/photo', [ProfilePhotoController::class, 'apply'])->name('profile.photo.apply');
+        Route::patch('/profile/photo/{user}', [ProfilePhotoController::class, 'apply'])->name('profile.photo.apply');
     });
 
     // admin: 他人のプロフィール
