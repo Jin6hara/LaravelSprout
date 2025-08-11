@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\UsersController;
+use App\Http\Controllers\ProfilePhotoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -44,7 +45,7 @@ Route::prefix('profile')->group(function () {
     Route::middleware(['auth'])->group(function () {
         Route::get('/', [UsersController::class, 'showProfile'])->name('user.profile');
         Route::patch('/update-field', [UsersController::class, 'updateField'])->name('user.updateField');
-
+        Route::patch('/profile/photo/{user}', [ProfilePhotoController::class, 'apply'])->name('profile.photo.apply');
     });
 
     // admin: 他人のプロフィール
@@ -53,4 +54,3 @@ Route::prefix('profile')->group(function () {
         Route::patch('/update-field/{user}', [AdminController::class, 'updateField'])->name('admin.user.updateField');
     });
 });
-

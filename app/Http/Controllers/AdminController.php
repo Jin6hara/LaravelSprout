@@ -23,16 +23,14 @@ class AdminController extends Controller
     public function register(UserRequest $request)
     {
 
-        $defaultPictures = config('user.default_profile_pictures');
-
         User::create([
             'name'              => $request->name,
             'email'             => $request->email,
             'employee_code'     => $request->employee_code,
             'password'          => Hash::make($request->password),
             'gender'            => $request->gender,
-            'role'              => 'general',//登録時の誤設定を防ぐ目的で、権限は後から変更できる仕様とする。
-            'profile_picture'   => $defaultPictures[$request->gender],
+            'role'              => 'general', //登録時の誤設定を防ぐ目的で、権限は後から変更できる仕様とする。
+            'profile_picture'   => null,
             'self_introduction' => 'こんにちは、' . $request->name . 'です。',
         ]);
 
@@ -50,7 +48,7 @@ class AdminController extends Controller
         $targetUser = $user;
 
         // 権限チェック
-        $this->authorize('view', $targetUser);
+        $this->authorize('update', $targetUser);
 
         $field = $request->input('field');
         $validated = $request->validated(); // バリデーション通過後のデータ

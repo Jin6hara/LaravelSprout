@@ -42,7 +42,7 @@ class UsersSeeder extends Seeder
                 'updated_at' => $timestamp,
                 'gender' => $gender,
                 'role' => $role,
-                'profile_picture' => "default_{$gender}.png",
+                'profile_picture' => null,
                 'self_introduction' => "私の名前は{$i}haraです。",
 
                 // 🔽 追加項目
