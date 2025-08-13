@@ -11,9 +11,35 @@ use App\Models\User;
 
 class AdminController extends Controller
 {
-    public function dashboard()
+    /**
+     * ダッシュボード（初期表示：全件→検索UIも表示）
+     */
+    public function dashboard(Request $request)
     {
-        return view('admin.dashboard');
+        // 初期表示では検索語なし・対象は既定3つ
+        $word   = trim((string) $request->query('search_word', ''));
+        $fields = collect((array) $request->query('fields', ['employee_code', 'name', 'phone_number']))
+            ->intersect(['employee_code', 'name', 'phone_number'])
+            ->take(3);
+
+        // 検索語が空なら全件、入っていれば対象フィールドで部分一致
+        $query = User::query()
+            ->when(filled($word), function ($q) use ($word, $fields) {
+                $q->where(function ($w) use ($word, $fields) {
+                    $fields->values()->each(function ($field, $i) use ($w, $word) {
+                        // 先頭だけ where、それ以降は orWhere
+                        $method = $i === 0 ? 'where' : 'orWhere';
+                        $w->{$method}($field, 'like', "%{$word}%");
+                    });
+                });
+            });
+
+        $users = $query
+            ->orderByDesc('updated_at')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('admin.dashboard', compact('users', 'word', 'fields'));
     }
 
     public function showForm()
@@ -66,21 +92,33 @@ class AdminController extends Controller
         return response()->json(['message' => '更新完了']);
     }
 
+    /**
+     * 検索（GET /admin/search）
+     * 実質は dashboard と同じロジック。分けたいという要望に合わせてルートだけ分離。
+     */
     public function search(Request $request)
     {
-        $word = trim((string) $request->query('search_word', ''));
+        // dashboard() をそのまま再利用でもOK。ここではコピペで明示。
+        $word   = trim((string) $request->query('search_word', ''));
+        $fields = collect((array) $request->query('fields', ['employee_code','name','phone_number']))
+            ->intersect(['employee_code','name','phone_number'])
+            ->take(3);
 
-        $mq = User::query()
-            ->when(filled($word), fn ($q)=>
-                $q->where(fn($w) =>
-                    $w->where('employee_code', 'like', "%{$word}%")
-                    ->orWhere('name', 'like', "%{$word}%")
-                    ->orWhere('phone_number', 'like', "%{$word}%")
-                ) 
-            );
+        $query = User::query()
+            ->when(filled($word), function ($q) use ($word, $fields) {
+                $q->where(function ($w) use ($word, $fields) {
+                    $fields->values()->each(function ($field, $i) use ($w, $word) {
+                        $method = $i === 0 ? 'where' : 'orWhere';
+                        $w->{$method}($field, 'like', "%{$word}%");
+                    });
+                });
+            });
 
-        $user = $mq->orderByDesc('id')->paginate(20)->withQueryString();
+        $users = $query
+            ->orderByDesc('updated_at')
+            ->paginate(10)
+            ->withQueryString();
 
-        return view('admin.dashboard', compact('user', 'word'));
+        return view('admin.dashboard', compact('users','word','fields'));
     }
 }
