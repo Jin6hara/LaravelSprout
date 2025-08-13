@@ -52,5 +52,6 @@ Route::prefix('profile')->group(function () {
     Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::get('{user}', [UsersController::class, 'showProfile'])->name('admin.user.profile');
         Route::patch('/update-field/{user}', [AdminController::class, 'updateField'])->name('admin.user.updateField');
+        Route::get('/admin/search', [AdminController::class, 'search'])->name('admin.search');
     });
 });

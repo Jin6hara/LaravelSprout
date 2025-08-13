@@ -6,6 +6,7 @@ use App\Http\Requests\UserRequest;
 use App\Http\Requests\AdminUpdateUserFieldRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Http\Request;
 use App\Models\User;
 
 class AdminController extends Controller
@@ -63,5 +64,23 @@ class AdminController extends Controller
         $targetUser->save();
 
         return response()->json(['message' => '更新完了']);
+    }
+
+    public function search(Request $request)
+    {
+        $word = trim((string) $request->query('search_word', ''));
+
+        $mq = User::query()
+            ->when(filled($word), fn ($q)=>
+                $q->where(fn($w) =>
+                    $w->where('employee_code', 'like', "%{$word}%")
+                    ->orWhere('name', 'like', "%{$word}%")
+                    ->orWhere('phone_number', 'like', "%{$word}%")
+                ) 
+            );
+
+        $user = $mq->orderByDesc('id')->paginate(20)->withQueryString();
+
+        return view('admin.dashboard', compact('user', 'word'));
     }
 }
