@@ -55,4 +55,11 @@ class User extends Authenticatable
     {
         return 'employee_code';
     }
+
+    public function getProfileImageUrlAttribute(): string
+    {
+        $defaults = config('user.default_profile_pictures');
+        $file = $this->profile_picture ?: $defaults[$this->gender];
+        return asset('image/' . ltrim($file, '/'));
+    }
 }
