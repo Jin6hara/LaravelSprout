@@ -51,6 +51,46 @@
                 </select>
                 @error('gender') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>
+            
+            <div class="mb-3">
+                <label class="form-label">電話番号（任意）</label>
+                <input type="text" name="phone_number"
+                    class="form-control @error('phone_number') is-invalid @enderror"
+                    value="{{ old('phone_number') }}">
+                @error('phone_number') <div class="invalid-feedback">{{ $message }}</div> @enderror
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">住所（任意）</label>
+                <input type="text" name="address"
+                    class="form-control @error('address') is-invalid @enderror"
+                    value="{{ old('address') }}">
+                @error('address') <div class="invalid-feedback">{{ $message }}</div> @enderror
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">入社日（start_date）</label>
+                <input type="date" name="start_date"
+                    class="form-control @error('start_date') is-invalid @enderror"
+                    value="{{ old('start_date') }}">
+                @error('start_date') <div class="invalid-feedback">{{ $message }}</div> @enderror
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">退職日（任意）</label>
+                <input type="date" name="end_date"
+                    class="form-control @error('end_date') is-invalid @enderror"
+                    value="{{ old('end_date') }}">
+                @error('end_date') <div class="invalid-feedback">{{ $message }}</div> @enderror
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">備考（任意）</label>
+                <input type="text" name="note"
+                    class="form-control @error('note') is-invalid @enderror"
+                    value="{{ old('note') }}">
+                @error('note') <div class="invalid-feedback">{{ $message }}</div> @enderror
+            </div>
 
             <div class="d-grid">
                 <button type="submit" class="btn btn-primary">
