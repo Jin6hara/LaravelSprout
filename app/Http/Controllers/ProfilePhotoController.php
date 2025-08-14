@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 
 class ProfilePhotoController extends Controller
 {
@@ -17,7 +18,7 @@ class ProfilePhotoController extends Controller
      * - photo: file|null（仮アップロードの確定）
      * - delete: '1' or '0'（今の写真を削除してNULLにする）
      */
-    public function apply(Request $request, User $user)
+    public function apply(Request $request, User $user) : JsonResponse
     {
         // ファイルがあるときだけ画像バリデーション。無ければスキップ可（nullable）。
         $request->validate([

@@ -11,6 +11,8 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 
 class AdminController extends Controller
 {
@@ -35,8 +37,8 @@ class AdminController extends Controller
 
         // 検索クエリ
         $query = User::query()
-            ->when(filled($word), function ($q) use ($word, $fields) {
-                $q->where(function ($w) use ($word, $fields) {
+            ->when(filled($word), function (Builder $q) use ($word, $fields) {
+                $q->where(function (Builder $w) use ($word, $fields) {
                     $fields->values()->each(function ($field, $i) use ($w, $word) {
                         $method = $i === 0 ? 'where' : 'orWhere';
                         $w->{$method}($field, 'like', "%{$word}%");
@@ -68,6 +70,7 @@ class AdminController extends Controller
     }
 
     /**
+     * 登録処理（管理者用）
      * Handle user registration by validating input and creating user and employment terms records.
      */
     public function register(UserRequest $request): RedirectResponse
@@ -98,12 +101,13 @@ class AdminController extends Controller
         return redirect()->route('admin.dashboard')->with("status", "登録成功");
     }
 
-    /**
+    /**     
+     * ユーザーフィールドの更新（管理者用）  
      * @property int $id
      * @property string $name
      * @method bool save()
      */
-    public function updateField(AdminUpdateUserFieldRequest $request, User $user)
+    public function updateField(AdminUpdateUserFieldRequest $request, User $user): JsonResponse
     {
 
         $targetUser = $user;
@@ -130,7 +134,7 @@ class AdminController extends Controller
      * 検索（GET /admin/search）
      * 実質は dashboard と100％同じロジック。URL表示を分けるため、ルートだけ分離。
      */
-    public function search(Request $request)
+    public function search(Request $request): View
     {
         $allowedFields = ['employee_code', 'name', 'phone_number'];
 
@@ -144,8 +148,8 @@ class AdminController extends Controller
         }
 
         $query = User::query()
-            ->when(filled($word), function ($q) use ($word, $fields) {
-                $q->where(function ($w) use ($word, $fields) {
+            ->when(filled($word), function (Builder $q) use ($word, $fields) {
+                $q->where(function (Builder $w) use ($word, $fields) {
                     $fields->values()->each(function ($field, $i) use ($w, $word) {
                         $method = $i === 0 ? 'where' : 'orWhere';
                         $w->{$method}($field, 'like', "%{$word}%");
