@@ -16,28 +16,45 @@ class AdminController extends Controller
      */
     public function dashboard(Request $request)
     {
-        // 初期表示では検索語なし・対象は既定3つ
+        // 検索対象フィールドのホワイトリスト
+        $allowedFields = ['employee_code', 'name', 'phone_number'];
+
+        // 入力取得
         $word   = trim((string) $request->query('search_word', ''));
-        $fields = collect((array) $request->query('fields', ['employee_code', 'name', 'phone_number']))
-            ->intersect(['employee_code', 'name', 'phone_number'])
+        $fields = collect((array) $request->query('fields', $allowedFields))
+            ->intersect($allowedFields)
             ->take(3);
 
-        // 検索語が空なら全件、入っていれば対象フィールドで部分一致
+        // 万が一 0 件になったら全項目にフォールバック（?fields[]= などの変形入力対策）
+        if ($fields->isEmpty()) {
+            $fields = collect($allowedFields);
+        }
+
+        // 検索クエリ
         $query = User::query()
             ->when(filled($word), function ($q) use ($word, $fields) {
                 $q->where(function ($w) use ($word, $fields) {
                     $fields->values()->each(function ($field, $i) use ($w, $word) {
-                        // 先頭だけ where、それ以降は orWhere
                         $method = $i === 0 ? 'where' : 'orWhere';
                         $w->{$method}($field, 'like', "%{$word}%");
                     });
                 });
             });
 
-        $users = $query
-            ->orderByDesc('updated_at')
-            ->paginate(10)
-            ->withQueryString();
+        // 並び替え（既定: updated_at desc）
+        $sort = $request->query('sort', 'updated_at');
+        $dir  = strtolower($request->query('dir', 'desc'));
+
+        $allowedSorts = ['updated_at', 'employee_code', 'name'];
+        $allowedDirs  = ['asc', 'desc'];
+
+        if (!in_array($sort, $allowedSorts, true)) $sort = 'updated_at';
+        if (!in_array($dir,  $allowedDirs,  true)) $dir  = 'desc';
+
+        // employee_code が 5桁固定ならそのままでOK。可変長なら数値順にキャストも可（下のコメント参照）
+        $query->orderBy($sort, $dir);
+
+        $users = $query->paginate(10)->withQueryString();
 
         return view('admin.dashboard', compact('users', 'word', 'fields'));
     }
@@ -94,15 +111,20 @@ class AdminController extends Controller
 
     /**
      * 検索（GET /admin/search）
-     * 実質は dashboard と同じロジック。分けたいという要望に合わせてルートだけ分離。
+     * 実質は dashboard と100％同じロジック。URL表示を分けるため、ルートだけ分離。
      */
     public function search(Request $request)
     {
-        // dashboard() をそのまま再利用でもOK。ここではコピペで明示。
+        $allowedFields = ['employee_code', 'name', 'phone_number'];
+
         $word   = trim((string) $request->query('search_word', ''));
-        $fields = collect((array) $request->query('fields', ['employee_code','name','phone_number']))
-            ->intersect(['employee_code','name','phone_number'])
+        $fields = collect((array) $request->query('fields', $allowedFields))
+            ->intersect($allowedFields)
             ->take(3);
+
+        if ($fields->isEmpty()) {
+            $fields = collect($allowedFields);
+        }
 
         $query = User::query()
             ->when(filled($word), function ($q) use ($word, $fields) {
@@ -114,11 +136,19 @@ class AdminController extends Controller
                 });
             });
 
-        $users = $query
-            ->orderByDesc('updated_at')
-            ->paginate(10)
-            ->withQueryString();
+        $sort = $request->query('sort', 'updated_at');
+        $dir  = strtolower($request->query('dir', 'desc'));
 
-        return view('admin.dashboard', compact('users','word','fields'));
+        $allowedSorts = ['updated_at', 'employee_code', 'name'];
+        $allowedDirs  = ['asc', 'desc'];
+
+        if (!in_array($sort, $allowedSorts, true)) $sort = 'updated_at';
+        if (!in_array($dir,  $allowedDirs,  true)) $dir  = 'desc';
+
+        $query->orderBy($sort, $dir);
+
+        $users = $query->paginate(10)->withQueryString();
+
+        return view('admin.dashboard', compact('users', 'word', 'fields'));
     }
 }

@@ -46,9 +46,38 @@
                 <small class="text-muted">何も選択しない場合は3項目すべてを検索対象にします。</small>
             </div>
 
-            <div class="col-12 d-flex gap-2">
+            <div class="col-md-6 ustify-content-end mb-3 gap-2">
                 <button type="submit" class="btn btn-primary">検索</button>
                 <a href="{{ route('admin.dashboard') }}" class="btn btn-outline-secondary">条件をクリア</a>
+            </div>
+
+            {{-- 並び替え --}}
+            <div class="col-md-6 justify-content-end mb-3 gap-2">
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                        並び替え
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <a class="dropdown-item"
+                                href="{{ request()->fullUrlWithQuery(['sort'=>'updated_at','dir'=>'desc','page'=>1]) }}">
+                                更新日（新→旧）
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item"
+                                href="{{ request()->fullUrlWithQuery(['sort'=>'employee_code','dir'=>'asc','page'=>1]) }}">
+                                社員コード（昇順）
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item"
+                                href="{{ request()->fullUrlWithQuery(['sort'=>'employee_code','dir'=>'desc','page'=>1]) }}">
+                                社員コード（降順）
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </div>
     </form>
