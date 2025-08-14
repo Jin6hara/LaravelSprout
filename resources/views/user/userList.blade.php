@@ -21,7 +21,7 @@
 
             <div class="card-body">
                 <h6 class="card-title mb-1 text-center">
-                    <a href="{{ route('user.profile', $user) }}">
+                    <a href="{{ route('admin.user.profile', $user) }}">
                     {{ $user->name }}
                     </a>
                 </h6>
