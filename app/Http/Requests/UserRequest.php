@@ -22,18 +22,18 @@ class UserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-            'gender'   => 'required|in:male,female,other,unknown',
+            'name'          => 'required|string|max:255',
+            'email'         => 'required|string|email|max:255|unique:users',
+            'password'      => 'required|string|min:8|confirmed',
+            'gender'        => 'required|in:male,female,other,unknown',
             'employee_code' => 'required|digits:5|unique:users',
-            'phone_number' => 'nullable|string|max:15',
-            'address' => 'nullable|string|max:255',
+            'phone_number'  => 'nullable|string|max:15',
+            'address'       => 'nullable|string|max:255',
 
             //下記はemployment_termsのためのフィールド            
-            'start_date'     => ['required', 'date'],
-            'end_date'       => ['nullable', 'date', 'after_or_equal:start_date'],
-            'note'           => ['nullable', 'string', 'max:255'],
+            'start_date'    => ['required', 'date'],
+            'end_date'      => ['nullable', 'date', 'after_or_equal:start_date'],
+            'note'          => ['nullable', 'string', 'max:255'],
         ];
     }
 
