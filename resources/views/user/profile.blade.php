@@ -185,75 +185,47 @@ $defaultUrl = asset('image/' . $defaultPictures[$user->gender]);
             </li>
         </ul>
 
-        <div class="card">
+        <div class="card mt-4">
+            <div class="card-header">
+                <h4>本人情報</h4>
+            </div>
+            <div class="card-body">
+                <table class="table table-bordered">
+                    <colgroup>
+                        <col style="width:140px;"> <!-- ← 好きな幅に -->
+                        <col>
+                    </colgroup>
+                    <tr>
+                        <th>社員コード</th>
+                        <td>{{ $user->employee_code }}</td>
+                    </tr>
+                    <tr>
+                        <th>名前</th>
+                        <td>{{ $user->name }}</td>
+                    </tr>
+                    <tr>
+                        <th>性別</th>
+                        <td>{{ $user->gender_label }}</td>
+                    </tr>
+                </table>
+                @if (Auth::user()->role === 'admin' && isset($user))
+                <div class="mt-3">
+                    <a href="" class="btn btn-secondary btn-block">本人情報を編集</a>
+                </div>
+                @endif
+            </div>
+        </div>
+
+        <div class="card mt-4">
             <div class="card-header">
                 <h4>基本情報</h4>
             </div>
             <div class="card-body">
                 <table class="table table-bordered">
-                    <tr>
-                        <th>社員コード</th>
-                        <td>
-                            <span id="employee_code_display">{{ $user->employee_code }}</span>
-                            <input type="text" id="employee_code_input" class="form-control d-none" value="{{ $user->employee_code }}">
-                        </td>
-                        @if(auth()->user()->role === 'admin')
-                        <td style="width: 100px; text-align: center;">
-                            <button class="btn btn-sm btn-outline-secondary" id="employee_code_edit" onclick="editField('employee_code')">✏️</button>
-                            <button class="btn btn-sm btn-primary d-none" id="employee_code_save" onclick="saveField('employee_code')">✅</button>
-                            <button class="btn btn-sm btn-danger d-none" id="employee_code_cancel" onclick="cancelField('employee_code')">❌</button>
-                        </td>
-                        @else
-                        <td></td>
-                        @endif
-                    </tr>
-                    <tr>
-                        <th>名前</th>
-                        <td>
-                            <span id="name_display">{{ $user->name }}</span>
-                            <input type="text" id="name_input" class="form-control d-none" value="{{ $user->name }}">
-                        </td>
-                        @if(auth()->user()->role === 'admin')
-                        <td style="width: 100px; text-align: center;">
-                            <button class="btn btn-sm btn-outline-secondary" id="name_edit" onclick="editField('name')">✏️</button>
-                            <button class="btn btn-sm btn-primary d-none" id="name_save" onclick="saveField('name')">✅</button>
-                            <button class="btn btn-sm btn-danger d-none" id="name_cancel" onclick="cancelField('name')">❌</button>
-                        </td>
-                        @else
-                        <td></td>
-                        @endif
-                    </tr>
-                    <tr>
-                        <th>性別</th>
-                        @php
-                        $genderLabels = [
-                        'unknown' => '未選択',
-                        'male' => '男性',
-                        'female' => '女性',
-                        'other' => 'その他',
-                        ];
-                        @endphp
-                        <td>
-                            {{-- 表示用（日本語ラベル） --}}
-                            <span id="gender_display">{{ $genderLabels[$user->gender] ?? '未選択' }}</span>
-                            {{-- 編集用（セレクト） --}}
-                            <select id="gender_input" class="form-select d-none">
-                                <option value="unknown" {{ $user->gender === 'unknown' ? 'selected' : '' }}>未選択</option>
-                                <option value="male" {{ $user->gender === 'male'    ? 'selected' : '' }}>男性</option>
-                                <option value="female" {{ $user->gender === 'female'  ? 'selected' : '' }}>女性</option>
-                                <option value="other" {{ $user->gender === 'other'   ? 'selected' : '' }}>その他</option>
-                            </select>
-                        </td>
-                        @if(auth()->user()->role === 'admin')
-                        <td style="width: 100px; text-align: center;">
-                            <button class="btn btn-sm btn-outline-secondary" id="gender_edit" onclick="editField('gender')">✏️</button>
-                            <button class="btn btn-sm btn-primary d-none" id="gender_save" onclick="saveField('gender')">✅</button>
-                            <button class="btn btn-sm btn-danger d-none" id="gender_cancel" onclick="cancelField('gender')">❌</button>
-                        </td>
-                        @else
-                        <td></td>
-                        @endif
-                    </tr>
+                    <colgroup>
+                        <col style="width:140px;"> <!-- ← 好きな幅に -->
+                        <col>
+                    </colgroup>
                     <th>Email</th>
                     <td>
                         <span id="email_display">{{ $user->email }}</span>
@@ -302,11 +274,75 @@ $defaultUrl = asset('image/' . $defaultPictures[$user->gender]);
                         </td>
                     </tr>
                 </table>
+            </div>
+        </div>
+
+        {{-- 雇用情報 --}}
+        @php
+        // 雇用情報が複数ある場合に備えて最新開始日の1件を採用
+        $employment = optional($user->employmentTerms)->sortByDesc('start_date')->first();
+        @endphp
+        <div class="card mt-4">
+            <div class="card-header">
+                <h4>雇用情報</h4>
+            </div>
+            <div class="card-body">
+                <table class="table table-bordered profile-table">
+                    <colgroup>
+                        <col style="width:140px">
+                        <col>
+                    </colgroup>
+                    <tr>
+                        <th>雇用状態</th>
+                        <td>{{ $user->employment_state }}</td>
+                    </tr>
+                    <tr>
+                        <th>入社日</th>
+                        <td>{{ $employment?->start_date?->format('Y/m/d') ?? '—' }}</td>
+                    </tr>
+                    <tr>
+                        <th>退職日</th>
+                        <td>{{ $employment?->end_date?->format('Y/m/d') ?? '—' }}</td>
+                    </tr>
+                    <tr>
+                        <th>備考</th>
+                        <td>{{ $employment?->note ?? '—' }}</td>
+                    </tr>
+                </table>
+                @if (Auth::user()->role === 'admin' && isset($employment))
                 <div class="mt-3">
-                    <a href="" class="btn btn-secondary btn-block">情報の一括編集</a>
+                    <a href="" class="btn btn-secondary btn-block">雇用情報を編集</a>
+                </div>
+                @endif
+            </div>
+        </div>
+
+        {{-- 権限区分 --}}
+        @php
+        $roleLabels = ['admin' => '管理者', 'general' => '一般'];
+        @endphp
+        @if (Auth::user()->role === 'admin' && isset($user))
+        <div class="card mt-4">
+            <div class="card-header">
+                <h4>権限区分</h4>
+            </div>
+            <div class="card-body">
+                <table class="table table-bordered profile-table">
+                    <colgroup>
+                        <col style="width:140px">
+                        <col>
+                    </colgroup>
+                    <tr>
+                        <th>権限</th>
+                        <td>{{ $roleLabels[$user->role] ?? $user->role }}</td>
+                    </tr>
+                </table>
+                <div class="mt-3">
+                    <a href="" class="btn btn-secondary btn-block">権限を編集</a>
                 </div>
             </div>
         </div>
+        @endif
     </div>
 </div>
 

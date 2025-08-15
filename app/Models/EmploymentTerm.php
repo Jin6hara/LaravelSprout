@@ -12,6 +12,12 @@ class EmploymentTerm extends Model
 
     protected $fillable = ['user_id', 'start_date', 'end_date', 'note'];
 
+    //これで $employment->start_date が自動的に Carbon になり、Bladeで ->format('Y/m/d') が使えるようになる。
+    protected $casts = [
+        'start_date' => 'date',
+        'end_date'   => 'date',
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class);
