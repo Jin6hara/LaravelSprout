@@ -76,6 +76,14 @@ class User extends Authenticatable
         };
     }
 
+    public function getRoleLabelAttribute(): string
+    {
+        return [
+            'admin'   => '管理者',
+            'general' => '一般',
+        ][$this->role] ?? $this->role;
+    }
+
     public function employmentTerms()
     {
         return $this->hasMany(EmploymentTerm::class);

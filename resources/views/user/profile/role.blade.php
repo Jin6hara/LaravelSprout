@@ -1,8 +1,4 @@
-        
         {{-- 権限区分 --}}
-        @php
-        $roleLabels = ['admin' => '管理者', 'general' => '一般'];
-        @endphp
         @if (Auth::user()->role === 'admin' && isset($user))
         <div class="card mt-4">
             <div class="card-header">
@@ -16,7 +12,7 @@
                     </colgroup>
                     <tr>
                         <th>権限</th>
-                        <td>{{ $roleLabels[$user->role] ?? $user->role }}</td>
+                        <td>{{ $user->role_label }}</td>
                     </tr>
                 </table>
                 <div class="mt-3">

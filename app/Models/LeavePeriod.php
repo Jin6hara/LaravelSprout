@@ -10,6 +10,11 @@ class LeavePeriod extends Model
     use HasFactory;
 
     protected $fillable = ['employment_term_id', 'start_date', 'end_date', 'reason'];
+    
+    protected $casts = [
+        'start_date' => 'date',
+        'end_date'   => 'date',
+    ];
 
     public function employmentTerm()
     {

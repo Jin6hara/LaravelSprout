@@ -1,8 +1,4 @@
         {{-- 雇用情報 --}}
-        @php
-        // 雇用情報が複数ある場合に備えて最新開始日の1件を採用
-        $employment = optional($user->employmentTerms)->sortByDesc('start_date')->first();
-        @endphp
         <div class="card mt-4">
             <div class="card-header">
                 <h4>雇用情報</h4>
@@ -17,6 +13,18 @@
                         <th>雇用状態</th>
                         <td>{{ $user->employment_state }}</td>
                     </tr>
+                    @if($activeLeaves->isNotEmpty())
+                    @foreach($activeLeaves as $leave)
+                    <tr>
+                        <th>休職期間</th>
+                        <td>{{ $leave->start_date?->format('Y/m/d') ?? '—' }} 〜 {{ $leave->end_date?->format('Y/m/d') ?? '—' }}</td>
+                    </tr>
+                    <tr>
+                        <th>休職理由</th>
+                        <td>{{ $leave->reason ?? '—' }}</td>
+                    </tr>
+                    @endforeach
+                    @endif
                     <tr>
                         <th>入社日</th>
                         <td>{{ $employment?->start_date?->format('Y/m/d') ?? '—' }}</td>
