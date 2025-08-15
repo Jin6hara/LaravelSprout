@@ -170,7 +170,7 @@ $defaultUrl = asset('image/' . $defaultPictures[$user->gender]);
         <ul class="nav nav-tabs nav-justified mb-3">
             <li class="nav-item">
                 <a href="#" class="nav-link {{ Request::is('profile') || Request::is('profile/*') ? 'active' : '' }}">
-                    基本情報
+                    プロファイル
                 </a>
             </li>
             <li class="nav-item">
@@ -184,165 +184,10 @@ $defaultUrl = asset('image/' . $defaultPictures[$user->gender]);
                 </a>
             </li>
         </ul>
-
-        <div class="card mt-4">
-            <div class="card-header">
-                <h4>本人情報</h4>
-            </div>
-            <div class="card-body">
-                <table class="table table-bordered">
-                    <colgroup>
-                        <col style="width:140px;"> <!-- ← 好きな幅に -->
-                        <col>
-                    </colgroup>
-                    <tr>
-                        <th>社員コード</th>
-                        <td>{{ $user->employee_code }}</td>
-                    </tr>
-                    <tr>
-                        <th>名前</th>
-                        <td>{{ $user->name }}</td>
-                    </tr>
-                    <tr>
-                        <th>性別</th>
-                        <td>{{ $user->gender_label }}</td>
-                    </tr>
-                </table>
-                @if (Auth::user()->role === 'admin' && isset($user))
-                <div class="mt-3">
-                    <a href="" class="btn btn-secondary btn-block">本人情報を編集</a>
-                </div>
-                @endif
-            </div>
-        </div>
-
-        <div class="card mt-4">
-            <div class="card-header">
-                <h4>基本情報</h4>
-            </div>
-            <div class="card-body">
-                <table class="table table-bordered">
-                    <colgroup>
-                        <col style="width:140px;"> <!-- ← 好きな幅に -->
-                        <col>
-                    </colgroup>
-                    <th>Email</th>
-                    <td>
-                        <span id="email_display">{{ $user->email }}</span>
-                        <input type="text" id="email_input" class="form-control d-none" value="{{ $user->email }}">
-                    </td>
-                    <td style="width: 100px; text-align: center;">
-                        <button class="btn btn-sm btn-outline-secondary" id="email_edit" onclick="editField('email')">✏️</button>
-                        <button class="btn btn-sm btn-primary d-none" id="email_save" onclick="saveField('email')">✅</button>
-                        <button class="btn btn-sm btn-danger d-none" id="email_cancel" onclick="cancelField('email')">❌</button>
-                    </td>
-                    </tr>
-                    <tr>
-                        <th>電話番号</th>
-                        <td>
-                            <span id="phone_number_display">{{ $user->phone_number }}</span>
-                            <input type="text" id="phone_number_input" class="form-control d-none" value="{{ $user->phone_number }}">
-                        </td>
-                        <td style="width: 100px; text-align: center;">
-                            <button class="btn btn-sm btn-outline-secondary" id="phone_number_edit" onclick="editField('phone_number')">✏️</button>
-                            <button class="btn btn-sm btn-primary d-none" id="phone_number_save" onclick="saveField('phone_number')">✅</button>
-                            <button class="btn btn-sm btn-danger d-none" id="phone_number_cancel" onclick="cancelField('phone_number')">❌</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>住所</th>
-                        <td>
-                            <span id="address_display">{{ $user->address }}</span>
-                            <input type="text" id="address_input" class="form-control d-none" value="{{ $user->address }}">
-                        </td>
-                        <td style="width: 100px; text-align: center;">
-                            <button class="btn btn-sm btn-outline-secondary" id="address_edit" onclick="editField('address')">✏️</button>
-                            <button class="btn btn-sm btn-primary d-none" id="address_save" onclick="saveField('address')">✅</button>
-                            <button class="btn btn-sm btn-danger d-none" id="address_cancel" onclick="cancelField('address')">❌</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>自己紹介</th>
-                        <td>
-                            <span id="self_introduction_display">{{ $user->self_introduction }}</span>
-                            <input type="text" id="self_introduction_input" class="form-control d-none" value="{{ $user->self_introduction }}">
-                        </td>
-                        <td style="width: 100px; text-align: center;">
-                            <button class="btn btn-sm btn-outline-secondary" id="self_introduction_edit" onclick="editField('self_introduction')">✏️</button>
-                            <button class="btn btn-sm btn-primary d-none" id="self_introduction_save" onclick="saveField('self_introduction')">✅</button>
-                            <button class="btn btn-sm btn-danger d-none" id="self_introduction_cancel" onclick="cancelField('self_introduction')">❌</button>
-                        </td>
-                    </tr>
-                </table>
-            </div>
-        </div>
-
-        {{-- 雇用情報 --}}
-        @php
-        // 雇用情報が複数ある場合に備えて最新開始日の1件を採用
-        $employment = optional($user->employmentTerms)->sortByDesc('start_date')->first();
-        @endphp
-        <div class="card mt-4">
-            <div class="card-header">
-                <h4>雇用情報</h4>
-            </div>
-            <div class="card-body">
-                <table class="table table-bordered profile-table">
-                    <colgroup>
-                        <col style="width:140px">
-                        <col>
-                    </colgroup>
-                    <tr>
-                        <th>雇用状態</th>
-                        <td>{{ $user->employment_state }}</td>
-                    </tr>
-                    <tr>
-                        <th>入社日</th>
-                        <td>{{ $employment?->start_date?->format('Y/m/d') ?? '—' }}</td>
-                    </tr>
-                    <tr>
-                        <th>退職日</th>
-                        <td>{{ $employment?->end_date?->format('Y/m/d') ?? '—' }}</td>
-                    </tr>
-                    <tr>
-                        <th>備考</th>
-                        <td>{{ $employment?->note ?? '—' }}</td>
-                    </tr>
-                </table>
-                @if (Auth::user()->role === 'admin' && isset($employment))
-                <div class="mt-3">
-                    <a href="" class="btn btn-secondary btn-block">雇用情報を編集</a>
-                </div>
-                @endif
-            </div>
-        </div>
-
-        {{-- 権限区分 --}}
-        @php
-        $roleLabels = ['admin' => '管理者', 'general' => '一般'];
-        @endphp
-        @if (Auth::user()->role === 'admin' && isset($user))
-        <div class="card mt-4">
-            <div class="card-header">
-                <h4>権限区分</h4>
-            </div>
-            <div class="card-body">
-                <table class="table table-bordered profile-table">
-                    <colgroup>
-                        <col style="width:140px">
-                        <col>
-                    </colgroup>
-                    <tr>
-                        <th>権限</th>
-                        <td>{{ $roleLabels[$user->role] ?? $user->role }}</td>
-                    </tr>
-                </table>
-                <div class="mt-3">
-                    <a href="" class="btn btn-secondary btn-block">権限を編集</a>
-                </div>
-            </div>
-        </div>
-        @endif
+        @include('user.profile.personal',   ['user' => $user])
+        @include('user.profile.basic',      ['user' => $user])
+        @include('user.profile.employment', ['user' => $user])
+        @include('user.profile.role',       ['user' => $user])
     </div>
 </div>
 
