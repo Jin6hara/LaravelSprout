@@ -66,6 +66,24 @@ class User extends Authenticatable
         return asset('image/' . ltrim($file, '/'));
     }
 
+    public function getGenderLabelAttribute(): string
+    {
+        return match ($this->gender) {
+            'male' => '男性',
+            'female' => '女性',
+            'other' => 'その他',
+            default => '未選択',
+        };
+    }
+
+    public function getRoleLabelAttribute(): string
+    {
+        return [
+            'admin'   => '管理者',
+            'general' => '一般',
+        ][$this->role] ?? $this->role;
+    }
+
     public function employmentTerms()
     {
         return $this->hasMany(EmploymentTerm::class);
@@ -137,21 +155,21 @@ class User extends Authenticatable
 
         // 入社待ち（未来開始が1つでもあれば prehire 扱い）
         if ($this->employmentTerms()->whereDate('start_date', '>', $d)->exists()) {
-            return 'prehire';
+            return '入社待ち/prehire';
         }
 
         // 現在有効な雇用期間
         $term = $this->currentEmploymentTerm(today())->first();
         if (!$term) {
-            return 'terminated';
+            return '退職済み/terminated';
         }
 
         // 有効期間中に休職が重なっていれば on_leave
         if ($term->leavePeriods()->coversDate($d)->exists()) {
-            return 'on_leave';
+            return '休職中/on_leave';
         }
 
-        return 'active';
+        return '在籍中/active';
     }
 
     /** 通知や自動メールの基本判定 */

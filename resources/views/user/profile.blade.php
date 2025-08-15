@@ -170,7 +170,7 @@ $defaultUrl = asset('image/' . $defaultPictures[$user->gender]);
         <ul class="nav nav-tabs nav-justified mb-3">
             <li class="nav-item">
                 <a href="#" class="nav-link {{ Request::is('profile') || Request::is('profile/*') ? 'active' : '' }}">
-                    基本情報
+                    プロファイル
                 </a>
             </li>
             <li class="nav-item">
@@ -184,129 +184,10 @@ $defaultUrl = asset('image/' . $defaultPictures[$user->gender]);
                 </a>
             </li>
         </ul>
-
-        <div class="card">
-            <div class="card-header">
-                <h4>基本情報</h4>
-            </div>
-            <div class="card-body">
-                <table class="table table-bordered">
-                    <tr>
-                        <th>社員コード</th>
-                        <td>
-                            <span id="employee_code_display">{{ $user->employee_code }}</span>
-                            <input type="text" id="employee_code_input" class="form-control d-none" value="{{ $user->employee_code }}">
-                        </td>
-                        @if(auth()->user()->role === 'admin')
-                        <td style="width: 100px; text-align: center;">
-                            <button class="btn btn-sm btn-outline-secondary" id="employee_code_edit" onclick="editField('employee_code')">✏️</button>
-                            <button class="btn btn-sm btn-primary d-none" id="employee_code_save" onclick="saveField('employee_code')">✅</button>
-                            <button class="btn btn-sm btn-danger d-none" id="employee_code_cancel" onclick="cancelField('employee_code')">❌</button>
-                        </td>
-                        @else
-                        <td></td>
-                        @endif
-                    </tr>
-                    <tr>
-                        <th>名前</th>
-                        <td>
-                            <span id="name_display">{{ $user->name }}</span>
-                            <input type="text" id="name_input" class="form-control d-none" value="{{ $user->name }}">
-                        </td>
-                        @if(auth()->user()->role === 'admin')
-                        <td style="width: 100px; text-align: center;">
-                            <button class="btn btn-sm btn-outline-secondary" id="name_edit" onclick="editField('name')">✏️</button>
-                            <button class="btn btn-sm btn-primary d-none" id="name_save" onclick="saveField('name')">✅</button>
-                            <button class="btn btn-sm btn-danger d-none" id="name_cancel" onclick="cancelField('name')">❌</button>
-                        </td>
-                        @else
-                        <td></td>
-                        @endif
-                    </tr>
-                    <tr>
-                        <th>性別</th>
-                        @php
-                        $genderLabels = [
-                        'unknown' => '未選択',
-                        'male' => '男性',
-                        'female' => '女性',
-                        'other' => 'その他',
-                        ];
-                        @endphp
-                        <td>
-                            {{-- 表示用（日本語ラベル） --}}
-                            <span id="gender_display">{{ $genderLabels[$user->gender] ?? '未選択' }}</span>
-                            {{-- 編集用（セレクト） --}}
-                            <select id="gender_input" class="form-select d-none">
-                                <option value="unknown" {{ $user->gender === 'unknown' ? 'selected' : '' }}>未選択</option>
-                                <option value="male" {{ $user->gender === 'male'    ? 'selected' : '' }}>男性</option>
-                                <option value="female" {{ $user->gender === 'female'  ? 'selected' : '' }}>女性</option>
-                                <option value="other" {{ $user->gender === 'other'   ? 'selected' : '' }}>その他</option>
-                            </select>
-                        </td>
-                        @if(auth()->user()->role === 'admin')
-                        <td style="width: 100px; text-align: center;">
-                            <button class="btn btn-sm btn-outline-secondary" id="gender_edit" onclick="editField('gender')">✏️</button>
-                            <button class="btn btn-sm btn-primary d-none" id="gender_save" onclick="saveField('gender')">✅</button>
-                            <button class="btn btn-sm btn-danger d-none" id="gender_cancel" onclick="cancelField('gender')">❌</button>
-                        </td>
-                        @else
-                        <td></td>
-                        @endif
-                    </tr>
-                    <th>Email</th>
-                    <td>
-                        <span id="email_display">{{ $user->email }}</span>
-                        <input type="text" id="email_input" class="form-control d-none" value="{{ $user->email }}">
-                    </td>
-                    <td style="width: 100px; text-align: center;">
-                        <button class="btn btn-sm btn-outline-secondary" id="email_edit" onclick="editField('email')">✏️</button>
-                        <button class="btn btn-sm btn-primary d-none" id="email_save" onclick="saveField('email')">✅</button>
-                        <button class="btn btn-sm btn-danger d-none" id="email_cancel" onclick="cancelField('email')">❌</button>
-                    </td>
-                    </tr>
-                    <tr>
-                        <th>電話番号</th>
-                        <td>
-                            <span id="phone_number_display">{{ $user->phone_number }}</span>
-                            <input type="text" id="phone_number_input" class="form-control d-none" value="{{ $user->phone_number }}">
-                        </td>
-                        <td style="width: 100px; text-align: center;">
-                            <button class="btn btn-sm btn-outline-secondary" id="phone_number_edit" onclick="editField('phone_number')">✏️</button>
-                            <button class="btn btn-sm btn-primary d-none" id="phone_number_save" onclick="saveField('phone_number')">✅</button>
-                            <button class="btn btn-sm btn-danger d-none" id="phone_number_cancel" onclick="cancelField('phone_number')">❌</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>住所</th>
-                        <td>
-                            <span id="address_display">{{ $user->address }}</span>
-                            <input type="text" id="address_input" class="form-control d-none" value="{{ $user->address }}">
-                        </td>
-                        <td style="width: 100px; text-align: center;">
-                            <button class="btn btn-sm btn-outline-secondary" id="address_edit" onclick="editField('address')">✏️</button>
-                            <button class="btn btn-sm btn-primary d-none" id="address_save" onclick="saveField('address')">✅</button>
-                            <button class="btn btn-sm btn-danger d-none" id="address_cancel" onclick="cancelField('address')">❌</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>自己紹介</th>
-                        <td>
-                            <span id="self_introduction_display">{{ $user->self_introduction }}</span>
-                            <input type="text" id="self_introduction_input" class="form-control d-none" value="{{ $user->self_introduction }}">
-                        </td>
-                        <td style="width: 100px; text-align: center;">
-                            <button class="btn btn-sm btn-outline-secondary" id="self_introduction_edit" onclick="editField('self_introduction')">✏️</button>
-                            <button class="btn btn-sm btn-primary d-none" id="self_introduction_save" onclick="saveField('self_introduction')">✅</button>
-                            <button class="btn btn-sm btn-danger d-none" id="self_introduction_cancel" onclick="cancelField('self_introduction')">❌</button>
-                        </td>
-                    </tr>
-                </table>
-                <div class="mt-3">
-                    <a href="" class="btn btn-secondary btn-block">情報の一括編集</a>
-                </div>
-            </div>
-        </div>
+        @include('user.profile.personal',   ['user' => $user])
+        @include('user.profile.basic',      ['user' => $user])
+        @include('user.profile.employment', ['user' => $user])
+        @include('user.profile.role',       ['user' => $user])
     </div>
 </div>
 

@@ -14,20 +14,33 @@ class UsersController extends Controller
 {
     public function showProfile(?User $user = null): View
     {
-        $currentUser = Auth::user();
-
         // userがnull → 自分のプロフィール（一般ユーザー）
-        $targetUser = $user ?? $currentUser;
+        $targetUser = $user ?? Auth::user();;
 
         // 権限チェック
         $this->authorize('view', $targetUser);
 
-        // プロフィール画像取得ロジック
-        $defaultPictures = config('user.default_profile_pictures');
-        $gender = $targetUser->gender;
-        $targetUser->profile_picture = $targetUser->profile_picture ?? $defaultPictures[$gender];
+        // 雇用情報と休職期間をまとめてロード（最新開始日が先頭に来るように）
+        $targetUser->load([
+            'employmentTerms' => function ($q) {
+                $q->with('leavePeriods')
+                    ->orderByDesc('start_date');
+            },
+        ]);
 
-        return view('user.profile', ['user' => $targetUser]);
+        // 最新の雇用期間を取得（今日の日付でフィルタ）
+        // $employment = $targetUser->employmentTerms()->currentAt()->latest('start_date')->first(); // クエリで条件＆並び
+        $employment = $targetUser->employmentTerms->first(); // コレクションから最初
+
+        // 休職期間の取得（今日の日付でフィルタ）
+        // $activeLeaves = $employment?->activeLeavePeriods() ?? collect();
+        $activeLeaves = $employment?->leavePeriods()->coversDate()->get() ?? collect(); //性能的に有利
+
+        return view('user.profile', [
+            'user'         => $targetUser,
+            'employment'   => $employment,
+            'activeLeaves' => $activeLeaves,
+        ]);
     }
 
     /**
