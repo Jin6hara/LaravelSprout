@@ -22,6 +22,7 @@ class EmploymentTerm extends Model
     {
         return $this->belongsTo(User::class);
     }
+    
     public function leavePeriods()
     {
         return $this->hasMany(LeavePeriod::class);
@@ -34,5 +35,10 @@ class EmploymentTerm extends Model
             ->where(function ($qq) use ($d) {
                 $qq->whereNull('end_date')->orWhereDate('end_date', '>=', $d);
             });
+    }
+
+    public function activeLeavePeriods()
+    {
+        return $this->leavePeriods->filter->isActive()->values();
     }
 }

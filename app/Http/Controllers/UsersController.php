@@ -26,7 +26,7 @@ class UsersController extends Controller
         $targetUser->load([
             'employmentTerms' => function ($q) {
                 $q->with('leavePeriods')
-                  ->orderByDesc('start_date');
+                    ->orderByDesc('start_date');
             },
         ]);
 
@@ -34,16 +34,7 @@ class UsersController extends Controller
         $employment = $targetUser->employmentTerms->first();
 
         // 「現在休職中」の期間だけ抽出（start_date <= today <= end_date or end_date is null）
-        $activeLeaves = collect();
-        if ($employment) {
-            $today = now()->startOfDay();
-            $activeLeaves = $employment->leavePeriods->filter(function ($lp) use ($today) {
-                // start_date / end_date は casts で date(Carbon) にしておく
-                $started = $lp->start_date ? $lp->start_date->startOfDay()->lte($today) : false;
-                $notEnded = is_null($lp->end_date) ? true : $lp->end_date->endOfDay()->gte($today);
-                return $started && $notEnded;
-            })->values();
-        }
+        $activeLeaves = $employment?->activeLeavePeriods() ?? collect();
 
         return view('user.profile', [
             'user'         => $targetUser,
