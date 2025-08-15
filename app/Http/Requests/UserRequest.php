@@ -22,11 +22,18 @@ class UserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-            'gender'   => 'required|in:male,female,other,unknown',
+            'name'          => 'required|string|max:255',
+            'email'         => 'required|string|email|max:255|unique:users',
+            'password'      => 'required|string|min:8|confirmed',
+            'gender'        => 'required|in:male,female,other,unknown',
             'employee_code' => 'required|digits:5|unique:users',
+            'phone_number'  => 'nullable|string|max:15',
+            'address'       => 'nullable|string|max:255',
+
+            //下記はemployment_termsのためのフィールド            
+            'start_date'    => ['required', 'date'],
+            'end_date'      => ['nullable', 'date', 'after_or_equal:start_date'],
+            'note'          => ['nullable', 'string', 'max:255'],
         ];
     }
 
@@ -34,9 +41,9 @@ class UserRequest extends FormRequest
     public function messages()
     {
         return [
-        'employee_code.required' => 'Employee code is required.',
-        'employee_code.digits'   => 'Employee code must be exactly 5 digits.',
-        'employee_code.unique'   => 'This employee code is already in use.',
+            'employee_code.required' => 'Employee code is required.',
+            'employee_code.digits'   => 'Employee code must be exactly 5 digits.',
+            'employee_code.unique'   => 'This employee code is already in use.',
         ];
     }
 }

@@ -6,11 +6,13 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 //use Illuminate\Validation\ValidationException;(try catch 用)
 use App\Http\Requests\UpdateUserFieldRequest;
+use Illuminate\Http\JsonResponse;
+use Illuminate\View\View;
 
 
 class UsersController extends Controller
 {
-    public function showProfile(?User $user = null)
+    public function showProfile(?User $user = null): View
     {
         $currentUser = Auth::user();
 
@@ -33,7 +35,7 @@ class UsersController extends Controller
      * @property string $name
      * @method bool save()
      */
-    public function updateField(UpdateUserFieldRequest $request)
+    public function updateField(UpdateUserFieldRequest $request): JsonResponse
     {
         $targetUser = Auth::user();
 
