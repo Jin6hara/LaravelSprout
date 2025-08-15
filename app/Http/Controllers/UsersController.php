@@ -14,10 +14,8 @@ class UsersController extends Controller
 {
     public function showProfile(?User $user = null): View
     {
-        $currentUser = Auth::user();
-
         // userがnull → 自分のプロフィール（一般ユーザー）
-        $targetUser = $user ?? $currentUser;
+        $targetUser = $user ?? Auth::user();;
 
         // 権限チェック
         $this->authorize('view', $targetUser);
@@ -30,11 +28,13 @@ class UsersController extends Controller
             },
         ]);
 
-        // 最新の雇用情報 1 件（なければ null）
-        $employment = $targetUser->employmentTerms->first();
+        // 最新の雇用期間を取得（今日の日付でフィルタ）
+        // $employment = $targetUser->employmentTerms()->currentAt()->latest('start_date')->first(); // クエリで条件＆並び
+        $employment = $targetUser->employmentTerms->first(); // コレクションから最初
 
-        // 「現在休職中」の期間だけ抽出（start_date <= today <= end_date or end_date is null）
-        $activeLeaves = $employment?->activeLeavePeriods() ?? collect();
+        // 休職期間の取得（今日の日付でフィルタ）
+        // $activeLeaves = $employment?->activeLeavePeriods() ?? collect();
+        $activeLeaves = $employment?->leavePeriods()->coversDate()->get() ?? collect(); //性能的に有利
 
         return view('user.profile', [
             'user'         => $targetUser,
