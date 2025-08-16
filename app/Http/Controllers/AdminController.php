@@ -101,35 +101,6 @@ class AdminController extends Controller
         return redirect()->route('admin.dashboard')->with("status", "登録成功");
     }
 
-    /**     
-     * ユーザーフィールドの更新（管理者用）  
-     * @property int $id
-     * @property string $name
-     * @method bool save()
-     */
-    public function updateField(AdminUpdateUserFieldRequest $request, User $user): JsonResponse
-    {
-
-        $targetUser = $user;
-
-        // 権限チェック
-        $this->authorize('update', $targetUser);
-
-        $field = $request->input('field');
-        $validated = $request->validated(); // バリデーション通過後のデータ
-
-        $allowedFields = ['employee_code', 'name', 'gender', 'email', 'phone_number', 'address', 'self_introduction'];
-
-        if (!in_array($field, $allowedFields)) {
-            return response()->json(['error' => '更新できません'], 400);
-        }
-
-        $targetUser->$field = $validated['value']; // ※ $validated は ['value' => 入力値] の形
-        $targetUser->save();
-
-        return response()->json(['message' => '更新完了']);
-    }
-
     /**
      * 検索（GET /admin/search）
      * 実質は dashboard と100％同じロジック。URL表示を分けるため、ルートだけ分離。
