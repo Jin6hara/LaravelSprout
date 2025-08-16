@@ -21,7 +21,7 @@ class UserPolicy
     public function view(User $currentUser, User $targetUser): bool
     {
         // 自分自身 または 管理者であれば true
-        return $currentUser->id === $targetUser->id || $currentUser->role === 'admin';
+        return $currentUser->is($targetUser) || $currentUser->isAdmin();
     }
     /**
      * Determine whether the user can create models.
@@ -37,7 +37,7 @@ class UserPolicy
     public function update(User $currentUser, User $targetUser): bool
     {
         // 自分自身 または 管理者であれば true
-        return $currentUser->id === $targetUser->id || $currentUser->role === 'admin';
+        return $currentUser->is($targetUser) || $currentUser->isAdmin();
     }
 
     /**

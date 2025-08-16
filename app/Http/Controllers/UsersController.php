@@ -48,9 +48,9 @@ class UsersController extends Controller
      * @property string $name
      * @method bool save()
      */
-    public function updateField(UpdateUserFieldRequest $request): JsonResponse
+    public function updateField(UpdateUserFieldRequest $request, ?User $user = null): JsonResponse
     {
-        $targetUser = Auth::user();
+        $targetUser = $user ?? Auth::user();
 
         // 権限チェック
         $this->authorize('update', $targetUser);
