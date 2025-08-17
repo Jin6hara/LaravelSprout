@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             UsersSeeder::class,
             EmploymentTermsSeeder::class,
             LeavePeriodsSeeder::class,
+            PermissionRoleSeeder::class,
         ]);
 
         // \App\Models\User::factory(10)->create();

@@ -20,16 +20,12 @@ class UsersSeeder extends Seeder
 
             if ($i >= 1 && $i <= 4) {
                 $gender = "other";
-                $role = "general";
             } else if ($i >= 7 && $i <= 10) {
                 $gender = "female";
-                $role = "general";
             } else if ($i === 5 || $i === 6) {
                 $gender = "male";
-                $role = "admin";
             } else {
                 $gender = "unknown";
-                $role = "general";
             }
 
             $timestamp = now()->addMinutes(10 * $i);
@@ -41,7 +37,6 @@ class UsersSeeder extends Seeder
                 'created_at' => $timestamp,
                 'updated_at' => $timestamp,
                 'gender' => $gender,
-                'role' => $role,
                 'profile_picture' => null,
                 'self_introduction' => "私の名前は{$i}haraです。",
 

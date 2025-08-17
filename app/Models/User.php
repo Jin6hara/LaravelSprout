@@ -9,10 +9,11 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Carbon\Carbon;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes, HasRoles;
 
     /**
      * The attributes that are mass assignable.
@@ -54,6 +55,15 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
+    /**
+     * The name of the guard used by this model.
+     * This is used by Spatie's Permission package to determine the guard for roles and permissions.
+     *
+     * @var string
+     * @see https://spatie.be/docs/laravel-permission/v5/basic-usage/guards-and-multi-auth#guard_name
+     */
+    protected string $guard_name = 'web';
+
     public function getRouteKeyName()
     {
         return 'employee_code';
@@ -78,7 +88,7 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return $this->hasRole('admin');
     }
 
     public function getRoleLabelAttribute(): string
