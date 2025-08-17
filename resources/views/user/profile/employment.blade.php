@@ -38,10 +38,10 @@
                         <td>{{ $employment?->note ?? '—' }}</td>
                     </tr>
                 </table>
-                @if (Auth::user()->role === 'admin' && isset($employment))
+                @role('admin|super_admin')
                 <div class="mt-3">
                     <a href="" class="btn btn-secondary btn-block">雇用情報を編集</a>
                 </div>
-                @endif
+                @endrole
             </div>
         </div>

@@ -98,10 +98,19 @@ class User extends Authenticatable
 
     public function getRoleLabelAttribute(): string
     {
-        return [
-            'admin'   => '管理者',
-            'general' => '一般',
-        ][$this->role] ?? $this->role;
+        $role = $this->getRoleNames()->first();
+
+        if (!$role) {
+            return '未設定';
+        }
+
+        $map = [
+            'general'      => '一般',
+            'admin'        => '管理者',
+            'super_admin'  => 'スーパー管理者', 
+        ];
+
+        return $map[$role] ?? $role; // 未定義ロールは英字のまま表示
     }
 
     public function employmentTerms()

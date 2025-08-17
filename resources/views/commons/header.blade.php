@@ -7,7 +7,7 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto">
                 @auth
-                <a class="nav-link" href="{{ auth()->user()->role === 'admin' 
+                <a class="nav-link" href="{{ auth()->user()->isAdmin() 
                 ? route('admin.user.profile', ['user' => auth()->user()->employee_code]) 
                 : route('user.profile') }}">
                 マイページ
@@ -15,10 +15,10 @@
                 <li class="nav-item"><a class="nav-link" href="">交通費精算</a></li>
                 <li class="nav-item"><a class="nav-link" href="">お問い合わせ</a></li>
                 <li class="nav-item">
-                    @if(Auth::user()->role === 'admin')
-                    <a class="nav-link" href="{{ route('admin.dashboard') }}">管理者画面</a>
+                @role('admin|super_admin')
+                <a class="nav-link" href="{{ route('admin.dashboard') }}">管理者画面</a>
                 <li class="nav-item"><a class="nav-link" href="{{ route('register.showForm') }}">新規登録</a></li>
-                @endif
+                @endrole
                 </li>
                 <li class="nav-item">
                     <form method="POST" action="{{ route('logout') }}">

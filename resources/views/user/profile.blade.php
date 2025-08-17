@@ -191,11 +191,11 @@ $defaultUrl = asset('image/' . $defaultPictures[$user->gender]);
     </div>
 </div>
 
-@php
-$updateFieldUrl = (Auth::user()->role === 'admin' && isset($user))
-? route('admin.user.updateField', ['user' => $user])
-: route('user.updateField');
-@endphp
+@role('admin|super_admin')
+    @php $updateFieldUrl = route('admin.user.updateField', ['user' => $user]); @endphp
+@else
+    @php $updateFieldUrl = route('user.updateField'); @endphp
+@endrole
 
 <script>
     const updateFieldUrl = @json($updateFieldUrl);
