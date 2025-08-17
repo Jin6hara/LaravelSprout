@@ -34,7 +34,9 @@ class LoginController extends Controller
             $request->session()->regenerate();
 
             $user = Auth::user();
-            if ($user->role === 'admin') {
+            // ここは権限認証とまったく関係ない。本認証はRoute+Policyに行っている。
+            // ここでは、ユーザーロールを取得してredirect先を決めているだけ。
+            if ($user->hasRole(['admin', 'super_admin'])) { 
                 return redirect()->route('admin.dashboard');//role check required
             } else {
                 return redirect()->route('welcome');//role check none required

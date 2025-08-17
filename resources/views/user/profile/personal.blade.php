@@ -22,7 +22,7 @@
                         <td>{{ $user->gender_label }}</td>
                     </tr>
                 </table>
-                @if (Auth::user()->role === 'admin' && isset($user))
+                @role('admin|super_admin')
                 <div class="mt-3">
                     <a href="" class="btn btn-secondary btn-block">本人情報を編集</a>
                 </div>

@@ -20,7 +20,6 @@ return new class extends Migration
             $table->rememberToken();
             $table->timestamps();
             $table->enum('gender', ['male', 'female', 'other', 'unknown'])->default('unknown');
-            $table->enum('role', ['admin', 'general'])->default('general');
             $table->string('profile_picture')->nullable();
             $table->text('self_introduction')->nullable();
             $table->softDeletes();

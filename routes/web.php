@@ -26,14 +26,14 @@ Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 //共通
-Route::middleware(['auth', 'role:general|admin'])->group(function () {
+Route::middleware(['auth', 'role:general|admin|super_admin'])->group(function () {
     Route::get('/', function () {
         return view('welcome');
     })->name('welcome');
 });
 
 //登録
-Route::middleware(['auth', 'role:admin'])->group(function () {
+Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
     Route::get('/admin/register', [AdminController::class, 'showForm'])->name('register.showForm');
     Route::post('/admin/register', [AdminController::class, 'register'])->name('register.submit');
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
@@ -49,7 +49,7 @@ Route::prefix('profile')->group(function () {
     });
 
     // admin: 他人のプロフィール
-    Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
         Route::get('{user}', [UsersController::class, 'showProfile'])->name('admin.user.profile');
         Route::patch('/update-field/{user}', [UsersController::class, 'updateField'])->name('admin.user.updateField');
         Route::get('/admin/search', [AdminController::class, 'search'])->name('admin.search');

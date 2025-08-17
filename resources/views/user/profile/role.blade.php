@@ -1,5 +1,5 @@
         {{-- 権限区分 --}}
-        @if (Auth::user()->role === 'admin' && isset($user))
+        @role('admin|super_admin')
         <div class="card mt-4">
             <div class="card-header">
                 <h4>権限区分</h4>
@@ -20,4 +20,4 @@
                 </div>
             </div>
         </div>
-        @endif
+        @endrole

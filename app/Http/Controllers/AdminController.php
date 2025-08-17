@@ -86,7 +86,6 @@ class AdminController extends Controller
                 'employee_code'     => $data['employee_code'],
                 'password'          => Hash::make($data['password']),
                 'gender'            => $data['gender'],
-                'role'              => 'general', //登録時の誤設定を防ぐ目的で、権限は後から変更できる仕様とする。
                 'profile_picture'   => null,
                 'self_introduction' => 'こんにちは、' . $data['name'] . 'です。',
             ]);
@@ -96,6 +95,8 @@ class AdminController extends Controller
                 'end_date'   => $data['end_date'] ?? null, // null なら在籍中
                 'note'       => $data['note'] ?? null,
             ]);
+            // model_has_roles テーブルへの登録
+            $user->assignRole('general');
         });
 
         return redirect()->route('admin.dashboard')->with("status", "登録成功");

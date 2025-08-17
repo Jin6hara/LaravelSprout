@@ -9,10 +9,11 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Carbon\Carbon;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes, HasRoles;
 
     /**
      * The attributes that are mass assignable.
@@ -26,7 +27,6 @@ class User extends Authenticatable
         'password',
         'email_verified_at',
         'gender',
-        'role',
         'phone_number',
         'address',
         'profile_picture',
@@ -54,6 +54,15 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
+    /**
+     * The name of the guard used by this model.
+     * This is used by Spatie's Permission package to determine the guard for roles and permissions.
+     *
+     * @var string
+     * @see https://spatie.be/docs/laravel-permission/v5/basic-usage/guards-and-multi-auth#guard_name
+     */
+    protected string $guard_name = 'web';
+
     public function getRouteKeyName()
     {
         return 'employee_code';
@@ -78,15 +87,29 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return $this->hasRole(['admin', 'super_admin']);
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->hasRole('super_admin');
     }
 
     public function getRoleLabelAttribute(): string
     {
-        return [
-            'admin'   => '管理者',
-            'general' => '一般',
-        ][$this->role] ?? $this->role;
+        $role = $this->getRoleNames()->first();
+
+        if (!$role) {
+            return '未設定';
+        }
+
+        $map = [
+            'general'      => '一般',
+            'admin'        => '管理者',
+            'super_admin'  => 'スーパー管理者', 
+        ];
+
+        return $map[$role] ?? $role; // 未定義ロールは英字のまま表示
     }
 
     public function employmentTerms()
