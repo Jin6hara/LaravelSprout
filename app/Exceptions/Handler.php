@@ -6,7 +6,8 @@ use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Throwable;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Session\TokenMismatchException;
-use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\Access\AuthorizationException; // Laravel 標準の Gate/Policy 権限チェック用の例外
+use Spatie\Permission\Exceptions\UnauthorizedException; // Spatie Permission パッケージの権限チェック用の例外
 
 class Handler extends ExceptionHandler
 {
@@ -44,8 +45,14 @@ class Handler extends ExceptionHandler
         }
 
         if ($exception instanceof AuthorizationException) {
-            // もともとroleチェックに使う予定だった。とりあえず残しておく。
-            return redirect()->route('home')->with('message', 'アクセス権限がありません。');
+            // もともとCheckRoleで対応できたので不要になった。今はSpatieで対応なのでstill不要。
+            return redirect()->route('welcome')->with('status', 'アクセス権限がありません。');
+        }
+
+        if ($exception instanceof UnauthorizedException) {
+            return redirect()
+                ->route('welcome')
+                ->with('status', '指定されたページにアクセスする権限がありません。');
         }
 
         return parent::render($request, $exception);
