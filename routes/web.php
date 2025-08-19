@@ -55,3 +55,8 @@ Route::prefix('profile')->group(function () {
         Route::get('/admin/search', [AdminController::class, 'search'])->name('admin.search');
     });
 });
+
+    Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
+        Route::get('{user}/role-change', [AdminController::class, 'showRoleChange'])->name('admin.user.roleChange');
+        
+    });

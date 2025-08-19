@@ -16,7 +16,7 @@
                     </tr>
                 </table>
                 <div class="mt-3">
-                    <a href="" class="btn btn-secondary btn-block">権限を編集</a>
+                    <a href="{{ route('admin.user.roleChange', $user) }}" class="btn btn-secondary btn-block">権限を編集</a>
                 </div>
             </div>
         </div>

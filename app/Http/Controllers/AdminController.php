@@ -144,4 +144,15 @@ class AdminController extends Controller
 
         return view('admin.dashboard', compact('users', 'word', 'fields'));
     }
+
+    public function showRoleChange(User $user): View
+    {
+        // ユーザーの現在のロールを取得
+        $currentRole = $user->getRoleNames()->first();
+
+        // 利用可能なロールを取得
+        $availableRoles = ['general', 'admin', 'super_admin'];
+
+        return view('user.roleChange', compact('user', 'currentRole', 'availableRoles'));
+    }
 }
