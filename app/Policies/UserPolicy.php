@@ -63,4 +63,11 @@ class UserPolicy
     {
         //
     }
+
+    public function applyRoleChange(User $actor, User $target): bool
+    {
+        // admin 以上なら申請可
+        if ($actor->hasRole(['admin', 'super_admin'])) return true;
+        return false;
+    }
 }

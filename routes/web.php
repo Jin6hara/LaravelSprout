@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\UsersController;
 use App\Http\Controllers\ProfilePhotoController;
+use App\Http\Controllers\RoleChangeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -56,7 +57,7 @@ Route::prefix('profile')->group(function () {
     });
 });
 
-    Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
-        Route::get('{user}/role-change', [AdminController::class, 'showRoleChange'])->name('admin.user.roleChange');
-        
-    });
+Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
+    Route::get('{user}/role-change', [RoleChangeController::class, 'showRoleChange'])->name('admin.user.roleChange');
+    Route::post('/users/{user}/role-change/apply', [RoleChangeController::class, 'apply'])->name('roleChange.apply');
+});

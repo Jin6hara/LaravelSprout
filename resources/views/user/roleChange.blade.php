@@ -27,7 +27,7 @@
             </table>
 
             {{-- 申請フォーム --}}
-            <form action="" method="POST"> {{-- {{ route('roleChange.request', $user) }} --}}
+            <form action="{{ route('roleChange.apply', $user) }}" method="POST"> {{--  --}}
                 @csrf
 
                 <div class="mb-3">
