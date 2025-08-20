@@ -7,6 +7,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\UsersController;
 use App\Http\Controllers\ProfilePhotoController;
 use App\Http\Controllers\RoleChangeController;
+use App\Http\Controllers\ApprovalController;
 
 /*
 |--------------------------------------------------------------------------
@@ -57,7 +58,19 @@ Route::prefix('profile')->group(function () {
     });
 });
 
+// ロール変更申請
 Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
     Route::get('{user}/role-change', [RoleChangeController::class, 'showRoleChange'])->name('admin.user.roleChange');
     Route::post('/users/{user}/role-change/apply', [RoleChangeController::class, 'apply'])->name('roleChange.apply');
+});
+
+// super_admin: 承認リクエストの表示・承認・却下
+Route::middleware(['auth'])->group(function () {
+
+    // ロール承認画面
+    Route::get('/approvals/{approvalRequest}', [ApprovalController::class, 'show'])->name('approvals.show');
+
+    // 承認・却下アクション
+    Route::post('/approvals/{approvalRequest}/approve', [ApprovalController::class, 'approve'])->name('approvals.approve');
+    Route::post('/approvals/{approvalRequest}/deny', [ApprovalController::class, 'deny'])->name('approvals.deny');
 });

@@ -46,7 +46,10 @@ class Handler extends ExceptionHandler
 
         if ($exception instanceof AuthorizationException) {
             // もともとCheckRoleで対応できたので不要になった。今はSpatieで対応なのでstill不要。
-            return redirect()->route('welcome')->with('status', 'アクセス権限がありません。');
+            // ファイル名に余計な'.'が入っているためpolicy呼び出せなかったときもこれが表示される。
+            return redirect()
+                ->route('welcome')
+                ->with('status', '403 This action is unauthorized.');
         }
 
         if ($exception instanceof UnauthorizedException) {

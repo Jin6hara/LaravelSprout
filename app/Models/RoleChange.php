@@ -33,4 +33,17 @@ class RoleChange extends Model
     {
         return $this->morphOne(ApprovalRequest::class, 'approvable');
     }
+
+    /**
+     * ドメイン反映メソッド
+     * 例: 実ロール変更を行う
+     *
+     * @return void
+     */
+    public function applyDomainEffect(): void
+    {
+        $user = $this->targetUser;
+        // 既存ロールを置換するなら syncRoles、追加なら assignRole
+        $user->syncRoles([$this->requested_role]);
+    }
 }
