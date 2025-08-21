@@ -8,6 +8,8 @@ use App\Http\Controllers\UsersController;
 use App\Http\Controllers\ProfilePhotoController;
 use App\Http\Controllers\RoleChangeController;
 use App\Http\Controllers\ApprovalController;
+use App\Http\Controllers\NotificationController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -65,7 +67,7 @@ Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
 });
 
 // super_admin: 承認リクエストの表示・承認・却下
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'role:super_admin'])->group(function () {
 
     // ロール承認画面
     Route::get('/approvals/{approvalRequest}', [ApprovalController::class, 'show'])->name('approvals.show');
@@ -73,4 +75,10 @@ Route::middleware(['auth'])->group(function () {
     // 承認・却下アクション
     Route::post('/approvals/{approvalRequest}/approve', [ApprovalController::class, 'approve'])->name('approvals.approve');
     Route::post('/approvals/{approvalRequest}/deny', [ApprovalController::class, 'deny'])->name('approvals.deny');
+});
+
+Route::middleware(['auth', 'role:super_admin'])->group(function () {
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.readAll');
 });

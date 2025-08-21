@@ -29,7 +29,7 @@ class ApprovalRequestedNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
     }
 
     /**
@@ -38,10 +38,10 @@ class ApprovalRequestedNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Approval Requested')
-            ->line('An approval request has been submitted.')
-            ->action('View Request', url('/'))
-            ->line('Thank you!');
+            ->subject('承認依頼: ' . $this->approvalRequest->title)
+            ->line('新しい承認依頼があります。')
+            ->action('承認画面を開く', route('approvals.show', $this->approvalRequest))
+            ->line('ご対応をお願いします。');
     }
 
     /**
@@ -54,9 +54,7 @@ class ApprovalRequestedNotification extends Notification
         return [
             'title' => $this->approvalRequest->title,
             'approval_request_id' => $this->approvalRequest->id,
-            'approvable_type' => $this->approvalRequest->approvable_type,
-            'approvable_id' => $this->approvalRequest->approvable_id,
-            'requested_by' => $this->approvalRequest->requester->name,
+            'url' => route('approvals.show', $this->approvalRequest), // ベル通知から遷移
         ];
     }
 }

@@ -1,4 +1,4 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark py-3">
     <div class="container">
         <a class="navbar-brand" href="{{ url('/') }}">ルートハブ</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -17,6 +17,18 @@
                 <li class="nav-item">
                 @role('admin|super_admin')
                 <a class="nav-link" href="{{ route('admin.dashboard') }}">管理者画面</a>
+                <li class="nav-item">
+                    @php $unread = auth()->user()->unreadNotifications()->count(); @endphp
+                    <a href="{{ route('notifications.index') }}" class="nav-link position-relative">
+                        通知
+                        <i class="bi bi-bell"></i>
+                        @if($unread > 0)
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            {{ $unread }}
+                        </span>
+                        @endif
+                    </a>
+                </li>
                 <li class="nav-item"><a class="nav-link" href="{{ route('register.showForm') }}">新規登録</a></li>
                 @endrole
                 </li>
