@@ -70,7 +70,7 @@ Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
 Route::middleware(['auth', 'role:super_admin'])->group(function () {
 
     // ロール承認画面
-    Route::get('/approvals/{approvalRequest}', [ApprovalController::class, 'show'])->name('approvals.show');
+    Route::get('/approvals/{approvalRequest}', [ApprovalController::class, 'show'])->name('approvals.show'); // 消したらURLは残るが404。name()の定義は使用していない。
 
     // 承認・却下アクション
     Route::post('/approvals/{approvalRequest}/approve', [ApprovalController::class, 'approve'])->name('approvals.approve');
@@ -81,4 +81,6 @@ Route::middleware(['auth', 'role:super_admin'])->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.readAll');
+        // クリック＝既読→詳細へ
+    Route::get('/notifications/{notification}/go', [NotificationController::class, 'go'])->name('notifications.go');// name('approvals.show')の内容と連携。
 });
