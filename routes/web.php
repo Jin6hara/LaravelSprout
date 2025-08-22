@@ -6,6 +6,10 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\UsersController;
 use App\Http\Controllers\ProfilePhotoController;
+use App\Http\Controllers\RoleChangeController;
+use App\Http\Controllers\ApprovalController;
+use App\Http\Controllers\NotificationController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -54,4 +58,29 @@ Route::prefix('profile')->group(function () {
         Route::patch('/update-field/{user}', [UsersController::class, 'updateField'])->name('admin.user.updateField');
         Route::get('/admin/search', [AdminController::class, 'search'])->name('admin.search');
     });
+});
+
+// ロール変更申請
+Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
+    Route::get('{user}/role-change', [RoleChangeController::class, 'showRoleChange'])->name('admin.user.roleChange');
+    Route::post('/users/{user}/role-change/apply', [RoleChangeController::class, 'apply'])->name('roleChange.apply');
+});
+
+// super_admin: 承認リクエストの表示・承認・却下
+Route::middleware(['auth', 'role:super_admin'])->group(function () {
+
+    // ロール承認画面
+    Route::get('/approvals/{approvalRequest}', [ApprovalController::class, 'show'])->name('approvals.show'); // 消したらURLは残るが404。name()の定義は使用していない。
+
+    // 承認・却下アクション
+    Route::post('/approvals/{approvalRequest}/approve', [ApprovalController::class, 'approve'])->name('approvals.approve');
+    Route::post('/approvals/{approvalRequest}/deny', [ApprovalController::class, 'deny'])->name('approvals.deny');
+});
+
+Route::middleware(['auth', 'role:super_admin'])->group(function () {
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.readAll');
+        // クリック＝既読→詳細へ
+    Route::get('/notifications/{notification}/go', [NotificationController::class, 'go'])->name('notifications.go');// name('approvals.show')の内容と連携。
 });
