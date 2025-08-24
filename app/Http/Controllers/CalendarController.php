@@ -4,92 +4,30 @@ namespace App\Http\Controllers;
 
 namespace App\Http\Controllers;
 
-use App\Models\Shift;//
-use App\Models\Holiday;//
-use App\Models\CoverageNeed;//
+use App\Models\Holiday; //
+use App\Models\CompanyClosure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Carbon;
 
 class CalendarController extends Controller
 {
     public function index()
     {
-        return view('calendar.index'); // BladeでFullCalendarを初期化
+        // resources/views/calendar/index.blade.php を表示（既に存在とのこと）
+        return view('calendar.index');
     }
 
-    // FullCalendarが ?start=YYYY-MM-DD&end=YYYY-MM-DD を付けてGETします
+    // FullCalendarが ?start=YYYY-MM-DD&end=YYYY-MM-DD で叩く想定
     public function events(Request $request)
     {
-        $start = $request->query('start'); // 文字列（ISO）
-        $end   = $request->query('end');
+        $start = Carbon::parse($request->query('start', now()->startOfYear()))->toDateString();
+        $end   = Carbon::parse($request->query('end', now()->endOfYear()))->toDateString();
 
-        $user = Auth::user();
-        $isAdmin = $user->hasRole('admin') || $user->hasRole('super_admin');
+        $holidays = Holiday::between($start, $end)->get()->map->toCalendarEvent();
+        $closures = CompanyClosure::between($start, $end)->get()->map->toCalendarEvent();
 
-        $events = [];
-
-        // 下記は燃料の入り口（サンプル）
-
-        // 祝日（全員に表示）
-        $holidays = Holiday::whereBetween('date', [$start, $end])->get();
-        foreach ($holidays as $h) {
-            $events[] = [
-                'id' => 'holiday-' . $h->id,
-                'title' => '祝日：' . $h->name,
-                'start' => $h->date->toDateString(),
-                'allDay' => true,
-                'display' => 'background', // 背景マーキング
-                'classNames' => ['fc-holiday'],
-            ];
-        }
-
-        if ($isAdmin) {
-            // 管理者：サブ募集（CoverageNeed）をイベントとして表示（件数をタイトルに）
-            $needs = CoverageNeed::whereBetween('date', [$start, $end])->get()
-                ->groupBy('date');
-
-            foreach ($needs as $date => $items) {
-                $count = $items->sum('needed');
-                $events[] = [
-                    'id' => 'need-' . $date,
-                    'title' => "サブ必要 {$count}件",
-                    'start' => $date,
-                    'allDay' => true,
-                    'classNames' => ['fc-need'],
-                    'extendedProps' => [
-                        'details' => $items->map(fn($it) => [
-                            'campus' => $it->campus,
-                            'needed' => $it->needed,
-                            'reason' => $it->reason
-                        ])->values(),
-                    ],
-                ];
-            }
-        } else {
-            // 講師：自分のシフト
-            $shifts = Shift::where('user_id', $user->id)
-                ->whereBetween('date', [$start, $end])
-                ->orderBy('date')
-                ->get();
-
-            foreach ($shifts as $s) {
-                $label = $s->type === 'overtime' ? '残業' : '通常';
-                $time  = ($s->start_time && $s->end_time) ? " {$s->start_time}–{$s->end_time}" : '';
-                $events[] = [
-                    'id' => 'shift-' . $s->id,
-                    'title' => "{$label}{$time} @{$s->location}",
-                    'start' => $s->date->toDateString(),
-                    'allDay' => true, // 日単位管理の想定。時間帯で出すなら allDay=false に
-                    'classNames' => [$s->type === 'overtime' ? 'fc-overtime' : 'fc-regular'],
-                    'extendedProps' => [
-                        'type' => $s->type,
-                        'location' => $s->location,
-                        'start_time' => $s->start_time,
-                        'end_time' => $s->end_time,
-                    ],
-                ];
-            }
-        }
+        // 同日重複（例：祝日かつ会社特休）なら company_off を優先して色を上書きしたい場合は、ここでマージロジック調整
+        $events = collect($holidays)->merge($closures)->values();
 
         return response()->json($events);
     }
