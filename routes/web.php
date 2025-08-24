@@ -9,7 +9,7 @@ use App\Http\Controllers\ProfilePhotoController;
 use App\Http\Controllers\RoleChangeController;
 use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\NotificationController;
-
+use App\Http\Controllers\CalendarController;
 
 /*
 |--------------------------------------------------------------------------
@@ -34,6 +34,8 @@ Route::middleware(['auth', 'role:general|admin|super_admin'])->group(function ()
     Route::get('/', function () {
         return view('welcome');
     })->name('welcome');
+    Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
+    Route::get('/calendar/events', [CalendarController::class, 'events'])->name('calendar.events'); // JSON
 });
 
 //登録
@@ -81,6 +83,6 @@ Route::middleware(['auth', 'role:super_admin'])->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.readAll');
-        // クリック＝既読→詳細へ
-    Route::get('/notifications/{notification}/go', [NotificationController::class, 'go'])->name('notifications.go');// name('approvals.show')の内容と連携。
+    // クリック＝既読→詳細へ
+    Route::get('/notifications/{notification}/go', [NotificationController::class, 'go'])->name('notifications.go'); // name('approvals.show')の内容と連携。
 });
