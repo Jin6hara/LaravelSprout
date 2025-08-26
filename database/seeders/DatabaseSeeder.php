@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             PermissionRoleSeeder::class,
             HolidaysJapan2025_2026Seeder::class,
             RestPatternSeeder::class,
+            CompanyClosureSeeder::class,
         ]);
 
         // \App\Models\User::factory(10)->create();

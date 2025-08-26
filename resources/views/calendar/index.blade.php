@@ -45,6 +45,12 @@
   .fc-off-statutory { background-color: rgba(13, 110, 253, 0.18) !important; }
   /* ユーザー休日: 所定休（背景薄青・区別しやすい色） */
   .fc-off-prescribed { background-color: rgba(41, 188, 255, 0.15) !important; }
+  /* 会社休業日 */
+  .fc-company-break {
+    background-color: rgba(25, 135, 84, .18) !important;
+    border: 1px solid rgba(25, 135, 84, .35) !important;
+    font-weight: 600;
+  }
 </style>
 @endpush
 
