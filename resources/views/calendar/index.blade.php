@@ -33,14 +33,18 @@
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.css" rel="stylesheet">
 <style>
   /* 祝日背景 */
-  .fc-holiday { background-color: rgba(255, 193, 7, 0.15) !important; }
+  .fc-holiday { background-color: rgba(255, 7, 7, 0.15) !important; }
   /* 管理者のサブ必要イベント */
-  .fc-need { background-color: rgba(220, 53, 69, .15) !important; border: 1px solid rgba(220,53,69,.4) }
+  .fc-need { background-color: rgba(220, 53, 69, .15) !important; border: 1px solid rgba(86, 220, 53, 0.4) }
   /* 講師のシフト */
-  .fc-regular { background-color: rgba(13,110,253,.12) !important; border: 1px solid rgba(13,110,253,.35) }
+  .fc-regular { background-color: rgba(255, 255, 255, 0.12) !important; border: 1px solid rgba(141, 41, 255, 0.35) }
   .fc-overtime { background-color: rgba(25,135,84,.12) !important; border: 1px solid rgba(25,135,84,.35) }
   /* カレンダー高さ調整 */
   #calendar { max-width: 1100px; margin: 0 auto; }
+  /* ユーザー休日: 法定休（背景青・区別しやすい色） */
+  .fc-off-statutory { background-color: rgba(13, 110, 253, 0.18) !important; }
+  /* ユーザー休日: 所定休（背景薄青・区別しやすい色） */
+  .fc-off-prescribed { background-color: rgba(41, 188, 255, 0.15) !important; }
 </style>
 @endpush
 

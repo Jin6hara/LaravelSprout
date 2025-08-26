@@ -87,7 +87,7 @@ class CalendarController extends Controller
                         'title'  => $isStatutory ? '法定休' : '所定休',
                         'start'  => $ymd,
                         'allDay' => true,
-                        'classNames' => ['fc-regular'], // [$isStatutory ? 'fc-off-statutory' : 'fc-off-prescribed']
+                        'classNames' => [$isStatutory ? 'fc-off-statutory' : 'fc-off-prescribed'], //CSSで色分けする
                         'extendedProps' => ['category' => '1_off', 'type' => $isStatutory ? 'statutory' : 'prescribed'],
                     ]);
                 }
