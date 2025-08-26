@@ -5,7 +5,7 @@
   <h2 class="mb-0">カレンダー</h2>
   {{-- 役割ヒント --}}
   @role('admin|super_admin')
-    <span class="badge text-bg-primary">管理者ビュー：サブ必要状況</span>
+    <span class="badge text-bg-primary">管理者ビュー：{{ $viewUser->name ?? ('ID:'.$viewUser->id) }} のカレンダー</span>
   @else
     <span class="badge text-bg-secondary">講師ビュー：自分のシフト</span>
   @endrole
@@ -54,6 +54,7 @@ document.addEventListener('DOMContentLoaded', function () {
     initialView: 'dayGridMonth',
     height: 'auto',
     firstDay: 0, // 0:日曜はじまり
+    eventOrder: "extendedProps.category,title,start",
     headerToolbar: {
       left: 'prev,next today',
       center: 'title',
@@ -67,6 +68,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // ここがLaravelのJSONエンドポイント
     events: {
       url: "{{ route('calendar.events') }}",
+      extraParams: { user_id: @json($viewUser->id) },
       failure: () => alert('イベント取得に失敗しました')
     },
 

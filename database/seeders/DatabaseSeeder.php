@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             LeavePeriodsSeeder::class,
             PermissionRoleSeeder::class,
             HolidaysJapan2025_2026Seeder::class,
+            RestPatternSeeder::class,
         ]);
 
         // \App\Models\User::factory(10)->create();

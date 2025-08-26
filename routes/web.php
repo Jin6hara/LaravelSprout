@@ -34,8 +34,16 @@ Route::middleware(['auth', 'role:general|admin|super_admin'])->group(function ()
     Route::get('/', function () {
         return view('welcome');
     })->name('welcome');
-    Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
+});
+
+//カレンダー関連
+Route::middleware(['auth'])->group(function () {
+    // FullCalendarのJSON
     Route::get('/calendar/events', [CalendarController::class, 'events'])->name('calendar.events'); // JSON
+    // 自分のカレンダー
+    Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
+    // 管理者: 任意ユーザーのカレンダー（/calendar/{user}）
+    Route::get('/calendar/{user}', [CalendarController::class, 'index'])->middleware('role:admin|super_admin')->name('calendar.index.user');
 });
 
 //登録
