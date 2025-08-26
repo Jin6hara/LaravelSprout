@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Carbon\CarbonPeriod;
 use App\Models\{User, Holiday, UserRestPattern};
 use Illuminate\Support\Facades\Auth;
 
@@ -25,68 +26,75 @@ class CalendarController extends Controller
     // FullCalendarが ?start=YYYY-MM-DD&end=YYYY-MM-DD で叩く想定
     public function events(Request $request)
     {
-        $viewer = Auth::user();
+        $viewer = auth()->user();
         $start = Carbon::parse($request->query('start', now()->startOfYear()))->startOfDay();
         $end   = Carbon::parse($request->query('end',   now()->endOfYear()))->endOfDay();
 
-        // 対象ユーザーの確定
         $targetUserId = (int) $request->query('user_id', $viewer->id);
-        if (!$viewer->hasRole(['admin', 'super_admin']) && $targetUserId !== $viewer->id) {
-            abort(403);
-        }
+        if (!$viewer->hasRole(['admin', 'super_admin']) && $targetUserId !== $viewer->id) abort(403);
         $targetUser = User::findOrFail($targetUserId);
 
-        // 祝日（背景）
+        // 祝日（背景表示）
         $holidays = Holiday::between($start->toDateString(), $end->toDateString())
             ->get()
             ->map(function ($h) {
-                $e = $h->toCalendarEvent(); // 既存のメソッド想定
-                // 背景表示を明示（CSS .fc-holiday を当てる）
+                $e = $h->toCalendarEvent();
                 $e['display'] = 'background';
                 $e['classNames'] = array_unique(array_merge($e['classNames'] ?? [], ['fc-holiday']));
                 return $e;
             });
 
-        // ユーザーの有効パターンを期間から決定（複数期間に跨る可能性）
+        // ★ 祝日の「日付集合」を作る（同日の所定/法定休は出さない）
+        $holidayDates = collect($holidays)
+            ->flatMap(function ($e) {
+                $s = Carbon::parse($e['start'])->toDateString();
+                $t = isset($e['end']) ? Carbon::parse($e['end'])->subDay()->toDateString() : $s; // endが翌日境界なら-1日
+                if ($s === $t) return [$s];
+                $period = CarbonPeriod::create($s, $t);
+                return collect($period)->map->toDateString()->all();
+            })
+            ->unique()
+            ->flip(); // has() でO(1)判定するため
+
+        // ユーザーの休日パターンから「所定/法定休」を生成
         $assigns = UserRestPattern::with(['pattern.rules'])
             ->where('user_id', $targetUser->id)
             ->activeBetween($start->toDateString(), $end->toDateString())
             ->orderBy('start_date')
             ->get();
 
-        // 曜日 → kind マップを期間別に適用してイベント生成
         $offEvents = collect();
-        $cursor = (clone $start)->startOfDay();
-
+        $cursor = (clone $start);
         while ($cursor <= $end) {
-            // この日の適用アサイン（開始が最も新しいものを優先）
+            $ymd = $cursor->toDateString();
+
+            // ★ 祝日ならスキップ
+            if ($holidayDates->has($ymd)) {
+                $cursor->addDay();
+                continue;
+            }
+
             $assign = $assigns->first(function ($a) use ($cursor) {
-                $okStart = $a->start_date->lte($cursor);
-                $okEnd   = is_null($a->end_date) || $a->end_date->gte($cursor);
-                return $okStart && $okEnd;
+                return $a->start_date->lte($cursor) && (is_null($a->end_date) || $a->end_date->gte($cursor));
             });
+
             if ($assign && $assign->pattern) {
                 $w = (int) $cursor->dayOfWeek; // 0(日)〜6(土)
                 $rule = $assign->pattern->rules->firstWhere('weekday', $w);
                 if ($rule && $rule->kind !== 'work') {
-                    $title = $rule->kind === 'statutory_off' ? '法定休' : '所定休';
+                    $isStatutory = $rule->kind === 'statutory_off';
                     $offEvents->push([
-                        'title'      => $title,
-                        'start'      => $cursor->toDateString(),
-                        'allDay'     => true,
-                        'classNames' => ['fc-regular'],
-                        'extendedProps' => [
-                            'type' => $title,
-                            'category' => '1_off', // 並び順制御したい場合用
-                        ],
+                        'title'  => $isStatutory ? '法定休' : '所定休',
+                        'start'  => $ymd,
+                        'allDay' => true,
+                        'classNames' => ['fc-regular'], // [$isStatutory ? 'fc-off-statutory' : 'fc-off-prescribed']
+                        'extendedProps' => ['category' => '1_off', 'type' => $isStatutory ? 'statutory' : 'prescribed'],
                     ]);
                 }
             }
             $cursor->addDay();
         }
 
-        // マージ（祝日は背景 / 休日は通常イベント）=> 祝日が必ず視認できる
-        $events = $offEvents->merge($holidays)->values();
-        return response()->json($events);
+        return response()->json($offEvents->merge($holidays)->values());
     }
 }
