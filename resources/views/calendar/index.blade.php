@@ -32,27 +32,46 @@
 @push('styles')
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.css" rel="stylesheet">
 <style>
+  /* 今日の日付背景 */
+  .fc-day-today {
+    background-color: rgba(255, 255, 255, 0.53) !important;
+    border: 2px solid rgba(255, 0, 0, 1) !important; }
   /* 祝日背景 */
-  .fc-holiday { background-color: rgba(255, 7, 7, 0.15) !important; }
-  /* 管理者のサブ必要イベント */
-  .fc-need { background-color: rgba(220, 53, 69, .15) !important; border: 1px solid rgba(86, 220, 53, 0.4) }
-  /* 講師のシフト */
-  .fc-regular { background-color: rgba(255, 255, 255, 0.12) !important; border: 1px solid rgba(141, 41, 255, 0.35) }
-  .fc-overtime { background-color: rgba(25,135,84,.12) !important; border: 1px solid rgba(25,135,84,.35) }
-  /* カレンダー高さ調整 */
-  #calendar { max-width: 1100px; margin: 0 auto; }
+  .fc-holiday { 
+    background-color: rgba(255, 0, 0, 0.54) !important;
+    border: 1px solid rgba(255, 255, 255, 1) !important; }
   /* ユーザー休日: 法定休（背景青・区別しやすい色） */
-  .fc-off-statutory { background-color: rgba(13, 110, 253, 0.18) !important; }
+  .fc-off-statutory { 
+    background-color: rgba(0, 102, 255, 0.47) !important;
+    border: 1px solid rgba(255, 255, 255, 1) !important; }
   /* ユーザー休日: 所定休（背景薄青・区別しやすい色） */
-  .fc-off-prescribed { background-color: rgba(41, 188, 255, 0.15) !important; }
+  .fc-off-prescribed { 
+    background-color: rgba(0, 174, 255, 0.51) !important;
+    border: 1px solid rgba(255, 255, 255, 1) !important; }
   /* 会社休業日 */
   .fc-company-break {
-    background-color: rgba(25, 135, 84, .18) !important;
-    border: 1px solid rgba(25, 135, 84, .35) !important;
+    background-color: rgba(0, 255, 13, 0.5) !important;
+    border: 1px solid rgba(255, 255, 255, 1) !important;
     font-weight: 600;
   }
-   /* 追加：RWD（黄色）/ ORDは所定休と同じ色=fc-off-prescribed を使用 */
-  .fc-rwd { background-color: rgba(255, 193, 7, .25) !important; border: 1px solid rgba(255, 193, 7, .45) !important; font-weight: 600; }
+   /* RWD（黄色）/ ORDは所定休と同じ色=fc-off-prescribed を使用 */
+  .fc-rwd { 
+    background-color: rgba(255, 193, 7, .25) !important; 
+    border: 1px solid rgba(255, 193, 7, .45) !important; 
+    font-weight: 600; }
+  /* 管理者のサブ必要イベント */
+  .fc-need { 
+    background-color: rgba(220, 53, 69, .15) !important; 
+    border: 1px solid rgba(86, 220, 53, 0.4) }
+  /* 講師のシフト */
+  .fc-regular { 
+    background-color: rgba(255, 255, 255, 0.12) !important; 
+    border: 1px solid rgba(141, 41, 255, 0.35) }
+  .fc-overtime { 
+    background-color: rgba(25,135,84,.12) !important; 
+    border: 1px solid rgba(25,135,84,.35) }
+  /* カレンダー高さ調整 */
+  #calendar { max-width: 1100px; margin: 10 auto; }
 </style>
 @endpush
 
