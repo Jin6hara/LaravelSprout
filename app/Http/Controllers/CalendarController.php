@@ -6,8 +6,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Carbon\CarbonPeriod;
-use App\Models\{User, Holiday, UserRestPattern, CompanyClosure};
+use App\Models\{User, Holiday, UserRestPattern, CompanyClosure, RestPatternAdjustment};
 use Illuminate\Support\Facades\Auth;
 
 class CalendarController extends Controller
@@ -50,18 +49,31 @@ class CalendarController extends Controller
             ->map(fn($e) => Carbon::parse($e['start'])->toDateString())
             ->unique()->flip();
 
-        // ========== ユーザーの所定/法定休（前回のロジック） ==========
+        // ===== ユーザーのパターン割当 & 調整（ORD/RWD） ========================
         $assigns = UserRestPattern::with(['pattern.rules'])
             ->where('user_id', $targetUser->id)
             ->activeBetween($start->toDateString(), $end->toDateString())
             ->orderBy('start_date')
             ->get();
 
-        $offEvents = collect();
-        $offDateSet = []; // 所定/法定休の日付セット
+        $patternIds = $assigns->pluck('rest_pattern_id')->unique()->values();
 
+        // 対象期間内の調整をパターンID×日付でグループ化
+        $adjustments = RestPatternAdjustment::between($start->toDateString(), $end->toDateString())
+            ->whereIn('rest_pattern_id', $patternIds)
+            ->get()
+            ->groupBy([
+                'rest_pattern_id',
+                fn($a) => $a->date->toDateString(),
+            ]);
+
+        $offEvents  = collect(); // 法定・所定・ORD
+        $rwdEvents  = collect(); // RWD（黄色）
+        $offDateSet = [];        // 「この日はOFF扱い」判定用セット（会社休暇の除外に使う）
+
+        // ===== 日ごと生成（祝日はオフ系/RWDとも出さない） =======================
         $cursor = (clone $start)->startOfDay();
-        while ($cursor <= $end) {
+        while ($cursor->lte($end)) {
             $ymd = $cursor->toDateString();
 
             // ★ 祝日ならスキップ
@@ -70,25 +82,59 @@ class CalendarController extends Controller
                 continue;
             }
 
+            // 当日有効な割当
             $assign = $assigns->first(function ($a) use ($cursor) {
                 return $a->start_date->lte($cursor) && (is_null($a->end_date) || $a->end_date->gte($cursor));
             });
 
             if ($assign && $assign->pattern) {
-                $w = (int) $cursor->dayOfWeek; // 0(日)〜6(土)
-                $rule = $assign->pattern->rules->firstWhere('weekday', $w);
-                if ($rule && $rule->kind !== 'work') {
-                    $isStatutory = $rule->kind === 'statutory_off';
+                $w    = (int) $cursor->dayOfWeek; // 0(日)〜6(土)
+                $rule = $assign->pattern->rules->firstWhere('weekday', $w); // work / prescribed_off / statutory_off
+
+                // 当日の調整（その日のパターンに紐づくもののみ）
+                /** @var \App\Models\RestPatternAdjustment|null $adj */
+                $adj = optional(data_get($adjustments, "{$assign->rest_pattern_id}.{$ymd}"))->first();
+
+                if ($adj && $adj->kind === 'add_off') {
+                    // ORD: 所定休を追加（元がworkでもOFF化）※所定休と同じ色
                     $offEvents->push([
-                        'title'  => $isStatutory ? 'LRD' : 'ORD',
+                        'title'  => $adj->title ?: '調整休日（ORD）',
                         'start'  => $ymd,
                         'allDay' => true,
-                        'classNames' => [$isStatutory ? 'fc-off-statutory' : 'fc-off-prescribed'], //CSSで色分けする
-                        'extendedProps' => ['category' => '1_off', 'type' => $isStatutory ? 'statutory' : 'prescribed'],
+                        'classNames' => ['fc-off-prescribed'],
+                        'extendedProps' => ['category' => '1_off', 'type' => 'prescribed', 'code' => 'ORD'],
                     ]);
                     $offDateSet[$ymd] = true;
+                } elseif ($adj && $adj->kind === 'work_instead') {
+                    // RWD: 元がoffなら取消（勤務扱い）＋黄色で見せる
+                    if ($rule && $rule->kind !== 'work') {
+                        $rwdEvents->push([
+                            'title'  => $adj->title ?: '調整出勤（RWD）',
+                            'start'  => $ymd,
+                            'allDay' => true,
+                            'classNames' => ['fc-rwd'],
+                            'extendedProps' => ['category' => '1_off', 'type' => 'rwd', 'code' => 'RWD'],
+                        ]);
+                        // offDateSet に入れない＝勤務扱い
+                    }
+                    // もともとworkなら何もしない（視覚だけ出したいなら push も可）
+
+                } else {
+                    // 通常（調整なし）：元がoffなら表示
+                    if ($rule && $rule->kind !== 'work') {
+                        $isStatutory = $rule->kind === 'statutory_off';
+                        $offEvents->push([
+                            'title'  => $isStatutory ? 'LRD' : 'ORD',
+                            'start'  => $ymd,
+                            'allDay' => true,
+                            'classNames' => [$isStatutory ? 'fc-off-statutory' : 'fc-off-prescribed'],
+                            'extendedProps' => ['category' => '1_off', 'type' => $isStatutory ? 'statutory' : 'prescribed'],
+                        ]);
+                        $offDateSet[$ymd] = true;
+                    }
                 }
             }
+
             $cursor->addDay();
         }
 
@@ -134,8 +180,12 @@ class CalendarController extends Controller
             }
         }
 
-        // 祝日（背景）→ 会社休暇（緑）→ 所定/法定（グレー）
-        $events = $offEvents->merge($companyEvents)->merge($holidayEvents)->values();
+        // ===== マージ順（必要ならここを調整） ===============================
+        $events = $offEvents
+            ->merge($companyEvents)
+            ->merge($rwdEvents)
+            ->merge($holidayEvents)
+            ->values();
 
         return response()->json($events);
     }

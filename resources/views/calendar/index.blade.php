@@ -51,6 +51,8 @@
     border: 1px solid rgba(25, 135, 84, .35) !important;
     font-weight: 600;
   }
+   /* 追加：RWD（黄色）/ ORDは所定休と同じ色=fc-off-prescribed を使用 */
+  .fc-rwd { background-color: rgba(255, 193, 7, .25) !important; border: 1px solid rgba(255, 193, 7, .45) !important; font-weight: 600; }
 </style>
 @endpush
 
