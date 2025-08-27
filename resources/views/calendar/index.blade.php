@@ -81,7 +81,8 @@ document.addEventListener('DOMContentLoaded', function () {
     events: {
       url: "{{ route('calendar.events') }}",
       extraParams: { user_id: @json($viewUser->id) },
-      failure: () => alert('イベント取得に失敗しました')
+      failure: () => alert('イベント取得に失敗しました'),
+      error: (xhr) => console.error('FC error:', xhr?.xhr?.responseText || xhr)
     },
 
     // イベントクリック時にモーダル表示
