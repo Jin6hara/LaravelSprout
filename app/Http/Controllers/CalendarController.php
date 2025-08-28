@@ -4,93 +4,50 @@ namespace App\Http\Controllers;
 
 namespace App\Http\Controllers;
 
-use App\Models\Shift;//
-use App\Models\Holiday;//
-use App\Models\CoverageNeed;//
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use App\Services\Calendar\CalendarEventService;
 
 class CalendarController extends Controller
 {
-    public function index()
+    public function index(Request $request, ?User $user = null)
     {
-        return view('calendar.index'); // BladeでFullCalendarを初期化
+        $viewer = Auth::user();
+        $viewUser = $user ?? $viewer; // 自分
+        // general は自分のみ、admin/super_admin は誰でも
+        if (!$viewer->hasRole(['admin', 'super_admin']) && $viewUser->id !== $viewer->id) {
+            abort(403);
+        }
+        return view('calendar.index', ['viewUser' => $viewUser]);
     }
 
-    // FullCalendarが ?start=YYYY-MM-DD&end=YYYY-MM-DD を付けてGETします
-    public function events(Request $request)
+    public function events(Request $request, CalendarEventService $svc)
     {
-        $start = $request->query('start'); // 文字列（ISO）
-        $end   = $request->query('end');
+        try {
+            $viewer = Auth::user();
 
-        $user = Auth::user();
-        $isAdmin = $user->hasRole('admin') || $user->hasRole('super_admin');
+            $start = Carbon::parse($request->query('start', now()->startOfYear()))->startOfDay();
+            $end   = Carbon::parse($request->query('end',   now()->endOfYear()))->endOfDay();
 
-        $events = [];
+            $targetUserId = (int) $request->query('user_id', $viewer->id);
+            if (!$viewer->hasRole(['admin', 'super_admin']) && $targetUserId !== $viewer->id) abort(403);
+            $targetUser = User::findOrFail($targetUserId);
 
-        // 下記は燃料の入り口（サンプル）
-
-        // 祝日（全員に表示）
-        $holidays = Holiday::whereBetween('date', [$start, $end])->get();
-        foreach ($holidays as $h) {
-            $events[] = [
-                'id' => 'holiday-' . $h->id,
-                'title' => '祝日：' . $h->name,
-                'start' => $h->date->toDateString(),
-                'allDay' => true,
-                'display' => 'background', // 背景マーキング
-                'classNames' => ['fc-holiday'],
-            ];
+            $events = $svc->build($targetUser, $start, $end);
+            return response()->json($events);
+        } catch (\Throwable $e) {
+            Log::error('Calendar events error', [
+                'msg' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'start' => $request->query('start'),
+                'end' => $request->query('end'),
+                'user' => $request->query('user_id'),
+            ]);
+            return response()->json([], 200);
         }
-
-        if ($isAdmin) {
-            // 管理者：サブ募集（CoverageNeed）をイベントとして表示（件数をタイトルに）
-            $needs = CoverageNeed::whereBetween('date', [$start, $end])->get()
-                ->groupBy('date');
-
-            foreach ($needs as $date => $items) {
-                $count = $items->sum('needed');
-                $events[] = [
-                    'id' => 'need-' . $date,
-                    'title' => "サブ必要 {$count}件",
-                    'start' => $date,
-                    'allDay' => true,
-                    'classNames' => ['fc-need'],
-                    'extendedProps' => [
-                        'details' => $items->map(fn($it) => [
-                            'campus' => $it->campus,
-                            'needed' => $it->needed,
-                            'reason' => $it->reason
-                        ])->values(),
-                    ],
-                ];
-            }
-        } else {
-            // 講師：自分のシフト
-            $shifts = Shift::where('user_id', $user->id)
-                ->whereBetween('date', [$start, $end])
-                ->orderBy('date')
-                ->get();
-
-            foreach ($shifts as $s) {
-                $label = $s->type === 'overtime' ? '残業' : '通常';
-                $time  = ($s->start_time && $s->end_time) ? " {$s->start_time}–{$s->end_time}" : '';
-                $events[] = [
-                    'id' => 'shift-' . $s->id,
-                    'title' => "{$label}{$time} @{$s->location}",
-                    'start' => $s->date->toDateString(),
-                    'allDay' => true, // 日単位管理の想定。時間帯で出すなら allDay=false に
-                    'classNames' => [$s->type === 'overtime' ? 'fc-overtime' : 'fc-regular'],
-                    'extendedProps' => [
-                        'type' => $s->type,
-                        'location' => $s->location,
-                        'start_time' => $s->start_time,
-                        'end_time' => $s->end_time,
-                    ],
-                ];
-            }
-        }
-
-        return response()->json($events);
     }
 }
