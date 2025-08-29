@@ -56,22 +56,26 @@
   }
    /* RWD（黄色）/ ORDは所定休と同じ色=fc-off-prescribed を使用 */
   .fc-rwd { 
-    background-color: rgba(255, 193, 7, .25) !important; 
-    border: 1px solid rgba(255, 193, 7, .45) !important; 
-    font-weight: 600; }
-  /* 管理者のサブ必要イベント */
-  .fc-need { 
-    background-color: rgba(220, 53, 69, .15) !important; 
-    border: 1px solid rgba(86, 220, 53, 0.4) }
-  /* 講師のシフト */
-  .fc-regular { 
-    background-color: rgba(255, 255, 255, 0.12) !important; 
-    border: 1px solid rgba(141, 41, 255, 0.35) }
+    background-color: rgba(255,193,7,.25) !important; 
+    border: 1px solid rgba(255,193,7,.45) !important;
+    font-weight: 600; 
+  }
+  /* Regular shift (level5) */
+  .fc-regular-shift { 
+    background-color: rgba(25,135,84,.18) !important; 
+    border: 1px solid rgba(25,135,84,.35) !important;
+  }
+  .fc-regular-shift-sub {
+    background-color: rgba(255,193,7,.25) !important; 
+    border: 1px solid rgba(255,193,7,.45) !important;
+    font-weight: 600;
+  }
   .fc-overtime { 
     background-color: rgba(25,135,84,.12) !important; 
     border: 1px solid rgba(25,135,84,.35) }
   /* カレンダー高さ調整 */
   #calendar { max-width: 1100px; margin: 10 auto; }
+
 </style>
 @endpush
 

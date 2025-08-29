@@ -7,6 +7,9 @@ use App\Models\Holiday;
 use App\Models\UserRestPattern;
 use App\Models\CompanyClosure;
 use App\Models\RestPatternAdjustment;
+use App\Models\Schedule;
+use App\Models\ScheduleLine;
+use App\Models\UserScheduleAssignment;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Collection;
@@ -47,13 +50,18 @@ class CalendarEventService
         // -------------- level4: Company Closures（緑 / Fixed ALP） --------------
         // 「カバーされていない日」= level1〜3 で埋まっていない日
         $covered = $this->unionSets($holidayDates, $rwdDates, $offDates);
-        $companyEvents = $this->buildCompanyClosures($covered, $start, $end);
+        [$companyEvents, $companyDates] = $this->buildCompanyClosures($covered, $start, $end);
+        $coveredAll = $covered + $companyDates;
+
+        // ★ level5: Regular shift
+        $regularEvents = $this->buildRegularShifts($user, $start, $end, $coveredAll);
 
         // 返却順は任意ですが、見栄えの安定性のため level1→2→3→4 で返します
         return collect($holidayEvents)
             ->merge($rwdEvents)
             ->merge($offEvents)
             ->merge($companyEvents)
+            ->merge($regularEvents)
             ->values()
             ->all();
     }
@@ -190,6 +198,7 @@ class CalendarEventService
     private function buildCompanyClosures(array $covered, Carbon $start, Carbon $end): array
     {
         $events = collect();
+        $dateSet = [];
         $closures = CompanyClosure::between($start->toDateString(), $end->toDateString())->get();
 
         foreach ($closures as $c) {
@@ -223,10 +232,74 @@ class CalendarEventService
                         'index_in_closure' => $shownCount,
                     ],
                 ]);
+                $dateSet[$ymd] = true;
             }
         }
+        return [$events->all(), $dateSet];
+    }
+
+    private function buildRegularShifts(User $user, Carbon $start, Carbon $end, array $covered): array
+    {
+        // 期間にかかる割当を先読み（スケジュール&ラインも先に読んでもOK）
+        $assignments = UserScheduleAssignment::with(['schedule.lines'])
+            ->where('user_id', $user->id)
+            ->activeBetween($start->toDateString(), $end->toDateString())
+            ->get();
+
+        $events = collect();
+        $cursor = (clone $start)->startOfDay();
+
+        while ($cursor->lte($end)) {
+            $ymd = $cursor->toDateString();
+            if (isset($covered[$ymd])) {
+                $cursor->addDay();
+                continue;
+            } // level1〜4 で覆われた日は出さない
+
+            // 当日有効な割当（最新開始を優先）
+            $asg = $assignments->first(function ($a) use ($cursor) {
+                return $a->start_date->lte($cursor) && $a->end_date->gte($cursor);
+            });
+
+            if ($asg && $asg->schedule) {
+                $dow = (int) $cursor->dayOfWeek; // 0..6
+                // 当日有効なラインのみ
+                $lines = $asg->schedule->lines->filter(function ($ln) use ($dow, $cursor) {
+                    return ($ln->dow === $dow)
+                        && ($ln->effective_start->lte($cursor))
+                        && ($ln->effective_end->gte($cursor));
+                });
+
+                foreach ($lines as $ln) {
+                    // 時間（ローカル）を当日付に合成
+                    $startAt = Carbon::parse($ymd . ' ' . $ln->start_time);
+                    $endAt   = Carbon::parse($ymd . ' ' . $ln->end_time);
+
+                    $isSub = strcasecmp($ln->school_name, 'Sub') === 0;
+
+                    $events->push([
+                        'title'  => "{$ln->school_name} {$startAt->format('H:i')}–{$endAt->format('H:i')}",
+                        'start'  => $startAt->toIso8601String(),
+                        'end'    => $endAt->toIso8601String(),
+                        'allDay' => false,
+                        'classNames' => [$isSub ? 'fc-regular-shift-sub' : 'fc-regular-shift'],
+                        'extendedProps' => [
+                            'category' => '5_regular',
+                            'type' => 'regular_shift',
+                            'location' => $ln->school_name,
+                            'start_time' => $startAt->format('H:i'),
+                            'end_time' => $endAt->format('H:i'),
+                        ],
+                    ]);
+                }
+            }
+
+            $cursor->addDay();
+        }
+
         return $events->all();
     }
+
 
     // -----------------------------------------------------------------
     // Utils
