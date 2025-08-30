@@ -34,23 +34,23 @@
 <style>
   /* 今日の日付背景 */
   .fc-day-today {
-    background-color: rgba(255, 255, 255, 0.53) !important;
-    border: 2px solid rgba(255, 0, 0, 1) !important; }
+    background-color: rgba(0, 149, 248, 0.39) !important;
+    border: 2px solid rgba(233, 233, 233, 1) !important; }
   /* 祝日背景 */
   .fc-holiday { 
-    background-color: rgba(255, 0, 0, 0.54) !important;
+    background-color: rgba(141, 38, 38, 0.54) !important;
     border: 1px solid rgba(255, 255, 255, 1) !important; }
   /* ユーザー休日: 法定休（背景青・区別しやすい色） */
   .fc-off-statutory { 
-    background-color: rgba(0, 102, 255, 0.47) !important;
+    background-color: rgba(51, 84, 138, 0.47) !important;
     border: 1px solid rgba(255, 255, 255, 1) !important; }
   /* ユーザー休日: 所定休（背景薄青・区別しやすい色） */
   .fc-off-prescribed { 
-    background-color: rgba(0, 174, 255, 0.51) !important;
+    background-color: rgba(48, 107, 134, 0.51) !important;
     border: 1px solid rgba(255, 255, 255, 1) !important; }
   /* 会社休業日 */
   .fc-company-break {
-    background-color: rgba(0, 255, 13, 0.5) !important;
+    background-color: rgba(32, 124, 37, 0.5) !important;
     border: 1px solid rgba(255, 255, 255, 1) !important;
     font-weight: 600;
   }
@@ -62,7 +62,7 @@
   }
   /* Regular shift (level5) */
   .fc-regular-shift { 
-    background-color: rgba(25,135,84,.18) !important; 
+    background-color: rgba(0, 134, 45, 0.18) !important; 
     border: 1px solid rgba(25,135,84,.35) !important;
   }
   .fc-regular-shift-sub {
@@ -108,6 +108,12 @@ document.addEventListener('DOMContentLoaded', function () {
       error: (xhr) => console.error('FC error:', xhr?.xhr?.responseText || xhr)
     },
 
+    eventContent: function(arg) {
+  // ここで表示内容を完全にカスタマイズできる
+  // 例: タイトルのみ表示
+    return { html: arg.event.title };
+   },
+
     // イベントクリック時にモーダル表示
     eventClick(info) {
       info.jsEvent.preventDefault();
@@ -137,6 +143,7 @@ document.addEventListener('DOMContentLoaded', function () {
       modal.show();
     },
   });
+  
 
   calendar.render();
 });
