@@ -75,7 +75,37 @@ class CalendarResolver
             }
         }
 
-        // 5) 出力（regular 1つ + OFF + ON）
+        // 5) ★ regular_plan の勝者のうち「会社休暇(SB/WB)」だけ表示順に数えて先頭5件を Fixed ALP
+        // daily['regular'] には勝者（表示対象）が入っている
+        $winners = [];
+        foreach ($daily as $date => $bucket) {
+            if (!empty($bucket['regular'])) {
+                $winners[$date] = $bucket['regular'];
+            }
+        }
+        ksort($winners); // 日付順
+
+        $visibleCountPerClosure = []; // key: closure_id でも code+id でもOK
+        foreach ($winners as $date => $ev) {
+            $kind = $ev->extendedProps['kind'] ?? null;
+            $code = $ev->extendedProps['closure_code'] ?? null;
+            $cid  = $ev->extendedProps['closure_id'] ?? null;
+
+            if ($kind === 'company_break' && in_array($code, ['SB', 'WB'], true)) {
+                $key = $cid ?: $code; // id がなければ code 単位で
+                $visibleCountPerClosure[$key] = ($visibleCountPerClosure[$key] ?? 0) + 1;
+
+                if ($visibleCountPerClosure[$key] <= 5) {
+                    $ev->title = 'Fixed ALP';  // ← 表示される先頭5件だけ差し替え
+                    $ev->extendedProps['is_fixed_alp'] = true;
+                } else {
+                    // 6件目以降は元名のまま（特に何もしない）
+                    $ev->extendedProps['is_fixed_alp'] = false;
+                }
+            }
+        }
+
+        // 6) 出力（regular 1つ + OFF + ON）
         $events = [];
         foreach ($daily as $bucket) {
             if (($this->rules['regular_plan_only_one_per_day'] ?? true) && $bucket['regular']) {

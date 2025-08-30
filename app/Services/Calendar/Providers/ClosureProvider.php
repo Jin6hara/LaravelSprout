@@ -9,6 +9,7 @@ use App\Services\Calendar\Contracts\CalendarEventProvider;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 
+// app/Services/Calendar/Providers/ClosureProvider.php
 class ClosureProvider implements CalendarEventProvider
 {
     public function provide(User $user, Carbon $start, Carbon $end): array
@@ -18,24 +19,24 @@ class ClosureProvider implements CalendarEventProvider
 
         foreach ($closures as $c) {
             $period = CarbonPeriod::create($c->start_date, $c->end_date);
-            $shown = 0;
             foreach ($period as $d) {
                 $ymd = $d->toDateString();
-                $title = $c->name;
-                if (in_array($c->code, ['SB', 'WB'], true)) {
-                    if ($shown < 5) {
-                        $title = 'Fixed ALP';
-                    }
-                    $shown++;
-                }
+
+                // ★ ここでは常に元名。Fixed ALP の判定は後段（Resolver）に委ねる
                 $events[] = new CandidateEvent([
-                    'title' => $title,
-                    'start' => $ymd,
+                    'title'  => $c->name,
+                    'start'  => $ymd,
                     'allDay' => true,
                     'classNames' => ['fc-company-break'],
-                    'extendedProps' => ['category' => '0_company', 'code' => $c->code, 'original_name' => $c->name],
-                    'level' => 4,
-                    'type' => EventType::BACKGROUND,
+                    'extendedProps' => [
+                        'category'      => '0_company',
+                        'kind'          => 'company_break', // ← 判定用
+                        'closure_id'    => $c->id,          // ← 同一休暇を区別
+                        'closure_code'  => $c->code,        // ← SB / WB 判定
+                        'original_name' => $c->name,
+                    ],
+                    'level'     => 4,
+                    'type'      => EventType::BACKGROUND,
                     'planGroup' => PlanGroup::REGULAR_PLAN,
                 ]);
             }
