@@ -1,9 +1,7 @@
 /* 今日の日付背景 */
 .fc-day-today {
-  background-color: rgba(253, 255, 117, 0.39);
-  /* !important外した */
-  border: 2px solid rgba(233, 233, 233, 1);
-  /* !important外した */
+  outline-offset: -2px;    /* 内側に寄せる */
+  animation: today-glow 2s infinite;
 }
 
 /* (適用中)Fun surprise: animate today's date with a glowing border */
@@ -19,10 +17,6 @@
   100% {
     box-shadow: 0 0 3px 2px rgba(254, 255, 180, 0.53);
   }
-}
-
-.fc-day-today {
-  animation: today-glow 2s infinite;
 }
 
 /* (適用中)祝日背景 */
@@ -83,8 +77,8 @@
 
 /* RWD（黄色）/ ORDは所定休と同じ色=fc-off-prescribed を使用 */
 .fc-rwd {
-  background-color: rgba(255, 251, 0, 0.5) !important;
-  border: 1px solid rgba(255, 255, 255, 0.45) !important;
+  background-color: rgba(230, 226, 0, 0.5) !important;
+  border: 1px solid rgba(105, 107, 0, 0.45) !important;
   font-weight: 600;
 }
 
@@ -95,8 +89,8 @@
 }
 
 .fc-regular-shift-sub {
-  background-color: rgba(255, 251, 0, 0.5) !important;
-  border: 1px solid rgba(255, 255, 255, 0.45) !important;
+  background-color: rgba(230, 226, 0, 0.5) !important;
+  border: 1px solid rgba(105, 107, 0, 0.45) !important;
   font-weight: 600;
 }
 
@@ -108,6 +102,39 @@
 
 /* カレンダー高さ調整 */
 #calendar {
-  max-width: 1200px;
+  max-width: auto;
   margin: 30 auto;
+}
+ 
+/* カレンダーセル内余白を-1にする */
+.fc .fc-daygrid-day-frame {
+  padding: -1px;
+}
+
+/* カレンダー曜日ヘッダーの下線を消す、色を黒く、文字を小さく */
+.fc-col-header-cell-cushion {
+  text-decoration: none !important;
+  color: #222 !important;
+  font-size: 0.95em !important;
+}
+
+/* カレンダー日付（数字）の色を黒く、文字を小さく、underline消す */
+.fc-daygrid-day-number {
+  margin-top: -2px !important;
+  color: #222 !important;
+  font-size: 0.90em !important;
+  text-decoration: none !important;
+}
+
+/* イベント全体（枠） */
+.fc-daygrid-event {
+  margin-top: -2px !important;      /* イベントの上部余白（セル内の日付数字との間隔）[-2] */
+  white-space: nowrap;              /* イベントテキストの折り返しを禁止（1行表示）[pre-line] */
+  overflow: hidden;                 /* 内容が枠を超えた場合は非表示にする [pre-line, scroll]*/
+  text-overflow: ellipsis;          /* 枠を超えた場合「...」で省略表示する [clip] */
+  font-size: 0.90em;                /* イベント文字サイズ（基準の90%で少し小さめ） */
+  padding: 0px 0px;                 /* イベント枠内の上下左右余白を0pxにする */
+  border-radius: 6px;               /* イベント枠の角丸指定（6px） */
+  box-sizing: border-box;           /* パディング・ボーダーを含めて幅・高さを計算 */
+  max-width: 95%;                   /* イベント枠の最大幅（セル幅の95%まで） */
 }

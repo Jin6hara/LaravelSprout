@@ -5,6 +5,17 @@ document.addEventListener('DOMContentLoaded', function () {
         initialView: 'dayGridMonth',
         height: 'auto',
         firstDay: 0,
+        // 10分単位でスロットを区切る
+        slotDuration: '00:10:00',
+        // ラベルを 09:00, 09:10, … のように24h表記
+        slotLabelFormat: {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        },
+        // 表示範囲を制限
+        slotMinTime: '09:00:00',
+        slotMaxTime: '23:00:00',
         eventOrder: "extendedProps.category,title,start",
         headerToolbar: {
             left: 'prev,next today',
@@ -21,8 +32,12 @@ document.addEventListener('DOMContentLoaded', function () {
             failure: () => alert('イベント取得に失敗しました'),
             error: (xhr) => console.error('FC error:', xhr?.xhr?.responseText || xhr)
         },
-        dayCellContent: function (e) {
-            return e.date.getDate() + "";
+        // 週の日付表示制御
+        dayCellContent(info) {
+            if (info.view.type === 'dayGridMonth') {
+                return info.date.getDate();      // 月表示だけ日付数字
+            }
+            return { html: '' };               // timeGrid(週/日)では描画しない
         },
         eventContent: function (arg) {
             return { html: arg.event.title };
