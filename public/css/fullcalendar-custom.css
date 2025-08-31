@@ -67,7 +67,7 @@
 
 /* 会社休業日 */
 .fc-company-break {
-  background-color: rgba(168, 255, 172, 0.5) !important;
+  background-color: rgba(173, 173, 173, 0.51) !important;
   border: 1px solid rgba(255, 255, 255, 1) !important;
   font-weight: 600;
 }
@@ -125,7 +125,7 @@
 
 /* イベント全体（枠） */
 .fc-daygrid-event {
-  margin-top: -2px !important;      /* イベントの上部余白（セル内の日付数字との間隔）[-2] */
+  margin-top: -2px;                 /* イベントの上部余白（セル内の日付数字との間隔）[-2] */
   white-space: nowrap;              /* イベントテキストの折り返しを禁止（1行表示）[pre-line] */
   overflow: hidden;                 /* 内容が枠を超えた場合は非表示にする [pre-line, scroll]*/
   text-overflow: ellipsis;          /* 枠を超えた場合「...」で省略表示する [clip] */

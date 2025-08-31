@@ -39,87 +39,125 @@ class CalendarResolver
         // 2) 日単位のバケツ
         $daily = []; // 'YYYY-MM-DD' => ['regular'=>CandidateEvent|null, 'on'=>[], 'off'=>[]]
 
-        // 3) ★ regular_plan 全体（BACKGROUND も ON も含む）から level 最小を1つ選ぶ
         foreach ($cands as $ev) {
-            if ($ev->planGroup !== PlanGroup::REGULAR_PLAN) continue;
-
             $d = $ev->dateKey;
-            $daily[$d] ??= ['regular' => null, 'on' => [], 'off' => []];
+            $daily[$d] ??= ['regular_by_level' => [], 'reg_bg' => [], 'reg_on' => [], 'event_off' => [], 'event_on' => []];
 
-            // 祝日 untouchable
-            if (($this->rules['holiday_untouchable'] ?? true) && $daily[$d]['regular'] && $daily[$d]['regular']->level === 1) {
-                continue;
-            }
-
-            if (!$daily[$d]['regular'] || $ev->level < $daily[$d]['regular']->level) {
-                $daily[$d]['regular'] = $ev; // 勝者を入れ替え
-            }
-        }
-
-        // 4) ★ EVENT グループのみ OFF/ON を合成
-        foreach ($cands as $ev) {
-            if ($ev->planGroup !== PlanGroup::EVENT) continue; // ← regular_plan の ON はここに入れない
-
-            $d = $ev->dateKey;
-            $daily[$d] ??= ['regular' => null, 'on' => [], 'off' => []];
-
-            if ($ev->type === EventType::OFF) {
-                $daily[$d]['off'][] = $ev;
-                if ($this->rules['off_overrides_on'] ?? true) {
-                    $daily[$d]['on'] = []; // 簡易：その日の EVENT-ON を全消し
-                }
-            } elseif ($ev->type === EventType::ON) {
-                if ($this->rules['on_adds_to_background'] ?? true) {
-                    $daily[$d]['on'][] = $ev;
+            if ($ev->planGroup === PlanGroup::REGULAR_PLAN) {
+                $daily[$d]['regular_by_level'][$ev->level] ??= [];
+                $daily[$d]['regular_by_level'][$ev->level][] = $ev;
+            } else { // EVENT グループ
+                if ($ev->type === EventType::OFF) {
+                    $daily[$d]['event_off'][] = $ev;
+                } elseif ($ev->type === EventType::ON) {
+                    $daily[$d]['event_on'][] = $ev;
                 }
             }
         }
 
-        // 5) ★ regular_plan の勝者のうち「会社休暇(SB/WB)」だけ表示順に数えて先頭5件を Fixed ALP
-        // daily['regular'] には勝者（表示対象）が入っている
+        // 3) regular_plan の「最小 level の“すべて”」を勝者として採用
+        foreach ($daily as $d => &$bucket) {
+            if (empty($bucket['regular_by_level'])) continue;
+
+            $levels = array_keys($bucket['regular_by_level']);
+            sort($levels); // 小さい = 強い
+            // 祝日untouchable: level1があれば1択
+            $minLevel = ($this->rules['holiday_untouchable'] ?? true) && in_array(1, $levels, true) ? 1 : $levels[0];
+
+            $winners = $bucket['regular_by_level'][$minLevel];
+
+            // 勝者を背景/ONに分配（複数可）
+            foreach ($winners as $ev) {
+                if ($ev->type === EventType::BACKGROUND) {
+                    $bucket['reg_bg'][] = $ev;
+                } elseif ($ev->type === EventType::ON) {
+                    $bucket['reg_on'][] = $ev;
+                }
+            }
+
+            // regular_plan.on は早い時間順に
+            usort($bucket['reg_on'], function ($a, $b) {
+                return strcmp($a->start, $b->start);
+            });
+        }
+        unset($bucket);
+
+        // 4) ルール適用
+        foreach ($daily as $d => &$bucket) {
+            // 4-1) event.off は regular_plan.on を全て打ち消す（event.on は消さない）
+            if (!empty($bucket['event_off']) && ($this->rules['off_overrides_on'] ?? true)) {
+                $bucket['reg_on'] = [];
+            }
+
+            // 4-2) event.on は regular_plan.on と1分でも重なれば、その regular_plan.on を丸ごと削除
+            if (!empty($bucket['event_on'])) {
+                $bucket['reg_on'] = $this->filterOutOverlappedRegularOn($bucket['reg_on'], $bucket['event_on']);
+                // event.on は background と共存（何もしない）
+                // 表示順のため event_on も時間順に
+                usort($bucket['reg_on'], fn($a, $b) => strcmp($a->start, $b->start));
+            }
+            foreach ($bucket['reg_on'] as $i => $ev) {
+                $ev->extendedProps['sort_order'] = $i;
+            }
+        }
+        unset($bucket);
+
+        // 5) regular_plan 勝者の中で「会社休暇(SB/WB)」は表示順に5件までFixed ALP
         $winners = [];
         foreach ($daily as $date => $bucket) {
-            if (!empty($bucket['regular'])) {
-                $winners[$date] = $bucket['regular'];
+            foreach ($bucket['reg_bg'] as $bg) {
+                $kind = $bg->extendedProps['kind'] ?? null;
+                $code = $bg->extendedProps['closure_code'] ?? null;
+                $cid  = $bg->extendedProps['closure_id'] ?? null;
+                if ($kind === 'company_break' && in_array($code, ['SB', 'WB'], true)) {
+                    $winners[] = [$date, $cid, $bg];
+                }
             }
-        }
-        ksort($winners); // 日付順
-
-        $visibleCountPerClosure = []; // key: closure_id でも code+id でもOK
-        foreach ($winners as $date => $ev) {
-            $kind = $ev->extendedProps['kind'] ?? null;
-            $code = $ev->extendedProps['closure_code'] ?? null;
-            $cid  = $ev->extendedProps['closure_id'] ?? null;
-
-            if ($kind === 'company_break' && in_array($code, ['SB', 'WB'], true)) {
-                $key = $cid ?: $code; // id がなければ code 単位で
-                $visibleCountPerClosure[$key] = ($visibleCountPerClosure[$key] ?? 0) + 1;
-
-                if ($visibleCountPerClosure[$key] <= 5) {
-                    $ev->title = 'Fixed ALP';  // ← 表示される先頭5件だけ差し替え
-                    $ev->extendedProps['is_fixed_alp'] = true;
-                } else {
-                    // 6件目以降は元名のまま（特に何もしない）
-                    $ev->extendedProps['is_fixed_alp'] = false;
+            foreach ($bucket['reg_on'] as $on) {
+                $kind = $on->extendedProps['kind'] ?? null;
+                $code = $on->extendedProps['closure_code'] ?? null;
+                $cid  = $on->extendedProps['closure_id'] ?? null;
+                if ($kind === 'company_break' && in_array($code, ['SB', 'WB'], true)) {
+                    $winners[] = [$date, $cid, $on];
                 }
             }
         }
+        usort($winners, fn($a, $b) => strcmp($a[0], $b[0])); // 日付順
 
-        // 6) 出力（regular 1つ + OFF + ON）
-        $events = [];
-        foreach ($daily as $bucket) {
-            if (($this->rules['regular_plan_only_one_per_day'] ?? true) && $bucket['regular']) {
-                $events[] = $bucket['regular']->toArray();
-            }
-            foreach ($bucket['off'] as $off) {
-                $events[] = $off->toArray();
-            }
-            foreach ($bucket['on']  as $on) {
-                $events[] = $on->toArray();
+        $visibleCountPerClosure = [];
+        foreach ($winners as [$date, $cid, $ev]) {
+            $key = $cid ?: 'default';
+            $visibleCountPerClosure[$key] = ($visibleCountPerClosure[$key] ?? 0) + 1;
+            if ($visibleCountPerClosure[$key] <= 5) {
+                $ev->title = 'Fixed ALP';
+                $ev->extendedProps['is_fixed_alp'] = true;
+            } else {
+                $ev->extendedProps['is_fixed_alp'] = false;
             }
         }
 
-        // 並び安定化（level→start）
+        // 6) 出力へ
+        $events = [];
+        foreach ($daily as $bucket) {
+            // 背景（regular_plan 最小levelのもの全部）
+            foreach ($bucket['reg_bg'] as $bg) {
+                $events[] = $bg->toArray();
+            }
+            // 有給などOFF（表示）
+            foreach ($bucket['event_off'] as $off) {
+                $events[] = $off->toArray();
+            }
+            // regular_plan.on（生き残った分）
+            foreach ($bucket['reg_on'] as $on) {
+                $events[] = $on->toArray();
+            }
+            // event.on（重ねて表示）
+            foreach ($bucket['event_on'] as $eon) {
+                $events[] = $eon->toArray();
+            }
+        }
+
+        // 並び安定化（同日跨ぎ用に level→start）
         usort($events, function ($a, $b) {
             $al = $a['extendedProps']['level'] ?? 9;
             $bl = $b['extendedProps']['level'] ?? 9;
@@ -128,5 +166,32 @@ class CalendarResolver
         });
 
         return $events;
+    }
+
+    // === ヘルパー：event.on が regular_plan.on を打ち消す（時間重複なら除外） ===
+    private function filterOutOverlappedRegularOn(array $regularOn, array $eventOn): array
+    {
+        // それぞれの [start, end) を Carbon で比較（end が無い/同一なら自動補完）
+        $toInterval = function ($ev) {
+            $s = \Carbon\Carbon::parse($ev->start);
+            $e = $ev->end ? \Carbon\Carbon::parse($ev->end) : (clone $s)->addMinute(); // 念のため最小1分
+            return [$s, $e];
+        };
+
+        $result = [];
+        foreach ($regularOn as $r) {
+            [$rs, $re] = $toInterval($r);
+            $overlapped = false;
+            foreach ($eventOn as $eo) {
+                [$es, $ee] = $toInterval($eo);
+                // 1分でも重なれば除外（[rs,re) × [es,ee) の交差）
+                if ($rs < $ee && $es < $re) {
+                    $overlapped = true;
+                    break;
+                }
+            }
+            if (!$overlapped) $result[] = $r;
+        }
+        return $result;
     }
 }
