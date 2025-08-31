@@ -1,0 +1,113 @@
+/* 今日の日付背景 */
+.fc-day-today {
+  background-color: rgba(253, 255, 117, 0.39);
+  /* !important外した */
+  border: 2px solid rgba(233, 233, 233, 1);
+  /* !important外した */
+}
+
+/* (適用中)Fun surprise: animate today's date with a glowing border */
+@keyframes today-glow {
+  20% {
+    box-shadow: 0 0 3px 2px rgba(255, 255, 255, 0.53);
+  }
+
+  50% {
+    box-shadow: 0 0 15px 6px rgba(255, 253, 114, 0.53);
+  }
+
+  100% {
+    box-shadow: 0 0 3px 2px rgba(254, 255, 180, 0.53);
+  }
+}
+
+.fc-day-today {
+  animation: today-glow 2s infinite;
+}
+
+/* (適用中)祝日背景 */
+.fc-holiday {
+  background-color: rgba(255, 122, 122, 0.54) !important;
+  border: 1px solid rgba(255, 255, 255, 1) !important;
+}
+
+/* 上記"!important"を外すと下記が適用される */
+.fc-holiday {
+  animation: rainbow-bg 3s linear infinite;
+}
+
+@keyframes rainbow-bg {
+  0% {
+    background-color: #ffaaaa;
+  }
+
+  20% {
+    background-color: #ffd700;
+  }
+
+  40% {
+    background-color: #aaffaa;
+  }
+
+  60% {
+    background-color: #aaaaff;
+  }
+
+  80% {
+    background-color: #ffaaff;
+  }
+
+  100% {
+    background-color: #ffaaaa;
+  }
+}
+
+/* ユーザー休日: 法定休（背景青・区別しやすい色） */
+.fc-off-statutory {
+  background-color: rgba(107, 107, 107, 0.47) !important;
+  border: 1px solid rgba(255, 255, 255, 1) !important;
+}
+
+/* ユーザー休日: 所定休（背景薄青・区別しやすい色） */
+.fc-off-prescribed {
+  background-color: rgba(173, 173, 173, 0.51) !important;
+  border: 1px solid rgba(255, 255, 255, 1) !important;
+}
+
+/* 会社休業日 */
+.fc-company-break {
+  background-color: rgba(168, 255, 172, 0.5) !important;
+  border: 1px solid rgba(255, 255, 255, 1) !important;
+  font-weight: 600;
+}
+
+/* RWD（黄色）/ ORDは所定休と同じ色=fc-off-prescribed を使用 */
+.fc-rwd {
+  background-color: rgba(255, 251, 0, 0.5) !important;
+  border: 1px solid rgba(255, 255, 255, 0.45) !important;
+  font-weight: 600;
+}
+
+/* Regular shift (level5) */
+.fc-regular-shift {
+  background-color: rgba(0, 255, 13, 0.5) !important;
+  border: 1px solid rgba(25, 135, 84, .35) !important;
+}
+
+.fc-regular-shift-sub {
+  background-color: rgba(255, 251, 0, 0.5) !important;
+  border: 1px solid rgba(255, 255, 255, 0.45) !important;
+  font-weight: 600;
+}
+
+/* （未使用）Overtime shift  */
+.fc-overtime {
+  background-color: rgba(25, 135, 84, .12) !important;
+  border: 1px solid rgba(25, 135, 84, .35)
+}
+
+/* カレンダー高さ調整 */
+#calendar {
+  max-width: 1200px;
+  margin: 30 auto;
+}
