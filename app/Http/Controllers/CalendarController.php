@@ -23,30 +23,21 @@ class CalendarController extends Controller
         }
         return view('calendar.index', ['viewUser' => $viewUser]);
     }
-
-    public function events(Request $request, CalendarEventService $svc)
+    public function events(Request $request, \App\Services\Calendar\CalendarResolver $resolver)
     {
         try {
             $viewer = Auth::user();
-
             $start = Carbon::parse($request->query('start', now()->startOfYear()))->startOfDay();
             $end   = Carbon::parse($request->query('end',   now()->endOfYear()))->endOfDay();
 
             $targetUserId = (int) $request->query('user_id', $viewer->id);
             if (!$viewer->hasRole(['admin', 'super_admin']) && $targetUserId !== $viewer->id) abort(403);
-            $targetUser = User::findOrFail($targetUserId);
+            $user = User::findOrFail($targetUserId);
 
-            $events = $svc->build($targetUser, $start, $end);
+            $events = $resolver->build($user, $start, $end);
             return response()->json($events);
         } catch (\Throwable $e) {
-            Log::error('Calendar events error', [
-                'msg' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'start' => $request->query('start'),
-                'end' => $request->query('end'),
-                'user' => $request->query('user_id'),
-            ]);
+            Log::error('Calendar events error', ['msg' => $e->getMessage(), 'line' => $e->getLine(), 'file' => $e->getFile()]);
             return response()->json([], 200);
         }
     }
