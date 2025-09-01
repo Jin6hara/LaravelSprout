@@ -13,8 +13,8 @@ return [
         App\Services\Calendar\Providers\WorkProvider::class       => ['level' => 5, 'type' => EventType::ON,         'plan' => PlanGroup::REGULAR_PLAN],
 
         // EVENT（例：有給/残業）— まずは空でもOK
-        App\Services\Calendar\Providers\LeaveProvider::class      => ['level' => 3, 'type' => EventType::OFF,        'plan' => PlanGroup::EVENT],
-        App\Services\Calendar\Providers\OvertimeProvider::class   => ['level' => 4, 'type' => EventType::ON,         'plan' => PlanGroup::EVENT],
+        App\Services\Calendar\Providers\LeaveProvider::class      => ['level' => 1, 'type' => EventType::OFF,        'plan' => PlanGroup::EVENT],
+        App\Services\Calendar\Providers\OvertimeProvider::class   => ['level' => 2, 'type' => EventType::ON,         'plan' => PlanGroup::EVENT],
     ],
 
     'rules' => [

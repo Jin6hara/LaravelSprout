@@ -22,19 +22,25 @@ class CalendarResolver
 
     public function build(User $user, Carbon $start, Carbon $end): array
     {
-        // 1) 各 Provider から候補を収集（既定メタを付与）
+        // 1) Provider収集 + 既定メタ付与（★config最優先）
         $cands = [];
         foreach ($this->providers as $p) {
             $cls = get_class($p);
             $defaults = $this->meta[$cls] ?? [];
             foreach ($p->provide($user, $start, $end) as $ev) {
-                // 既定適用（Provider側で上書き可）
-                $ev->level     = $ev->level     ?? ($defaults['level'] ?? 9);
-                $ev->type      = $ev->type      ?? ($defaults['type']  ?? EventType::BACKGROUND);
-                $ev->planGroup = $ev->planGroup ?? ($defaults['plan']  ?? PlanGroup::REGULAR_PLAN);
+                // level: config があれば必ず上書き
+                $ev->level     = $defaults['level'] ?? ($ev->level ?? 9);
+
+                // type: 基本は config、ただし Provider が動的に指定している場合（例:RWD=ON）はそれを優先
+                $ev->type      = $ev->type ?? ($defaults['type'] ?? EventType::BACKGROUND);
+
+                // plan: config を最優先（通常は固定でOK）
+                $ev->planGroup = $defaults['plan'] ?? ($ev->planGroup ?? PlanGroup::REGULAR_PLAN);
+
                 $cands[] = $ev;
             }
         }
+
 
         // 2) 日単位のバケツ
         $daily = []; // 'YYYY-MM-DD' => ['regular'=>CandidateEvent|null, 'on'=>[], 'off'=>[]]
