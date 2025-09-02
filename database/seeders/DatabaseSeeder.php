@@ -3,6 +3,8 @@
 namespace Database\Seeders;
 
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+
+use App\Models\Leave;
 use Illuminate\Database\Seeder;
 use Database\Seeders\UsersSeeder;
 
@@ -23,6 +25,7 @@ class DatabaseSeeder extends Seeder
             CompanyClosureSeeder::class,
             RestPatternAdjustmentSeeder::class,
             ScheduleSeeder::class,
+            LeaveSeeder::class,
         ]);
 
         // \App\Models\User::factory(10)->create();

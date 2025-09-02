@@ -28,7 +28,12 @@ class CalendarResolver
             $cls = get_class($p);
             $defaults = $this->meta[$cls] ?? [];
             foreach ($p->provide($user, $start, $end) as $ev) {
-                // level: config があれば必ず上書き
+
+                // ★ 追加：配列でも動くように軽く正規化
+                //  - ここは “読み取りのみ” なので、配列は (object) キャストでOK
+                if (is_array($ev)) $ev = (object) $ev;
+
+                // ★ ここから先は従来通り
                 $ev->level     = $defaults['level'] ?? ($ev->level ?? 9);
 
                 // type: 基本は config、ただし Provider が動的に指定している場合（例:RWD=ON）はそれを優先
@@ -46,6 +51,15 @@ class CalendarResolver
         $daily = []; // 'YYYY-MM-DD' => ['regular'=>CandidateEvent|null, 'on'=>[], 'off'=>[]]
 
         foreach ($cands as $ev) {
+
+            // ★ 追加: dateKey が無ければ start から補完（YYYY-MM-DD）
+            if (empty($ev->dateKey)) {
+                // allDay は 0:00 始まり想定、ISO/日付どちらでもOKにしておく
+                $startStr = is_string($ev->start) ? $ev->start : (string)($ev->start ?? '');
+                $evDate   = substr($startStr, 0, 10); // "YYYY-MM-DD"
+                $ev->dateKey = $evDate ?: now()->toDateString(); // 最後の保険
+            }
+            
             $d = $ev->dateKey;
             $daily[$d] ??= ['regular_by_level' => [], 'reg_bg' => [], 'reg_on' => [], 'event_off' => [], 'event_on' => []];
 
@@ -144,23 +158,35 @@ class CalendarResolver
 
         // 6) 出力へ
         $events = [];
+        $push = function ($ev) use (&$events) {
+            if (is_object($ev) && method_exists($ev, 'toArray')) {
+                $events[] = $ev->toArray();
+            } else {
+                // ★ 配列/オブジェクトを FullCalendar 互換の配列へ最低限整形
+                //   必要キー: title, start, end, allDay(optional), classNames(optional), extendedProps(optional)
+                $arr = is_array($ev) ? $ev : get_object_vars($ev);
+
+                // extendedProps の sort_order が無ければ自動補完
+                $arr['extendedProps'] = $arr['extendedProps'] ?? [];
+                $arr['extendedProps']['level'] = $arr['extendedProps']['level'] ?? ($arr['level'] ?? 9);
+
+                $events[] = $arr;
+            }
+        };
+
         foreach ($daily as $bucket) {
-            // 背景（regular_plan 最小levelのもの全部）
             foreach ($bucket['reg_bg'] as $bg) {
-                $events[] = $bg->toArray();
+                $push($bg);
             }
-            // 有給などOFF（表示）
-            foreach ($bucket['event_off'] as $off) {
-                $events[] = $off->toArray();
-            }
-            // regular_plan.on（生き残った分）
+            foreach ($bucket['event_off'] as $o) {
+                $push($o);
+            } // OFFは表示
             foreach ($bucket['reg_on'] as $on) {
-                $events[] = $on->toArray();
+                $push($on);
             }
-            // event.on（重ねて表示）
-            foreach ($bucket['event_on'] as $eon) {
-                $events[] = $eon->toArray();
-            }
+            foreach ($bucket['event_on'] as $e) {
+                $push($e);
+            } // EVENT ONは重ねて表示
         }
 
         // 並び安定化（同日跨ぎ用に level→start）
@@ -168,7 +194,17 @@ class CalendarResolver
             $al = $a['extendedProps']['level'] ?? 9;
             $bl = $b['extendedProps']['level'] ?? 9;
             if ($al !== $bl) return $al <=> $bl;
-            return strcmp(($a['start'] ?? ''), ($b['start'] ?? ''));
+
+            // ★ 同一level内は date(YYYY-MM-DD) → start → title で安定ソート
+            $ad = substr(($a['start'] ?? ''), 0, 10);
+            $bd = substr(($b['start'] ?? ''), 0, 10);
+            if ($ad !== $bd) return strcmp($ad, $bd);
+
+            $as = $a['start'] ?? '';
+            $bs = $b['start'] ?? '';
+            if ($as !== $bs) return strcmp($as, $bs);
+
+            return strcmp(($a['title'] ?? ''), ($b['title'] ?? ''));
         });
 
         return $events;
