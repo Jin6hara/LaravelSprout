@@ -50,7 +50,10 @@ return new class extends Migration
             $t->date('end_date');
             $t->timestamps();
             $t->index(['user_id', 'start_date', 'end_date']);
-            $t->unique(['user_id', 'schedule_id', 'start_date']); // お好みで
+            $t->index(
+                ['user_id', 'schedule_id', 'start_date', 'end_date'],
+                'usa_user_sch_dates_idx'
+            );
         });
     }
 

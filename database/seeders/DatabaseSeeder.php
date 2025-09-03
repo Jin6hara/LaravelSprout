@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
             RestPatternAdjustmentSeeder::class,
             ScheduleSeeder::class,
             LeaveSeeder::class,
+            EventSeeder::class,
         ]);
 
         // \App\Models\User::factory(10)->create();

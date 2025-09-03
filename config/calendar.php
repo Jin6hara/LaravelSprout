@@ -14,7 +14,7 @@ return [
 
         // EVENT（例：有給/残業）— まずは空でもOK
         App\Services\Calendar\Providers\LeaveProvider::class      => ['level' => 1, 'type' => EventType::OFF,        'plan' => PlanGroup::EVENT],
-        App\Services\Calendar\Providers\OvertimeProvider::class   => ['level' => 2, 'type' => EventType::ON,         'plan' => PlanGroup::EVENT],
+        App\Services\Calendar\Providers\EventProvider::class      => ['level' => 2, 'type' => EventType::ON,         'plan' => PlanGroup::EVENT],
     ],
 
     'rules' => [

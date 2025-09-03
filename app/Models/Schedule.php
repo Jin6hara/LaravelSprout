@@ -21,4 +21,9 @@ class Schedule extends Model
             ->whereDate('effective_end', '>=', $s)
             ->whereDate('effective_start', '<=', $e);
     }
+
+    public function assignments()
+    {
+        return $this->hasMany(UserScheduleAssignment::class);
+    }
 }
