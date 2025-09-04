@@ -27,6 +27,9 @@ class DatabaseSeeder extends Seeder
             ScheduleSeeder::class,
             LeaveSeeder::class,
             EventSeeder::class,
+            LessonStartTimeSeeder::class,
+            LessonSeeder::class,
+            ScheduleDetailSeeder::class,
         ]);
 
         // \App\Models\User::factory(10)->create();
