@@ -9,14 +9,23 @@ use App\Models\ApprovalRequest;
 use App\Notifications\ApprovalRequestedNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
+use App\Models\LeaveCredit;
+use App\Support\Fiscal;
+use Carbon\Carbon;
 
 class LeaveApplyController extends Controller
 {
     // 本人
     public function create()
     {
+        $user = auth()->user();
+        $fy = Fiscal::fyKey(now());
+        $credit = LeaveCredit::where('user_id', $user->id)->where('fy', $fy)->first();
+
         return view('leaves.alpApply', [
             'action' => route('leave.apply.store'),
+            'remaining' => $credit?->remaining_days ?? 0,
+            'fy' => $fy,
         ]);
     }
 

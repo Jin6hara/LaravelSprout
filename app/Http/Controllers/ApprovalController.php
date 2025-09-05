@@ -6,6 +6,7 @@ use App\Models\ApprovalRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Services\LeaveBalanceService;
 use App\Policies\ApprovalRequestPolicy;
 
 class ApprovalController extends Controller
@@ -39,6 +40,16 @@ class ApprovalController extends Controller
             if (method_exists($approvable, 'applyDomainEffect')) {
                 $approvable->applyDomainEffect(); // 後述の小メソッド
             }
+
+            /** @var Leave $leave */
+            $leave = $approvalRequest->approvable;
+            $leave->update([
+                'status'      => 'approved',
+                'approved_by' => auth()->id(),
+            ]);
+
+            // 有給消化
+            app(LeaveBalanceService::class)->consume($leave);
         });
 
         return back()->with('status', '承認しました。');

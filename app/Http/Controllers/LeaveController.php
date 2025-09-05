@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreLeaveRequest;
 use App\Models\Leave;
+use App\Services\LeaveBalanceService;
+use Illuminate\Support\Facades\DB;
 
 class LeaveController extends Controller
 {
@@ -34,5 +36,23 @@ class LeaveController extends Controller
 
         // Observer が自動でスナップショット生成
         return redirect()->route('leaves.create')->with('success', 'Leave created and snapshots processed.');
+    }
+
+
+    public function cancel(Leave $leave)
+    {
+        $this->authorize('cancel', $leave);
+
+        DB::transaction(function () use ($leave) {
+            $wasApproved = $leave->status === 'approved';
+
+            $leave->update(['status' => 'cancelled']);
+
+            if ($wasApproved) {
+                app(LeaveBalanceService::class)->revert($leave);
+            }
+        });
+
+        return back()->with('success', '申請を取り消しました。');
     }
 }

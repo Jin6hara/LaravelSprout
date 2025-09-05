@@ -2,6 +2,11 @@
 @extends('layouts.app')
 
 @section('content')
+@if(isset($fy))
+<div class="mb-3 p-2 rounded bg-light">
+    FY: {{ $fy }} / 残有給: <strong>{{ number_format($remaining, 2) }}</strong> 日
+</div>
+@endif
 <div class="container max-w-xl mx-auto">
     <h1 class="text-lg font-bold mb-4">有給申請</h1>
 
