@@ -23,9 +23,17 @@ class LeaveApplyRequest extends FormRequest
     {
         return [
             'user_id'    => ['required', 'exists:users,id'],
-            'start_date' => ['required', 'date'],
-            'end_date'   => ['nullable', 'date', 'after_or_equal:start_date'],
+            'dates'      => ['required', 'array', 'min:1'],
+            'dates.*'    => ['required', 'date'], // 必要なら after_or_equal:today 等を追加
             'reason'     => ['nullable', 'string'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'dates.required' => '申請日を1つ以上入力してください。',
+            'dates.*.date'   => '日付の形式が正しくありません。',
         ];
     }
 }

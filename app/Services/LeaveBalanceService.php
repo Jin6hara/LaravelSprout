@@ -129,11 +129,11 @@ class LeaveBalanceService
         $count = 0;
 
         foreach ($period as $d) {
-            $isWeekend = in_array($d->dayOfWeekIso, [6, 7], true); // 6=Sat, 7=Sun
+            //$isWeekend = in_array($d->dayOfWeekIso, [6, 7], true); // 6=Sat, 7=Sun
             $isHoliday = $holidayDates->has($d->toDateString());
-            if (!$isWeekend && !$isHoliday) $count++;
+            if (!$isHoliday) $count++; // !$isWeekend && 
         }
-
+        
         return (float)$count;
     }
 }
