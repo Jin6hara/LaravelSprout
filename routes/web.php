@@ -10,6 +10,7 @@ use App\Http\Controllers\RoleChangeController;
 use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\LeaveController;
 
 /*
 |--------------------------------------------------------------------------
@@ -44,6 +45,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
     // 管理者: 任意ユーザーのカレンダー（/calendar/{user}）
     Route::get('/calendar/{user}', [CalendarController::class, 'index'])->middleware('role:admin|super_admin')->name('calendar.index.user');
+});
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/leaves/create', [LeaveController::class, 'create'])->name('leaves.create');
+    Route::post('/leaves',        [LeaveController::class, 'store'])->name('leaves.store');
 });
 
 //登録

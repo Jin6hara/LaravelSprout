@@ -22,7 +22,7 @@ class ScheduleDetail extends Model
     {
         return $this->belongsTo(LessonStartTime::class, 'lesson_start_time_id');
     }
-    
+
     public function lesson(): BelongsTo
     {
         return $this->belongsTo(Lesson::class);

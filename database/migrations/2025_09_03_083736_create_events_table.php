@@ -24,12 +24,8 @@ return new class extends Migration
             $t->time('end_time')->nullable();
 
             // 属性：event.on の種別
-            // regular_copy=欠席発生時にregularのコマをコピー
-            // overtime=残業, sub=代行, special=特別イベント, other=その他
-            $t->enum('kind', ['regular_copy', 'overtime', 'sub', 'special', 'other'])->index();
-
-            // 誰が入るか（担当者は単一前提。将来複数ならpivot追加）
-            $t->foreignId('assigned_user_id')->nullable()->constrained('users')->nullOnDelete();
+            // 担当者必要かどうか、other=その他
+            $t->enum('sub', ['none_required', 'required', 'other'])->index();
 
             // 元々の担当（代行トレース用）
             $t->foreignId('original_user_id')->nullable()->constrained('users')->nullOnDelete();
@@ -39,9 +35,13 @@ return new class extends Migration
 
             // どのLeaveから生成されたスナップショットか（※CREATEでは after() を使わない）
             $t->foreignId('source_leave_id')->nullable()->constrained('leaves')->nullOnDelete();
+            
+            // 誰が入るか（担当者は単一前提。将来複数ならpivot追加）
+            $t->foreignId('assigned_user_id')->nullable()->constrained('users')->nullOnDelete();
 
             // 運用補助
-            $t->enum('status', ['confirmed', 'draft', 'cancelled'])->default('confirmed')->index();
+            $t->enum('status', ['pending', 'fixed', 'filled','in_process'])->default('pending')->index();
+            $t->enum('type', ['regular_time', 'overtime', 'schedule_change', 'special'])->index();
             $t->text('notes')->nullable();
 
             $t->timestamps();
