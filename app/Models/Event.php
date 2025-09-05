@@ -7,8 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Services\Calendar\EventType;
-use App\Services\Calendar\PlanGroup;
 
 class Event extends Model
 {
@@ -38,6 +36,7 @@ class Event extends Model
     {
         return $this->belongsTo(User::class, 'assigned_user_id');
     }
+
     public function originalUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'original_user_id');
@@ -50,4 +49,13 @@ class Event extends Model
             ->whereDate('event_date', '<=', $end->toDateString());
     }
 
+    public function leave(): BelongsTo
+    {
+        return $this->belongsTo(Leave::class, 'source_leave_id');
+    }
+
+    public function details()
+    {
+        return $this->hasMany(EventDetail::class);
+    }
 }

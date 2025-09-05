@@ -37,6 +37,9 @@ return new class extends Migration
             // 欠席時コピー元（正規コマ追跡用）
             $t->foreignId('source_schedule_line_id')->nullable()->constrained('schedule_lines')->nullOnDelete();
 
+            // どのLeaveから生成されたスナップショットか（※CREATEでは after() を使わない）
+            $t->foreignId('source_leave_id')->nullable()->constrained('leaves')->nullOnDelete();
+
             // 運用補助
             $t->enum('status', ['confirmed', 'draft', 'cancelled'])->default('confirmed')->index();
             $t->text('notes')->nullable();
@@ -45,6 +48,7 @@ return new class extends Migration
 
             // 重複防止の最低限（完全な“時間かぶり”はアプリ層で検証）
             $t->index(['assigned_user_id', 'event_date', 'start_time', 'end_time'], 'events_user_date_time_idx');
+            $t->index(['source_leave_id', 'event_date'], 'events_leave_date_idx');
         });
     }
 
