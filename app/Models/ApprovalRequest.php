@@ -24,7 +24,7 @@ class ApprovalRequest extends Model
     protected $casts = [
         'metadata' => 'array',
     ];
-
+    //Role|Paid Leave|Overtime
     public function approvable(): MorphTo
     {
         return $this->morphTo();
@@ -34,7 +34,7 @@ class ApprovalRequest extends Model
     {
         return $this->belongsTo(User::class, 'requested_by_id');
     }
-
+    //Role|Paid Leave|Overtime
     public function actions(): HasMany
     {
         return $this->hasMany(ApprovalAction::class);

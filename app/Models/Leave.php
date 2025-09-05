@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 class Leave extends Model
 {
@@ -76,5 +77,10 @@ class Leave extends Model
             'late'    => '遅刻',
             default   => '休暇',
         };
+    }
+
+    public function approvalRequest(): MorphOne
+    {
+        return $this->morphOne(ApprovalRequest::class, 'approvable');
     }
 }

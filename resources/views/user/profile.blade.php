@@ -174,13 +174,13 @@ $defaultUrl = asset('image/' . $defaultPictures[$user->gender]);
                 </a>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link {{ Request::is('schedule') || Request::is('schedule/*') ? 'active' : '' }}">
+                <a href="{{ route('calendar.index') }}" class="nav-link {{ Request::is('calender') || Request::is('calender/*') ? 'active' : '' }}">
                     スケジュール
                 </a>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link">
-                    各種申請
+                <a href="{{ route('leave.apply.create') }}" class="nav-link {{ Request::is('leaveApply') || Request::is('leaveApply/*') ? 'active' : '' }}">
+                    有給申請
                 </a>
             </li>
         </ul>
