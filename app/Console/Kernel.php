@@ -20,8 +20,12 @@ class Kernel extends ConsoleKernel
      */
     protected function commands(): void
     {
-        $this->load(__DIR__.'/Commands');
+        $this->load(__DIR__ . '/Commands');
 
         require base_path('routes/console.php');
     }
+
+    protected $commands = [
+        \App\Console\Commands\GrantLeaveDays::class,//php artisan leave:grant 10 --date=2025-04-13 一斉付与　（テスト用）
+    ];
 }

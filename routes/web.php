@@ -10,6 +10,8 @@ use App\Http\Controllers\RoleChangeController;
 use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\LeaveController;
+use App\Http\Controllers\LeaveApplyController;
 
 /*
 |--------------------------------------------------------------------------
@@ -45,6 +47,35 @@ Route::middleware(['auth'])->group(function () {
     // 管理者: 任意ユーザーのカレンダー（/calendar/{user}）
     Route::get('/calendar/{user}', [CalendarController::class, 'index'])->middleware('role:admin|super_admin')->name('calendar.index.user');
 });
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/leaves/create', [LeaveController::class, 'create'])->name('leaves.create');
+    Route::post('/leaves',        [LeaveController::class, 'store'])->name('leaves.store');
+});
+
+
+Route::middleware(['auth'])->group(function () {
+    // 申請画面（本人用）
+    Route::get('/leaveApply', [LeaveApplyController::class, 'create'])->name('leave.apply.create');
+    Route::post('/leaveApply', [LeaveApplyController::class, 'store'])->name('leave.apply.store');
+
+    // 管理者: 指定ユーザーで申請を代理作成する画面
+    Route::get('/leaveApply/{user}', [LeaveApplyController::class, 'createForUser'])
+        ->middleware('role:admin|super_admin')
+        ->name('leave.apply.createForUser');
+    Route::post('/leaveApply/{user}', [LeaveApplyController::class, 'storeForUser'])
+        ->middleware('role:admin|super_admin')
+        ->name('leave.apply.storeForUser');
+
+    // 承認画面（承認者向け）
+    Route::get('/approvals/{approvalRequest}', [ApprovalController::class, 'show'])
+        ->name('approvals.show');
+    Route::post('/approvals/{approvalRequest}/approve', [ApprovalController::class, 'approve'])
+        ->name('approvals.approve');
+    Route::post('/approvals/{approvalRequest}/deny', [ApprovalController::class, 'deny'])
+        ->name('approvals.deny');
+});
+
 
 //登録
 Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
