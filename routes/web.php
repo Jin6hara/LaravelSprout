@@ -48,6 +48,15 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/calendar/{user}', [CalendarController::class, 'index'])->middleware('role:admin|super_admin')->name('calendar.index.user');
 });
 
+// routes/web.php
+Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
+    Route::get('/forecast', [CalendarController::class, 'forecast'])
+        ->name('calendar.forecast');
+
+    Route::get('/forecast/events', [CalendarController::class, 'forecastEvents'])
+        ->name('calendar.forecast.events');
+});
+
 Route::middleware(['auth'])->group(function () {
     Route::get('/leaves/create', [LeaveController::class, 'create'])->name('leaves.create');
     Route::post('/leaves',        [LeaveController::class, 'store'])->name('leaves.store');
