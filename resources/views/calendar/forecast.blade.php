@@ -25,13 +25,13 @@
 
 @push('styles')
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.css" rel="stylesheet">
-<link href="{{ asset('css/fullcalendar-custom.css') }}" rel="stylesheet">
+<link href="{{ asset('css/forecast-custom.css') }}" rel="stylesheet">
 @endpush
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js"></script>
-<script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js"></script>
+  <script>
     window.calendarEventsUrl = "{{ route('calendar.forecast.events') }}";
-</script>
-<script src="{{ asset('js/forecast.js') }}"></script>
+  </script>
+  <script src="{{ asset('js/forecast.js') }}?v={{ filemtime(public_path('js/forecast.js')) }}"></script>
 @endpush

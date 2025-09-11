@@ -16,8 +16,8 @@ class ForecastResolver
     public function __construct(iterable $providers)
     {
         $this->providers = is_array($providers) ? $providers : iterator_to_array($providers);
-        $this->meta  = config('calendar.providers', []);
-        $this->rules = config('calendar.rules', []);
+        $this->meta  = config('calendar_forecast.providers', []);
+        $this->rules = config('calendar_forecast.rules', []);
     }
 
     public function build(?User $user, Carbon $start, Carbon $end): array
@@ -39,7 +39,7 @@ class ForecastResolver
                 // FC配列化
                 $arr = method_exists($ev, 'toArray') ? $ev->toArray() : get_object_vars($ev);
                 $arr['extendedProps'] = $arr['extendedProps'] ?? [];
-                $arr['extendedProps']['level'] = $arr['extendedProps']['level'] ?? $level;
+                $arr['extendedProps']['level'] = $level;
 
                 // 背景指定の補完
                 if (!isset($arr['display']) && $type === EventType::BACKGROUND) {
