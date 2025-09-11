@@ -48,7 +48,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/calendar/{user}', [CalendarController::class, 'index'])->middleware('role:admin|super_admin')->name('calendar.index.user');
 });
 
-// routes/web.php
+// Forecast関連
 Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
     Route::get('/forecast', [CalendarController::class, 'forecast'])
         ->name('calendar.forecast');
