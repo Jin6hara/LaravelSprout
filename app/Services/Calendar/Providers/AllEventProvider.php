@@ -75,7 +75,6 @@ class AllEventProvider implements CalendarEventProvider
             ];
 
             $events[] = new CandidateEvent([
-                'id'      => 'ev:' . $e->id,   // ★追加
                 'title'   => $title,
                 'start'   => $startAt,
                 'end'     => $endAt,
@@ -84,14 +83,15 @@ class AllEventProvider implements CalendarEventProvider
                 'classNames' => $classNames,
                 'extendedProps' => [
                     'category'  => 'event',
-                    'type'      => $e->type,           // overtime/sub/special/other
+                    'type'      => $e->type,                 // regular_time / overtime / schedule_change / special
+                    'sub'       => $e->sub,                  // required / none_required / other
                     'school'    => $e->school_name,
-                    'status'    => $e->status,
+                    'status'    => $e->status,               // pending / fixed / filled / in_process
                     'source_schedule_line_id' => $e->source_schedule_line_id,
                     'original_user_id'        => $e->original_user_id,
+                    'assigned_user_id'        => $e->assigned_user_id,
                     'details'   => $details,
-                    // 週ビューの表示順制御（必要なら type ごとに値を調整）
-                    'sort_order' => $this->sortOrderFortype($e->type),
+                    'sort_order'=> $this->sortOrderForType($e->type),
                 ],
                 // Resolver 側で上書きされても良いようにデフォ値を付与
                 'level'     => 1,
