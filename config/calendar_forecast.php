@@ -9,6 +9,7 @@ return [
         App\Services\Calendar\Providers\HolidayProvider::class    => ['level' => 1, 'type' => EventType::BACKGROUND, 'plan' => PlanGroup::REGULAR_PLAN],
         App\Services\Calendar\Providers\ClosureProvider::class    => ['level' => 4, 'type' => EventType::BACKGROUND, 'plan' => PlanGroup::REGULAR_PLAN],
         App\Services\Calendar\Providers\SubCountProvider::class   => ['level' => 5, 'type' => EventType::BACKGROUND, 'plan' => PlanGroup::REGULAR_PLAN],
+        App\Services\Calendar\Providers\AllEventProvider::class   => ['level' => 1, 'type' => EventType::ON,         'plan' => PlanGroup::EVENT       ],
     ],
 
     'rules' => [
