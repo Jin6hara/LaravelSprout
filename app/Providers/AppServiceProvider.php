@@ -12,6 +12,7 @@ use App\Services\Calendar\ForecastResolver;
 use App\Services\Calendar\Providers\HolidayProvider;
 use App\Services\Calendar\Providers\ClosureProvider;
 use App\Services\Calendar\Providers\SubCountProvider;
+use App\Services\Calendar\Providers\AllEventProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -43,6 +44,7 @@ class AppServiceProvider extends ServiceProvider
                 $app->make(HolidayProvider::class),
                 $app->make(ClosureProvider::class),
                 $app->make(SubCountProvider::class), 
+                $app->make(AllEventProvider::class),
             ];
             return new ForecastResolver($providers);
         });
