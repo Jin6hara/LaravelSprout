@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Services\LeaveBalanceService;
 use App\Policies\ApprovalRequestPolicy;
+use App\Models\Leave;
 
 class ApprovalController extends Controller
 {
@@ -42,14 +43,15 @@ class ApprovalController extends Controller
             }
 
             /** @var Leave $leave */
-            $leave = $approvalRequest->approvable;
-            $leave->update([
-                'status'      => 'approved',
-                'approved_by' => auth()->id(),
-            ]);
+            if ($approvable instanceof Leave) {
+                $approvable->update([
+                    // 'status' は上で更新済み
+                    'approved_by' => auth()->id(),
+                ]);
 
-            // 有給消化
-            app(LeaveBalanceService::class)->consume($leave);
+                app(LeaveBalanceService::class)
+                    ->consume($approvable);
+            }
         });
 
         return back()->with('status', '承認しました。');
