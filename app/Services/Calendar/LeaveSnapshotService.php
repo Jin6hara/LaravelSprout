@@ -14,7 +14,7 @@ use Carbon\CarbonPeriod;
 class LeaveSnapshotService
 {
     /**
-     * Leaveに紐づくregular_copyを安全に作り直す
+     * Leaveに紐づく'required'を安全に作り直す
      */
     public function rebuildSnapshotsForLeave(Leave $leave): void
     {
@@ -37,12 +37,12 @@ class LeaveSnapshotService
     }
 
     /**
-     * 指定Leaveが作ったregular_copyを削除
+     * 指定Leaveが作った'required'を削除
      */
     public function deleteSnapshotsForLeave(Leave $leave): void
     {
         DB::transaction(function () use ($leave) {
-            Event::where('sub', 'none_required')
+            Event::where('sub', 'required') // ← change: 生成と同じ 'required' に合わせる
                 ->where('source_leave_id', $leave->id)
                 ->delete();
         });

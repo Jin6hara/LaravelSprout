@@ -16,6 +16,9 @@ class LeaveObserver
     public function updated(Leave $leave): void
     {
         // 期間やstatusが変わった場合も安全に作り直す
+        if (!$leave->wasChanged(['status', 'start_date', 'end_date', 'time_start', 'time_end'])) {
+            return;
+        }
         app(LeaveSnapshotService::class)->rebuildSnapshotsForLeave($leave);
     }
 
