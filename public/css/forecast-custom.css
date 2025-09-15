@@ -1,0 +1,93 @@
+/* 今日の日付背景 */
+.fc-day-today {
+  outline-offset: -2px;
+  animation: today-glow-inset 2s infinite;
+}
+@keyframes today-glow-inset {
+  20% { box-shadow: inset 0 0 3px 2px rgba(255, 128, 128, 0.5); }
+  50% { box-shadow: inset 0 0 15px 6px rgba(255, 180, 180, 0.53); }
+  100% { box-shadow: inset 0 0 3px 2px rgba(254, 255, 180, 0.53); }
+}
+
+/* 祝日背景（アニメにしたい場合はこちらだけ残す） */
+.fc-holiday {
+  animation: rainbow-bg 3s linear infinite;
+}
+@keyframes rainbow-bg {
+  0%   { background-color: #ffaaaa; }
+  20%  { background-color: #ffd700; }
+  40%  { background-color: #aaffaa; }
+  60%  { background-color: #aaaaff; }
+  80%  { background-color: #ffaaff; }
+  100% { background-color: #ffaaaa; }
+}
+
+/* 会社休業日 */
+.fc-company-break {
+  background-color: rgba(173, 173, 173, 0.51) !important;
+  border: 1px solid #fff !important;
+  font-weight: 600;
+}
+
+/* イベント色分け */
+.fc .fc-event.sub-none_required .fc-event-main,
+.fc .fc-event.sub-other .fc-event-main {
+  background-color: #9ca3af; border-color: #9ca3af;
+}
+/* イベント色分け !importantつけないと効かない*/
+.fc .fc-event.sub-required .fc-event-main {
+  background-color: #10b981 !important; border-color: #10b981 !important;
+}
+.fc .fc-event.fc-event-overtime .fc-event-main {
+  background-color: #8b5cf6 !important; border-color: #8b5cf6 !important;
+}
+
+/* status 枠線 */
+.fc .fc-event.status-pending,
+.fc .fc-event.status-in_process {
+  border-width: 4px; border-style: solid; border-color: #ef4444;
+}
+.fc .fc-event.status-fixed,
+.fc .fc-event.status-filled {
+  border-width: 4px; border-style: solid; border-color: #10b981;
+}
+
+/* 共通 */
+.fc .fc-event { border-radius: 8px; }
+
+/* カレンダー外観 */
+#calendar {
+  max-width: 1200px; /* autoは無効なので具体値を */
+  margin: 30px auto;
+}
+
+/* セル内余白 */
+.fc .fc-daygrid-day-frame { padding: 0; }
+
+/* ヘッダー */
+.fc-col-header-cell-cushion {
+  text-decoration: none !important;
+  color: #222 !important;
+  font-size: 0.95em !important;
+}
+
+/* 日付数字 */
+.fc-daygrid-day-number {
+  margin-top: -2px !important;
+  color: #222 !important;
+  font-size: 0.90em !important;
+  text-decoration: none !important;
+}
+
+/* イベント枠 */
+.fc-daygrid-event {
+  margin-top: -2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.90em;
+  padding: 0;
+  border-radius: 6px;
+  max-width: 95%;
+  box-sizing: border-box;
+}
