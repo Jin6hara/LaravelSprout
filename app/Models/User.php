@@ -10,6 +10,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Carbon\Carbon;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable
 {
@@ -106,7 +107,7 @@ class User extends Authenticatable
         $map = [
             'general'      => '一般',
             'admin'        => '管理者',
-            'super_admin'  => 'スーパー管理者', 
+            'super_admin'  => 'スーパー管理者',
         ];
 
         return $map[$role] ?? $role; // 未定義ロールは英字のまま表示
@@ -205,5 +206,10 @@ class User extends Authenticatable
     {
         $state = $this->employment_state; // 上のアクセサで取得
         return $state === 'active';
+    }
+
+    public function commuterPasses(): HasMany
+    {
+        return $this->hasMany(CommuterPass::class);
     }
 }
