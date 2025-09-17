@@ -63,7 +63,6 @@ return new class extends Migration
         Schema::create('expenses', function (Blueprint $t) {
             $t->id();
 
-            $t->foreignId('user_id')->constrained()->cascadeOnDelete();
             $t->foreignId('expense_report_id')
                 ->constrained('expense_reports')
                 ->cascadeOnDelete();

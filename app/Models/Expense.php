@@ -43,10 +43,6 @@ class Expense extends Model
         return $this->belongsTo(ExpenseReport::class, 'expense_report_id');
     }
 
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
 
     public function commuterPass()
     {
