@@ -12,6 +12,10 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\LeaveApplyController;
+use App\Http\Controllers\ExpenseReportController;
+use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\Admin\AdminExpenseController;
+use App\Http\Controllers\Admin\Export\AdminExpenseExportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -133,4 +137,27 @@ Route::middleware(['auth', 'role:super_admin'])->group(function () {
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.readAll');
     // クリック＝既読→詳細へ
     Route::get('/notifications/{notification}/go', [NotificationController::class, 'go'])->name('notifications.go'); // name('approvals.show')の内容と連携。
+});
+
+Route::middleware(['auth'])->group(function () {
+
+    // 管理一覧（中で policy: viewAny を使う）
+    Route::get('/expense-reports', [AdminExpenseController::class, 'index'])
+        ->name('expense.admin.index');
+
+    // 個票
+    Route::get('/expense-reports/{report}', [ExpenseReportController::class, 'show'])
+        ->name('expense.reports.show');
+    Route::get('/expense-reports/{report}/flags', [ExpenseReportController::class, 'flags']);
+    Route::post('/expense-reports/{report}/submit', [ExpenseReportController::class, 'submit'])
+        ->name('expense.reports.submit');
+
+    // CRUD
+    Route::post('/expenses', [ExpenseController::class, 'store']);
+    Route::put('/expenses/{expense}', [ExpenseController::class, 'update']);
+    Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy']);
+
+    // Export
+    Route::get('/expense-reports/export/csv', [AdminExpenseExportController::class, 'csv'])
+        ->name('expense.export.csv');
 });
