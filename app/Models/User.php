@@ -106,7 +106,7 @@ class User extends Authenticatable
         $map = [
             'general'      => '一般',
             'admin'        => '管理者',
-            'super_admin'  => 'スーパー管理者', 
+            'super_admin'  => 'スーパー管理者',
         ];
 
         return $map[$role] ?? $role; // 未定義ロールは英字のまま表示
@@ -205,5 +205,30 @@ class User extends Authenticatable
     {
         $state = $this->employment_state; // 上のアクセサで取得
         return $state === 'active';
+    }
+
+    public function expenseReports()
+    {
+        return $this->hasMany(ExpenseReport::class);
+    }
+
+    public function commuterPasses()
+    {
+        return $this->hasMany(CommuterPass::class);
+    }
+
+    /**
+     * ユーザーに紐づく全Expense（ExpenseReport 経由）
+     */
+    public function expenses()
+    {
+        return $this->hasManyThrough(
+            Expense::class,         // 目標
+            ExpenseReport::class,   // 中間
+            'user_id',              // ExpenseReport 側のFK（users.id を指す）
+            'expense_report_id',    // Expense 側のFK（expense_reports.id を指す）
+            'id',                   // User ローカルキー
+            'id'                    // ExpenseReport ローカルキー
+        );
     }
 }
