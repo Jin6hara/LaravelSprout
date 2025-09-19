@@ -62,13 +62,15 @@
             layout: "fitColumns",
             height: "600px",
             placeholder: "データがありません",
-            columns: [
-                // ✅ ID列は削除しました
-                {
+            columns: [{
                     title: "日付",
                     field: "expense_date",
                     sorter: "date",
-                    width: 120
+                    width: 120,
+                    // ▼ フッターに件数
+                    bottomCalc: function(values) {
+                        return "Days: " + values.length;
+                    },
                 },
                 {
                     title: "Weekday",
@@ -77,7 +79,7 @@
                     formatter: function(cell) {
                         const d = cell.getRow().getData().expense_date;
                         if (!d) return "";
-                        const idx = new Date(d).getDay(); // 0=Sun ... 6=Sat（ローカルTZ）
+                        const idx = new Date(d).getDay(); // 0=Sun ... 6=Sat
                         return weekdayNames[idx] ?? "";
                     }
                 },
@@ -105,11 +107,17 @@
                     title: "金額(円)",
                     field: "cost",
                     hozAlign: "right",
-                    width: 110,
+                    width: 120,
                     formatter: function(cell) {
                         const v = cell.getValue();
                         return v != null ? v.toLocaleString() : "";
-                    }
+                    },
+                    // ▼ フッターに合計（カンマ区切り）
+                    bottomCalc: "sum",
+                    bottomCalcFormatter: function(cell) {
+                        const v = cell.getValue();
+                        return v != null ? v.toLocaleString() : "";
+                    },
                 },
                 {
                     title: "備考",
@@ -120,4 +128,5 @@
         });
     });
 </script>
+
 @endsection
