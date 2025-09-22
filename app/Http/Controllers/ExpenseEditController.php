@@ -38,19 +38,21 @@ class ExpenseEditController extends Controller
 
         $expenses = $report->expenses()
             ->orderBy('expense_date')
-            ->get(['id', 'expense_date', 'station_from', 'station_to', 'note', 'cost', 'trip_type', 'category', 'commuter_pass_id', 'created_at', 'updated_at']);
+            ->orderBy('seq')
+            ->get(['id', 'expense_date', 'seq', 'station_from', 'station_to', 'note', 'cost', 'trip_type', 'category', 'commuter_pass_id', 'created_at', 'updated_at']);
 
         // Tabulatorに渡しやすい配列へ（Enum/Carbonをstringへ）
         $rows = $expenses->map(function ($e) {
             return [
-                'id'               => $e->id,
-                'expense_date'     => $e->expense_date?->toDateString(),
-                'station_from'     => $e->station_from,
-                'station_to'       => $e->station_to,
-                'note'             => $e->note,
-                'cost'             => (int)$e->cost,
-                'trip_type'        => is_object($e->trip_type) ? $e->trip_type->value : $e->trip_type,
-                'category'         => is_object($e->category) ? $e->category->value  : $e->category,
+                'id'           => $e->id,
+                'expense_date' => $e->expense_date?->toDateString(),
+                'seq'          => (int)($e->seq ?? 100),
+                'station_from' => $e->station_from,
+                'station_to'   => $e->station_to,
+                'note'         => $e->note,
+                'cost'         => (int)$e->cost,
+                'trip_type'    => is_object($e->trip_type) ? $e->trip_type->value : $e->trip_type,
+                'category'     => is_object($e->category) ? $e->category->value : $e->category,
                 'commuter_pass_id' => $e->commuter_pass_id,
             ];
         })->values();

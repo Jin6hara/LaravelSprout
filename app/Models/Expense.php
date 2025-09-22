@@ -18,6 +18,7 @@ class Expense extends Model
         'user_id',
         'expense_report_id',
         'expense_date',
+        'seq',
         'station_from',
         'station_to',
         'note',
