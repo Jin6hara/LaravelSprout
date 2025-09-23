@@ -145,3 +145,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/expenses/{user}/edit', [ExpenseEditController::class, 'adminEdit'])
         ->name('expenses.admin.edit');
 });
+
+use App\Http\Controllers\ExpenseApiController;
+
+Route::middleware(['auth'])->group(function () {
+    Route::post('/api/expenses',        [ExpenseApiController::class, 'store'])->name('api.expenses.store');
+    Route::put('/api/expenses/{expense}',[ExpenseApiController::class, 'update'])->name('api.expenses.update');
+    Route::delete('/api/expenses/{expense}',[ExpenseApiController::class, 'destroy'])->name('api.expenses.destroy');
+});
