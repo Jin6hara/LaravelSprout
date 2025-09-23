@@ -13,6 +13,10 @@
   .ag-theme-alpine { height: 600px; width: 100%; }
   .row-actions { display:flex; gap:6px; justify-content:center; }
   .row-actions button { font-size: 12px; padding: 2px 6px; }
+/* 行の色分け（ON=薄緑, OFF=薄グレー） */
+.ag-theme-alpine .ag-row.row-on  .ag-cell { background-color: #ecfdf5 !important; }
+.ag-theme-alpine .ag-row.row-off .ag-cell { background-color: #f3f4f6 !important; color:#6b7280; }
+
 </style>
 @endpush
 
@@ -43,9 +47,12 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+  const eventOnMap = @json($eventOnMap ?? []);
   const initialRows = @json($rows);
   const reportId    = @json($report->id);
   const csrf        = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+  function isOnDay(ymd){
+  return !!eventOnMap[ymd];}
 
   // ===== utils =====
   const weekdayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -262,6 +269,10 @@ document.getElementById('addByDateBtn')?.addEventListener('click', async () => {
     suppressClickEdit: false,
     animateRows: true,
     rowSelection: { mode: 'singleRow' },  // ★ 新APIに合わせる
+  rowClassRules: {
+    'row-on' : p => isOnDay(p.data?.expense_date),   // 緑
+    'row-off': p => !isOnDay(p.data?.expense_date),  // 灰
+  },
     onGridReady: (params) => {
       recalcFooterSum(params.api);
     },
