@@ -30,8 +30,11 @@
       <div>ステータス: <strong>{{ strtoupper($report->status->value ?? $report->status) }}</strong></div>
       <div class="total">合計: <strong id="sumCost">{{ number_format($report->total_amount) }}</strong> 円</div>
     </div>
-    <div class="mt-2">
-      <button id="saveBtn" class="btn btn-primary btn-sm">保存</button>
+    <div class="mt-2 d-flex align-items-center gap-2">
+        <input type="date" id="pickDate" class="form-control form-control-sm" style="width: 160px;">
+        <button id="addByDateBtn" class="btn btn-success btn-sm">＋指定日を追加</button>
+        <button id="saveBtn" class="btn btn-primary btn-sm">保存</button>
+   
     </div>
   </div>
 
@@ -194,6 +197,61 @@ document.addEventListener('DOMContentLoaded', function () {
     },
     { headerName:'Note', field:'note', flex:1, minWidth:200, editable:true },
   ];
+  function maxSeqForDate(ymd){
+  let max = 0;
+  gridApi.forEachNodeAfterFilterAndSort(n => {
+    if (toYMDLocal(n.data.expense_date) === ymd) {
+      const s = Number(n.data.seq ?? 0);
+      if (s > max) max = s;
+    }
+  });
+  return max;
+}
+
+document.getElementById('addByDateBtn')?.addEventListener('click', async () => {
+  const input = document.getElementById('pickDate');
+  const ymd = toYMDLocal(input?.value);
+  if (!ymd) return alert('日付を選択してください。');
+
+  // レポートの年月チェック
+  const [yy, mm] = ymd.split('-').map(v=>Number(v));
+  if (yy !== Number(@json($y)) || mm !== Number(@json($m))) {
+    if (!confirm('レポートの年月と異なる日付です。追加しますか？')) return;
+  }
+
+  // Eligibility（任意）：もし flags を用意していたら警告
+  if (window.expenseFlags && window.expenseFlags[ymd] && window.expenseFlags[ymd].normal === false) {
+    const reason = window.expenseFlags[ymd].reason || 'eligible=false';
+    if (!confirm(`注意：この日は通常勤務扱いではありません（${reason}）。追加しますか？`)) return;
+  }
+
+  // 同日最大 seq + 1024
+  const seq = maxSeqForDate(ymd) + 1024;
+
+  try{
+    const created = await apiCreate({
+      expense_report_id: reportId,
+      expense_date: ymd,
+      seq: seq,
+      station_from: null,
+      station_to: null,
+      note: null,
+      cost: 0,
+      trip_type: 'round_trip',
+      category: 'regular',
+      commuter_pass_id: null,
+    });
+
+    const row = normalizeRow(created);
+    gridApi.applyTransaction({ add: [row] });
+    if (gridApi.refreshClientSideRowModel) gridApi.refreshClientSideRowModel('sort');
+
+    // 追加した行へスクロール＆選択
+    gridApi.ensureIndexVisible(gridApi.getDisplayedRowCount()-1);
+  }catch(err){
+    alert(err?.message || '追加に失敗しました');
+  }
+});
 
   // ===== grid init =====
   const gridOptions = {
