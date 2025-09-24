@@ -18,6 +18,7 @@ class Expense extends Model
         'user_id',
         'expense_report_id',
         'expense_date',
+        'seq',
         'station_from',
         'station_to',
         'note',
@@ -28,7 +29,7 @@ class Expense extends Model
     ];
 
     protected $casts = [
-        'expense_date' => 'date',
+        'expense_date' => 'date:Y-m-d',// 形式を指定/フロント表示に関わる
         'trip_type'    => ExpenseTripType::class,
         'category'     => ExpenseCategory::class,
         'cost'         => 'integer',

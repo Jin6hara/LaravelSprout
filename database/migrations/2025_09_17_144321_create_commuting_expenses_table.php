@@ -68,6 +68,7 @@ return new class extends Migration
                 ->cascadeOnDelete();
 
             $t->date('expense_date')->index();
+            $t->unsignedInteger('seq')->default(100); // 同日複数行の並び順用
 
             $t->string('station_from')->nullable();
             $t->string('station_to')->nullable();
@@ -88,8 +89,8 @@ return new class extends Migration
                 ->nullOnDelete();
 
             $t->timestamps();
-
-            $t->index(['expense_report_id', 'expense_date']);
+            // 同一レポート内で、日付＋並び順の組み合わせは一意
+            $t->index(['expense_report_id', 'expense_date', 'seq']);
         });
     }
 

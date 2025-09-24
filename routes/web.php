@@ -134,3 +134,22 @@ Route::middleware(['auth', 'role:super_admin'])->group(function () {
     // クリック＝既読→詳細へ
     Route::get('/notifications/{notification}/go', [NotificationController::class, 'go'])->name('notifications.go'); // name('approvals.show')の内容と連携。
 });
+
+use App\Http\Controllers\ExpenseEditController;
+Route::middleware(['auth'])->group(function () {
+    // ユーザー本人: /expenses/edit?year=YYYY&month=M
+    Route::get('/expenses/edit', [ExpenseEditController::class, 'selfEdit'])
+        ->name('expenses.edit');
+
+    // 管理者: /expenses/{user}/edit?year=YYYY&month=M
+    Route::get('/expenses/{user}/edit', [ExpenseEditController::class, 'adminEdit'])
+        ->name('expenses.admin.edit');
+});
+
+use App\Http\Controllers\ExpenseApiController;
+
+Route::middleware(['auth'])->group(function () {
+    Route::post('/api/expenses',        [ExpenseApiController::class, 'store'])->name('api.expenses.store');
+    Route::put('/api/expenses/{expense}',[ExpenseApiController::class, 'update'])->name('api.expenses.update');
+    Route::delete('/api/expenses/{expense}',[ExpenseApiController::class, 'destroy'])->name('api.expenses.destroy');
+});
