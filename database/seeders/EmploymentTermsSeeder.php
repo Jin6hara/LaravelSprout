@@ -11,7 +11,7 @@ class EmploymentTermsSeeder extends Seeder
     public function run(): void
     {
         for ($i = 1; $i <= 19; $i++) {
-            $user = User::where('employee_code', str_pad($i, 5, '0', STR_PAD_LEFT))->first();
+            $user = User::where('employee_code', str_pad($i, 6, '0', STR_PAD_LEFT))->first();
             if (!$user) continue;
 
             if ($i >= 1 && $i <= 13) {

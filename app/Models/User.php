@@ -21,7 +21,9 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
-        'name',
+        'family_name',
+        'first_middle_name',
+        'name_in_kana',
         'email',
         'employee_code',
         'password',
@@ -62,6 +64,19 @@ class User extends Authenticatable
      * @see https://spatie.be/docs/laravel-permission/v5/basic-usage/guards-and-multi-auth#guard_name
      */
     protected string $guard_name = 'web';
+
+    // family_name, first_middle_name のどちらかが更新されたら name は自動更新する
+    public function setFamilyNameAttribute($value)
+    {
+        $this->attributes['family_name'] = $value;
+        $this->attributes['name'] = trim($value . ' ' . ($this->first_middle_name ?? ''));
+    }
+
+    public function setFirstMiddleNameAttribute($value)
+    {
+        $this->attributes['first_middle_name'] = $value;
+        $this->attributes['name'] = trim(($this->family_name ?? '') . ' ' . $value);
+    }
 
     public function getRouteKeyName()
     {
