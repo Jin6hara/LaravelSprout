@@ -31,7 +31,8 @@ class UsersSeeder extends Seeder
             $timestamp = now()->addMinutes(10 * $i);
 
             User::create([
-                'name' => "{$i}hara",
+                'family_name' => "{$i}hara",
+                'first_middle_name' => "Jim",
                 'email' => "job{$i}hara@gmail.com",
                 'password' => Hash::make('laravel'),
                 'created_at' => $timestamp,
@@ -40,7 +41,7 @@ class UsersSeeder extends Seeder
                 'profile_picture' => null,
                 'self_introduction' => "私の名前は{$i}haraです。",
                 // 🔽 追加項目
-                'employee_code' => str_pad($i, 5, '0', STR_PAD_LEFT), // 00001〜、5桁
+                'employee_code' => str_pad($i, 6, '0', STR_PAD_LEFT), // 000001〜、6桁
                 'address' => "大阪府大阪市テスト区ララベル{$i}丁目",
                 'phone_number' => str_pad("0901234" . $i, 11, '0', STR_PAD_RIGHT)//11桁
             ]);

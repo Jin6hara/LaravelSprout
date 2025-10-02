@@ -13,7 +13,10 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->string('family_name');
+            $table->string('first_middle_name')->nullable();
+            $table->string('name_in_kana')->nullable();
+            $table->string('name'); // ←既存互換用、結合した値を保持
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
@@ -24,7 +27,7 @@ return new class extends Migration
             $table->text('self_introduction')->nullable();
             $table->softDeletes();
             // 交通費精算に関連する最低限の情報
-            $table->string('employee_code', 5)->unique();// 社員コード
+            $table->string('employee_code', 6)->unique(); // 社員コード
             $table->string('address')->nullable(); // 自宅など出発地の参考に
             $table->string('phone_number')->nullable(); // 緊急連絡や照会用
         });
