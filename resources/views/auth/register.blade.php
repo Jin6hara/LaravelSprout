@@ -9,10 +9,24 @@
             @csrf
 
             <div class="mb-3">
-                <label class="form-label">名前</label>
-                <input type="text" name="name" class="form-control @error('name') is-invalid @enderror"
-                    value="{{ old('name') }}">
-                @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                <label class="form-label">姓</label>
+                <input type="text" name="family_name" class="form-control @error('family_name') is-invalid @enderror"
+                    value="{{ old('family_name') }}">
+                @error('family_name') <div class="invalid-feedback">{{ $message }}</div> @enderror
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">名</label>
+                <input type="text" name="first_middle_name" class="form-control @error('first_middle_name') is-invalid @enderror"
+                    value="{{ old('first_middle_name') }}">
+                @error('first_middle_name') <div class="invalid-feedback">{{ $message }}</div> @enderror
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">カナ</label>
+                <input type="text" name="name_in_kana" class="form-control @error('name_in_kana') is-invalid @enderror"
+                    value="{{ old('name_in_kana') }}">
+                @error('name_in_kana') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>
 
             <div class="mb-3">
@@ -51,7 +65,7 @@
                 </select>
                 @error('gender') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>
-            
+
             <div class="mb-3">
                 <label class="form-label">電話番号（任意）</label>
                 <input type="text" name="phone_number"

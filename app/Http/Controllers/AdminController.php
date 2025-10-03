@@ -81,13 +81,15 @@ class AdminController extends Controller
 
             // user テーブルへの登録
             $user = User::create([
-                'name'              => $data['name'],
+                'family_name'       => $data['family_name'],
+                'first_middle_name' => $data['first_middle_name'],
+                'name_in_kana'      => $data['name_in_kana'] ?? null,
                 'email'             => $data['email'],
                 'employee_code'     => $data['employee_code'],
                 'password'          => Hash::make($data['password']),
                 'gender'            => $data['gender'],
                 'profile_picture'   => null,
-                'self_introduction' => 'こんにちは、' . $data['name'] . 'です。',
+                'self_introduction' => 'こんにちは、' . $data['first_middle_name'] . 'です。',
             ]);
             // employment_terms テーブルへの登録
             $user->employmentTerms()->create([
