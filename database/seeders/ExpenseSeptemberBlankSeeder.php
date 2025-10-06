@@ -15,7 +15,7 @@ class ExpenseSeptemberBlankSeeder extends Seeder
         $tz    = 'Asia/Tokyo';
         $now   = Carbon::now($tz);
         $year  = (int) $now->format('Y');
-        $month = 9; // 9月
+        $month = 10; // 10月
 
         // User 1〜10 の 9月レポートに対して、1〜30日の空行を作成
         for ($userId = 1; $userId <= 10; $userId++) {
