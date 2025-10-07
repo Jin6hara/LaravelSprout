@@ -12,6 +12,20 @@ use App\Enums\ExpenseReportStatus;
 
 class ExpenseApiController extends Controller
 {
+    // 共有: ロック検査
+    private function abortIfLocked(ExpenseReport $report)
+    {
+        // 提出以降はロック（必要に応じてapproved/paidも）
+        $lockedStatuses = [
+            ExpenseReportStatus::SUBMITTED->value,
+            ExpenseReportStatus::APPROVED->value,
+            ExpenseReportStatus::PAID->value,
+        ];
+        if (in_array($report->status, $lockedStatuses, true)) {
+            abort(423, 'This expense report is locked (submitted).');
+        }
+    }
+
     // 追加
     public function store(Request $req)
     {
@@ -34,6 +48,8 @@ class ExpenseApiController extends Controller
         if (method_exists($req->user(), 'isAdmin') && !$req->user()->isAdmin()) {
             abort_unless($req->user()->id === $report->user_id, 403);
         }
+
+        $this->abortIfLocked($report); 
 
         // 月内チェック
         $d = Carbon::parse($data['expense_date']);
@@ -69,6 +85,7 @@ class ExpenseApiController extends Controller
         if (method_exists($req->user(), 'isAdmin') && !$req->user()->isAdmin()) {
             abort_unless($req->user()->id === $report->user_id, 403);
         }
+        $this->abortIfLocked($report); 
 
         $data = $req->validate([
             'station_from'      => ['nullable', 'string', 'max:255'],
@@ -99,12 +116,13 @@ class ExpenseApiController extends Controller
         if (method_exists($req->user(), 'isAdmin') && !$req->user()->isAdmin()) {
             abort_unless($req->user()->id === $report->user_id, 403);
         }
+        $this->abortIfLocked($report); 
 
         $expense->delete();
         return response()->json(['ok' => true]);
     }
 
-        public function submitReport(ExpenseReport $report, Request $request)
+    public function submitReport(ExpenseReport $report, Request $request)
     {
         // 認可：本人 or 管理者（運用に合わせて）
         if (method_exists($request->user(), 'isAdmin')) {
