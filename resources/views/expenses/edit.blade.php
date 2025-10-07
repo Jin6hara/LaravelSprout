@@ -102,6 +102,10 @@
       <input type="date" id="pickDate" class="form-control form-control-sm" style="width: 160px;">
       <button id="addByDateBtn" class="btn btn-success btn-sm">＋指定日を追加</button>
       <button id="saveBtn" class="btn btn-primary btn-sm">保存</button>
+      {{-- 右端へ寄せる --}}
+      <div class="ms-auto"></div>
+      {{-- ★ 追加：提出ボタン --}}
+      <button id="submitBtn" class="btn btn-warning btn-sm">提出</button>
     </div>
     @else
     <div class="p-2">
@@ -116,7 +120,7 @@
 
   <div id="expensesGrid" class="ag-theme-alpine"></div>
 </div>
-
+{{-- 対象月検索用 --}}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   const monthInput = document.getElementById('monthPick');
@@ -141,6 +145,51 @@ document.addEventListener('DOMContentLoaded', function () {
   monthInput?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); doSearch(); }
   });
+});
+</script>
+{{-- 提出用 --}}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const submitBtn = document.getElementById('submitBtn');
+  const csrf      = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+  const reportId  = @json($report->id ?? null);
+
+  // ルート名は例：api.expense-reports.submit（{report} を受ける）
+  // 置換用の __ID__ を入れておく
+  const submitUrl = reportId
+    ? @json(route('api.expense-reports.submit', ['report' => '__ID__'])).replace('__ID__', reportId)
+    : null;
+
+  if (submitBtn && submitUrl) {
+    submitBtn.addEventListener('click', async () => {
+      if (!confirm('この月の交通費を提出しますか？（提出後は編集できない場合があります）')) return;
+
+      try {
+        const res = await fetch(submitUrl, {
+          method: 'PUT', // or POST (サーバ側に合わせてOK)
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrf,
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({ status: 'submitted' }) // サーバ側で submitted_at も更新
+        });
+        if (!res.ok) throw await res.json().catch(() => ({ message: 'Submit failed' }));
+        const data = await res.json();
+
+        // ヘッダのステータス表示を即時更新
+        const statusEl = document.querySelector('[data-status-label]');
+        if (statusEl) {
+          const up = (data.status ?? 'submitted').toString().toUpperCase();
+          statusEl.textContent = up;
+        }
+
+        alert('提出しました');
+      } catch (err) {
+        alert(err?.message || '提出に失敗しました');
+      }
+    });
+  }
 });
 </script>
 

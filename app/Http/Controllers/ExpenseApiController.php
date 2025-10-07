@@ -8,6 +8,7 @@ use App\Models\CommuterPass;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Carbon\Carbon;
+use App\Enums\ExpenseReportStatus;
 
 class ExpenseApiController extends Controller
 {
@@ -101,5 +102,36 @@ class ExpenseApiController extends Controller
 
         $expense->delete();
         return response()->json(['ok' => true]);
+    }
+
+        public function submitReport(ExpenseReport $report, Request $request)
+    {
+        // 認可：本人 or 管理者（運用に合わせて）
+        if (method_exists($request->user(), 'isAdmin')) {
+            $authorized = $request->user()->isAdmin() || $request->user()->id === $report->user_id;
+        } else {
+            $authorized = $request->user()->id === $report->user_id;
+        }
+        abort_unless($authorized, 403);
+
+        // すでに提出済みならそのまま返す（冪等）
+        if ($report->status === ExpenseReportStatus::SUBMITTED->value) {
+            return response()->json([
+                'id'           => $report->id,
+                'status'       => $report->status,
+                'submitted_at' => optional($report->submitted_at)->toISOString(),
+            ]);
+        }
+
+        // 更新（タイムゾーンはJST）
+        $report->status       = ExpenseReportStatus::SUBMITTED->value;
+        $report->submitted_at = now('Asia/Tokyo');
+        $report->save();
+
+        return response()->json([
+            'id'           => $report->id,
+            'status'       => $report->status,
+            'submitted_at' => optional($report->submitted_at)->toISOString(),
+        ]);
     }
 }
