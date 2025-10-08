@@ -136,6 +136,7 @@ Route::middleware(['auth', 'role:super_admin'])->group(function () {
 });
 
 use App\Http\Controllers\ExpenseEditController;
+
 Route::middleware(['auth'])->group(function () {
     // ユーザー本人: /expenses/edit?year=YYYY&month=M
     Route::get('/expenses/edit', [ExpenseEditController::class, 'selfEdit'])
@@ -144,6 +145,9 @@ Route::middleware(['auth'])->group(function () {
     // 管理者: /expenses/{user}/edit?year=YYYY&month=M
     Route::get('/expenses/{user}/edit', [ExpenseEditController::class, 'adminEdit'])
         ->name('expenses.admin.edit');
+    // ★ 提出（report単位）
+    Route::put('/expenses/reports/{report}/submit', [ExpenseEditController::class, 'submit'])
+        ->name('expenses.submit');
 });
 
 use App\Http\Controllers\ExpenseApiController;
@@ -152,5 +156,4 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/api/expenses',        [ExpenseApiController::class, 'store'])->name('api.expenses.store');
     Route::put('/api/expenses/{expense}',[ExpenseApiController::class, 'update'])->name('api.expenses.update');
     Route::delete('/api/expenses/{expense}',[ExpenseApiController::class, 'destroy'])->name('api.expenses.destroy');
-    Route::put('/api/expense-reports/{report}/submit', [ExpenseApiController::class, 'submitReport'])->name('api.expense-reports.submit');
 });

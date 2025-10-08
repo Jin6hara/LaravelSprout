@@ -107,7 +107,19 @@
       {{-- 右端へ寄せる --}}
       <div class="ms-auto"></div>
       {{-- ★ 追加：提出ボタン --}}
-      <button id="submitBtn" class="btn btn-warning btn-sm">提出</button>
+      {{-- ★ 提出フォーム（押すと画面再読み込み） --}}
+      <form
+        method="POST"
+        action="{{ route('expenses.submit', ['report' => $report->id]) }}"
+        onsubmit="return confirm('この月の交通費を提出しますか？（提出後は編集できません）');">
+        @csrf
+        @method('PUT')
+        <button type="submit" class="btn btn-warning btn-sm" id="submitBtn">提出</button>
+      </form>
+      @else
+      {{-- 提出済み表示（必要なら） --}}
+      <div class="ms-auto"></div>
+      <span class="text-muted">提出済み（{{ optional($report->submitted_at)->format('Y-m-d H:i') }}）</span>
       @endif
     </div>
     @else
@@ -150,57 +162,13 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 </script>
-{{-- 提出用 --}}
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  const submitBtn = document.getElementById('submitBtn');
-  const csrf      = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
-  const reportId  = @json($report->id ?? null);
-
-  // ルート名は例：api.expense-reports.submit（{report} を受ける）
-  // 置換用の __ID__ を入れておく
-  const submitUrl = reportId
-    ? @json(route('api.expense-reports.submit', ['report' => '__ID__'])).replace('__ID__', reportId)
-    : null;
-
-  if (submitBtn && submitUrl) {
-    submitBtn.addEventListener('click', async () => {
-      if (!confirm('この月の交通費を提出しますか？（提出後は編集できない場合があります）')) return;
-
-      try {
-        const res = await fetch(submitUrl, {
-          method: 'PUT', // or POST (サーバ側に合わせてOK)
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': csrf,
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({ status: 'submitted' }) // サーバ側で submitted_at も更新
-        });
-        if (!res.ok) throw await res.json().catch(() => ({ message: 'Submit failed' }));
-        const data = await res.json();
-
-        // ヘッダのステータス表示を即時更新
-        const statusEl = document.querySelector('[data-status-label]');
-        if (statusEl) {
-          const up = (data.status ?? 'submitted').toString().toUpperCase();
-          statusEl.textContent = up;
-        }
-
-        alert('提出しました');
-      } catch (err) {
-        alert(err?.message || '提出に失敗しました');
-      }
-    });
-  }
-});
-</script>
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     const eventOnMap = @json($eventOnMap ?? []);
     const initialRows = @json($rows);
     const isLocked = @json(($report->submitted_at ?? null) !== null); // ★追加
+    const canEdit  = !isLocked; // ★追加
     const reportId = @json($report->id ?? null);
     const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
 
@@ -311,7 +279,11 @@ document.addEventListener('DOMContentLoaded', function () {
           wrap.appendChild(addBtn);
           wrap.appendChild(delBtn);
 
-          if (isLocked) { addBtn.disabled = true; delBtn.disabled = true; return wrap; } // ★追加
+          if (isLocked) { // 提出後は行追加/削除だけでなく編集も不可
+          addBtn.disabled = true;
+          delBtn.disabled = true;
+          return wrap;
+          }
 
           addBtn.addEventListener('click', async () => {
             const base = p.data;
@@ -424,19 +396,19 @@ document.addEventListener('DOMContentLoaded', function () {
         headerName: 'From',
         field: 'station_from',
         width: 140,
-        editable: true
+        editable: canEdit
       },
       {
         headerName: 'To',
         field: 'station_to',
         width: 140,
-        editable: true
+        editable: canEdit
       },
       {
         headerName: 'Amount',
         field: 'cost',
         width: 100,
-        editable: true,
+        editable: canEdit,
         valueFormatter: (p) => p.value != null ? Number(p.value).toLocaleString() : '',
         valueParser: (p) => Number(p.newValue ?? 0),
       },
@@ -444,7 +416,7 @@ document.addEventListener('DOMContentLoaded', function () {
         headerName: 'Type',
         field: 'trip_type',
         width: 100,
-        editable: true,
+        editable: canEdit,
         cellEditor: 'agSelectCellEditor',
         cellEditorParams: {
           values: ['round_trip', 'one_way']
@@ -454,7 +426,7 @@ document.addEventListener('DOMContentLoaded', function () {
         headerName: '！',
         field: 'category',
         width: 100,
-        editable: true,
+        editable: canEdit,
         cellEditor: 'agSelectCellEditor',
         cellEditorParams: {
           values: ['regular', 'irregular']
@@ -465,7 +437,7 @@ document.addEventListener('DOMContentLoaded', function () {
         field: 'note',
         flex: 1,
         minWidth: 200,
-        editable: true
+        editable: canEdit
       },
     ];
 
@@ -537,7 +509,7 @@ document.addEventListener('DOMContentLoaded', function () {
         filter: false,
         resizable: true
       },
-      suppressClickEdit: false,
+      suppressClickEdit: isLocked,  // クリックで編集開始を抑止
       animateRows: true,
       rowSelection: {
         mode: 'singleRow'
