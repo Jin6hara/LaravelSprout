@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Carbon\Carbon;
 use App\Services\Calendar\CalendarResolver;
 use App\Services\Calendar\EventType;
+use App\Enums\ExpenseReportStatus;
 
 class ExpenseEditController extends Controller
 {
@@ -107,5 +108,32 @@ class ExpenseEditController extends Controller
             'rows'        => $rows,
             'eventOnMap'  => $eventOnMap,
         ]);
+    }
+
+    public function submit(ExpenseReport $report, Request $request)
+    {
+        // 認可：本人 or 管理者（Policy推奨）
+        $user = $request->user();
+        $authorized = $user->id === $report->user_id || (method_exists($user, 'isAdmin') && $user->isAdmin());
+        abort_unless($authorized, 403);
+
+        // 既に提出済みなら何もしない（冪等）
+        if ($report->status !== ExpenseReportStatus::SUBMITTED->value) {
+            $report->status = ExpenseReportStatus::SUBMITTED->value;
+            $report->submitted_at = now('Asia/Tokyo');
+            $report->save();
+        }
+
+        // 年月に戻る（本人 or 管理者で分岐）
+        $y = $report->year;
+        $m = $report->month;
+
+        if ($user->id === $report->user_id) {
+            return redirect()->route('expenses.edit', ['year' => $y, 'month' => $m])
+                ->with('status', '提出しました。編集はできません。');
+        } else {
+            return redirect()->route('expenses.admin.edit', ['user' => $report->employee_code, 'year' => $y, 'month' => $m])
+                ->with('status', '提出しました。編集はできません。');
+        }
     }
 }
