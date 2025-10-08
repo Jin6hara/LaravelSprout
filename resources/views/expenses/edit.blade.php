@@ -168,6 +168,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const eventOnMap = @json($eventOnMap ?? []);
     const initialRows = @json($rows);
     const isLocked = @json(($report->submitted_at ?? null) !== null); // ★追加
+    const canEdit  = !isLocked; // ★追加
     const reportId = @json($report->id ?? null);
     const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
 
@@ -278,7 +279,11 @@ document.addEventListener('DOMContentLoaded', function () {
           wrap.appendChild(addBtn);
           wrap.appendChild(delBtn);
 
-          if (isLocked) { addBtn.disabled = true; delBtn.disabled = true; return wrap; } // ★追加
+          if (isLocked) { // 提出後は行追加/削除だけでなく編集も不可
+          addBtn.disabled = true;
+          delBtn.disabled = true;
+          return wrap;
+          }
 
           addBtn.addEventListener('click', async () => {
             const base = p.data;
@@ -391,19 +396,19 @@ document.addEventListener('DOMContentLoaded', function () {
         headerName: 'From',
         field: 'station_from',
         width: 140,
-        editable: true
+        editable: canEdit
       },
       {
         headerName: 'To',
         field: 'station_to',
         width: 140,
-        editable: true
+        editable: canEdit
       },
       {
         headerName: 'Amount',
         field: 'cost',
         width: 100,
-        editable: true,
+        editable: canEdit,
         valueFormatter: (p) => p.value != null ? Number(p.value).toLocaleString() : '',
         valueParser: (p) => Number(p.newValue ?? 0),
       },
@@ -411,7 +416,7 @@ document.addEventListener('DOMContentLoaded', function () {
         headerName: 'Type',
         field: 'trip_type',
         width: 100,
-        editable: true,
+        editable: canEdit,
         cellEditor: 'agSelectCellEditor',
         cellEditorParams: {
           values: ['round_trip', 'one_way']
@@ -421,7 +426,7 @@ document.addEventListener('DOMContentLoaded', function () {
         headerName: '！',
         field: 'category',
         width: 100,
-        editable: true,
+        editable: canEdit,
         cellEditor: 'agSelectCellEditor',
         cellEditorParams: {
           values: ['regular', 'irregular']
@@ -432,7 +437,7 @@ document.addEventListener('DOMContentLoaded', function () {
         field: 'note',
         flex: 1,
         minWidth: 200,
-        editable: true
+        editable: canEdit
       },
     ];
 
@@ -504,7 +509,7 @@ document.addEventListener('DOMContentLoaded', function () {
         filter: false,
         resizable: true
       },
-      suppressClickEdit: false,
+      suppressClickEdit: isLocked,  // クリックで編集開始を抑止
       animateRows: true,
       rowSelection: {
         mode: 'singleRow'
