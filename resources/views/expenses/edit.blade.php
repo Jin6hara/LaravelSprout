@@ -99,6 +99,8 @@
       <div class="total">合計: <strong id="sumCost">{{ number_format($report->total_amount) }}</strong> 円</div>
     </div>
     <div class="mt-2 d-flex align-items-center gap-2">
+      @if($report->status === \App\Enums\ExpenseReportStatus::DRAFT)
+      {{-- 下のスクリプトで利用 --}}
       <input type="date" id="pickDate" class="form-control form-control-sm" style="width: 160px;">
       <button id="addByDateBtn" class="btn btn-success btn-sm">＋指定日を追加</button>
       <button id="saveBtn" class="btn btn-primary btn-sm">保存</button>
@@ -106,6 +108,7 @@
       <div class="ms-auto"></div>
       {{-- ★ 追加：提出ボタン --}}
       <button id="submitBtn" class="btn btn-warning btn-sm">提出</button>
+      @endif
     </div>
     @else
     <div class="p-2">
@@ -197,6 +200,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.addEventListener('DOMContentLoaded', function() {
     const eventOnMap = @json($eventOnMap ?? []);
     const initialRows = @json($rows);
+    const isLocked = @json(($report->submitted_at ?? null) !== null); // ★追加
     const reportId = @json($report->id ?? null);
     const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
 
@@ -306,6 +310,8 @@ document.addEventListener('DOMContentLoaded', function () {
           delBtn.textContent = 'ー';
           wrap.appendChild(addBtn);
           wrap.appendChild(delBtn);
+
+          if (isLocked) { addBtn.disabled = true; delBtn.disabled = true; return wrap; } // ★追加
 
           addBtn.addEventListener('click', async () => {
             const base = p.data;
