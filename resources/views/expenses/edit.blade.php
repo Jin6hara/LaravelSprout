@@ -331,6 +331,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // ===== Tabulator 初期化 =====
   const table = new Tabulator("#expensesTable", {
+    selectableRange: true,
+    selectableRangeColumns: true,
+    selectableRangeRows: true,
+    clipboardCopyRowRange:"range", //change default selector to selected
     data: initialRows.map(normalizeRow),
     columns,
     layout: "fitColumns",
