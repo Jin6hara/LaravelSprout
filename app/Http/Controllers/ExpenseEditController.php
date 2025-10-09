@@ -43,13 +43,14 @@ class ExpenseEditController extends Controller
         $expenses = $report
             ? $report->expenses()
             ->orderBy('expense_date')
-            ->get(['id', 'expense_date', 'station_from', 'station_to', 'note', 'cost', 'trip_type', 'category', 'commuter_pass_id', 'created_at', 'updated_at'])
+            ->get(['id', 'expense_date', 'seq', 'station_from', 'station_to', 'note', 'cost', 'trip_type', 'category', 'commuter_pass_id', 'created_at', 'updated_at'])
             : collect(); // ★ 無ければ空
 
         $rows = $expenses->map(function ($e) {
             return [
                 'id'               => $e->id,
                 'expense_date'     => $e->expense_date?->toDateString(),
+                'seq'              => $e->seq,
                 'station_from'     => $e->station_from,
                 'station_to'       => $e->station_to,
                 'note'             => $e->note,
