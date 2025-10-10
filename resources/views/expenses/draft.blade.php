@@ -15,6 +15,11 @@
     .total { font-weight: 700; }
     .muted { color: #6b7280; }
     #sheet { width: 100%; max-width: 100%; height: auto; margin: 0 auto; }
+
+    /* 選択枠を見やすく（薄緑上でも視認性UP）*/
+    .jexcel_selection div {
+      border: 2px solid #2a8a2a;
+    }
   </style>
 @endpush
 
@@ -102,21 +107,25 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
-{{-- ▼ JSpreadsheet 初期化＋保存／指定日追加（seq計算＆並び替え） --}}
+{{-- ▼ JSpreadsheet 初期化＋保存／指定日追加（seq計算＆並び替え）＋ True 行のみ薄緑 --}}
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   if (!@json($hasReport)) return; // レポート無い月は何もしない
 
+  const eventOnMap = @json($eventOnMap ?? {});
   const csrfToken   = @json(csrf_token());
   const reportId    = @json($report?->id);
   const year        = @json($y);
   const month       = @json($m);
   const initialRows = @json($rows);
+
+  // サーバから渡されていればそれを使用（なければ空マップ）
   const eventOnMap  = @json($eventOnMap ?? []);
 
-  const COLOR_ON  = '#1e66ff';  // 青
-  const COLOR_OFF = '#d33';     // 赤
+  // 背景色
+  const ACTIVE_BG  = '#eaffea'; // Trueの日のみ
+  const DEFAULT_BG = '#ffffff'; // それ以外
 
   // 英語の曜日
   function enWeekday(dateStr) {
@@ -135,12 +144,10 @@ document.addEventListener('DOMContentLoaded', function () {
   // 初期データ行（表示列＋非表示の内部列）
   // 列: Date / Day / From / To / Amount / TripType(ENUM値) / Note / _id / _seq
   const matrix = initialRows.map(r => {
-  const date = r.expense_date || '';
-  const isEventOn = !!eventOnMap[date]; const color = isEventOn ? COLOR_ON : COLOR_OFF;
+    const date = r.expense_date || '';
     return [
       date,
       enWeekday(date),
-      color,                // ← Color列（index=2）
       r.station_from || '',
       r.station_to   || '',
       Number.isFinite(r.cost) ? r.cost : 0,
@@ -159,7 +166,6 @@ document.addEventListener('DOMContentLoaded', function () {
         columns: [
           { title:'Date',           type:'text',     width:120, readOnly:true  }, // 0
           { title:'Day',            type:'text',     width:70,  readOnly:true  }, // 1
-          { title:'Color', type:'color', width:50, render:'square', readOnly:true }, // 2 ←★追加
           { title:'From',           type:'text',     width:160                    }, // 2
           { title:'To',             type:'text',     width:160                    }, // 3
           { title:'Amount (JPY)',   type:'numeric',  width:130, mask:'#,##0'     }, // 4
@@ -170,9 +176,15 @@ document.addEventListener('DOMContentLoaded', function () {
         ],
         minDimensions: [9, Math.max(matrix.length, 1)],
 
-        //updateTable: function (instance, cell, col, row, val, label, cellName) {　←文字の色など..
+        // True/False に応じて背景色を切替
+        updateTable: function(instance, cell, col, row, val, label, cellName) {
+          if (row >= 0 && col >= 0) {
+            const date = instance.getValueFromCoords(0, row); // 0列目がDate
+            cell.style.backgroundColor = eventOnMap[date] ? ACTIVE_BG : DEFAULT_BG;
+          }
+        },
 
-        // 選択行の記憶用（挿入位置のヒントに使う）
+        // 選択行の記憶（指定日追加の挿入ヒント）
         onselection: function(el, column, row) {
           lastSelectedRow = (typeof row === 'number') ? row : null;
         }
@@ -182,19 +194,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // 便利関数：現在の全行データをオブジェクト配列に
   function readCurrentRows() {
-   const data = sheet[0].getData(false);
+    const data = sheet[0].getData(false); // 各セルの生値
     return data.map(arr => ({
       date:  arr[0] || '',
       day:   arr[1] || '',
-      color: arr[2] || '#ffffffff',
-      from:  arr[3] || '',
-      to:    arr[4] || '',
-      cost:  (arr[5] === '' || arr[5] == null) ? 0 : Number(String(arr[5]).replace(/,/g,'')),
-      trip:  arr[6] || '',
-      note:  arr[7] || '',
-      id:    arr[8] || '',
-      seq:   (arr[9] === '' || arr[9] == null) ? 100 : Number(arr[9]),
-    })).filter(r => r.date);
+      from:  arr[2] || '',
+      to:    arr[3] || '',
+      cost:  (arr[4] === '' || arr[4] == null) ? 0 : Number(String(arr[4]).replace(/,/g,'')),
+      trip:  arr[5] || '', // dropdown は id が入る（round_trip / one_way）
+      note:  arr[6] || '',
+      id:    arr[7] || '',
+      seq:   (arr[8] === '' || arr[8] == null) ? 100 : Number(arr[8]),
+    })).filter(r => r.date); // 日付なしは無視
   }
 
   // ソート：第一キー=Date(昇順)、第二キー=seq(昇順)
@@ -208,10 +219,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // 再描画：rows(オブジェクト配列) → シートへ反映
   function renderRows(rows) {
-      const newMatrix = rows.map(r => [
+    const newMatrix = rows.map(r => [
       r.date,
       enWeekday(r.date),
-      eventOnMap[r.date] ? '#6b92ffff' : '#e68484ff', // ← 色は再評価
       r.from || '',
       r.to   || '',
       r.cost || 0,
@@ -220,7 +230,7 @@ document.addEventListener('DOMContentLoaded', function () {
       r.id   || '',
       r.seq  ?? 100,
     ]);
-    sheet[0].setData(newMatrix); 
+    sheet[0].setData(newMatrix);
   }
 
   // 既存IDの集合（更新判定用）
@@ -229,18 +239,15 @@ document.addEventListener('DOMContentLoaded', function () {
   // === 指定日追加ロジック ===
   const pickDateEl   = document.getElementById('pickDate');
   const addByDateBtn = document.getElementById('addByDateBtn');
-  let lastSelectedRow = null; // 直近に選択した行番号（挿入位置のヒント）
+  let lastSelectedRow = null;
 
-  // 日付入力の妥当性でボタン制御
   function isValidDateStr(yyyy_mm_dd) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(yyyy_mm_dd)) return false;
     const [yy, mm, dd] = yyyy_mm_dd.split('-').map(Number);
     const d = new Date(yyyy_mm_dd + 'T00:00:00');
     if (isNaN(d)) return false;
-    // 入力月が画面の対象年/月と一致必須
     return (yy === Number(year) && mm === Number(month) && dd >= 1 && dd <= 31);
   }
-
   function enableAddButtonIfValid() {
     const v = pickDateEl?.value || '';
     addByDateBtn.disabled = !isValidDateStr(v);
@@ -248,53 +255,34 @@ document.addEventListener('DOMContentLoaded', function () {
   pickDateEl?.addEventListener('input', enableAddButtonIfValid);
   enableAddButtonIfValid();
 
-  // date に対する seq の決定
-  // ルール:
-  // 1) 同日の最大 seq が分かる場合、基本は「最大 + 1024」で末尾追加
-  // 2) ただし、同日内で「選択行の直後」に入れたい場合は、その選択行の seq と
-  //    次の（同日かつ seq が大きい）行の seq の中間値を取る
-  // 3) 中間値が取れない（隙間がない）場合は安全に「最大 + 1024」
+  // seq 決定
   function decideSeqForDate(targetDate, rows, hintAfterSeq = null) {
     const same = rows.filter(r => r.date === targetDate).sort((a,b)=>a.seq-b.seq);
-    if (same.length === 0) return 1024; // 同日の先頭として 1024
-
+    if (same.length === 0) return 1024;
     const maxSeq = same[same.length - 1].seq ?? 100;
-    if (hintAfterSeq == null) {
-      return maxSeq + 1024;
-    }
-
-    // hintAfterSeq より大きい最小 seq（= 直後の行の seq）を探す
+    if (hintAfterSeq == null) return maxSeq + 1024;
     const next = same.find(r => r.seq > hintAfterSeq);
     if (next && (next.seq - hintAfterSeq) > 1) {
       return Math.floor((hintAfterSeq + next.seq) / 2);
     }
-    // 中間値が取れない場合は末尾へ
     return maxSeq + 1024;
   }
 
   // 追加ボタン
   addByDateBtn?.addEventListener('click', () => {
     const dateStr = pickDateEl?.value || '';
-    if (!isValidDateStr(dateStr)) {
-      alert('この月内の日付を選択してください。');
-      return;
-    }
+    if (!isValidDateStr(dateStr)) { alert('この月内の日付を選択してください。'); return; }
 
-    // 現在の行を取得
     const rows = readCurrentRows();
 
-    // 「選択行が同日なら、その直後に挿入」を試みる
     let hintAfterSeq = null;
     if (lastSelectedRow != null) {
       const selected = rows[lastSelectedRow];
-      if (selected && selected.date === dateStr) {
-        hintAfterSeq = selected.seq ?? null;
-      }
+      if (selected && selected.date === dateStr) hintAfterSeq = selected.seq ?? null;
     }
 
     const newSeq = decideSeqForDate(dateStr, rows, hintAfterSeq);
 
-    // 新規行データ（Date/Day は固定値、編集不可。Trip/Note等は空でOK）
     const newRow = {
       date: dateStr,
       day:  enWeekday(dateStr),
@@ -303,16 +291,12 @@ document.addEventListener('DOMContentLoaded', function () {
       cost: 0,
       trip: '',
       note: '',
-      id:   '',    // 新規なので空
+      id:   '',
       seq:  newSeq
     };
 
-    // rowsに追加して、ルール4: 日付→seq で再ソート → 反映
     const updated = sortRowsByDateThenSeq([...rows, newRow]);
     renderRows(updated);
-
-    // 連続入力をしやすくする（複数日追加OK）
-    // 次の追加で再び検証されるので、日付は保持のままでもOK
     enableAddButtonIfValid();
   });
 
@@ -322,27 +306,17 @@ document.addEventListener('DOMContentLoaded', function () {
     saveBtn.addEventListener('click', async () => {
       const rows = readCurrentRows();
 
-      // バリデーション（この月内のデータか）
       for (const r of rows) {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(r.date)) {
-          alert(`日付形式エラー: ${r.date}`); return;
-        }
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(r.date)) { alert(`日付形式エラー: ${r.date}`); return; }
         const [yy, mm] = r.date.split('-').map(Number);
-        if (yy !== Number(year) || mm !== Number(month)) {
-          alert(`この月以外の日付が含まれています: ${r.date}`); return;
-        }
-        if (r.cost < 0 || !Number.isFinite(r.cost)) {
-          alert(`金額が不正です: ${r.cost}`); return;
-        }
-        if (!r.trip) {
-          alert(`Trip Type が未選択の日があります: ${r.date}`); return;
-        }
+        if (yy !== Number(year) || mm !== Number(month)) { alert(`この月以外の日付が含まれています: ${r.date}`); return; }
+        if (r.cost < 0 || !Number.isFinite(r.cost)) { alert(`金額が不正です: ${r.cost}`); return; }
+        if (!r.trip) { alert(`Trip Type が未選択の日があります: ${r.date}`); return; }
       }
 
       saveBtn.disabled = true; saveBtn.textContent = '保存中…';
 
       try {
-        // 1) UPDATE: id がある行
         const updates = rows.filter(r => r.id && initialIdSet.has(String(r.id)));
         for (const u of updates) {
           const resp = await fetch(`/api/expenses/${u.id}`, {
@@ -357,9 +331,8 @@ document.addEventListener('DOMContentLoaded', function () {
               station_to:   u.to   || null,
               note:         u.note || null,
               cost:         u.cost,
-              trip_type:    u.trip,   // 'round_trip' | 'one_way'
+              trip_type:    u.trip,
               seq:          u.seq,
-              // category は送らない（保持）
             }),
           });
           if (!resp.ok) {
@@ -368,7 +341,6 @@ document.addEventListener('DOMContentLoaded', function () {
           }
         }
 
-        // 2) CREATE: id が無い行
         const creates = rows.filter(r => !r.id);
         for (const c of creates) {
           const seq = Number.isFinite(c.seq) ? c.seq : 100;
@@ -387,8 +359,8 @@ document.addEventListener('DOMContentLoaded', function () {
               station_to:        c.to   || null,
               note:              c.note || null,
               cost:              c.cost,
-              trip_type:         c.trip,      // 'round_trip' | 'one_way'
-              category:          'regular',   // Category列削除のため既定 regular
+              trip_type:         c.trip,
+              category:          'regular',
             }),
           });
           if (!resp.ok) {
