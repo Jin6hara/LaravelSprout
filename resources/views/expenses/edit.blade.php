@@ -154,6 +154,26 @@ document.addEventListener('DOMContentLoaded', function () {
   const COLOR_PASS_ON  = '#9bf59b';  // Pass=有効期間
   const COLOR_PASS_OFF = '#ffffff';  // Pass=無効
 
+  // ★ 操作ボタンHTML
+  const ACTION_BTN_HTML = '<button type="button" class="btn btn-outline-danger btn-sm js-row-del" title="この行を削除">Del</button>';
+  const ADD_BTN_HTML    = '<button type="button" class="btn btn-outline-primary btn-sm js-row-add" title="この日の行を下に追加">Add</button>';
+  // 列定数
+  const COL = Object.freeze({
+    ACTIONS: 0,   // 削除ボタン
+    ADD:     1,   // 追加ボタン
+    DATE:    2,
+    DAY:     3,
+    WORK:    4,
+    FROM:    5,
+    TO:      6,
+    AMOUNT:  7,
+    TRIP:    8,
+    NOTE:    9,
+    ID:      10,  // hidden
+    SEQ:     11,  // hidden
+    PASS:    12,
+  });
+
   // 英語の曜日
   function enWeekday(dateStr) {
     if (!dateStr) return '';
@@ -178,10 +198,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const colorWork = isEventOn ? COLOR_WORK_ON : COLOR_WORK_OFF;
     const colorPass = isPassOn  ? COLOR_PASS_ON : COLOR_PASS_OFF;
-    const ACTION_BTN_HTML = '<button type="button" class="btn btn-outline-danger btn-sm js-row-del" title="この行を削除">🗑</button>';
 
     return [
       ACTION_BTN_HTML,        // 0: ★ Delete button
+      ADD_BTN_HTML,           // 1
       date,
       enWeekday(date),
       colorWork,             // 2: Work (Event)
@@ -202,10 +222,11 @@ document.addEventListener('DOMContentLoaded', function () {
       {
         data: matrix,
         columns: [
-          { title:'-',              type:'html',    width:45,  readOnly:true }, // 0 ★ Actions（先頭）
-          { title:'Date',           type:'text',     width:120, readOnly:true                  }, // 0
-          { title:'Day',            type:'text',     width:70,  readOnly:true                  }, // 1
-          { title:'Work',           type:'color',    width:70,  render:'square', readOnly:true }, // 2
+          { title:'-',              type:'html',    width:50,  readOnly:true }, // 0 ★ Actions（先頭）
+          { title:'+',              type:'html',    width:50,  readOnly:true }, // 1: 追加
+          { title:'Date',           type:'text',     width:110, readOnly:true                  }, // 0
+          { title:'Day',            type:'text',     width:65,  readOnly:true                  }, // 1
+          { title:'Work',           type:'color',    width:65,  render:'square', readOnly:true }, // 2
           { title:'From',           type:'text',     width:200                                 }, // 3
           { title:'To',             type:'text',     width:200                                 }, // 4
           { title:'Amount',   type:'numeric',  width:100, mask:'#,##0'                   }, // 5
@@ -213,19 +234,11 @@ document.addEventListener('DOMContentLoaded', function () {
           { title:'Note',           type:'text',     width:240                                 }, // 7
           { title:'_id',            type:'text',     width:0,   readOnly:true                  }, // 8
           { title:'_seq',           type:'numeric',  width:0,   readOnly:true                  }, // 9
-          { title:'Pass',           type:'color',    width:70,  render:'square', readOnly:true }, // 10
+          { title:'Pass',           type:'color',    width:65,  render:'square', readOnly:true }, // 10
         ],
-        minDimensions: [12, Math.max(matrix.length, 1)],
+        minDimensions: [13, Math.max(matrix.length, 1)],
 
-        updateTable: function(instance, cell, col, row, val) {
-          if (row < 0) return;
-
-          // 表示上の列番号で 9 が Actions 列（8,9 を隠しているため 11→9 にシフト）
-          if (col === 9) {
-            cell.innerHTML = '<button type="button" class="btn btn-outline-danger btn-sm js-row-del" title="この行を削除">🗑</button>';
-            cell.style.textAlign = 'center';
-          }
-        },       
+        //updateTable: here
 
         // 選択行の記憶用（挿入位置のヒントに使う）
         onselection: function(el, column, row) {
@@ -237,8 +250,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // 隠し列処理
 function hideInternalCols() {
-  sheet[0].hideColumn(9); // _id
-  sheet[0].hideColumn(10); // _seq
+  sheet[0].hideColumn(COL.ID);
+  sheet[0].hideColumn(COL.SEQ);
 }
 hideInternalCols();
 
@@ -246,17 +259,17 @@ hideInternalCols();
   function readCurrentRows() {
     const data = sheet[0].getData(false);
     return data.map(arr => ({
-      date:      arr[0] || '',
-      day:       arr[1] || '',
-      colorWork: arr[2] || COLOR_WORK_OFF, // 送信しないが読み取り保持
-      from:      arr[3] || '',
-      to:        arr[4] || '',
-      cost:      (arr[5] === '' || arr[5] == null) ? 0 : Number(String(arr[5]).replace(/,/g,'')),
-      trip:      arr[6] || '',
-      note:      arr[7] || '',
-      id:        arr[8] || '',
-      seq:       (arr[9] === '' || arr[9] == null) ? 100 : Number(arr[9]),
-      colorPass: arr[10] || COLOR_PASS_OFF, // 送信しないが読み取り保持
+      date:      arr[COL.DATE] || '',
+      day:       arr[COL.DAY]  || '',
+      colorWork: arr[COL.WORK] || COLOR_WORK_OFF,
+      from:      arr[COL.FROM] || '',
+      to:        arr[COL.TO]   || '',
+      cost:      (arr[COL.AMOUNT] === '' || arr[COL.AMOUNT] == null) ? 0 : Number(String(arr[COL.AMOUNT]).replace(/,/g,'')),
+      trip:      arr[COL.TRIP] || '',
+      note:      arr[COL.NOTE] || '',
+      id:        arr[COL.ID]   || '',
+      seq:       (arr[COL.SEQ] === '' || arr[COL.SEQ] == null) ? 100 : Number(arr[COL.SEQ]),
+      colorPass: arr[COL.PASS] || COLOR_PASS_OFF,
     })).filter(r => r.date);
   }
 
@@ -276,6 +289,7 @@ hideInternalCols();
       const pass = passActiveMap[r.date] ? COLOR_PASS_ON : COLOR_PASS_OFF;
       return [
         ACTION_BTN_HTML,      // 0
+        ADD_BTN_HTML,         // 1: 追加
         r.date,
         enWeekday(r.date),
         work,              // 2
@@ -477,48 +491,98 @@ hideInternalCols();
       }
     });
   }
-  // ……（jspreadsheet初期化の“外”で）クリック委譲
+    // クリック委譲（削除と追加の両方を処理）
   const sheetEl = document.getElementById('sheet');
   sheetEl.addEventListener('click', async (e) => {
-    const btn = e.target.closest('.js-row-del');
-    if (!btn) return;
-
-    // どのセル（=行）かを特定
-    const td = btn.closest('td');
+    const delBtn = e.target.closest('.js-row-del');
+    const addBtn = e.target.closest('.js-row-add');
+    const td = e.target.closest('td');
     if (!td) return;
-
-    // JSpreadsheetはセルに data-x/data-y を持っています
     const rowIndex = Number(td.getAttribute('data-y'));
     if (Number.isNaN(rowIndex) || rowIndex < 0) return;
 
-    // 該当行のデータ取得
-    const rowData = sheet[0].getRowData(rowIndex);
-    const id = rowData[9]; // _id列（index=9）
-
-    // 未保存行（idなし）は画面だけ削除
-    if (!id) {
-      sheet[0].deleteRow(rowIndex);
+    // --- 削除 ---
+    if (delBtn) {
+      const rowData = sheet[0].getRowData(rowIndex);
+      const id = rowData[COL.ID]; // _id
+      if (!id) { sheet[0].deleteRow(rowIndex); return; }
+      if (!confirm('この行を削除します。よろしいですか？')) return;
+      try {
+        const resp = await fetch(`/api/expenses/${id}`, {
+          method: 'DELETE',
+          headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+        });
+        if (!resp.ok) {
+          const t = await resp.text();
+          throw new Error(`削除失敗 (ID:${id}): ${resp.status} ${t}`);
+        }
+        sheet[0].deleteRow(rowIndex);
+      } catch (err) {
+        console.error(err);
+        alert('削除エラー: ' + (err?.message || err));
+      }
       return;
     }
 
-    if (!confirm('この行を削除します。よろしいですか？')) return;
+  // --- 追加（クリック行の「下」に同日行を1つ追加） ---
+    if (addBtn) {
+      const rows   = readCurrentRows();
+      const rowArr = sheet[0].getRowData(rowIndex);
+      const date   = rowArr[COL.DATE];
+      const curSeq = Number(rowArr[COL.SEQ] ?? 100);
 
-    try {
-      const resp = await fetch(`/api/expenses/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'X-CSRF-TOKEN': csrfToken,
-          'Accept': 'application/json',
-        },
-      });
-      if (!resp.ok) {
-        const t = await resp.text();
-        throw new Error(`削除失敗 (ID:${id}): ${resp.status} ${t}`);
+      // 同日行を seq 昇順で
+      const same = rows.filter(r => r.date === date).sort((a,b) => a.seq - b.seq);
+      const maxSeq = same.length ? same[same.length - 1].seq : 100;
+
+      let newSeq;
+      // ① 同日の行が1つだけ or クリック行が最大 → +1024
+      if (same.length === 1 || curSeq === maxSeq) {
+        newSeq = maxSeq + 1024;
+      } else {
+        // ② 次に大きい seq を探して中間値
+        const next = same.find(r => r.seq > curSeq);
+        if (next && (next.seq - curSeq) > 1) {
+          newSeq = Math.floor((curSeq + next.seq) / 2);
+        } else {
+          // 隙間がない時は最大 +1024
+          newSeq = maxSeq + 1024;
+        }
       }
-      sheet[0].deleteRow(rowIndex); // 画面からも消す
-    } catch (err) {
-      console.error(err);
-      alert('削除エラー: ' + (err?.message || err));
+
+      // 新規行（同日、下に入るよう seq を調整済み）
+      const newRow = {
+        date,
+        day:  enWeekday(date),
+        from: '',
+        to:   '',
+        cost: 0,
+        trip: '',
+        note: '',
+        id:   '',
+        seq:  newSeq,
+      };
+
+      // クリック行の「下」に一旦挿入してから、日付→seq で再ソート反映
+      const rowsWithNew = [
+        ...rows.slice(0, rowIndex + 1),
+        newRow,
+        ...rows.slice(rowIndex + 1),
+      ];
+
+      const updated = rowsWithNew.slice().sort((a, b) => {
+        if (a.date < b.date) return -1;
+        if (a.date > b.date) return 1;
+        return a.seq - b.seq;
+      });
+
+      renderRows(updated);
+
+      // 任意：新規行を選択状態にしたい場合（見失わないように）
+      const newIndex = updated.findIndex(r => r.date === date && r.seq === newSeq);
+      if (newIndex >= 0) {
+        sheet[0].selectCell(COL.FROM, newIndex); // 例えば From にフォーカス
+      }
     }
   });
 });
