@@ -102,28 +102,11 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
-{{-- ▼ JSpreadsheet 初期化＋保存処理 --}}
+{{-- ▼ JSpreadsheet 初期化＋保存／指定日追加（seq計算＆並び替え） --}}
 @push('scripts')
 <script>
-// ▼ JSpreadsheet 初期化の直前に追加
-let lastInsertAnchor = null; // 直前に右クリック等で選ばれていた行番号を記録
-
-// 直近(上方向に遡って)Dateが入っている行を探すユーティリティ
-function findNearestDateRow(instance, startRow) {
-  const rows = instance.getData(false);
-  // 1) まず上方向
-  for (let i = startRow; i >= 0; i--) {
-    if (rows[i] && rows[i][0]) return { idx: i, date: rows[i][0] };
-  }
-  // 2) 上で見つからなければ下方向
-  for (let i = startRow + 1; i < rows.length; i++) {
-    if (rows[i] && rows[i][0]) return { idx: i, date: rows[i][0] };
-  }
-  return null;
-}
-
 document.addEventListener('DOMContentLoaded', function () {
-  if (!@json($hasReport)) return;
+  if (!@json($hasReport)) return; // レポート無い月は何もしない
 
   const csrfToken   = @json(csrf_token());
   const reportId    = @json($report?->id);
@@ -131,6 +114,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const month       = @json($m);
   const initialRows = @json($rows);
 
+  // 英語の曜日
   function enWeekday(dateStr) {
     if (!dateStr) return '';
     const d = new Date(dateStr + 'T00:00:00');
@@ -138,195 +122,215 @@ document.addEventListener('DOMContentLoaded', function () {
     return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
   }
 
+  // TripType Enum
   const tripTypeOptions = [
     { id: 'round_trip', name: 'Round Trip' },
     { id: 'one_way',    name: 'One Way' },
   ];
 
+  // 初期データ行（表示列＋非表示の内部列）
+  // 列: Date / Day / From / To / Amount / TripType(ENUM値) / Note / _id / _seq
   const matrix = initialRows.map(r => {
     const date = r.expense_date || '';
     return [
-      date,                 // 0 Date (readOnly)
-      enWeekday(date),      // 1 Day  (readOnly)
-      r.station_from || '', // 2
-      r.station_to   || '', // 3
-      Number.isFinite(r.cost) ? r.cost : 0, // 4
-      r.trip_type || '',    // 5
-      r.note || '',         // 6
-      r.id ?? '',           // 7 _id
-      (r.seq ?? 100),       // 8 _seq
+      date,
+      enWeekday(date),
+      r.station_from || '',
+      r.station_to   || '',
+      Number.isFinite(r.cost) ? r.cost : 0,
+      r.trip_type || '',
+      r.note || '',
+      r.id ?? '',
+      (r.seq ?? 100)
     ];
   });
 
-  // ▼ 小関数：同日行を1つ下に追加
-  function insertSiblingRowBelow(instance, rowIndex) {
-    const d = instance.getValueFromCoords(0, rowIndex); // Date
-    if (!d) { alert('この行には日付がありません。'); return; }
-    const newRow = [ d, enWeekday(d), '', '', 0, '', '', '', 100 ];
-    instance.insertRow(1, rowIndex + 1, false);
-    instance.setRowData(rowIndex + 1, newRow);
-    instance.setSelectedRows([rowIndex + 1]);
-    instance.openEditor(4, rowIndex + 1); // col=4 Amount
-  }
-
-  // ▼ 小関数：指定日での挿入（同日の最後の明細の直下 or 日付順）
-  function insertByDate(instance, dateStr) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) { alert('有効な日付を選択してください'); return; }
-    const [yy, mm] = dateStr.split('-').map(Number);
-    if (yy !== Number(year) || mm !== Number(month)) { alert('対象月内の日付を選択してください'); return; }
-
-    const rows = instance.getData(false);
-    let lastIdx = -1;
-    rows.forEach((r, i) => { if (r[0] === dateStr) lastIdx = i; });
-
-    if (lastIdx < 0) {
-      let insertPos = rows.length; // 末尾
-      for (let i = 0; i < rows.length; i++) {
-        const cur = rows[i][0];
-        if (cur && cur < dateStr) insertPos = i + 1;
-      }
-      const newRow = [dateStr, enWeekday(dateStr), '', '', 0, '', '', '', 100];
-      instance.insertRow(1, insertPos, false);
-      instance.setRowData(insertPos, newRow);
-      instance.setSelectedRows([insertPos]);
-      instance.openEditor(4, insertPos);
-      return;
-    }
-
-    insertSiblingRowBelow(instance, lastIdx);
-  }
-
-  // ▼ JSpreadsheet 初期化
+  // === シート生成 ===
   const sheet = jspreadsheet(document.getElementById('sheet'), {
-    worksheets: [{
-      data: matrix,
-      columns: [
-        { title:'Date', type:'text', width:120, readOnly:true }, // 0
-        { title:'Day',  type:'text', width:70,  readOnly:true }, // 1
-        { title:'From', type:'text', width:160 },
-        { title:'To',   type:'text', width:160 },
-        { title:'Amount (JPY)', type:'numeric', width:130, mask:'#,##0' },
-        { title:'Trip Type', type:'dropdown', width:140, source: tripTypeOptions },
-        { title:'Note', type:'text', width:220 },
-        { title:'_id',  type:'text', visible:false },
-        { title:'_seq', type:'numeric', visible:false },
-      ],
-      minDimensions: [9, Math.max(matrix.length, 1)],
-
-      // 右クリックメニューを拡張（既定の Insert を残す）
-      contextMenu: (obj, x, y, e) => {
-        const items = [];
-        if (y >= 0) {
-          items.push({
-            title: 'この日の下に行を追加（Date/Day自動）',
-            onclick: () => {
-              lastInsertAnchor = y;
-              obj.insertRow(1, y + 1, false);
-            },
-          });
-          items.push({ type:'line' });
+    worksheets: [
+      {
+        data: matrix,
+        columns: [
+          { title:'Date',           type:'text',     width:120, readOnly:true  }, // 0
+          { title:'Day',            type:'text',     width:70,  readOnly:true  }, // 1
+          { title:'From',           type:'text',     width:160                    }, // 2
+          { title:'To',             type:'text',     width:160                    }, // 3
+          { title:'Amount (JPY)',   type:'numeric',  width:130, mask:'#,##0'     }, // 4
+          { title:'Trip Type',      type:'dropdown', width:140, source: tripTypeOptions }, // 5
+          { title:'Note',           type:'text',     width:220                    }, // 6
+          { title:'_id',            type:'text',     visible:false                }, // 7
+          { title:'_seq',           type:'numeric',  visible:false                }, // 8
+        ],
+        minDimensions: [9, Math.max(matrix.length, 1)],
+        // 選択行の記憶用（挿入位置のヒントに使う）
+        onselection: function(el, column, row) {
+          lastSelectedRow = (typeof row === 'number') ? row : null;
         }
-
-        // 既定メニューのフォールバック
-        const base = (typeof jspreadsheet?.contextMenu === 'function')
-          ? jspreadsheet.contextMenu(obj, x, y, e)
-          : [
-              { title: 'Copy',  shortcut: 'Ctrl + C', onclick: () => obj.copy(true) },
-              { title: 'Paste', shortcut: 'Ctrl + V', onclick: () => obj.paste(true) },
-              { title: 'Undo',  shortcut: 'Ctrl + Z', onclick: () => obj.undo() },
-              { title: 'Redo',  shortcut: 'Ctrl + Y', onclick: () => obj.redo() },
-            ];
-        return items.concat(base);
-      },
-
-      // 行挿入直前：アンカー（基準行）を安全に記録
-      onbeforeinsertrow: (instance, rowNumber, numOfRows, insertBefore, history) => {
-        const sel = instance.getSelectedRows();
-        if (sel && sel.length) {
-          lastInsertAnchor = sel[0];
-        } else if (typeof rowNumber === 'number') {
-          const idx = rowNumber + (insertBefore ? 0 : -1);
-          lastInsertAnchor = Math.max(0, idx);
-        } else {
-          lastInsertAnchor = 0;
-        }
-      },
-
-      // 行挿入後：Date/Day/_seq を自動補完
-      oninsertrow: (instance, rowNumber, numRows, history) => {
-        const anchor = (lastInsertAnchor ?? (rowNumber > 0 ? rowNumber - 1 : rowNumber));
-        const base = findNearestDateRow(instance, Math.max(0, anchor));
-        for (let i = 0; i < numRows; i++) {
-          const r = rowNumber + i;
-          let dateToUse = base?.date || '';
-          if (!dateToUse) {
-            const alt = findNearestDateRow(instance, r);
-            if (alt) dateToUse = alt.date;
-          }
-          if (dateToUse) {
-            instance.setValueFromCoords(0, r, dateToUse);            // Date
-            instance.setValueFromCoords(1, r, enWeekday(dateToUse)); // Day
-          }
-          instance.setValueFromCoords(8, r, 100);                    // _seq 既定
-        }
-        lastInsertAnchor = null;
-        instance.openEditor(4, rowNumber); // 使い勝手: 金額セルを開く
-      },
-    }]
+      }
+    ]
   });
 
-  // ▼ 「指定日を追加」ボタンの実装
-  const addByDateBtn = document.getElementById('addByDateBtn');
-  const pickDate     = document.getElementById('pickDate');
-  if (pickDate && addByDateBtn) {
-    pickDate.addEventListener('change', () => {
-      addByDateBtn.disabled = !pickDate.value;
-    });
-    addByDateBtn.disabled = !pickDate.value;
-    addByDateBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      const v = pickDate.value;
-      if (!v) return;
-      insertByDate(sheet[0], v);
-    });
-  }
-
-  // ▼ 保存処理（既存ロジックを維持）
+  // 便利関数：現在の全行データをオブジェクト配列に
   function readCurrentRows() {
-    const data = sheet[0].getData(false);
+    const data = sheet[0].getData(false); // 各セルの生値
     return data.map(arr => ({
       date:  arr[0] || '',
       day:   arr[1] || '',
       from:  arr[2] || '',
       to:    arr[3] || '',
       cost:  (arr[4] === '' || arr[4] == null) ? 0 : Number(String(arr[4]).replace(/,/g,'')),
-      trip:  arr[5] || '',
+      trip:  arr[5] || '', // dropdown は id が入る（round_trip / one_way）
       note:  arr[6] || '',
       id:    arr[7] || '',
       seq:   (arr[8] === '' || arr[8] == null) ? 100 : Number(arr[8]),
-    })).filter(r => r.date);
+    })).filter(r => r.date); // 日付なしは無視
   }
 
-  const initialIdSet = new Set(initialRows.map(r => String(r.id)));
-  const saveBtn = document.getElementById('saveBtn');
+  // ソート：第一キー=Date(昇順)、第二キー=seq(昇順)
+  function sortRowsByDateThenSeq(rows) {
+    return rows.slice().sort((a, b) => {
+      if (a.date < b.date) return -1;
+      if (a.date > b.date) return 1;
+      return (a.seq - b.seq);
+    });
+  }
 
+  // 再描画：rows(オブジェクト配列) → シートへ反映
+  function renderRows(rows) {
+    const newMatrix = rows.map(r => [
+      r.date,
+      enWeekday(r.date),
+      r.from || '',
+      r.to   || '',
+      r.cost || 0,
+      r.trip || '',
+      r.note || '',
+      r.id   || '',
+      r.seq  ?? 100,
+    ]);
+    sheet[0].setData(newMatrix);
+  }
+
+  // 既存IDの集合（更新判定用）
+  const initialIdSet = new Set(initialRows.map(r => String(r.id)));
+
+  // === 指定日追加ロジック ===
+  const pickDateEl   = document.getElementById('pickDate');
+  const addByDateBtn = document.getElementById('addByDateBtn');
+  let lastSelectedRow = null; // 直近に選択した行番号（挿入位置のヒント）
+
+  // 日付入力の妥当性でボタン制御
+  function isValidDateStr(yyyy_mm_dd) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(yyyy_mm_dd)) return false;
+    const [yy, mm, dd] = yyyy_mm_dd.split('-').map(Number);
+    const d = new Date(yyyy_mm_dd + 'T00:00:00');
+    if (isNaN(d)) return false;
+    // 入力月が画面の対象年/月と一致必須
+    return (yy === Number(year) && mm === Number(month) && dd >= 1 && dd <= 31);
+  }
+
+  function enableAddButtonIfValid() {
+    const v = pickDateEl?.value || '';
+    addByDateBtn.disabled = !isValidDateStr(v);
+  }
+  pickDateEl?.addEventListener('input', enableAddButtonIfValid);
+  enableAddButtonIfValid();
+
+  // date に対する seq の決定
+  // ルール:
+  // 1) 同日の最大 seq が分かる場合、基本は「最大 + 1024」で末尾追加
+  // 2) ただし、同日内で「選択行の直後」に入れたい場合は、その選択行の seq と
+  //    次の（同日かつ seq が大きい）行の seq の中間値を取る
+  // 3) 中間値が取れない（隙間がない）場合は安全に「最大 + 1024」
+  function decideSeqForDate(targetDate, rows, hintAfterSeq = null) {
+    const same = rows.filter(r => r.date === targetDate).sort((a,b)=>a.seq-b.seq);
+    if (same.length === 0) return 1024; // 同日の先頭として 1024
+
+    const maxSeq = same[same.length - 1].seq ?? 100;
+    if (hintAfterSeq == null) {
+      return maxSeq + 1024;
+    }
+
+    // hintAfterSeq より大きい最小 seq（= 直後の行の seq）を探す
+    const next = same.find(r => r.seq > hintAfterSeq);
+    if (next && (next.seq - hintAfterSeq) > 1) {
+      return Math.floor((hintAfterSeq + next.seq) / 2);
+    }
+    // 中間値が取れない場合は末尾へ
+    return maxSeq + 1024;
+  }
+
+  // 追加ボタン
+  addByDateBtn?.addEventListener('click', () => {
+    const dateStr = pickDateEl?.value || '';
+    if (!isValidDateStr(dateStr)) {
+      alert('この月内の日付を選択してください。');
+      return;
+    }
+
+    // 現在の行を取得
+    const rows = readCurrentRows();
+
+    // 「選択行が同日なら、その直後に挿入」を試みる
+    let hintAfterSeq = null;
+    if (lastSelectedRow != null) {
+      const selected = rows[lastSelectedRow];
+      if (selected && selected.date === dateStr) {
+        hintAfterSeq = selected.seq ?? null;
+      }
+    }
+
+    const newSeq = decideSeqForDate(dateStr, rows, hintAfterSeq);
+
+    // 新規行データ（Date/Day は固定値、編集不可。Trip/Note等は空でOK）
+    const newRow = {
+      date: dateStr,
+      day:  enWeekday(dateStr),
+      from: '',
+      to:   '',
+      cost: 0,
+      trip: '',
+      note: '',
+      id:   '',    // 新規なので空
+      seq:  newSeq
+    };
+
+    // rowsに追加して、ルール4: 日付→seq で再ソート → 反映
+    const updated = sortRowsByDateThenSeq([...rows, newRow]);
+    renderRows(updated);
+
+    // 連続入力をしやすくする（複数日追加OK）
+    // 次の追加で再び検証されるので、日付は保持のままでもOK
+    enableAddButtonIfValid();
+  });
+
+  // === 保存処理 ===
+  const saveBtn = document.getElementById('saveBtn');
   if (saveBtn) {
     saveBtn.addEventListener('click', async () => {
       const rows = readCurrentRows();
 
-      // バリデーション
+      // バリデーション（この月内のデータか）
       for (const r of rows) {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(r.date)) { alert(`日付形式エラー: ${r.date}`); return; }
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(r.date)) {
+          alert(`日付形式エラー: ${r.date}`); return;
+        }
         const [yy, mm] = r.date.split('-').map(Number);
-        if (yy !== Number(year) || mm !== Number(month)) { alert(`この月以外の日付が含まれています: ${r.date}`); return; }
-        if (r.cost < 0 || !Number.isFinite(r.cost)) { alert(`金額が不正です: ${r.cost}`); return; }
-        if (!r.trip) { alert(`Trip Type が未選択の日があります: ${r.date}`); return; }
+        if (yy !== Number(year) || mm !== Number(month)) {
+          alert(`この月以外の日付が含まれています: ${r.date}`); return;
+        }
+        if (r.cost < 0 || !Number.isFinite(r.cost)) {
+          alert(`金額が不正です: ${r.cost}`); return;
+        }
+        if (!r.trip) {
+          alert(`Trip Type が未選択の日があります: ${r.date}`); return;
+        }
       }
 
       saveBtn.disabled = true; saveBtn.textContent = '保存中…';
 
       try {
-        // UPDATE
+        // 1) UPDATE: id がある行
         const updates = rows.filter(r => r.id && initialIdSet.has(String(r.id)));
         for (const u of updates) {
           const resp = await fetch(`/api/expenses/${u.id}`, {
@@ -341,8 +345,9 @@ document.addEventListener('DOMContentLoaded', function () {
               station_to:   u.to   || null,
               note:         u.note || null,
               cost:         u.cost,
-              trip_type:    u.trip,
+              trip_type:    u.trip,   // 'round_trip' | 'one_way'
               seq:          u.seq,
+              // category は送らない（保持）
             }),
           });
           if (!resp.ok) {
@@ -351,7 +356,7 @@ document.addEventListener('DOMContentLoaded', function () {
           }
         }
 
-        // CREATE
+        // 2) CREATE: id が無い行
         const creates = rows.filter(r => !r.id);
         for (const c of creates) {
           const seq = Number.isFinite(c.seq) ? c.seq : 100;
@@ -370,8 +375,8 @@ document.addEventListener('DOMContentLoaded', function () {
               station_to:        c.to   || null,
               note:              c.note || null,
               cost:              c.cost,
-              trip_type:         c.trip,
-              category:          'regular',
+              trip_type:         c.trip,      // 'round_trip' | 'one_way'
+              category:          'regular',   // Category列削除のため既定 regular
             }),
           });
           if (!resp.ok) {
@@ -382,6 +387,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         alert('保存しました。');
         location.reload();
+
       } catch (err) {
         console.error(err);
         alert('保存でエラーが発生しました。\n' + (err?.message || err));
@@ -391,114 +397,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 });
-
-// ========== ここから：指定日追加（rules 1-4 対応） ==========
-(function(){
-  if (!@json($hasReport)) return;
-
-  const addBtn   = document.getElementById('addByDateBtn');
-  const datePick = document.getElementById('pickDate');
-
-  // 入力があれば有効化
-  function toggleAddBtn(){
-    addBtn.disabled = !/^\d{4}-\d{2}-\d{2}$/.test(datePick?.value || '');
-  }
-  datePick?.addEventListener('input', toggleAddBtn);
-  toggleAddBtn();
-
-  // 'YYYY-MM-DD' → epoch（比較用）
-  function toEpoch(d){
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d);
-    if(!m) return NaN;
-    const y=+m[1], mo=+m[2]-1, da=+m[3];
-    return new Date(y, mo, da).getTime();
-  }
-
-  // 英語曜日（既存の enWeekday と同じ仕様をここでも使う）
-  function weekdayEn(dateStr){
-    if (!dateStr) return '';
-    const d = new Date(dateStr + 'T00:00:00');
-    if (isNaN(d)) return '';
-    return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
-  }
-
-  // 現在の行データ（内部列含むマトリクス）を取得
-  function getMatrix(){
-    return sheet[0].getData(false);
-    // 列: [0]Date [1]Day [2]From [3]To [4]Amount [5]TripType(id) [6]Note [7]_id [8]_seq
-  }
-
-  // ルール④：日付→seq（昇順）で並び替えして全体を再描画
-  function sortAndRedraw(matrix){
-    matrix.sort((a,b)=>{
-      const ad = toEpoch(a[0]||''); // Date
-      const bd = toEpoch(b[0]||'');
-      if (ad !== bd) return ad - bd;                     // 日付昇順
-      const as = Number(a[8] ?? 0), bs = Number(b[8] ?? 0);
-      return as - bs;                                    // 同日内は seq 昇順
-    });
-    sheet[0].setData(matrix);
-  }
-
-  // ルール③：seq を決める
-  //   ・同日既存が 0 件 → 100
-  //   ・同日既存が 1 件（=最大）→ 既存max + 1024
-  //   ・同日既存が 2 件以上 → 既存max + 1024（末尾追加）
-  //
-  //   ※「間に挿入して中間値」にも対応できるよう、将来は選択行の直後に入れる設計に拡張可。
-  function nextSeqForDate(matrix, dateStr){
-    const same = matrix.filter(r => r[0] === dateStr);
-    if (same.length === 0) return 100;
-    const maxSeq = same.reduce((m,r)=>Math.max(m, Number(r[8] ?? 0)), -Infinity);
-    return (Number.isFinite(maxSeq) ? maxSeq : 100) + 1024;
-  }
-
-  // 行を1つ作って返す
-  function makeRow(dateStr, seq){
-    return [
-      dateStr,             // Date（ルール①：即反映・編集不可）※列定義で readOnly
-      weekdayEn(dateStr),  // Day  （ルール①：即反映・編集不可）※列定義で readOnly
-      '',                  // From
-      '',                  // To
-      0,                   // Amount
-      '',                  // TripType(id)
-      '',                  // Note
-      '',                  // _id（新規）
-      seq,                 // _seq
-    ];
-  }
-
-  // クリックで追加
-  addBtn?.addEventListener('click', (e)=>{
-    e.preventDefault();
-    const d = datePick?.value || '';
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) { alert('日付を選択してください'); return; }
-
-    // ルール②：同じ操作を何度でも実行可（複数OK）
-    const matrix = getMatrix();
-
-    // ルール③：seq 決定（同日最大なら +1024、初回は 100）
-    const seq = nextSeqForDate(matrix, d);
-
-    // 1行生成
-    const row = makeRow(d, seq);
-
-    // 追加 → ルール④で日付→seqに並べ替えて再描画
-    matrix.push(row);
-    sortAndRedraw(matrix);
-
-    // UX：直後に TripType（ドロップダウン）へフォーカス
-    // 追加された行のインデックスを再取得してからフォーカスを当てる
-    const data = sheet[0].getData(false);
-    const idx = data.findIndex(r => r[0]===d && Number(r[8])===seq);
-    if (idx >= 0) {
-      // (rowIndex, colIndex)
-      sheet[0].setSelectedCells([[idx, 5, idx, 5]]);
-      sheet[0].openEditor(idx, 5);
-    }
-  });
-})();
 </script>
 @endpush
-
 @endsection
