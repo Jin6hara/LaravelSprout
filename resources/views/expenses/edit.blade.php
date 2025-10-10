@@ -15,6 +15,23 @@
     .total { font-weight: 700; }
     .muted { color: #6b7280; }
     #sheet { width: 100%; max-width: 100%; height: auto; margin: 0 auto; }
+
+    /* ▼ 文字サイズ */
+    .header-box .meta > div {
+      font-size: 1rem;      /* 通常より大きめ（約17.6px） */
+      line-height: 1.5;       /* 行間を少し広く */
+    }
+
+    .header-box .meta strong {
+      font-size: 1rem;     /* 強調文字はさらに少し大きく */
+      font-weight: 600;
+    }
+
+    /* 定期券ブロック内の細文字（日付）を落ち着かせる */
+    .header-box .meta .muted {
+      font-size: 0.95rem;
+      color: #6b7280;
+    }
   </style>
 @endpush
 
@@ -50,7 +67,22 @@
         <div>ステータス:
           <strong>{{ strtoupper($report->status->value ?? $report->status) }}</strong>
         </div>
-        <div class="total">合計: <strong id="sumCost">{{ number_format($report->total_amount) }}</strong> 円</div>
+        
+        {{-- ▼ 定期券（この月に有効なものを右寄せで詳細表示） --}}
+        @if(!empty($activePasses))
+          <div class="total ms-auto text-end"> 
+            @foreach($activePasses as $p)
+                <div class="muted small">
+                <strong>定期券:{{ $p['station_from'] }} → {{ $p['station_to'] }}</strong>
+                <span class="muted">{{ $p['valid_range'] }}</span>
+                </div>
+            @endforeach
+          </div>
+        @endif    
+
+        {{-- ▼ 空白行（1行分の余白） --}}
+        <div class="total w-100 mb-2">合計: <strong id="sumCost">{{ number_format($report->total_amount) }}</strong> 円</div>
+
       </div>
       <div class="mt-2 d-flex align-items-center gap-2">
         @if($report->status === \App\Enums\ExpenseReportStatus::DRAFT)
@@ -70,7 +102,7 @@
       </div>
     @else
       <div class="p-2">
-        <div class="muted">講師: <strong>{{ $user->family_name ?? '' }} {{ $user->first_name ?? '' }}</strong></div>
+        <div class="muted">講師: <strong>{{ $user->name ?? '' }}</strong></div>
         <div class="mt-2 alert alert-secondary" role="alert" style="padding:8px 12px">
           対象レコードがございません（{{ $y }}年{{ $m }}月）。<br>
           上の「対象月」から別の月をお選びください。

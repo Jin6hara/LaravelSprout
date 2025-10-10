@@ -117,6 +117,33 @@ class ExpenseEditController extends Controller
             }
         }
 
+        // ▼ 画面表示用に整形（当月区間とフルの両方を持たせる）
+        $activePasses = $passes->map(function ($p) use ($start, $end) {
+            $fromFull = \Carbon\Carbon::parse($p->date_from);
+            $toFull   = \Carbon\Carbon::parse($p->date_to);
+
+            $fromDisp = $fromFull->copy()->max($start);
+            $toDisp   = $toFull->copy()->min($end);
+
+            return [
+                'id'            => $p->id,
+                'station_from'  => $p->station_from,
+                'station_to'    => $p->station_to,
+                'cost'          => (int) $p->cost,
+
+                // 定期券本来の期間（YYYY-MM-DD形式）
+                'valid_from'    => $fromFull->toDateString(),
+                'valid_to'      => $toFull->toDateString(),
+                'valid_range'   => $fromFull->toDateString() . '〜' . $toFull->toDateString(),
+
+                // 当月に表示する期間（YYYY-MM-DD形式）
+                'display_from'  => $fromDisp->toDateString(),
+                'display_to'    => $toDisp->toDateString(),
+                'display_range' => $fromDisp->toDateString() . '〜' . $toDisp->toDateString(),
+                //'valid_range'   => $fromFull->translatedFormat('n月j日').'〜'.$toFull->translatedFormat('n月j日'),
+            ];
+        })->values()->all();
+
         return view('expenses.edit', [
             'user'        => $user,
             'report'      => $report,              // ★ null 可
@@ -126,6 +153,7 @@ class ExpenseEditController extends Controller
             'rows'        => $rows,                // 明細行の配列
             'eventOnMap'  => $eventOnMap,          // ★ イベントON日のマップ 
             'passActiveMap' => $passActiveMap,     // ★ 定期券の有効日マップ
+            'activePasses'  => $activePasses,      // ★ ヘッダー表示用
         ]);
     }
 
