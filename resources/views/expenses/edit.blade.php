@@ -178,6 +178,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const colorWork = isEventOn ? COLOR_WORK_ON : COLOR_WORK_OFF;
     const colorPass = isPassOn  ? COLOR_PASS_ON : COLOR_PASS_OFF;
+    const ACTION_BTN_HTML = '<button type="button" class="btn btn-outline-danger btn-sm js-row-del" title="この行を削除">🗑</button>';
 
     return [
       date,
@@ -191,6 +192,7 @@ document.addEventListener('DOMContentLoaded', function () {
       r.id ?? '',            // 8
       (r.seq ?? 100),        // 9
       colorPass,             // 10: Pass
+      ACTION_BTN_HTML,       // 11: Actions
     ];
   });
 
@@ -201,20 +203,29 @@ document.addEventListener('DOMContentLoaded', function () {
         data: matrix,
         columns: [
           { title:'Date',           type:'text',     width:120, readOnly:true                  }, // 0
-          { title:'Day',            type:'text',     width:73,  readOnly:true                  }, // 1
+          { title:'Day',            type:'text',     width:70,  readOnly:true                  }, // 1
           { title:'Work',           type:'color',    width:70,  render:'square', readOnly:true }, // 2
           { title:'From',           type:'text',     width:200                                 }, // 3
           { title:'To',             type:'text',     width:200                                 }, // 4
-          { title:'Amount (JPY)',   type:'numeric',  width:130, mask:'#,##0'                   }, // 5
-          { title:'Trip Type',      type:'dropdown', width:140, source: tripTypeOptions        }, // 6
+          { title:'Amount',   type:'numeric',  width:100, mask:'#,##0'                   }, // 5
+          { title:'Trip Type',      type:'dropdown', width:100, source: tripTypeOptions        }, // 6
           { title:'Note',           type:'text',     width:240                                 }, // 7
           { title:'_id',            type:'text',     width:0,   readOnly:true                  }, // 8
           { title:'_seq',           type:'numeric',  width:0,   readOnly:true                  }, // 9
           { title:'Pass',           type:'color',    width:70,  render:'square', readOnly:true }, // 10
+          { title:'', type:'html', width:45, readOnly:true }, // 11 ★ Actions
         ],
-        minDimensions: [11, Math.max(matrix.length, 1)],
+        minDimensions: [12, Math.max(matrix.length, 1)],
 
-        
+        updateTable: function(instance, cell, col, row, val) {
+          if (row < 0) return;
+
+          // 表示上の列番号で 9 が Actions 列（8,9 を隠しているため 11→9 にシフト）
+          if (col === 9) {
+            cell.innerHTML = '<button type="button" class="btn btn-outline-danger btn-sm js-row-del" title="この行を削除">🗑</button>';
+            cell.style.textAlign = 'center';
+          }
+        },       
 
         // 選択行の記憶用（挿入位置のヒントに使う）
         onselection: function(el, column, row) {
@@ -275,6 +286,7 @@ hideInternalCols();
         r.id   || '',      // 8
         r.seq  ?? 100,     // 9
         pass,              // 10
+        '',                // 11: ★ Actions（ボタン用のダミー）
       ];
     });
     sheet[0].setData(newMatrix);
@@ -465,6 +477,50 @@ hideInternalCols();
       }
     });
   }
+  // ……（jspreadsheet初期化の“外”で）クリック委譲
+  const sheetEl = document.getElementById('sheet');
+  sheetEl.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.js-row-del');
+    if (!btn) return;
+
+    // どのセル（=行）かを特定
+    const td = btn.closest('td');
+    if (!td) return;
+
+    // JSpreadsheetはセルに data-x/data-y を持っています
+    const rowIndex = Number(td.getAttribute('data-y'));
+    if (Number.isNaN(rowIndex) || rowIndex < 0) return;
+
+    // 該当行のデータ取得
+    const rowData = sheet[0].getRowData(rowIndex);
+    const id = rowData[8]; // _id 列（index=8）
+
+    // 未保存行（idなし）は画面だけ削除
+    if (!id) {
+      sheet[0].deleteRow(rowIndex);
+      return;
+    }
+
+    if (!confirm('この行を削除します。よろしいですか？')) return;
+
+    try {
+      const resp = await fetch(`/api/expenses/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'X-CSRF-TOKEN': csrfToken,
+          'Accept': 'application/json',
+        },
+      });
+      if (!resp.ok) {
+        const t = await resp.text();
+        throw new Error(`削除失敗 (ID:${id}): ${resp.status} ${t}`);
+      }
+      sheet[0].deleteRow(rowIndex); // 画面からも消す
+    } catch (err) {
+      console.error(err);
+      alert('削除エラー: ' + (err?.message || err));
+    }
+  });
 });
 </script>
 @endpush
