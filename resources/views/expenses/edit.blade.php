@@ -97,7 +97,9 @@
           </form>
         @else
           <div class="ms-auto"></div>
-          <span class="text-muted">提出済み（{{ optional($report->submitted_at)->format('Y-m-d H:i') }}）</span>
+          <span class="text-muted">提出済み（{{ optional($report->submitted_at)->format('Y-m-d H:i') }}）
+            <br>If you need to correct, please contact Native HR at 06-6352-0650.
+          </span>
         @endif
       </div>
     @else
@@ -112,6 +114,24 @@
   </div>
 
   <div id="sheet"></div>
+
+  {{-- ✅ ヘッダーの下など、見せたい場所に置く --}}
+  <a href="https://world.jorudan.co.jp/mln/en/?sub_lang=nosub"
+    class="btn btn-outline-secondary btn-sm"
+    target="_blank" rel="noopener noreferrer">
+    Open Jorudan (Japanese Transit Planer)
+  </a>
+  <a href="https://www.google.com/maps/"
+    class="btn btn-outline-secondary btn-sm"
+    target="_blank" rel="noopener noreferrer">
+    Open Google Maps
+  </a>
+    <a href="https://map.yahoo.co.jp/"
+    class="btn btn-outline-secondary btn-sm"
+    target="_blank" rel="noopener noreferrer">
+    Open Yahoo Maps
+  </a>
+  
 </div>
 
 {{-- 月検索 --}}
