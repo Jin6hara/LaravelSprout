@@ -181,6 +181,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const ACTION_BTN_HTML = '<button type="button" class="btn btn-outline-danger btn-sm js-row-del" title="この行を削除">🗑</button>';
 
     return [
+      ACTION_BTN_HTML,        // 0: ★ Delete button
       date,
       enWeekday(date),
       colorWork,             // 2: Work (Event)
@@ -192,7 +193,6 @@ document.addEventListener('DOMContentLoaded', function () {
       r.id ?? '',            // 8
       (r.seq ?? 100),        // 9
       colorPass,             // 10: Pass
-      ACTION_BTN_HTML,       // 11: Actions
     ];
   });
 
@@ -202,6 +202,7 @@ document.addEventListener('DOMContentLoaded', function () {
       {
         data: matrix,
         columns: [
+          { title:'-',              type:'html',    width:45,  readOnly:true }, // 0 ★ Actions（先頭）
           { title:'Date',           type:'text',     width:120, readOnly:true                  }, // 0
           { title:'Day',            type:'text',     width:70,  readOnly:true                  }, // 1
           { title:'Work',           type:'color',    width:70,  render:'square', readOnly:true }, // 2
@@ -213,7 +214,6 @@ document.addEventListener('DOMContentLoaded', function () {
           { title:'_id',            type:'text',     width:0,   readOnly:true                  }, // 8
           { title:'_seq',           type:'numeric',  width:0,   readOnly:true                  }, // 9
           { title:'Pass',           type:'color',    width:70,  render:'square', readOnly:true }, // 10
-          { title:'', type:'html', width:45, readOnly:true }, // 11 ★ Actions
         ],
         minDimensions: [12, Math.max(matrix.length, 1)],
 
@@ -235,10 +235,10 @@ document.addEventListener('DOMContentLoaded', function () {
     ]
   });
 
-// 下記のカラムを隠す
+// 隠し列処理
 function hideInternalCols() {
-  sheet[0].hideColumn(8); // _id
-  sheet[0].hideColumn(9); // _seq
+  sheet[0].hideColumn(9); // _id
+  sheet[0].hideColumn(10); // _seq
 }
 hideInternalCols();
 
@@ -275,6 +275,7 @@ hideInternalCols();
       const work = eventOnMap[r.date]    ? COLOR_WORK_ON : COLOR_WORK_OFF;
       const pass = passActiveMap[r.date] ? COLOR_PASS_ON : COLOR_PASS_OFF;
       return [
+        ACTION_BTN_HTML,      // 0
         r.date,
         enWeekday(r.date),
         work,              // 2
@@ -286,7 +287,6 @@ hideInternalCols();
         r.id   || '',      // 8
         r.seq  ?? 100,     // 9
         pass,              // 10
-        '',                // 11: ★ Actions（ボタン用のダミー）
       ];
     });
     sheet[0].setData(newMatrix);
@@ -493,7 +493,7 @@ hideInternalCols();
 
     // 該当行のデータ取得
     const rowData = sheet[0].getRowData(rowIndex);
-    const id = rowData[8]; // _id 列（index=8）
+    const id = rowData[9]; // _id列（index=9）
 
     // 未保存行（idなし）は画面だけ削除
     if (!id) {
