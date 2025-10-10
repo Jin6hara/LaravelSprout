@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsuites/dist/jsuites.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jspreadsheet-ce@5/dist/jspreadsheet.min.css">
   <style>
-    .page-wrap { max-width: 1100px; margin: 20px auto; }
+    .page-wrap { max-width: 1300px; margin: 20px auto; }
     .header-box {
       background: #f8f9fa; padding: 12px 16px; border-radius: 8px; border: 1px solid #78a3faff;
     }
@@ -108,15 +108,19 @@ document.addEventListener('DOMContentLoaded', function () {
 document.addEventListener('DOMContentLoaded', function () {
   if (!@json($hasReport)) return; // レポート無い月は何もしない
 
-  const csrfToken   = @json(csrf_token());
-  const reportId    = @json($report?->id);
-  const year        = @json($y);
-  const month       = @json($m);
-  const initialRows = @json($rows);
-  const eventOnMap  = @json($eventOnMap ?? []);
+  const csrfToken     = @json(csrf_token());
+  const reportId      = @json($report?->id);
+  const year          = @json($y);
+  const month         = @json($m);
+  const initialRows   = @json($rows);
+  const eventOnMap    = @json($eventOnMap ?? []);
+  const passActiveMap = @json($passActiveMap ?? []); // ★ 定期券
 
-  const COLOR_ON  = '#1e66ff';  // 青
-  const COLOR_OFF = '#d33';     // 赤
+  // 色定数（6桁HEXで安定化）
+  const COLOR_WORK_ON  = '#6b92ff';  // Work=ON（イベントON）
+  const COLOR_WORK_OFF = '#e68484';  // Work=OFF
+  const COLOR_PASS_ON  = '#9bf59b';  // Pass=有効期間
+  const COLOR_PASS_OFF = '#ffffff';  // Pass=無効
 
   // 英語の曜日
   function enWeekday(dateStr) {
@@ -133,21 +137,28 @@ document.addEventListener('DOMContentLoaded', function () {
   ];
 
   // 初期データ行（表示列＋非表示の内部列）
-  // 列: Date / Day / From / To / Amount / TripType(ENUM値) / Note / _id / _seq
+  // 列: Date(0) / Day(1) / Work(2:color) / From(3) / To(4) / Amount(5) / Trip(6) / Note(7) / _id(8) / _seq(9) / Pass(10:color)
   const matrix = initialRows.map(r => {
-  const date = r.expense_date || '';
-  const isEventOn = !!eventOnMap[date]; const color = isEventOn ? COLOR_ON : COLOR_OFF;
+    const date = r.expense_date || '';
+
+    const isEventOn = !!eventOnMap[date];
+    const isPassOn  = !!passActiveMap[date];
+
+    const colorWork = isEventOn ? COLOR_WORK_ON : COLOR_WORK_OFF;
+    const colorPass = isPassOn  ? COLOR_PASS_ON : COLOR_PASS_OFF;
+
     return [
       date,
       enWeekday(date),
-      color,                // ← Color列（index=2）
-      r.station_from || '',
-      r.station_to   || '',
-      Number.isFinite(r.cost) ? r.cost : 0,
-      r.trip_type || '',
-      r.note || '',
-      r.id ?? '',
-      (r.seq ?? 100)
+      colorWork,             // 2: Work (Event)
+      r.station_from || '',  // 3
+      r.station_to   || '',  // 4
+      Number.isFinite(r.cost) ? r.cost : 0, // 5
+      r.trip_type || '',     // 6
+      r.note || '',          // 7
+      r.id ?? '',            // 8
+      (r.seq ?? 100),        // 9
+      colorPass,             // 10: Pass
     ];
   });
 
@@ -157,20 +168,21 @@ document.addEventListener('DOMContentLoaded', function () {
       {
         data: matrix,
         columns: [
-          { title:'Date',           type:'text',     width:120, readOnly:true  }, // 0
-          { title:'Day',            type:'text',     width:70,  readOnly:true  }, // 1
-          { title:'Color', type:'color', width:50, render:'square', readOnly:true }, // 2 ←★追加
-          { title:'From',           type:'text',     width:160                    }, // 2
-          { title:'To',             type:'text',     width:160                    }, // 3
-          { title:'Amount (JPY)',   type:'numeric',  width:130, mask:'#,##0'     }, // 4
-          { title:'Trip Type',      type:'dropdown', width:140, source: tripTypeOptions }, // 5
-          { title:'Note',           type:'text',     width:220                    }, // 6
-          { title:'_id',            type:'text',     visible:false                }, // 7
-          { title:'_seq',           type:'numeric',  visible:false                }, // 8
+          { title:'Date',           type:'text',     width:120, readOnly:true                  }, // 0
+          { title:'Day',            type:'text',     width:73,  readOnly:true                  }, // 1
+          { title:'Work',           type:'color',    width:70,  render:'square', readOnly:true }, // 2
+          { title:'From',           type:'text',     width:200                                 }, // 3
+          { title:'To',             type:'text',     width:200                                 }, // 4
+          { title:'Amount (JPY)',   type:'numeric',  width:130, mask:'#,##0'                   }, // 5
+          { title:'Trip Type',      type:'dropdown', width:140, source: tripTypeOptions        }, // 6
+          { title:'Note',           type:'text',     width:240                                 }, // 7
+          { title:'_id',            type:'text',     width:0,   readOnly:true                  }, // 8
+          { title:'_seq',           type:'numeric',  width:0,   readOnly:true                  }, // 9
+          { title:'Pass',           type:'color',    width:70,  render:'square', readOnly:true }, // 10
         ],
-        minDimensions: [9, Math.max(matrix.length, 1)],
+        minDimensions: [11, Math.max(matrix.length, 1)],
 
-        //updateTable: function (instance, cell, col, row, val, label, cellName) {　←文字の色など..
+        
 
         // 選択行の記憶用（挿入位置のヒントに使う）
         onselection: function(el, column, row) {
@@ -180,20 +192,28 @@ document.addEventListener('DOMContentLoaded', function () {
     ]
   });
 
+// 下記のカラムを隠す
+function hideInternalCols() {
+  sheet[0].hideColumn(8); // _id
+  sheet[0].hideColumn(9); // _seq
+}
+hideInternalCols();
+
   // 便利関数：現在の全行データをオブジェクト配列に
   function readCurrentRows() {
-   const data = sheet[0].getData(false);
+    const data = sheet[0].getData(false);
     return data.map(arr => ({
-      date:  arr[0] || '',
-      day:   arr[1] || '',
-      color: arr[2] || '#ffffffff',
-      from:  arr[3] || '',
-      to:    arr[4] || '',
-      cost:  (arr[5] === '' || arr[5] == null) ? 0 : Number(String(arr[5]).replace(/,/g,'')),
-      trip:  arr[6] || '',
-      note:  arr[7] || '',
-      id:    arr[8] || '',
-      seq:   (arr[9] === '' || arr[9] == null) ? 100 : Number(arr[9]),
+      date:      arr[0] || '',
+      day:       arr[1] || '',
+      colorWork: arr[2] || COLOR_WORK_OFF, // 送信しないが読み取り保持
+      from:      arr[3] || '',
+      to:        arr[4] || '',
+      cost:      (arr[5] === '' || arr[5] == null) ? 0 : Number(String(arr[5]).replace(/,/g,'')),
+      trip:      arr[6] || '',
+      note:      arr[7] || '',
+      id:        arr[8] || '',
+      seq:       (arr[9] === '' || arr[9] == null) ? 100 : Number(arr[9]),
+      colorPass: arr[10] || COLOR_PASS_OFF, // 送信しないが読み取り保持
     })).filter(r => r.date);
   }
 
@@ -208,19 +228,24 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // 再描画：rows(オブジェクト配列) → シートへ反映
   function renderRows(rows) {
-      const newMatrix = rows.map(r => [
-      r.date,
-      enWeekday(r.date),
-      eventOnMap[r.date] ? '#6b92ffff' : '#e68484ff', // ← 色は再評価
-      r.from || '',
-      r.to   || '',
-      r.cost || 0,
-      r.trip || '',
-      r.note || '',
-      r.id   || '',
-      r.seq  ?? 100,
-    ]);
-    sheet[0].setData(newMatrix); 
+    const newMatrix = rows.map(r => {
+      const work = eventOnMap[r.date]    ? COLOR_WORK_ON : COLOR_WORK_OFF;
+      const pass = passActiveMap[r.date] ? COLOR_PASS_ON : COLOR_PASS_OFF;
+      return [
+        r.date,
+        enWeekday(r.date),
+        work,              // 2
+        r.from || '',      // 3
+        r.to   || '',      // 4
+        r.cost || 0,       // 5
+        r.trip || '',      // 6
+        r.note || '',      // 7
+        r.id   || '',      // 8
+        r.seq  ?? 100,     // 9
+        pass,              // 10
+      ];
+    });
+    sheet[0].setData(newMatrix);
   }
 
   // 既存IDの集合（更新判定用）

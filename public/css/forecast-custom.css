@@ -57,7 +57,7 @@
 
 /* カレンダー外観 */
 #calendar {
-  max-width: 1200px; /* autoは無効なので具体値を */
+  max-width: 1300px; /* autoは無効なので具体値を */
   margin: 30px auto;
 }
 
