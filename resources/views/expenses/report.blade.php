@@ -6,7 +6,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsuites/dist/jsuites.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jspreadsheet-ce@5/dist/jspreadsheet.min.css">
   <style>
-    .page-wrap { max-width: 1000px; margin: 20px auto; }
+    .page-wrap { max-width: 1100px; margin: 20px auto; }
     .header-box {
       background: #f8f9fa; padding: 12px 16px; border-radius: 8px; border: 1px solid #78a3faff;
     }
@@ -15,6 +15,16 @@
 
     h1 { margin-bottom: 1.5rem; }
     .jspreadsheet tbody td { font-size: 0.95rem; }
+    
+    /* ▼ シート内リンクの下線を全消し */
+    #sheet a { 
+      text-decoration: none !important;
+    }
+    /* Detailsのボタンを見やすく */
+    #sheet .btn.btn-sm.btn-outline-primary {
+      padding: 2px 8px;
+      line-height: 0.9;
+    }
   </style>
 @endpush
 
@@ -93,16 +103,18 @@ document.addEventListener('DOMContentLoaded', function () {
   const yy = {{ (int)$y }};
   const mm = {{ (int)$m }};
 
-  // code を <a> に変換
-  function codeLink(code) {
-    const safe = String(code || '');
-    const href = `/expenses/${encodeURIComponent(safe)}/edit?year=${yy}&month=${mm}`;
-    return `<a class="link-emp" href="${href}" target="_blank" rel="noopener">${safe}</a>`;
+  // DetailsボタンHTMLを生成
+  function detailsBtn(code) {
+    const safe = encodeURIComponent(String(code ?? ''));
+    const href = `/expenses/${safe}/edit?year=${yy}&month=${mm}`;
+    // aタグをBootstrap風ボタンに（別タブで開く）
+    return `<a href="${href}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">Details</a>`;
   }
-
+  // データー挿入（順番に注意）
   const matrix = rows.map(r => ([
-    codeLink(r.employee_code),              // ← リンクHTML
-    r.family_name   ?? '',
+    detailsBtn(r.employee_code),            // 0: Details（ボタン）
+    r.employee_code ?? '',
+    r.family_name   ?? '', 
     r.first_name    ?? '',
     Number(r.total_amount ?? 0),
     (r.status || '').toUpperCase(),
@@ -119,14 +131,14 @@ document.addEventListener('DOMContentLoaded', function () {
         '':'color:red; font-weight:bold;'
       },
       columns: [
-        { title: 'Employee Code', width: 120, readOnly: true, type: 'html' }, // ← html
+        { title: 'Details',       width: 90,  readOnly: true, type: 'html' }, // ボタン列
+        { title: 'Employee Code', width: 150, readOnly: true }, // ← html
         { title: 'Family Name',   width: 150, readOnly: true },
-        { title: 'First Name',    width: 250, readOnly: true },
+        { title: 'First (Middle) Name',    width: 220, readOnly: true },
         { title: 'Total (JPY)',   width: 140, readOnly: true, type: 'numeric', mask: '#,##0' },
         { title: 'Status',        width: 140, readOnly: true },
-        { title: 'Submitted At',  width: 147, readOnly: true },
+        { title: 'Submitted At',  width: 157, readOnly: true },
       ],
-      stripHTMLOnCopy: true, // html コピーを有効に
       allowInsertRow: false,
       allowManualInsertRow: false,
       allowDeleteRow: false,
