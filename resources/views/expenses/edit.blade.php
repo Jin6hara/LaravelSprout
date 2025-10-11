@@ -257,6 +257,17 @@ document.addEventListener('DOMContentLoaded', function () {
           { title:'Pass',           type:'color',    width:65,  render:'square', readOnly:true }, // 10
         ],
         minDimensions: [13, Math.max(matrix.length, 1)],
+      allowInsertRow: false,
+      allowManualInsertRow: false,
+      allowDeleteRow: false,
+      allowInsertColumn: false,
+      allowDeleteColumn: false,
+      allowRenameColumn: false,
+      allowComments: false,
+      allowSaving: false,
+      freezeColumns: 1,
+      tableOverflow: false, //影
+      tableHeight: '470px',
 
         //updateTable: here
 
