@@ -1,93 +1,140 @@
-{{-- resources/views/expenses/report.blade.php --}}
 @extends('layouts.app')
 
-@section('title', 'Expense Reports（管理者・一覧）')
+@section('title', '交通費レポート一覧（管理者）')
 
 @push('styles')
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsuites/dist/jsuites.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jspreadsheet-ce@5/dist/jspreadsheet.min.css">
   <style>
-    .page-wrap { max-width: 1300px; margin: 20px auto; }
-    .header-box { background: #f8f9fa; padding: 12px 16px; border-radius: 8px; border: 1px solid #78a3fa; }
-    .header-box .meta { display:flex; flex-wrap:wrap; gap:16px; font-size:14px; align-items:center; }
-    .muted { color:#6b7280; }
-    .total { font-weight:700; }
-    #sheet { width:100%; max-width:100%; margin-top:12px; }
-    .search-form { display:flex; gap:8px; align-items:center; }
-    .search-form select, .search-form input[type="number"] { padding:6px 8px; }
-    .btn { padding:6px 10px; border:1px solid #ddd; border-radius:6px; background:#fff; cursor:pointer; }
+    .page-wrap { max-width: 1000px; margin: 20px auto; }
+    .header-box {
+      background: #f8f9fa; padding: 12px 16px; border-radius: 8px; border: 1px solid #78a3faff;
+    }
+    .header-box .meta { display: flex; flex-wrap: wrap; gap: 16px; font-size: 14px; }
+    #sheet { width: 100%; height: auto; }
+
+    h1 { margin-bottom: 1.5rem; }
+    .jspreadsheet tbody td { font-size: 0.95rem; }
   </style>
 @endpush
 
-@section('content')
-<div class="page-wrap">
-  {{-- ヘッダー / 月次検索 --}}
-  <div class="header-box">
-    <div class="meta">
-      <form method="GET" action="{{ route('expenses.admin.report') }}" class="search-form">
-        @php
-          $y = (int)($summary['year'] ?? now('Asia/Tokyo')->year);
-          $m = (int)($summary['month'] ?? now('Asia/Tokyo')->month);
-        @endphp
-        <label>Year
-          <input type="number" name="year" value="{{ $y }}" min="2000" max="2099" />
-        </label>
-        <label>Month
-          <select name="month">
-            @for ($i=1; $i<=12; $i++)
-              <option value="{{ $i }}" @selected($i===$m)>{{ $i }}</option>
-            @endfor
-          </select>
-        </label>
-        <button class="btn" type="submit">Search</button>
-      </form>
-
-      <div class="muted">Records: <span class="total">{{ number_format($summary['count'] ?? 0) }}</span></div>
-      <div class="muted">Total Amount (JPY): <span class="total">{{ number_format($summary['total'] ?? 0) }}</span></div>
-    </div>
-  </div>
-
-  {{-- JSpreadsheet 表示領域 --}}
-  <div id="sheet"></div>
-</div>
-@endsection
-
 @push('scripts')
-  {{-- jsuites → jspreadsheet の順で必須 --}}
-  <script src="https://cdn.jsdelivr.net/npm/jsuites@5/dist/jsuites.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jspreadsheet-ce@5/dist/jspreadsheet.min.js"></script>
-
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      const rows = @json($rows);
-
-      const data = rows.map(r => ([
-        r.employee_code ?? '',
-        r.family_name ?? '',
-        r.first_name ?? '',
-        Number(r.total_amount ?? 0),
-        r.status ?? '',
-        r.submitted_at ?? '',
-      ]));
-
-      const el = document.getElementById('sheet');
-
-      jspreadsheet(el, {
-        data,
-        tableOverflow: true,
-        tableWidth: '100%',
-        defaultColWidth: 160,
-        columns: [
-          { title: 'Employ Code', type: 'text', readOnly: true, width: 130 },
-          { title: 'Family Name', type: 'text', readOnly: true, width: 150 },
-          { title: 'First Name',  type: 'text', readOnly: true, width: 150 },
-          { title: 'Total Amount (JPY)', type: 'numeric', readOnly: true, mask:'#,##0', decimal:',', width: 160 },
-          { title: 'Status', type: 'text', readOnly: true, width: 120 },
-          { title: 'Submitted At', type: 'text', readOnly: true, width: 170 },
-        ],
-        editable: false,
-      });
-    });
-  </script>
+  <script src="https://cdn.jsdelivr.net/npm/jsuites/dist/jsuites.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspreadsheet-ce@5/dist/index.min.js"></script>
 @endpush
 
+@section('content')
+
+
+<div class="page-wrap">
+  <h1>交通費レポート一覧（{{ $y }}年{{ $m }}月）</h1>
+
+  {{-- ▼ 月選択フォーム --}}
+  <form method="GET" class="mb-3 d-flex align-items-center gap-2" id="monthForm">
+    <label for="monthPick" class="form-label m-0">対象月</label>
+    <input type="month" id="monthPick" name="monthpick"
+      class="form-control form-control-sm" style="width:170px"
+      value="{{ sprintf('%04d-%02d', $y, $m) }}">
+    <button id="monthSearchBtn" class="btn btn-sm btn-outline-primary" type="button">検索</button>
+  </form>
+
+    <div class="header-box mb-4">
+      <div class="meta w-100" style="gap:24px">
+        <div>総人数: <strong>{{ number_format($summary['count']) }}</strong> 人</div>
+        <div>提出人数: <strong>{{ number_format($summary['submitted']) }}</strong> 人</div>
+        <div>未提出人数: <strong>{{ number_format($summary['not_submitted']) }}</strong> 人</div>
+        
+        {{-- 合計（提出済を主役、全体は参考） --}}
+        <div class="total">
+          提出済合計: <strong id="sumSubmitted">{{ number_format($summary['sum_submitted']) }}</strong> 円
+          <span class="muted ms-2">(全体: <span id="sumAll">{{ number_format($summary['sum_all']) }}</span> 円)</span>
+          @if(($summary['sum_approved'] ?? 0) > 0)
+            <span class="muted ms-2">/ 承認済: <span id="sumApproved">{{ number_format($summary['sum_approved']) }}</span> 円</span>
+          @endif
+        </div>
+
+        <div class="ms-auto d-flex align-items-center" style="gap:8px; flex-wrap:wrap">
+          @foreach($summary['by_status'] as $st => $cnt)
+            @php
+              $cls = match (strtolower($st)) {
+                'draft'     => 'badge-draft',
+                'submitted' => 'badge-submitted',
+              };
+            @endphp
+            <span class="badge {{ $cls }}" title="{{ $st }}">{{ strtoupper($st) }}: {{ $cnt }}</span>
+          @endforeach
+        </div>
+      </div>
+    </div>
+
+  {{-- ▼ テーブル --}}
+  <div id="sheet"></div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  // --- 月検索（そのまま） ---
+  const monthInput = document.getElementById('monthPick');
+  const btn        = document.getElementById('monthSearchBtn');
+  function doSearch() {
+    const v = monthInput?.value || '';
+    if (!/^\d{4}-\d{2}$/.test(v)) { alert('対象月を選択してください。'); return; }
+    const [yy, mm] = v.split('-');
+    const url = new URL(window.location.href);
+    url.searchParams.set('year', yy);
+    url.searchParams.set('month', Number(mm));
+    window.location = url.toString();
+  }
+  btn?.addEventListener('click', (e) => { e.preventDefault(); doSearch(); });
+  monthInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); doSearch(); } });
+
+  // --- 表データ（そのまま） ---
+  const rows = @json($rows);
+  const matrix = rows.map(r => ([
+    r.employee_code ?? '',
+    r.family_name   ?? '',
+    r.first_name    ?? '',
+    Number(r.total_amount ?? 0),
+    (r.status || '').toUpperCase(),
+    r.submitted_at  ?? ''
+  ]));
+
+  // === v5 正しい初期化：worksheets を使う ===
+  const el = document.getElementById('sheet');
+  const sheet = jspreadsheet(el, {
+    worksheets: [{
+      data: matrix,
+      // セル一つしか効かない
+      style: {
+        '':'color:red; font-weight:bold;'
+      },
+      columns: [
+        { title: 'Employee Code', width: 120, readOnly: true },
+        { title: 'Family Name',   width: 150, readOnly: true },
+        { title: 'First Name',    width: 250, readOnly: true },
+        { title: 'Total (JPY)',   width: 140, readOnly: true, type: 'numeric', mask: '#,##0' },
+        { title: 'Status',        width: 140, readOnly: true },
+        { title: 'Submitted At',  width: 147, readOnly: true },
+      ],
+      allowInsertRow: false,
+      allowManualInsertRow: false,
+      allowDeleteRow: false,
+      allowInsertColumn: false,
+      allowDeleteColumn: false,
+      allowRenameColumn: false,
+      allowComments: false,
+      allowSaving: false,
+      freezeColumns: 1,
+      tableOverflow: false, //影
+      tableHeight: '470px',
+      // v5 での簡易ソートはヘッダクリックで可（columns 定義に依存）
+      // 必要に応じて search/tabs なども後で追加可能
+    }],
+  });
+
+  // 参考：合計再計算（今はPHPで済ませている）
+  const total = sheet[0].getColumnData(3).reduce((a,v)=>a+(+v||0),0);
+});
+</script>
+
+@endsection
