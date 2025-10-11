@@ -90,8 +90,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // --- 表データ（そのまま） ---
   const rows = @json($rows);
+  const yy = {{ (int)$y }};
+  const mm = {{ (int)$m }};
+
+  // code を <a> に変換
+  function codeLink(code) {
+    const safe = String(code || '');
+    const href = `/expenses/${encodeURIComponent(safe)}/edit?year=${yy}&month=${mm}`;
+    return `<a class="link-emp" href="${href}" target="_blank" rel="noopener">${safe}</a>`;
+  }
+
   const matrix = rows.map(r => ([
-    r.employee_code ?? '',
+    codeLink(r.employee_code),              // ← リンクHTML
     r.family_name   ?? '',
     r.first_name    ?? '',
     Number(r.total_amount ?? 0),
@@ -109,13 +119,14 @@ document.addEventListener('DOMContentLoaded', function () {
         '':'color:red; font-weight:bold;'
       },
       columns: [
-        { title: 'Employee Code', width: 120, readOnly: true },
+        { title: 'Employee Code', width: 120, readOnly: true, type: 'html' }, // ← html
         { title: 'Family Name',   width: 150, readOnly: true },
         { title: 'First Name',    width: 250, readOnly: true },
         { title: 'Total (JPY)',   width: 140, readOnly: true, type: 'numeric', mask: '#,##0' },
         { title: 'Status',        width: 140, readOnly: true },
         { title: 'Submitted At',  width: 147, readOnly: true },
       ],
+      stripHTMLOnCopy: true, // html コピーを有効に
       allowInsertRow: false,
       allowManualInsertRow: false,
       allowDeleteRow: false,
