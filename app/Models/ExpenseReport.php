@@ -57,4 +57,11 @@ class ExpenseReport extends Model
     {
         return $q->where('year', $year)->where('month', $month);
     }
+
+    /** 指定年月のスコープ */
+    public function scopeForYm($q, int $y, int $m)
+    {
+        return $q->where('year', $y)->where('month', $m);
+    }
+    
 }

@@ -157,3 +157,10 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/api/expenses/{expense}',[ExpenseApiController::class, 'update'])->name('api.expenses.update');
     Route::delete('/api/expenses/{expense}',[ExpenseApiController::class, 'destroy'])->name('api.expenses.destroy');
 });
+
+use App\Http\Controllers\ExpenseReportController;
+
+Route::middleware(['auth', 'role:admin|super_admin']) // 権限ミドルウェアは環境に合わせて
+    ->get('/expenses/report', [ExpenseReportController::class, 'show'])
+    ->name('expenses.admin.report');
+

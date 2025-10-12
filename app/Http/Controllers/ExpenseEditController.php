@@ -43,13 +43,14 @@ class ExpenseEditController extends Controller
         $expenses = $report
             ? $report->expenses()
             ->orderBy('expense_date')
-            ->get(['id', 'expense_date', 'station_from', 'station_to', 'note', 'cost', 'trip_type', 'category', 'commuter_pass_id', 'created_at', 'updated_at'])
+            ->get(['id', 'expense_date', 'seq', 'station_from', 'station_to', 'note', 'cost', 'trip_type', 'category', 'commuter_pass_id', 'created_at', 'updated_at'])
             : collect(); // ★ 無ければ空
 
         $rows = $expenses->map(function ($e) {
             return [
                 'id'               => $e->id,
                 'expense_date'     => $e->expense_date?->toDateString(),
+                'seq'              => $e->seq,
                 'station_from'     => $e->station_from,
                 'station_to'       => $e->station_to,
                 'note'             => $e->note,
@@ -99,14 +100,60 @@ class ExpenseEditController extends Controller
         $eventOnMap = [];
         foreach ($daily as $d => $flags) $eventOnMap[$d] = $flags['has_on'];
 
+        // ▼ CommuterPass：この月に重なる定期券を取得し、日付キーの「有効マップ」を作る
+        $passes = \App\Models\CommuterPass::query()
+            ->where('user_id', $user->id)
+            ->whereDate('date_from', '<=', $end->toDateString())
+            ->whereDate('date_to',   '>=', $start->toDateString())
+            ->orderBy('date_from')
+            ->get(['id', 'date_from', 'date_to', 'station_from', 'station_to']);
+
+        $passActiveMap = [];
+        foreach ($passes as $p) {
+            $from = \Carbon\Carbon::parse($p->date_from)->max($start);
+            $to   = \Carbon\Carbon::parse($p->date_to)->min($end);
+            for ($d = $from->copy(); $d->lte($to); $d->addDay()) {
+                $passActiveMap[$d->toDateString()] = true;
+            }
+        }
+
+        // ▼ 画面表示用に整形（当月区間とフルの両方を持たせる）
+        $activePasses = $passes->map(function ($p) use ($start, $end) {
+            $fromFull = \Carbon\Carbon::parse($p->date_from);
+            $toFull   = \Carbon\Carbon::parse($p->date_to);
+
+            $fromDisp = $fromFull->copy()->max($start);
+            $toDisp   = $toFull->copy()->min($end);
+
+            return [
+                'id'            => $p->id,
+                'station_from'  => $p->station_from,
+                'station_to'    => $p->station_to,
+                'cost'          => (int) $p->cost,
+
+                // 定期券本来の期間（YYYY-MM-DD形式）
+                'valid_from'    => $fromFull->toDateString(),
+                'valid_to'      => $toFull->toDateString(),
+                'valid_range'   => $fromFull->toDateString() . '〜' . $toFull->toDateString(),
+
+                // 当月に表示する期間（YYYY-MM-DD形式）
+                'display_from'  => $fromDisp->toDateString(),
+                'display_to'    => $toDisp->toDateString(),
+                'display_range' => $fromDisp->toDateString() . '〜' . $toDisp->toDateString(),
+                //'valid_range'   => $fromFull->translatedFormat('n月j日').'〜'.$toFull->translatedFormat('n月j日'),
+            ];
+        })->values()->all();
+
         return view('expenses.edit', [
             'user'        => $user,
             'report'      => $report,              // ★ null 可
-            'hasReport'   => (bool)$report,        // ★ 追加
-            'y'           => $y,
-            'm'           => $m,
-            'rows'        => $rows,
-            'eventOnMap'  => $eventOnMap,
+            'hasReport'   => (bool)$report,        // ★ 提出済み or 下書き有り
+            'y'           => $y,                   // 選択中の年
+            'm'           => $m,                   // 選択中の月
+            'rows'        => $rows,                // 明細行の配列
+            'eventOnMap'  => $eventOnMap,          // ★ イベントON日のマップ 
+            'passActiveMap' => $passActiveMap,     // ★ 定期券の有効日マップ
+            'activePasses'  => $activePasses,      // ★ ヘッダー表示用
         ]);
     }
 

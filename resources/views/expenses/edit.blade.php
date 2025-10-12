@@ -1,87 +1,58 @@
+{{-- resources/views/expenses/edit.blade.php --}}
 @extends('layouts.app')
 
 @section('title', '交通費（表示のみ）')
 
 @push('styles')
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-grid.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-theme-alpine.css">
-<style>
-  .page-wrap {
-    max-width: 1100px;
-    margin: 20px auto;
-  }
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsuites/dist/jsuites.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jspreadsheet-ce@5/dist/jspreadsheet.min.css">
+  <style>
+    .page-wrap { max-width: 1300px; margin: 20px auto; }
+    .header-box {
+      background: #f8f9fa; padding: 12px 16px; border-radius: 8px; border: 1px solid #78a3faff;
+    }
+    .header-box .meta { display: flex; flex-wrap: wrap; gap: 16px; font-size: 14px; }
+    .total { font-weight: 700; }
+    .muted { color: #6b7280; }
+    #sheet { width: 100%; max-width: 100%; height: auto; margin: 0 auto; }
 
-  .header-box {
-    background: #f8f9fa;
-    padding: 12px 16px;
-    border-radius: 8px;
-    border: 1px solid #78a3faff;
-  }
+    /* ▼ 文字サイズ */
+    .header-box .meta > div {
+      font-size: 1rem;      /* 通常より大きめ（約17.6px） */
+      line-height: 1.5;       /* 行間を少し広く */
+    }
 
-  .header-box .meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-    font-size: 14px;
-  }
+    .header-box .meta strong {
+      font-size: 1rem;     /* 強調文字はさらに少し大きく */
+      font-weight: 600;
+    }
 
-  .total {
-    font-weight: 700;
-  }
-
-  .ag-theme-alpine {
-    height: 600px;
-    width: 100%;
-  }
-
-  .row-actions {
-    display: flex;
-    gap: 6px;
-    justify-content: center;
-  }
-
-  .row-actions button {
-    font-size: 12px;
-    padding: 2px 6px;
-  }
-
-  .ag-theme-alpine .ag-row.row-on .ag-cell {
-    background-color: #ecfdf5 !important;
-  }
-
-  .ag-theme-alpine .ag-row.row-off .ag-cell {
-    background-color: #f3f4f6 !important;
-    color: #6b7280;
-  }
-
-  .muted {
-    color: #6b7280;
-  }
-</style>
+    /* 定期券ブロック内の細文字（日付）を落ち着かせる */
+    .header-box .meta .muted {
+      font-size: 0.95rem;
+      color: #6b7280;
+    }
+  </style>
 @endpush
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/ag-grid-community/dist/ag-grid-community.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsuites/dist/jsuites.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspreadsheet-ce@5/dist/index.min.js"></script>
 @endpush
 
 @section('content')
 <div class="page-wrap">
   <h1 class="mb-3">交通費（{{ $y }}年{{ $m }}月）</h1>
 
-  {{-- ▼ 月選択フォーム（GET） --}}
+  {{-- ▼ 月選択フォーム --}}
   <form method="GET" class="mb-3 d-flex align-items-center gap-2" id="monthForm">
     <label for="monthPick" class="form-label m-0">対象月</label>
-    <input
-      type="month"
-      id="monthPick"
-      name="monthpick"
-      class="form-control form-control-sm"
-      style="width:170px"
+    <input type="month" id="monthPick" name="monthpick"
+      class="form-control form-control-sm" style="width:170px"
       value="{{ sprintf('%04d-%02d', $y, $m) }}">
     <button id="monthSearchBtn" class="btn btn-sm btn-outline-primary" type="button">検索</button>
 
     <noscript>
-      {{-- JS無効時用：送信用のyear/monthをhiddenに入れてsubmit --}}
       <input type="hidden" name="year" value="{{ $y }}">
       <input type="hidden" name="month" value="{{ $m }}">
       <button type="submit" class="btn btn-sm btn-outline-primary">検索</button>
@@ -90,52 +61,80 @@
 
   <div class="header-box mb-4">
     @if($hasReport)
-    <div class="meta">
-      <div>講師: <strong>{{ $report->employee_family_name }} {{ $report->employee_first_middle_name }}</strong></div>
-      <div>社員コード: <strong>{{ $report->employee_code }}</strong></div>
-      <div>ステータス:
-        <strong>{{ strtoupper($report->status->value ?? $report->status) }}</strong>
+      <div class="meta">
+        <div>講師: <strong>{{ $report->employee_family_name }} {{ $report->employee_first_middle_name }}</strong></div>
+        <div>社員コード: <strong>{{ $report->employee_code }}</strong></div>
+        <div>ステータス:
+          <strong>{{ strtoupper($report->status->value ?? $report->status) }}</strong>
+        </div>
+        
+        {{-- ▼ 定期券（この月に有効なものを右寄せで詳細表示） --}}
+        @if(!empty($activePasses))
+          <div class="total ms-auto text-end"> 
+            @foreach($activePasses as $p)
+                <div class="muted small">
+                <strong>定期券:{{ $p['station_from'] }} → {{ $p['station_to'] }}</strong>
+                <span class="muted">{{ $p['valid_range'] }}</span>
+                </div>
+            @endforeach
+          </div>
+        @endif    
+
+        {{-- ▼ 空白行（1行分の余白） --}}
+        <div class="total w-100 mb-2">合計: <strong id="sumCost">{{ number_format($report->total_amount) }}</strong> 円</div>
+
       </div>
-      <div class="total">合計: <strong id="sumCost">{{ number_format($report->total_amount) }}</strong> 円</div>
-    </div>
-    <div class="mt-2 d-flex align-items-center gap-2">
-      @if($report->status === \App\Enums\ExpenseReportStatus::DRAFT)
-      {{-- 下のスクリプトで利用 --}}
-      <input type="date" id="pickDate" class="form-control form-control-sm" style="width: 160px;">
-      <button id="addByDateBtn" class="btn btn-success btn-sm">＋指定日を追加</button>
-      <button id="saveBtn" class="btn btn-primary btn-sm">保存</button>
-      {{-- 右端へ寄せる --}}
-      <div class="ms-auto"></div>
-      {{-- ★ 追加：提出ボタン --}}
-      {{-- ★ 提出フォーム（押すと画面再読み込み） --}}
-      <form
-        method="POST"
-        action="{{ route('expenses.submit', ['report' => $report->id]) }}"
-        onsubmit="return confirm('この月の交通費を提出しますか？（提出後は編集できません）');">
-        @csrf
-        @method('PUT')
-        <button type="submit" class="btn btn-warning btn-sm" id="submitBtn">提出</button>
-      </form>
-      @else
-      {{-- 提出済み表示（必要なら） --}}
-      <div class="ms-auto"></div>
-      <span class="text-muted">提出済み（{{ optional($report->submitted_at)->format('Y-m-d H:i') }}）</span>
-      @endif
-    </div>
+      <div class="mt-2 d-flex align-items-center gap-2">
+        @if($report->status === \App\Enums\ExpenseReportStatus::DRAFT)
+          <input type="date" id="pickDate" class="form-control form-control-sm" style="width: 160px;">
+          <button id="addByDateBtn" class="btn btn-success btn-sm" type="button" disabled>＋指定日を追加</button>
+          <button id="saveBtn" class="btn btn-primary btn-sm" type="button">保存</button>
+          <div class="ms-auto"></div>
+          <form method="POST" action="{{ route('expenses.submit', ['report' => $report->id]) }}"
+                onsubmit="return confirm('この月の交通費を提出しますか？（提出後は編集できません）');">
+            @csrf @method('PUT')
+            <button type="submit" class="btn btn-warning btn-sm" id="submitBtn">提出</button>
+          </form>
+        @else
+          <div class="ms-auto"></div>
+          <span class="text-muted">提出済み（{{ optional($report->submitted_at)->format('Y-m-d H:i') }}）
+            <br>If you need to correct, please contact XXX Dpt at 06-XXXX-XXXX.
+          </span>
+        @endif
+      </div>
     @else
-    <div class="p-2">
-      <div class="muted">講師: <strong>{{ $user->family_name ?? '' }} {{ $user->first_name ?? '' }}</strong></div>
-      <div class="mt-2 alert alert-secondary" role="alert" style="padding:8px 12px">
-        対象レコードがございません（{{ $y }}年{{ $m }}月）。<br>
-        上の「対象月」から別の月をお選びください。
+      <div class="p-2">
+        <div class="muted">講師: <strong>{{ $user->name ?? '' }}</strong></div>
+        <div class="mt-2 alert alert-secondary" role="alert" style="padding:8px 12px">
+          対象レコードがございません（{{ $y }}年{{ $m }}月）。<br>
+          上の「対象月」から別の月をお選びください。
+        </div>
       </div>
-    </div>
     @endif
   </div>
 
-  <div id="expensesGrid" class="ag-theme-alpine"></div>
+  <div id="sheet"></div>
+
+  {{-- ✅ ヘッダーの下など、見せたい場所に置く --}}
+  <a href="https://world.jorudan.co.jp/mln/en/?sub_lang=nosub"
+    class="btn btn-outline-secondary btn-sm"
+    target="_blank" rel="noopener noreferrer">
+    Open Jorudan (Japanese Transit Planer)
+  </a>
+  <a href="https://www.google.com/maps/"
+    class="btn btn-outline-secondary btn-sm"
+    target="_blank" rel="noopener noreferrer">
+    Open Google Maps
+  </a>
+    <a href="https://map.yahoo.co.jp/"
+    class="btn btn-outline-secondary btn-sm"
+    target="_blank" rel="noopener noreferrer">
+    Open Yahoo Maps
+  </a>
+  
 </div>
-{{-- 対象月検索用 --}}
+
+{{-- 月検索 --}}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   const monthInput = document.getElementById('monthPick');
@@ -143,432 +142,481 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function doSearch() {
     const v = monthInput?.value || '';
-    if (!/^\d{4}-\d{2}$/.test(v)) {
-      alert('対象月を選択してください。');
-      return;
-    }
+    if (!/^\d{4}-\d{2}$/.test(v)) { alert('対象月を選択してください。'); return; }
     const [yy, mm] = v.split('-');
     const url = new URL(window.location.href);
     url.searchParams.set('year', yy);
-    url.searchParams.set('month', Number(mm)); // "09"→9 に
+    url.searchParams.set('month', Number(mm));
     window.location = url.toString();
   }
-
   btn?.addEventListener('click', (e) => { e.preventDefault(); doSearch(); });
-
-  // Enterキーで検索したい場合（任意）
-  monthInput?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); doSearch(); }
-  });
+  monthInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); doSearch(); } });
 });
 </script>
 
+{{-- ▼ JSpreadsheet 初期化＋保存／指定日追加（seq計算＆並び替え） --}}
+@push('scripts')
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const eventOnMap = @json($eventOnMap ?? []);
-    const initialRows = @json($rows);
-    const isLocked = @json(($report->submitted_at ?? null) !== null); // ★追加
-    const canEdit  = !isLocked; // ★追加
-    const reportId = @json($report->id ?? null);
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+document.addEventListener('DOMContentLoaded', function () {
+  if (!@json($hasReport)) return; // レポート無い月は何もしない
 
-    function isOnDay(ymd) {
-      return !!eventOnMap[ymd];
-    }
+  const csrfToken     = @json(csrf_token());
+  const reportId      = @json($report?->id);
+  const year          = @json($y);
+  const month         = @json($m);
+  const initialRows   = @json($rows);
+  const eventOnMap    = @json($eventOnMap ?? []);
+  const passActiveMap = @json($passActiveMap ?? []); // ★ 定期券
 
-    // ===== utils =====
-    const weekdayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  // 色定数（6桁HEXで安定化）
+  const COLOR_WORK_ON  = '#6b92ff';  // Work=ON（イベントON）
+  const COLOR_WORK_OFF = '#e68484';  // Work=OFF
+  const COLOR_PASS_ON  = '#9bf59b';  // Pass=有効期間
+  const COLOR_PASS_OFF = '#ffffff';  // Pass=無効
 
-    function toYMDLocal(v) {
-      if (!v) return v;
-      if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
-      const d = new Date(v);
-      if (isNaN(d)) return String(v).slice(0, 10);
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${y}-${m}-${day}`;
-    }
+  // ★ 操作ボタンHTML
+  const ACTION_BTN_HTML = '<button type="button" class="btn btn-outline-danger btn-sm js-row-del" title="この行を削除">Del</button>';
+  const ADD_BTN_HTML    = '<button type="button" class="btn btn-outline-primary btn-sm js-row-add" title="この日の行を下に追加">Add</button>';
+  // 列定数
+  const COL = Object.freeze({
+    ACTIONS: 0,   // 削除ボタン
+    ADD:     1,   // 追加ボタン
+    DATE:    2,
+    DAY:     3,
+    WORK:    4,
+    FROM:    5,
+    TO:      6,
+    AMOUNT:  7,
+    TRIP:    8,
+    NOTE:    9,
+    ID:      10,  // hidden
+    SEQ:     11,  // hidden
+    PASS:    12,
+  });
 
-    function compareDateYMD(a, b) {
-      if (a === b) return 0;
-      return a < b ? -1 : 1;
-    }
+  // 英語の曜日
+  function enWeekday(dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr + 'T00:00:00');
+    if (isNaN(d)) return '';
+    return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
+  }
 
-    function normalizeRow(r) {
-      return {
-        ...r,
-        expense_date: toYMDLocal(r.expense_date),
-        seq: Number(r.seq ?? 100),
-        cost: Number(r.cost ?? 0),
-      };
-    }
+  // TripType Enum
+  const tripTypeOptions = [
+    { id: 'round_trip', name: 'Round Trip' },
+    { id: 'one_way',    name: 'One Way' },
+  ];
 
-    function fmtInt(n) {
-      return (n ?? 0).toLocaleString();
-    }
+  // 初期データ行（表示列＋非表示の内部列）
+  // 列: Date(0) / Day(1) / Work(2:color) / From(3) / To(4) / Amount(5) / Trip(6) / Note(7) / _id(8) / _seq(9) / Pass(10:color)
+  const matrix = initialRows.map(r => {
+    const date = r.expense_date || '';
 
-    function recalcFooterSum(api) {
-      let sum = 0;
-      api.forEachNodeAfterFilterAndSort(node => sum += Number(node.data?.cost ?? 0));
-      const el = document.getElementById('sumCost');
-      if (el) el.innerText = fmtInt(sum);
-    }
+    const isEventOn = !!eventOnMap[date];
+    const isPassOn  = !!passActiveMap[date];
 
-    // ===== API helpers =====
-    async function apiCreate(payload) {
-      const res = await fetch(@json(route('api.expenses.store')), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': csrf,
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw await res.json().catch(() => ({
-        message: 'Create failed'
-      }));
-      return res.json();
-    }
-    async function apiUpdate(id, payload) {
-      const url = @json(route('api.expenses.update', ['expense' => '__ID__'])).replace('__ID__', id);
-      const res = await fetch(url, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': csrf,
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw await res.json().catch(() => ({
-        message: 'Update failed'
-      }));
-      return res.json();
-    }
-    async function apiDelete(id) {
-      const url = @json(route('api.expenses.destroy', ['expense' => '__ID__'])).replace('__ID__', id);
-      const res = await fetch(url, {
-        method: 'DELETE',
-        headers: {
-          'X-CSRF-TOKEN': csrf,
-          'Accept': 'application/json'
-        }
-      });
-      if (!res.ok) throw await res.json().catch(() => ({
-        message: 'Delete failed'
-      }));
-      return res.json();
-    }
+    const colorWork = isEventOn ? COLOR_WORK_ON : COLOR_WORK_OFF;
+    const colorPass = isPassOn  ? COLOR_PASS_ON : COLOR_PASS_OFF;
 
-    // ===== column defs =====
-    const columnDefs = [{
-        headerName: '',
-        field: '_actions',
-        width: 80,
-        sortable: false,
-        filter: false,
-        cellRenderer: (p) => {
-          const wrap = document.createElement('div');
-          wrap.className = 'row-actions';
-          const addBtn = document.createElement('button');
-          addBtn.textContent = '＋';
-          const delBtn = document.createElement('button');
-          delBtn.textContent = 'ー';
-          wrap.appendChild(addBtn);
-          wrap.appendChild(delBtn);
-
-          if (isLocked) { // 提出後は行追加/削除だけでなく編集も不可
-          addBtn.disabled = true;
-          delBtn.disabled = true;
-          return wrap;
-          }
-
-          addBtn.addEventListener('click', async () => {
-            const base = p.data;
-            const d = toYMDLocal(base.expense_date);
-            const curSeq = Number(base.seq ?? 100);
-
-            // 同日の seq を収集して中間 or +100
-            const sameDaySeqs = [];
-            gridApi.forEachNodeAfterFilterAndSort(n => {
-              if (toYMDLocal(n.data.expense_date) === d) sameDaySeqs.push(Number(n.data.seq ?? 0));
-            });
-            sameDaySeqs.sort((a, b) => a - b);
-            let nextSeq = null;
-            for (const s of sameDaySeqs) {
-              if (s > curSeq) {
-                nextSeq = s;
-                break;
-              }
-            }
-            const newSeq = (nextSeq === null) ? curSeq + 100 : (nextSeq - curSeq > 1 ? Math.floor((curSeq + nextSeq) / 2) : curSeq + 100);
-
-            try {
-              const created = await apiCreate({
-                expense_report_id: reportId,
-                expense_date: d,
-                seq: newSeq,
-                station_from: null,
-                station_to: null,
-                note: null,
-                cost: 0,
-                trip_type: 'round_trip',
-                category: 'regular',
-                commuter_pass_id: null,
-              });
-              const row = normalizeRow(created);
-              gridApi.applyTransaction({
-                add: [row]
-              });
-
-              // ★ 並べ替えを強制再実行（setSortModel は使わない）
-              if (gridApi.refreshClientSideRowModel) gridApi.refreshClientSideRowModel('sort');
-
-              recalcFooterSum(gridApi);
-            } catch (err) {
-              alert(err.message || 'Add failed');
-            }
-          });
-
-          delBtn.addEventListener('click', async () => {
-            const row = p.data;
-            if (!row.id) {
-              gridApi.applyTransaction({
-                remove: [row]
-              });
-              return;
-            }
-            if (!confirm('この行を削除しますか？')) return;
-            try {
-              await apiDelete(row.id);
-              gridApi.applyTransaction({
-                remove: [row]
-              });
-              if (gridApi.refreshClientSideRowModel) gridApi.refreshClientSideRowModel('sort');
-              recalcFooterSum(gridApi);
-            } catch (err) {
-              alert(err.message || 'Delete failed');
-            }
-          });
-
-          return wrap;
-        }
-      },
-
-      // 日付（初期ソート: sort=asc, sortIndex=0）
-      {
-        headerName: '日付',
-        field: 'expense_date',
-        width: 120,
-        editable: false,
-        valueGetter: (p) => toYMDLocal(p.data.expense_date),
-        comparator: (a, b) => compareDateYMD(a, b),
-        sort: 'asc', // ★ 初期ソート
-        sortIndex: 0, // ★ 優先順位1位
-      },
-      {
-        headerName: 'Weekday',
-        field: 'weekday',
-        width: 100,
-        editable: false,
-        valueGetter: (p) => {
-          const d = toYMDLocal(p.data.expense_date);
-          if (!d) return '';
-          return weekdayNames[new Date(d + 'T00:00:00').getDay()] ?? '';
-        },
-      },
-
-      // 並び用（非表示, 初期ソート: sortIndex=1）
-      {
-        headerName: 'seq',
-        field: 'seq',
-        hide: true,
-        comparator: (a, b) => Number(a ?? 0) - Number(b ?? 0),
-        valueGetter: (p) => Number(p.data.seq ?? 0),
-        sort: 'asc', // ★ 初期ソート
-        sortIndex: 1, // ★ 優先順位2位
-      },
-
-      // 入力列
-      {
-        headerName: 'From',
-        field: 'station_from',
-        width: 140,
-        editable: canEdit
-      },
-      {
-        headerName: 'To',
-        field: 'station_to',
-        width: 140,
-        editable: canEdit
-      },
-      {
-        headerName: 'Amount',
-        field: 'cost',
-        width: 100,
-        editable: canEdit,
-        valueFormatter: (p) => p.value != null ? Number(p.value).toLocaleString() : '',
-        valueParser: (p) => Number(p.newValue ?? 0),
-      },
-      {
-        headerName: 'Type',
-        field: 'trip_type',
-        width: 100,
-        editable: canEdit,
-        cellEditor: 'agSelectCellEditor',
-        cellEditorParams: {
-          values: ['round_trip', 'one_way']
-        }
-      },
-      {
-        headerName: '！',
-        field: 'category',
-        width: 100,
-        editable: canEdit,
-        cellEditor: 'agSelectCellEditor',
-        cellEditorParams: {
-          values: ['regular', 'irregular']
-        }
-      },
-      {
-        headerName: 'Note',
-        field: 'note',
-        flex: 1,
-        minWidth: 200,
-        editable: canEdit
-      },
+    return [
+      ACTION_BTN_HTML,        // 0: ★ Delete button
+      ADD_BTN_HTML,           // 1
+      date,
+      enWeekday(date),
+      colorWork,             // 2: Work (Event)
+      r.station_from || '',  // 3
+      r.station_to   || '',  // 4
+      Number.isFinite(r.cost) ? r.cost : 0, // 5
+      r.trip_type || '',     // 6
+      r.note || '',          // 7
+      r.id ?? '',            // 8
+      (r.seq ?? 100),        // 9
+      colorPass,             // 10: Pass
     ];
+  });
 
-    function maxSeqForDate(ymd) {
-      let max = 0;
-      gridApi.forEachNodeAfterFilterAndSort(n => {
-        if (toYMDLocal(n.data.expense_date) === ymd) {
-          const s = Number(n.data.seq ?? 0);
-          if (s > max) max = s;
+  // === シート生成 ===
+  const sheet = jspreadsheet(document.getElementById('sheet'), {
+    worksheets: [
+      {
+        data: matrix,
+        columns: [
+          { title:'-',              type:'html',     width:50,  readOnly:true                  }, // 0 削除
+          { title:'+',              type:'html',     width:50,  readOnly:true                  }, // 1 追加
+          { title:'Date',           type:'text',     width:110, readOnly:true                  }, // 2
+          { title:'Day',            type:'text',     width:65,  readOnly:true                  }, // 3
+          { title:'Work',           type:'color',    width:65,  render:'square', readOnly:true }, // 4
+          { title:'From',           type:'text',     width:200                                 }, // 5
+          { title:'To',             type:'text',     width:200                                 }, // 6
+          { title:'Amount',         type:'numeric',  width:100, mask:'#,##0'                   }, // 7
+          { title:'Trip Type',      type:'dropdown', width:100, source: tripTypeOptions        }, // 8
+          { title:'Note',           type:'text',     width:240                                 }, // 9
+          { title:'_id',            type:'text',     width:0,   readOnly:true                  }, // 10
+          { title:'_seq',           type:'numeric',  width:0,   readOnly:true                  }, // 11
+          { title:'Pass',           type:'color',    width:65,  render:'square', readOnly:true }, // 12
+        ],
+        minDimensions: [13, Math.max(matrix.length, 1)],
+      allowInsertRow: false,
+      allowManualInsertRow: false,
+      allowDeleteRow: false,
+      allowInsertColumn: false,
+      allowDeleteColumn: false,
+      allowRenameColumn: false,
+      allowComments: false,
+      allowSaving: false,
+      freezeColumns: 1,
+      tableOverflow: false, //影
+      tableHeight: '470px',
+
+        //updateTable: here
+
+        // 選択行の記憶用（挿入位置のヒントに使う）
+        onselection: function(el, column, row) {
+          lastSelectedRow = (typeof row === 'number') ? row : null;
         }
-      });
-      return max;
+      }
+    ]
+  });
+
+// 隠し列処理
+function hideInternalCols() {
+  sheet[0].hideColumn(COL.ID);
+  sheet[0].hideColumn(COL.SEQ);
+}
+hideInternalCols();
+
+  // 便利関数：現在の全行データをオブジェクト配列に
+  function readCurrentRows() {
+    const data = sheet[0].getData(false);
+    return data.map(arr => ({
+      date:      arr[COL.DATE] || '',
+      day:       arr[COL.DAY]  || '',
+      colorWork: arr[COL.WORK] || COLOR_WORK_OFF,
+      from:      arr[COL.FROM] || '',
+      to:        arr[COL.TO]   || '',
+      cost:      (arr[COL.AMOUNT] === '' || arr[COL.AMOUNT] == null) ? 0 : Number(String(arr[COL.AMOUNT]).replace(/,/g,'')),
+      trip:      arr[COL.TRIP] || '',
+      note:      arr[COL.NOTE] || '',
+      id:        arr[COL.ID]   || '',
+      seq:       (arr[COL.SEQ] === '' || arr[COL.SEQ] == null) ? 100 : Number(arr[COL.SEQ]),
+      colorPass: arr[COL.PASS] || COLOR_PASS_OFF,
+    })).filter(r => r.date);
+  }
+
+  // ソート：第一キー=Date(昇順)、第二キー=seq(昇順)
+  function sortRowsByDateThenSeq(rows) {
+    return rows.slice().sort((a, b) => {
+      if (a.date < b.date) return -1;
+      if (a.date > b.date) return 1;
+      return (a.seq - b.seq);
+    });
+  }
+
+  // 再描画：rows(オブジェクト配列) → シートへ反映
+  function renderRows(rows) {
+    const newMatrix = rows.map(r => {
+      const work = eventOnMap[r.date]    ? COLOR_WORK_ON : COLOR_WORK_OFF;
+      const pass = passActiveMap[r.date] ? COLOR_PASS_ON : COLOR_PASS_OFF;
+      return [
+        ACTION_BTN_HTML,      // 0
+        ADD_BTN_HTML,         // 1: 追加
+        r.date,               // 2
+        enWeekday(r.date),    // 3
+        work,                 // 4
+        r.from || '',         // 5
+        r.to   || '',         // 6
+        r.cost || 0,          // 7
+        r.trip || '',         // 8
+        r.note || '',         // 9
+        r.id   || '',         // 10
+        r.seq  ?? 100,        // 11
+        pass,                 // 12
+      ];
+    });
+    sheet[0].setData(newMatrix);
+  }
+
+  // 既存IDの集合（更新判定用）
+  const initialIdSet = new Set(initialRows.map(r => String(r.id)));
+
+  // === 指定日追加ロジック ===
+  const pickDateEl   = document.getElementById('pickDate');
+  const addByDateBtn = document.getElementById('addByDateBtn');
+  let lastSelectedRow = null; // 直近に選択した行番号（挿入位置のヒント）
+
+  // 日付入力の妥当性でボタン制御
+  function isValidDateStr(yyyy_mm_dd) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(yyyy_mm_dd)) return false;
+    const [yy, mm, dd] = yyyy_mm_dd.split('-').map(Number);
+    const d = new Date(yyyy_mm_dd + 'T00:00:00');
+    if (isNaN(d)) return false;
+    // 入力月が画面の対象年/月と一致必須
+    return (yy === Number(year) && mm === Number(month) && dd >= 1 && dd <= 31);
+  }
+
+  function enableAddButtonIfValid() {
+    const v = pickDateEl?.value || '';
+    addByDateBtn.disabled = !isValidDateStr(v);
+  }
+  pickDateEl?.addEventListener('input', enableAddButtonIfValid);
+  enableAddButtonIfValid();
+
+  // date に対する seq の決定
+  // ルール:
+  // 1) 同日の最大 seq が分かる場合、基本は「最大 + 1024」で末尾追加
+  // 2) ただし、同日内で「選択行の直後」に入れたい場合は、その選択行の seq と
+  //    次の（同日かつ seq が大きい）行の seq の中間値を取る
+  // 3) 中間値が取れない（隙間がない）場合は安全に「最大 + 1024」
+  function decideSeqForDate(targetDate, rows, hintAfterSeq = null) {
+    const same = rows.filter(r => r.date === targetDate).sort((a,b)=>a.seq-b.seq);
+    if (same.length === 0) return 1024; // 同日の先頭として 1024
+
+    const maxSeq = same[same.length - 1].seq ?? 100;
+    if (hintAfterSeq == null) {
+      return maxSeq + 1024;
     }
 
-    document.getElementById('addByDateBtn')?.addEventListener('click', async () => {
-      const input = document.getElementById('pickDate');
-      const ymd = toYMDLocal(input?.value);
-      if (!ymd) return alert('日付を選択してください。');
+    // hintAfterSeq より大きい最小 seq（= 直後の行の seq）を探す
+    const next = same.find(r => r.seq > hintAfterSeq);
+    if (next && (next.seq - hintAfterSeq) > 1) {
+      return Math.floor((hintAfterSeq + next.seq) / 2);
+    }
+    // 中間値が取れない場合は末尾へ
+    return maxSeq + 1024;
+  }
 
-      // レポートの年月チェック
-      const [yy, mm] = ymd.split('-').map(v => Number(v));
-      if (yy !== Number(@json($y)) || mm !== Number(@json($m))) {
-        if (!confirm('レポートの年月と異なる日付です。追加しますか？')) return;
-      }
-
-      // Eligibility（任意）：もし flags を用意していたら警告
-      if (window.expenseFlags && window.expenseFlags[ymd] && window.expenseFlags[ymd].normal === false) {
-        const reason = window.expenseFlags[ymd].reason || 'eligible=false';
-        if (!confirm(`注意：この日は通常勤務扱いではありません（${reason}）。追加しますか？`)) return;
-      }
-
-      // 同日最大 seq + 1024
-      const seq = maxSeqForDate(ymd) + 1024;
-
-      try {
-        const created = await apiCreate({
-          expense_report_id: reportId,
-          expense_date: ymd,
-          seq: seq,
-          station_from: null,
-          station_to: null,
-          note: null,
-          cost: 0,
-          trip_type: 'round_trip',
-          category: 'regular',
-          commuter_pass_id: null,
-        });
-
-        const row = normalizeRow(created);
-        gridApi.applyTransaction({
-          add: [row]
-        });
-        if (gridApi.refreshClientSideRowModel) gridApi.refreshClientSideRowModel('sort');
-
-        // 追加した行へスクロール＆選択
-        gridApi.ensureIndexVisible(gridApi.getDisplayedRowCount() - 1);
-      } catch (err) {
-        alert(err?.message || '追加に失敗しました');
-      }
-    });
-
-    // ===== grid init =====
-    const gridOptions = {
-      theme: 'legacy', // ag-grid.css を使い続ける
-      columnDefs,
-      rowData: initialRows.map(normalizeRow),
-      defaultColDef: {
-        sortable: true,
-        filter: false,
-        resizable: true
-      },
-      suppressClickEdit: isLocked,  // クリックで編集開始を抑止
-      animateRows: true,
-      rowSelection: {
-        mode: 'singleRow'
-      }, // ★ 新APIに合わせる
-      rowClassRules: {
-        'row-on': p => isOnDay(p.data?.expense_date), // 緑
-        'row-off': p => !isOnDay(p.data?.expense_date), // 灰
-      },
-      onGridReady: (params) => {
-        recalcFooterSum(params.api);
-      },
-      onCellValueChanged: (e) => {
-        if (e.data?.id) dirtyIds.add(e.data.id);
-        if (e.colDef.field === 'cost') recalcFooterSum(gridApi);
-      },
-    };
-
-    const gridDiv = document.getElementById('expensesGrid');
-    let gridApi;
-    try {
-      if (window.agGrid && typeof agGrid.createGrid === 'function') {
-        gridApi = agGrid.createGrid(gridDiv, gridOptions);
-      } else {
-        new agGrid.Grid(gridDiv, gridOptions);
-        gridApi = gridOptions.api; // 旧API
-      }
-    } catch (e) {
-      console.error('AG Grid init error:', e);
-      gridDiv.innerHTML = '<div style="padding:12px;color:#b91c1c;background:#fee2e2;border:1px solid #fecaca;border-radius:8px">Gridの初期化に失敗しました。コンソールのエラーをご確認ください。</div>';
+  // 追加ボタン
+  addByDateBtn?.addEventListener('click', () => {
+    const dateStr = pickDateEl?.value || '';
+    if (!isValidDateStr(dateStr)) {
+      alert('この月内の日付を選択してください。');
       return;
     }
 
-    // 変更追跡 & 保存
-    const dirtyIds = new Set();
-    document.getElementById('saveBtn')?.addEventListener('click', async () => {
-      const tx = [];
-      gridApi.forEachNode(n => {
-        if (n.data?.id && dirtyIds.has(n.data.id)) {
-          tx.push(apiUpdate(n.data.id, {
-            station_from: n.data.station_from ?? null,
-            station_to: n.data.station_to ?? null,
-            note: n.data.note ?? null,
-            cost: Number(n.data.cost ?? 0),
-            trip_type: n.data.trip_type,
-            category: n.data.category,
-            commuter_pass_id: n.data.commuter_pass_id ?? null,
-            seq: Number(n.data.seq ?? 100),
-          }));
+    // 現在の行を取得
+    const rows = readCurrentRows();
+
+    // 「選択行が同日なら、その直後に挿入」を試みる
+    let hintAfterSeq = null;
+    if (lastSelectedRow != null) {
+      const selected = rows[lastSelectedRow];
+      if (selected && selected.date === dateStr) {
+        hintAfterSeq = selected.seq ?? null;
+      }
+    }
+
+    const newSeq = decideSeqForDate(dateStr, rows, hintAfterSeq);
+
+    // 新規行データ（Date/Day は固定値、編集不可。Trip/Note等は空でOK）
+    const newRow = {
+      date: dateStr,
+      day:  enWeekday(dateStr),
+      from: '',
+      to:   '',
+      cost: 0,
+      trip: '',
+      note: '',
+      id:   '',    // 新規なので空
+      seq:  newSeq
+    };
+
+    // rowsに追加して、ルール4: 日付→seq で再ソート → 反映
+    const updated = sortRowsByDateThenSeq([...rows, newRow]);
+    renderRows(updated);
+
+    // 連続入力をしやすくする（複数日追加OK）
+    // 次の追加で再び検証されるので、日付は保持のままでもOK
+    enableAddButtonIfValid();
+  });
+
+  // === 保存処理 ===
+  const saveBtn = document.getElementById('saveBtn');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', async () => {
+      const rows = readCurrentRows();
+
+      // バリデーション（この月内のデータか）
+      for (const r of rows) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(r.date)) {
+          alert(`日付形式エラー: ${r.date}`); return;
         }
-      });
+        const [yy, mm] = r.date.split('-').map(Number);
+        if (yy !== Number(year) || mm !== Number(month)) {
+          alert(`この月以外の日付が含まれています: ${r.date}`); return;
+        }
+        if (r.cost < 0 || !Number.isFinite(r.cost)) {
+          alert(`金額が不正です: ${r.cost}`); return;
+        }
+        if (!r.trip) {
+          alert(`Trip Type が未選択の日があります: ${r.date}`); return;
+        }
+      }
+
+      saveBtn.disabled = true; saveBtn.textContent = '保存中…';
+
       try {
-        await Promise.all(tx);
-        dirtyIds.clear();
-        alert('保存しました');
+        // 1) UPDATE: id がある行
+        const updates = rows.filter(r => r.id && initialIdSet.has(String(r.id)));
+        for (const u of updates) {
+          const resp = await fetch(`/api/expenses/${u.id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-TOKEN': csrfToken,
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+              station_from: u.from || null,
+              station_to:   u.to   || null,
+              note:         u.note || null,
+              cost:         u.cost,
+              trip_type:    u.trip,   // 'round_trip' | 'one_way'
+              seq:          u.seq,
+              // category は送らない（保持）
+            }),
+          });
+          if (!resp.ok) {
+            const t = await resp.text();
+            throw new Error(`更新失敗 (ID:${u.id}): ${resp.status} ${t}`);
+          }
+        }
+
+        // 2) CREATE: id が無い行
+        const creates = rows.filter(r => !r.id);
+        for (const c of creates) {
+          const seq = Number.isFinite(c.seq) ? c.seq : 100;
+          const resp = await fetch('/api/expenses', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-TOKEN': csrfToken,
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+              expense_report_id: reportId,
+              expense_date:      c.date,
+              seq:               seq,
+              station_from:      c.from || null,
+              station_to:        c.to   || null,
+              note:              c.note || null,
+              cost:              c.cost,
+              trip_type:         c.trip,      // 'round_trip' | 'one_way'
+              category:          'regular',   // Category列削除のため既定 regular
+            }),
+          });
+          if (!resp.ok) {
+            const t = await resp.text();
+            throw new Error(`作成失敗 (Date:${c.date}): ${resp.status} ${t}`);
+          }
+        }
+
+        alert('保存しました。');
+        location.reload();
+
       } catch (err) {
-        alert(err.message || '保存に失敗しました');
+        console.error(err);
+        alert('保存でエラーが発生しました。\n' + (err?.message || err));
+      } finally {
+        saveBtn.disabled = false; saveBtn.textContent = '保存';
       }
     });
-  });
-</script>
+  }
+    // クリック委譲（削除と追加の両方を処理）
+  const sheetEl = document.getElementById('sheet');
+  sheetEl.addEventListener('click', async (e) => {
+    const delBtn = e.target.closest('.js-row-del');
+    const addBtn = e.target.closest('.js-row-add');
+    const td = e.target.closest('td');
+    if (!td) return;
+    const rowIndex = Number(td.getAttribute('data-y'));
+    if (Number.isNaN(rowIndex) || rowIndex < 0) return;
 
+    // --- 削除 ---
+    if (delBtn) {
+      const rowData = sheet[0].getRowData(rowIndex);
+      const id = rowData[COL.ID]; // _id
+      if (!id) { sheet[0].deleteRow(rowIndex); return; }
+      if (!confirm('この行を削除します。よろしいですか？')) return;
+      try {
+        const resp = await fetch(`/api/expenses/${id}`, {
+          method: 'DELETE',
+          headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+        });
+        if (!resp.ok) {
+          const t = await resp.text();
+          throw new Error(`削除失敗 (ID:${id}): ${resp.status} ${t}`);
+        }
+        sheet[0].deleteRow(rowIndex);
+      } catch (err) {
+        console.error(err);
+        alert('削除エラー: ' + (err?.message || err));
+      }
+      return;
+    }
+
+  // --- 追加（クリック行の「下」に同日行を1つ追加） ---
+    if (addBtn) {
+      const rows   = readCurrentRows();
+      const rowArr = sheet[0].getRowData(rowIndex);
+      const date   = rowArr[COL.DATE];
+      const curSeq = Number(rowArr[COL.SEQ] ?? 100);
+
+      // 同日行を seq 昇順で
+      const same = rows.filter(r => r.date === date).sort((a,b) => a.seq - b.seq);
+      const maxSeq = same.length ? same[same.length - 1].seq : 100;
+
+      let newSeq;
+      // ① 同日の行が1つだけ or クリック行が最大 → +1024
+      if (same.length === 1 || curSeq === maxSeq) {
+        newSeq = maxSeq + 1024;
+      } else {
+        // ② 次に大きい seq を探して中間値
+        const next = same.find(r => r.seq > curSeq);
+        if (next && (next.seq - curSeq) > 1) {
+          newSeq = Math.floor((curSeq + next.seq) / 2);
+        } else {
+          // 隙間がない時は最大 +1024
+          newSeq = maxSeq + 1024;
+        }
+      }
+
+      // 新規行（同日、下に入るよう seq を調整済み）
+      const newRow = {
+        date,
+        day:  enWeekday(date),
+        from: '',
+        to:   '',
+        cost: 0,
+        trip: '',
+        note: '',
+        id:   '',
+        seq:  newSeq,
+      };
+
+      // クリック行の「下」に一旦挿入してから、日付→seq で再ソート反映
+      const rowsWithNew = [
+        ...rows.slice(0, rowIndex + 1),
+        newRow,
+        ...rows.slice(rowIndex + 1),
+      ];
+
+      const updated = rowsWithNew.slice().sort((a, b) => {
+        if (a.date < b.date) return -1;
+        if (a.date > b.date) return 1;
+        return a.seq - b.seq;
+      });
+
+      renderRows(updated);
+
+      // 任意：新規行を選択状態にしたい場合（見失わないように）
+      const newIndex = updated.findIndex(r => r.date === date && r.seq === newSeq);
+      if (newIndex >= 0) {
+        sheet[0].selectCell(COL.FROM, newIndex); // 例えば From にフォーカス
+      }
+    }
+  });
+});
+</script>
+@endpush
 @endsection
