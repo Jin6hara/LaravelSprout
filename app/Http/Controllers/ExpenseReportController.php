@@ -38,8 +38,7 @@ class ExpenseReportController extends Controller
                 'month'
             )
             ->forYm($y, $m)
-            ->orderBy('employee_family_name')
-            ->orderBy('employee_first_middle_name')
+            ->orderBy('employee_code')
             ->get();
 
         // テーブル行（Jspreadsheetのマトリクスにしやすい構造へ）
