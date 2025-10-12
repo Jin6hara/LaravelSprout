@@ -98,7 +98,7 @@
         @else
           <div class="ms-auto"></div>
           <span class="text-muted">提出済み（{{ optional($report->submitted_at)->format('Y-m-d H:i') }}）
-            <br>If you need to correct, please contact Native HR at 06-6352-0650.
+            <br>If you need to correct, please contact XXX Dpt at 06-XXXX-XXXX.
           </span>
         @endif
       </div>
@@ -242,19 +242,19 @@ document.addEventListener('DOMContentLoaded', function () {
       {
         data: matrix,
         columns: [
-          { title:'-',              type:'html',    width:50,  readOnly:true }, // 0 ★ Actions（先頭）
-          { title:'+',              type:'html',    width:50,  readOnly:true }, // 1: 追加
-          { title:'Date',           type:'text',     width:110, readOnly:true                  }, // 0
-          { title:'Day',            type:'text',     width:65,  readOnly:true                  }, // 1
-          { title:'Work',           type:'color',    width:65,  render:'square', readOnly:true }, // 2
-          { title:'From',           type:'text',     width:200                                 }, // 3
-          { title:'To',             type:'text',     width:200                                 }, // 4
-          { title:'Amount',   type:'numeric',  width:100, mask:'#,##0'                   }, // 5
-          { title:'Trip Type',      type:'dropdown', width:100, source: tripTypeOptions        }, // 6
-          { title:'Note',           type:'text',     width:240                                 }, // 7
-          { title:'_id',            type:'text',     width:0,   readOnly:true                  }, // 8
-          { title:'_seq',           type:'numeric',  width:0,   readOnly:true                  }, // 9
-          { title:'Pass',           type:'color',    width:65,  render:'square', readOnly:true }, // 10
+          { title:'-',              type:'html',     width:50,  readOnly:true                  }, // 0 削除
+          { title:'+',              type:'html',     width:50,  readOnly:true                  }, // 1 追加
+          { title:'Date',           type:'text',     width:110, readOnly:true                  }, // 2
+          { title:'Day',            type:'text',     width:65,  readOnly:true                  }, // 3
+          { title:'Work',           type:'color',    width:65,  render:'square', readOnly:true }, // 4
+          { title:'From',           type:'text',     width:200                                 }, // 5
+          { title:'To',             type:'text',     width:200                                 }, // 6
+          { title:'Amount',         type:'numeric',  width:100, mask:'#,##0'                   }, // 7
+          { title:'Trip Type',      type:'dropdown', width:100, source: tripTypeOptions        }, // 8
+          { title:'Note',           type:'text',     width:240                                 }, // 9
+          { title:'_id',            type:'text',     width:0,   readOnly:true                  }, // 10
+          { title:'_seq',           type:'numeric',  width:0,   readOnly:true                  }, // 11
+          { title:'Pass',           type:'color',    width:65,  render:'square', readOnly:true }, // 12
         ],
         minDimensions: [13, Math.max(matrix.length, 1)],
       allowInsertRow: false,
@@ -321,17 +321,17 @@ hideInternalCols();
       return [
         ACTION_BTN_HTML,      // 0
         ADD_BTN_HTML,         // 1: 追加
-        r.date,
-        enWeekday(r.date),
-        work,              // 2
-        r.from || '',      // 3
-        r.to   || '',      // 4
-        r.cost || 0,       // 5
-        r.trip || '',      // 6
-        r.note || '',      // 7
-        r.id   || '',      // 8
-        r.seq  ?? 100,     // 9
-        pass,              // 10
+        r.date,               // 2
+        enWeekday(r.date),    // 3
+        work,                 // 4
+        r.from || '',         // 5
+        r.to   || '',         // 6
+        r.cost || 0,          // 7
+        r.trip || '',         // 8
+        r.note || '',         // 9
+        r.id   || '',         // 10
+        r.seq  ?? 100,        // 11
+        pass,                 // 12
       ];
     });
     sheet[0].setData(newMatrix);

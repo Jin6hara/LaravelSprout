@@ -131,13 +131,13 @@ document.addEventListener('DOMContentLoaded', function () {
         '':'color:red; font-weight:bold;'
       },
       columns: [
-        { title: 'Details',       width: 90,  readOnly: true, type: 'html' }, // ボタン列
-        { title: 'Employee Code', width: 150, readOnly: true }, // ← html
-        { title: 'Family Name',   width: 150, readOnly: true },
-        { title: 'First (Middle) Name',    width: 220, readOnly: true },
-        { title: 'Total (JPY)',   width: 140, readOnly: true, type: 'numeric', mask: '#,##0' },
-        { title: 'Status',        width: 140, readOnly: true },
-        { title: 'Submitted At',  width: 157, readOnly: true },
+        { title: 'Details',               width: 90,  readOnly: true, type: 'html' }, // ボタン列
+        { title: 'Employee Code',         width: 150, readOnly: true               }, // ← html
+        { title: 'Family Name',           width: 150, readOnly: true               },
+        { title: 'First (Middle) Name',   width: 220, readOnly: true               },
+        { title: 'Total (JPY)',           width: 140, readOnly: true, type: 'numeric', mask: '#,##0' },
+        { title: 'Status',                width: 140, readOnly: true               },
+        { title: 'Submitted At',          width: 157, readOnly: true               }  // yyyy-mm-dd hh:ii:ss,
       ],
       allowInsertRow: false,
       allowManualInsertRow: false,
