@@ -13,39 +13,25 @@ return new class extends Migration
     {
         Schema::create('events', function (Blueprint $t) {
             $t->id();
-
-            // 独立イベント：単日（AllDay も許容）
             $t->date('event_date')->index();
-
-            // 表示＆連携用
-            $t->string('title')->nullable();        // 例: 撮影
-            $t->string('school_name')->nullable();  // 例: Umeda GB / Ikoma / ...
-            $t->time('start_time')->nullable();     // nullならAllDay
-            $t->time('end_time')->nullable();
-
-            // 属性：event.on の種別
-            // 担当者必要かどうか、other=その他
-            $t->enum('sub', ['none_required', 'required', 'other'])->index();
-
-            // 元々の担当（代行トレース用）
             $t->foreignId('original_user_id')->nullable()->constrained('users')->nullOnDelete();
-
-            // 欠席時コピー元（正規コマ追跡用）
-            $t->foreignId('source_schedule_line_id')->nullable()->constrained('schedule_lines')->nullOnDelete();
-
-            // どのLeaveから生成されたスナップショットか（※CREATEでは after() を使わない）
-            $t->foreignId('source_leave_id')->nullable()->constrained('leaves')->nullOnDelete();
-            
-            // 誰が入るか（担当者は単一前提。将来複数ならpivot追加）
+            $t->text('Leave_type')->nullable();
+            $t->enum('sub', ['none_required', 'required', 'other'])->index();
+            $t->string('title')->nullable();        // 例: 撮影、OPPT/ML
+            $t->string('school_name')->nullable();
+            $t->time('start_time')->nullable();
+            $t->time('end_time')->nullable();
+            $t->string('total_duration', 5)->nullable(); // "H:MM" 最大 "23:59" を想定
+            $t->text('Lesson')->nullable();
             $t->foreignId('assigned_user_id')->nullable()->constrained('users')->nullOnDelete();
-
-            // 運用補助
-            $t->enum('status', ['pending', 'fixed', 'filled','in_process'])->default('pending')->index();
+            $t->enum('status', ['pending', 'fixed', 'filled', 'in_process'])->default('pending')->index();
             $t->enum('type', ['regular_time', 'overtime', 'schedule_change', 'special'])->index();
             $t->text('notes')->nullable();
-
+            // 欠席時コピー元（正規コマ追跡用）
+            $t->foreignId('source_schedule_line_id')->nullable()->constrained('schedule_lines')->nullOnDelete();
+            // どのLeaveから生成されたスナップショットか（※CREATEでは after() を使わない）
+            $t->foreignId('source_leave_id')->nullable()->constrained('leaves')->nullOnDelete();
             $t->timestamps();
-
             // 重複防止の最低限（完全な“時間かぶり”はアプリ層で検証）
             $t->index(['assigned_user_id', 'event_date', 'start_time', 'end_time'], 'events_user_date_time_idx');
             $t->index(['source_leave_id', 'event_date'], 'events_leave_date_idx');

@@ -18,6 +18,7 @@ class Event extends Model
         'school_name',
         'start_time',
         'end_time',
+        'total_duration',
         'type',
         'assigned_user_id',
         'sub',
@@ -32,6 +33,8 @@ class Event extends Model
         'start_time' => 'datetime:H:i',
         'end_time'   => 'datetime:H:i',
     ];
+
+    protected $appends = ['total_minutes'];
 
     public function assignedUser(): BelongsTo
     {
@@ -58,5 +61,15 @@ class Event extends Model
     public function details()
     {
         return $this->hasMany(EventDetail::class);
+    }
+
+    // Total Duration用表示整形: start_time / end_time を "H:i" に見せたい場合（保存はDBのまま）
+    public function getStartTimeAttribute($value): ?string
+    {
+        return $value ? substr($value, 0, 5) : null; // "HH:MM"
+    }
+    public function getEndTimeAttribute($value): ?string
+    {
+        return $value ? substr($value, 0, 5) : null;
     }
 }
