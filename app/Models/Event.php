@@ -34,7 +34,7 @@ class Event extends Model
         'end_time'   => 'datetime:H:i',
     ];
 
-    protected $appends = ['total_minutes'];
+    protected $appends = ['total_duration']; //API/Bladeで見える
 
     public function assignedUser(): BelongsTo
     {
@@ -63,13 +63,13 @@ class Event extends Model
         return $this->hasMany(EventDetail::class);
     }
 
-    // Total Duration用表示整形: start_time / end_time を "H:i" に見せたい場合（保存はDBのまま）
-    public function getStartTimeAttribute($value): ?string
+    // total_duration ("H:MM") から分数に変換して返す
+    public function getTotalDurationAttribute(): ?string
     {
-        return $value ? substr($value, 0, 5) : null; // "HH:MM"
-    }
-    public function getEndTimeAttribute($value): ?string
-    {
-        return $value ? substr($value, 0, 5) : null;
+        $min = $this->total_minutes;
+        if ($min === null) return null;
+        $h = intdiv($min, 60);
+        $m = $min % 60;
+        return sprintf('%d:%02d', $h, $m); // 例: 465 → "7:45"
     }
 }
