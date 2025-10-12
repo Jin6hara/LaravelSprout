@@ -29,6 +29,11 @@
   font-weight: 600;
 }
 
+/* イベントの角を少し四角くする */
+.fc .fc-event {
+  border-radius: 6px !important;
+}
+
 /* イベント色分け */
 .fc .fc-event.sub-none_required .fc-event-main,
 .fc .fc-event.sub-other .fc-event-main {
@@ -45,11 +50,15 @@
 /* status 枠線 */
 .fc .fc-event.status-pending,
 .fc .fc-event.status-in_process {
-  border-width: 4px; border-style: solid; border-color: #ef4444;
+  border-width: 3px; border-style: solid; border-color: #ef4444;
 }
 .fc .fc-event.status-fixed,
 .fc .fc-event.status-filled {
-  border-width: 4px; border-style: solid; border-color: #10b981;
+  border-width: 3px; border-style: solid; border-color: #10b981;
+}
+/* 割り当て済み(pending/in_process + assignedあり) */
+.fc .fc-event.status-assigned {
+  border-width: 3px; border-style: solid; border-color: #fabd15;
 }
 
 /* 共通 */

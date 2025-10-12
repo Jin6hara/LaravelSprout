@@ -74,6 +74,14 @@ class AllEventProvider implements CalendarEventProvider
                 "status-{$e->status}",         // 例: status-pending / status-in_process / status-fixed / status-filled
             ];
 
+            // ✅ 追加条件: pending/in_process + assigned_user_idあり
+            if (
+                in_array($e->status, ['pending', 'in_process'], true) &&
+                !empty($e->assigned_user_id)
+            ) {
+                $classNames[] = 'status-assigned'; // 黄色枠専用クラス
+            }
+
             $events[] = new CandidateEvent([
                 'title'   => $title,
                 'start'   => $startAt,
@@ -91,7 +99,7 @@ class AllEventProvider implements CalendarEventProvider
                     'original_user_id'        => $e->original_user_id,
                     'assigned_user_id'        => $e->assigned_user_id,
                     'details'   => $details,
-                    'sort_order'=> $this->sortOrderForType($e->type),
+                    'sort_order' => $this->sortOrderForType($e->type),
                 ],
                 // Resolver 側で上書きされても良いようにデフォ値を付与
                 'level'     => 1,
