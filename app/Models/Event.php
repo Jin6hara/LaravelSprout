@@ -18,6 +18,7 @@ class Event extends Model
         'school_name',
         'start_time',
         'end_time',
+        'total_duration',
         'type',
         'assigned_user_id',
         'sub',
@@ -32,6 +33,8 @@ class Event extends Model
         'start_time' => 'datetime:H:i',
         'end_time'   => 'datetime:H:i',
     ];
+
+    protected $appends = ['total_duration']; //API/Bladeで見える
 
     public function assignedUser(): BelongsTo
     {
@@ -58,5 +61,15 @@ class Event extends Model
     public function details()
     {
         return $this->hasMany(EventDetail::class);
+    }
+
+    // total_duration ("H:MM") から分数に変換して返す
+    public function getTotalDurationAttribute(): ?string
+    {
+        $min = $this->total_minutes;
+        if ($min === null) return null;
+        $h = intdiv($min, 60);
+        $m = $min % 60;
+        return sprintf('%d:%02d', $h, $m); // 例: 465 → "7:45"
     }
 }

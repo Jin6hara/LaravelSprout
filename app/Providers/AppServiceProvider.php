@@ -7,7 +7,9 @@ use Illuminate\Pagination\Paginator;
 use App\Services\Calendar\CalendarResolver;
 use App\Services\Calendar\Contracts\CalendarEventProvider;
 use App\Models\Leave;
+use App\Models\Event;
 use App\Observers\LeaveObserver;
+use App\Observers\EventObserver;
 use App\Services\Calendar\ForecastResolver;
 use App\Services\Calendar\Providers\HolidayProvider;
 use App\Services\Calendar\Providers\ClosureProvider;
@@ -57,5 +59,6 @@ class AppServiceProvider extends ServiceProvider
     {
         Paginator::useBootstrapFive(); //user.userListのpagination用に
         Leave::observe(LeaveObserver::class);
+        Event::observe(EventObserver::class);
     }
 }

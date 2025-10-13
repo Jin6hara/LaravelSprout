@@ -1,8 +1,8 @@
 document.addEventListener('DOMContentLoaded', function () {
     const calendarEl = document.getElementById('calendar');
-    console.log('[forecast.js] loaded');
+    console.log('[] loaded - forecast.js:3');
     function openSubModal(ev) {
-        console.log('[forecast.js] openSubModal', ev.extendedProps); // ← 追加
+        console.log('[] openSubModal - forecast.js:5', ev.extendedProps); // ← 追加
         // ...（モーダル生成はそのまま）
     }
 
@@ -13,6 +13,16 @@ document.addEventListener('DOMContentLoaded', function () {
         const users = p.users || {};
         const absent = p.absent_users || {};
 
+        // 件数を決定（countがなければ内訳合計） // ← 追加
+        const count = (typeof p.count === 'number')
+            ? p.count
+            : ((bd.event || 0) + (bd.line || 0) + (bd.work_instead || 0)); // ← 追加
+        const displayTitle = `Total Subs ${count}`; // ← 追加
+
+        // モーダルヘッダのタイトルも更新（要素があれば） // ← 追加
+        const titleEl = document.querySelector('#eventModal .modal-title'); // ← 追加
+        if (titleEl) titleEl.textContent = displayTitle; // ← 追加
+
         const pill = (name) => `<span class="badge text-bg-secondary me-1 mb-1">${name}</span>`;
         const group = (title, list) => {
             const body = (list || []).length ? list.map(u => pill(u.name)).join('') : '<span class="text-muted">—</span>';
@@ -22,18 +32,18 @@ document.addEventListener('DOMContentLoaded', function () {
     </div>`;
         };
 
-        let html = `<div class="mb-2"><strong>${ev.title}</strong></div>`;
+        let html = `<div class="mb-2"><strong>${displayTitle}</strong></div>`; // ← 修正（もともとは${ev.title}）
         html += `<div class="mb-2 small text-muted">
-    Event:${bd.event ?? 0} / Line:${bd.line ?? 0} / WorkInstead:${bd.work_instead ?? 0}
+    SC:${bd.event ?? 0} / Regular:${bd.line ?? 0} / RWD:${bd.work_instead ?? 0}
   </div>`;
-        html += `<h6 class="mt-3">サブ（対象者）</h6>`;
-        html += group('イベント由来', users.event);
-        html += group('スケジュール由来', users.line);
-        html += group('Work Instead', users.work_instead);
-        html += `<h6 class="mt-3">欠席サブ（除外）</h6>`;
-        html += group('イベント由来', absent.event);
-        html += group('スケジュール由来', absent.line);
-        html += group('Work Instead', absent.work_instead);
+        html += `<h6 class="mt-3">Available Subs</h6>`;
+        html += group('SC', users.event);
+        html += group('Regular', users.line);
+        html += group('RWD', users.work_instead);
+        html += `<h6 class="mt-3">Absence Subs</h6>`;
+        html += group('SC', absent.event);
+        html += group('Regular', absent.line);
+        html += group('RWD', absent.work_instead);
 
         document.getElementById('eventModalBody').innerHTML = html;
 
@@ -65,7 +75,7 @@ document.addEventListener('DOMContentLoaded', function () {
         events: {
             url: window.calendarEventsUrl,
             failure: () => alert('イベント取得に失敗しました'),
-            error: (xhr) => console.error('FC error:', xhr?.xhr?.responseText || xhr)
+            error: (xhr) => console.error('FC error: - forecast.js:78', xhr?.xhr?.responseText || xhr)
         },
 
         dayCellContent(info) {
@@ -82,7 +92,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (isSubEvt(info.event)) {
                 info.el.addEventListener('click', (e) => {
                     e.preventDefault();
-                    console.log('[forecast.js] bg click', info.event.title); // ← 追加
+                    console.log('[] bg click - forecast.js:95', info.event.title); // ← 追加
                     openSubModal(info.event);
                 });
             }
@@ -102,10 +112,34 @@ document.addEventListener('DOMContentLoaded', function () {
             // 既存の汎用表示（祝日・会社休暇）
             const e = info.event, p = e.extendedProps || {};
             let html = `<div class="mb-2"><strong>${e.title}</strong></div>`;
-            html += `<div>種別：${p.kind ?? '—'}</div>`;
-            if (p.closure_code) html += `<div>区分：${p.closure_code}</div>`;
-            const fmt = d => d ? d.toLocaleDateString('ja-JP') : '';
-            if (e.start || e.end) html += `<div>日付：${fmt(e.start)}${e.end ? ' 〜 ' + fmt(e.end) : ''}</div>`;
+
+            // ▼▼ 詳細があればリストで表示（別ファイルの実装を最小移植） ▼▼ // ← 追加
+            if (Array.isArray(p.details) && p.details.length) {
+                html += '<ul class="list-group">'; // ← 追加
+                p.details.forEach(d => {
+                    const left = `
+        <span>
+          ${d.start_hm ? `${d.start_hm} → ` : ''}
+          ${d.lesson_name ?? '—'}
+          ${d.lesson_code ? ` (${d.lesson_code})` : ''}
+        </span>
+      `;
+                    const right = `
+        <span class="badge text-bg-primary">
+          ${d.lesson_min != null ? `${d.lesson_min}分` : (d.lesson_type ?? '—')}
+        </span>
+      `;
+                    html += `<li class="list-group-item d-flex justify-content-between">${left}${right}</li>`; // ← 追加
+                });
+                html += '</ul>'; // ← 追加
+            } else {
+                // ▲▲ 詳細がないときは従来の簡易情報 ▲▲
+                html += `<div>種別：${p.kind ?? '—'}</div>`;
+                if (p.closure_code) html += `<div>区分：${p.closure_code}</div>`;
+                const fmt = d => d ? d.toLocaleDateString('ja-JP') : '';
+                if (e.start || e.end) html += `<div>日付：${fmt(e.start)}${e.end ? ' 〜 ' + fmt(e.end) : ''}</div>`;
+            }
+
             document.getElementById('eventModalBody').innerHTML = html;
             new bootstrap.Modal(document.getElementById('eventModal')).show();
         }
