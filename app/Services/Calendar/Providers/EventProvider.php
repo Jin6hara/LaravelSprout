@@ -16,9 +16,9 @@ class EventProvider implements CalendarEventProvider
 
         $rows = Event::query()
             ->where('assigned_user_id', $user->id)
+            // status: fixed/filled のみ対象（cancelled 等はここで除外される）
+            ->whereIn('status', ['fixed', 'filled'])
             // sub 条件を撤去
-            ->where('status', '!=', 'cancelled')
-            // 期間絞り。スコープ between($start,$end) がある場合はそちらでもOK
             ->whereBetween('event_date', [$start->toDateString(), $end->toDateString()])
             ->with(['details.start', 'details.lesson'])
             ->orderBy('event_date')->orderBy('start_time')
