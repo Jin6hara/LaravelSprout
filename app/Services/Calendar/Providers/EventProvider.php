@@ -13,9 +13,10 @@ class EventProvider implements CalendarEventProvider
     public function provide(User $user, Carbon $start, Carbon $end): array
     {
         // 表示対象は requied/none_required両方（後者は消しもいいけどとりあえず残しておく）
+
         $rows = Event::query()
             ->where('assigned_user_id', $user->id)
-            ->whereIn('sub', ['required','none_required']) // overtime/sub/special/other
+            // sub 条件を撤去
             ->where('status', '!=', 'cancelled')
             // 期間絞り。スコープ between($start,$end) がある場合はそちらでもOK
             ->whereBetween('event_date', [$start->toDateString(), $end->toDateString()])
@@ -33,7 +34,6 @@ class EventProvider implements CalendarEventProvider
                 $e->school_name,
                 $e->start_time ? $e->start_time->format('H:i') : null,
                 $e->end_time   ? $e->end_time->format('H:i')   : null,
-                $e->sub,
                 $e->type // ← 追加
             );
 
@@ -75,14 +75,14 @@ class EventProvider implements CalendarEventProvider
                 'classNames' => $classNames,
                 'extendedProps' => [
                     'category'  => 'event',
-                    'type'      => $e->type,           // overtime/sub/special/other
+                    'type'      => $e->type,
                     'school'    => $e->school_name,
                     'status'    => $e->status,
                     'source_schedule_line_id' => $e->source_schedule_line_id,
                     'original_user_id'        => $e->original_user_id,
                     'details'   => $details,
                     // 週ビューの表示順制御（必要なら type ごとに値を調整）
-                    'sort_order'=> $this->sortOrderFortype($e->type),
+                    'sort_order' => $this->sortOrderFortype($e->type),
                 ],
                 // Resolver 側設定（ベース250905FC）で level/type/planGroup は上書きされますが、
                 // デフォルト値としてセットしておきます。
@@ -119,7 +119,7 @@ class EventProvider implements CalendarEventProvider
             'overtime'       => '残業',
             'regular_time'   => '通常勤務',
             'special'        => '特別イベント',
-            'schedule_change'=> '時間変更',
+            'schedule_change' => '時間変更',
             default          => 'イベント',
         };
     }
@@ -134,7 +134,7 @@ class EventProvider implements CalendarEventProvider
             'overtime'       => 10,
             'regular_time'   => 20,
             'special'        => 30,
-            'schedule_change'=> 40,
+            'schedule_change' => 40,
             default          => 50,
         };
     }

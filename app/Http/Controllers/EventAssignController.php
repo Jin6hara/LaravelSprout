@@ -33,7 +33,6 @@ class EventAssignController extends Controller
             'event_date'        => ['required', 'date'],
             'original_user_id'  => ['nullable', 'exists:users,id'],
             'Leave_type'        => ['nullable', 'string'],
-            'sub'               => ['required', \Illuminate\Validation\Rule::in(['none_required', 'required', 'other'])],
             'title'             => ['nullable', 'string', 'max:255'],
             'school_name'       => ['nullable', 'string', 'max:255'],
 
@@ -45,7 +44,7 @@ class EventAssignController extends Controller
             'Lesson'            => ['nullable', 'string'],
             'assigned_user_id'  => ['nullable', 'exists:users,id'],
             'status'            => ['required', \Illuminate\Validation\Rule::in(['pending', 'fixed', 'filled', 'in_process'])],
-            'type'              => ['required', \Illuminate\Validation\Rule::in(['regular_time', 'overtime', 'schedule_change', 'special'])],
+            'type'              => ['required', \Illuminate\Validation\Rule::in(['regular_time', 'none_required', 'overtime', 'schedule_change', 'rostered_working_day', 'special'])],
             'notes'             => ['nullable', 'string'],
         ]);
 

@@ -25,9 +25,15 @@
 
     $userOptions = $userOptions ?? collect();
 
-    $statusOptions = ['pending'=>'pending','in_process'=>'in_process','fixed'=>'fixed','filled'=>'filled'];
-    $typeOptions   = ['regular_time'=>'regular_time','overtime'=>'overtime','schedule_change'=>'schedule_change','special'=>'special'];
-    $subOptions    = ['none_required'=>'none_required','required'=>'required','other'=>'other'];
+    $statusOptions = ['pending'=>'Pending','in_process'=>'In Process','fixed'=>'Fixed','filled'=>'Filled'];
+    $typeOptions   = [
+    'regular_time' => 'RT',
+    'none_required' => 'None Requred',
+    'overtime' => 'OT',
+    'schedule_change' => 'SC',
+    'rostered_working_day' => 'RWD',
+    'special' => 'SP'
+    ];
   @endphp
 
   @if($events->count())
@@ -55,11 +61,6 @@
                 <select name="status" class="form-select form-select-sm">
                   @foreach($statusOptions as $v => $label)
                     <option value="{{ $v }}" @selected($event->status===$v)>{{ $label }}</option>
-                  @endforeach
-                </select>
-                <select name="sub" class="form-select form-select-sm">
-                  @foreach($subOptions as $v => $label)
-                    <option value="{{ $v }}" @selected($event->sub===$v)>{{ $label }}</option>
                   @endforeach
                 </select>
               </div>
@@ -117,7 +118,7 @@
                   <select name="assigned_user_id" class="form-select form-select-sm">
                     <option value="">—</option>
                     @foreach($userOptions as $u)
-                      <option value="{{ $u->id }}" @selected($event->assigned_user_id===$u->id)>{{ $u->employee_code }} {{ $u->name }}</option>
+                      <option value="{{ $u->id }}" @selected($event->assigned_user_id===$u->id)>{{ $u->name }} [{{ $u->employee_code }}]</option>
                     @endforeach
                   </select>
                 </div>
@@ -126,7 +127,7 @@
                   <select name="original_user_id" class="form-select form-select-sm">
                     <option value="">—</option>
                     @foreach($userOptions as $u)
-                      <option value="{{ $u->id }}" @selected($event->original_user_id===$u->id)>{{ $u->employee_code }} {{ $u->name }}</option>
+                      <option value="{{ $u->id }}" @selected($event->original_user_id===$u->id)>{{ $u->name }} [{{ $u->employee_code }}]</option>
                     @endforeach
                   </select>
                 </div>

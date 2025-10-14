@@ -34,17 +34,24 @@
   border-radius: 6px !important;
 }
 
-/* イベント色分け */
-.fc .fc-event.sub-none_required .fc-event-main,
-.fc .fc-event.sub-other .fc-event-main {
-  background-color: #9ca3af !important; border-color: #9ca3af !important;
-}
-/* イベント色分け !importantつけないと効かない*/
-.fc .fc-event.sub-required .fc-event-main {
-  background-color: #10b981; border-color: #10b981;
-}
+/* イベント色分け Over Time */
 .fc .fc-event.fc-event-overtime .fc-event-main {
-  background-color: #8b5cf6; border-color: #8b5cf6;
+  background-color: #8b5cf6 !important; /* 紫 */
+  border-color: #8b5cf6 !important;
+}
+/* イベント色分け 代講者不要 */
+.fc .fc-event.fc-event-none_required .fc-event-main {
+  background-color: #9ca3af !important; /* 灰色 */
+  border-color: #9ca3af !important;
+}
+
+/* その他（Regular Time、 その他Schedule Change など時間外給与生じない場合 ）→ 緑 */
+.fc .fc-event.fc-event-regular_time .fc-event-main,
+.fc .fc-event.fc-event-schedule_change .fc-event-main,
+.fc .fc-event.fc-event-rostered_working_day .fc-event-main,
+.fc .fc-event.fc-event-special .fc-event-main {
+  background-color: #10b981 !important; /* 緑 */
+  border-color: #10b981 !important;
 }
 
 /* status 枠線 */

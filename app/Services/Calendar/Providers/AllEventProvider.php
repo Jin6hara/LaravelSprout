@@ -13,7 +13,7 @@ class AllEventProvider implements CalendarEventProvider
     /**
      * 期間内の「全イベント（全ユーザー分）」を取得して返却
      * - EventDetails があれば details として展開（WorkProvider と同一形）
-     * - sub/type/status を extendedProps と classNames に反映（CSSで色分け）
+     * - type/status を extendedProps と classNames に反映（CSSで色分け）
      */
     public function provide(User $user, Carbon $start, Carbon $end): array
     {
@@ -69,9 +69,8 @@ class AllEventProvider implements CalendarEventProvider
             // CSS用クラス（色分け/枠線用）
             $classNames = [
                 'fc-event-on',
-                "fc-event-{$e->type}",         // 例: fc-event-overtime
-                "sub-{$e->sub}",               // 例: sub-required / sub-none_required / sub-other
-                "status-{$e->status}",         // 例: status-pending / status-in_process / status-fixed / status-filled
+                "fc-event-{$e->type}",   // 例: fc-event-overtime / fc-event-none_required / fc-event-regular_time など
+                "status-{$e->status}",   // 例: status-pending / status-in_process / status-fixed / status-filled
             ];
 
             // ✅ 追加条件: pending/in_process + assigned_user_idあり
@@ -92,7 +91,6 @@ class AllEventProvider implements CalendarEventProvider
                 'extendedProps' => [
                     'category'  => 'event',
                     'type'      => $e->type,                 // regular_time / overtime / schedule_change / special
-                    'sub'       => $e->sub,                  // required / none_required / other
                     'school'    => $e->school_name,
                     'status'    => $e->status,               // pending / fixed / filled / in_process
                     'source_schedule_line_id' => $e->source_schedule_line_id,

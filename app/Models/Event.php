@@ -16,7 +16,6 @@ class Event extends Model
         'event_date',
         'original_user_id',
         'Leave_type',
-        'sub',
         'title',
         'school_name',
         'start_time',

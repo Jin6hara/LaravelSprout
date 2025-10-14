@@ -42,7 +42,7 @@ class LeaveSnapshotService
     public function deleteSnapshotsForLeave(Leave $leave): void
     {
         DB::transaction(function () use ($leave) {
-            Event::where('sub', 'required') // ← change: 生成と同じ 'required' に合わせる
+            Event::query()
                 ->where('source_leave_id', $leave->id)
                 ->delete();
         });
@@ -85,12 +85,11 @@ class LeaveSnapshotService
         foreach ($lines as $line) {
             // 二重生成の保険
             $exists = Event::query()
-                ->where('sub', 'required')
                 ->whereDate('event_date', $ymd)
                 ->where('source_schedule_line_id', $line->id)
                 ->where('source_leave_id', $leave->id)
                 ->exists();
-            if ($exists) continue;
+            if ($exists) {continue;} // ブロック構文（波かっこあり）
 
             // event 作成
             $event = Event::create([
@@ -99,8 +98,7 @@ class LeaveSnapshotService
                 'school_name'             => $line->school_name,
                 'start_time'              => substr($line->start_time, 0, 8), // H:i[:s]対策で正規化
                 'end_time'                => substr($line->end_time,   0, 8),
-                'sub'                     => 'required',
-                'type'                    => 'regular_time', 
+                'type'                    => 'regular_time',
                 'assigned_user_id'        => null, // 後ほどSubシフトに担当してもらう
                 'original_user_id'        => $userId,
                 'source_schedule_line_id' => $line->id,
