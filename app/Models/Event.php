@@ -14,18 +14,21 @@ class Event extends Model
 
     protected $fillable = [
         'event_date',
+        'original_user_id',
+        'Leave_type',
+        'sub',
         'title',
         'school_name',
         'start_time',
         'end_time',
         'total_duration',
-        'type',
+        'Lesson',
         'assigned_user_id',
-        'sub',
-        'original_user_id',
-        'source_schedule_line_id',
         'status',
+        'type',
         'notes',
+        'source_schedule_line_id',
+        'source_leave_id',
     ];
 
     protected $casts = [

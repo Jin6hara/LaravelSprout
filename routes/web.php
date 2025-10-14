@@ -165,15 +165,8 @@ Route::middleware(['auth', 'role:admin|super_admin']) // 権限ミドルウェ�
     ->name('expenses.admin.report');
 
 use App\Http\Controllers\EventAssignController;
-use App\Http\Controllers\EventApiController;
 
-Route::middleware(['auth'])->group(function () {
-    // 編集画面
-    Route::get('/events_subs/edit', [EventAssignController::class, 'edit'])
-        ->name('events.edit');
-
-    // API（命名を expenses→events に修正）
-    Route::post('/api/events',               [EventApiController::class, 'store'])->name('api.events.store');
-    Route::put('/api/events/{event}',        [EventApiController::class, 'update'])->name('api.events.update');
-    Route::delete('/api/events/{event}',     [EventApiController::class, 'destroy'])->name('api.events.destroy');
+Route::middleware(['auth','role:admin|super_admin'])->group(function () {
+    Route::get('/event_assigner', [EventAssignController::class, 'edit'])->name('calendar.edit');
+    Route::put('/events/{event}', [EventAssignController::class, 'update'])->name('events.update');
 });
