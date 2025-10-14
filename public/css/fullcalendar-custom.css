@@ -74,20 +74,20 @@
 
 /* RWD（黄色）/ ORD（調整）は所定休と同じ色=fc-off-prescribed を使用 */
 .fc-rwd {
-  background-color: rgba(230, 226, 0, 0.5) !important;
+  background-color: rgba(230, 157, 0, 0.5) !important;
   border: 1px solid rgba(105, 107, 0, 0.45) !important;
   font-weight: 600;
 }
 
 /* Regular shift (level5) */
 .fc-regular-shift {
-  background-color: rgba(0, 255, 13, 0.5) !important;
+  background-color: rgba(0, 216, 11, 0.5) !important;
   border: 1px solid rgba(25, 135, 84, .35) !important;
 }
 
 /* Regular shift - Sub (level5) */
 .fc-regular-shift-sub {
-  background-color: rgba(230, 226, 0, 0.5) !important;
+  background-color: rgba(230, 157, 0, 0.5) !important;
   border: 1px solid rgba(105, 107, 0, 0.45) !important;
   font-weight: 600;
 }
@@ -110,12 +110,12 @@
 .fc-leave-paid,
 .fc-leave-special {
   background-color: rgba(2, 159, 221, 0.644) !important;
-  border: 1px solid rgba(72, 203, 255, 0.644)
+  border: 1px solid rgba(0, 107, 150, 0.644)
 }
 
 .fc-leave-absence {
   background-color: rgba(88, 88, 88, 0.658) !important;
-  border: 1px solid rgba(129, 129, 129, 0.5)
+  border: 1px solid rgba(102, 102, 102, 0.568)
 }
 
 
@@ -148,6 +148,7 @@
 /* イベント全体（枠） */
 .fc-daygrid-event {
   margin-top: -2px;                 /* イベントの上部余白（セル内の日付数字との間隔）[-2] */
+  margin-bottom: 1px;              /* イベントの下部余白（セル下端との間隔）[3] */
   white-space: nowrap;              /* イベントテキストの折り返しを禁止（1行表示）[pre-line] */
   overflow: hidden;                 /* 内容が枠を超えた場合は非表示にする [pre-line, scroll]*/
   text-overflow: ellipsis;          /* 枠を超えた場合「...」で省略表示する [clip] */
