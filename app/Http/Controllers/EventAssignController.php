@@ -129,4 +129,16 @@ class EventAssignController extends Controller
 
         return back()->with('status', 'イベントを複写しました。');
     }
+
+    public function storeBlank()
+    {
+        // 空白イベントを作成（最低限: 今日の日付・status=pending）
+        $event = Event::create([
+            'event_date' => now()->toDateString(),
+            'status'     => 'pending',
+            'type'       => 'regular_time',
+        ]);
+
+        return back()->with('status', '空白イベントを追加しました。');
+    }
 }

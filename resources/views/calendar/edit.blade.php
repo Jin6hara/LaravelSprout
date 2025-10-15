@@ -39,6 +39,15 @@
   @if($events->count())
   <div class="d-flex justify-content-between align-items-center mb-2">
     <h5 class="mb-0">Event Assigner</h5>
+      <div class="d-flex align-items-center gap-2">
+        <form method="POST" action="{{ route('events.store.blank') }}" class="m-0 p-0">
+          @csrf
+          <button type="submit" class="btn btn-sm btn-success">
+            ＋ 空白イベントを追加
+          </button>
+        </form>
+      </div>
+    </div>
     <small class="text-muted">{{ $events->total() }} 件</small>
   </div>
 
