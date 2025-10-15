@@ -41,6 +41,109 @@
     <h5 class="mb-0">Event Assigner</h5>
     <small class="text-muted">{{ $events->total() }} 件</small>
   </div>
+
+  {{-- 検索フォーム --}}
+  <form method="GET" action="{{ route('calendar.edit') }}" class="search mb-2">
+    <div class="card">
+      <div class="card-body p-2">
+        <div class="row g-2 align-items-end">
+
+          {{-- title（部分一致） 
+          <div class="col-12 col-md-3">
+            <label class="form-label small mb-1">Title</label>
+            <input type="text" name="title" class="form-control form-control-sm"
+                  value="{{ request('title') }}" placeholder="例: 撮影, OPPT など">
+          </div> --}}
+
+          {{-- Original User --}}
+          <div class="col-12 col-md-3">
+            <label class="form-label small mb-1">Original User</label>
+            <select name="original_user_id" class="form-select form-select-sm">
+              <option value="">（指定なし）</option>
+              @foreach($userOptions as $u)
+                <option value="{{ $u->id }}" @selected(request('original_user_id') == $u->id)>
+                  {{ $u->name }} [{{ $u->employee_code }}]
+                </option>
+              @endforeach
+            </select>
+          </div>
+
+          {{-- Leave type（部分一致） --}}
+          <div class="col-12 col-md-3">
+            <label class="form-label small mb-1">Leave type</label>
+            <input type="text" name="Leave_type" class="form-control form-control-sm"
+                  value="{{ request('Leave_type') }}" placeholder="例: 有給, 欠勤 など">
+          </div>
+
+          {{-- School（部分一致） --}}
+          <div class="col-12 col-md-3">
+            <label class="form-label small mb-1">School</label>
+            <input type="text" name="school_name" class="form-control form-control-sm"
+                  value="{{ request('school_name') }}" placeholder="学校名で検索">
+          </div>
+
+          {{-- Assigned User --}}
+          <div class="col-12 col-md-3">
+            <label class="form-label small mb-1">Assigned User</label>
+            <select name="assigned_user_id" class="form-select form-select-sm">
+              <option value="">（指定なし）</option>
+              @foreach($userOptions as $u)
+                <option value="{{ $u->id }}" @selected(request('assigned_user_id') == $u->id)>
+                  {{ $u->name }} [{{ $u->employee_code }}]
+                </option>
+              @endforeach
+            </select>
+          </div>
+
+          {{-- Lesson（部分一致） --}}
+          <div class="col-12 col-md-3">
+            <label class="form-label small mb-1">Lesson</label>
+            <input type="text" name="Lesson" class="form-control form-control-sm"
+                  value="{{ request('Lesson') }}" placeholder="レッスン名で検索">
+          </div>
+
+          {{-- status --}}
+          <div class="col-6 col-md-3">
+            <label class="form-label small mb-1">Status</label>
+            <select name="status" class="form-select form-select-sm">
+              <option value="">（指定なし）</option>
+              @foreach($statusOptions as $v => $label)
+                <option value="{{ $v }}" @selected(request('status') === $v)>{{ $label }}</option>
+              @endforeach
+            </select>
+          </div>
+
+          {{-- type --}}
+          <div class="col-6 col-md-3">
+            <label class="form-label small mb-1">Type</label>
+            <select name="type" class="form-select form-select-sm">
+              <option value="">（指定なし）</option>
+              @foreach($typeOptions as $v => $label)
+                <option value="{{ $v }}" @selected(request('type') === $v)>{{ $label }}</option>
+              @endforeach
+            </select>
+          </div>
+
+          {{-- Date（当日一致） --}}
+          <div class="col-12 col-md-3">
+            <label class="form-label small mb-1">Date</label>
+            <input type="date" name="event_date" class="form-control form-control-sm"
+                  value="{{ request('event_date') }}">
+          </div>
+
+          {{-- 操作ボタン --}}
+          <label class="form-label small mb-1"></label>
+          <div class="col-12 col-md-3 d-flex gap-2 mt-2">
+            <button type="submit" class="btn btn-sm btn-primary flex-fill">検索</button>
+            <a href="{{ route('calendar.edit') }}" class="btn btn-sm btn-outline-secondary flex-fill">リセット</a>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </form>
+  {{-- ▲ ここまで検索フォーム --}}
+
   
   <div class="d-flex align-items-center gap-1 mb-2">
     {{-- 空白イベント追加 --}}
@@ -196,6 +299,12 @@
 <style>
   /* ページ専用の薄青 */
   .card-body.p-2.light-blue {
+    background-color: #eef6ff;
+    /* ごく淡い青 */
+  }
+
+  /* 検索専用の薄青 */
+  .card-body.p-2 {
     background-color: #eef6ff;
     /* ごく淡い青 */
   }

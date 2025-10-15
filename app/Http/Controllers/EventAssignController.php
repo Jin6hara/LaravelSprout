@@ -13,19 +13,73 @@ class EventAssignController extends Controller
 {
     public function edit(Request $request)
     {
-        $events = Event::query()
-            ->with(['assignedUser:id,name,employee_code', 'originalUser:id,name,employee_code'])
-            ->orderByDesc('event_date')->orderBy('start_time')->orderByDesc('id')
-            ->paginate(24);
-
-        // ← これが無いと Blade で undefined variable になりやすい
-        $userOptions = User::query()
+        $userOptions = \App\Models\User::query()
             ->select('id', 'name', 'employee_code')
             ->orderBy('employee_code')
             ->limit(500)
             ->get();
 
-        return view('calendar.edit', compact('events', 'userOptions'));
+        // 検索パラメータ取得
+        $originalUserId = $request->input('original_user_id');
+        $assignedUserId = $request->input('assigned_user_id');
+        $status         = $request->input('status');
+        $type           = $request->input('type');
+        $eventDate      = $request->input('event_date');
+        $leaveType      = $request->input('Leave_type');
+        $schoolName     = $request->input('school_name');
+        $title          = $request->input('title');
+        $lesson         = $request->input('Lesson');
+
+        $events = \App\Models\Event::query()
+            ->with(['assignedUser:id,name,employee_code', 'originalUser:id,name,employee_code'])
+            ->when($originalUserId, fn($q) => $q->where('original_user_id', $originalUserId))
+            ->when($assignedUserId, fn($q) => $q->where('assigned_user_id', $assignedUserId))
+            ->when($status,         fn($q) => $q->where('status', $status))
+            ->when($type,           fn($q) => $q->where('type', $type))
+            ->when($eventDate,      fn($q) => $q->whereDate('event_date', $eventDate))
+            ->when(
+                $leaveType !== null && $leaveType !== '',
+                fn($q) =>
+                $q->where('Leave_type', 'like', '%' . $leaveType . '%')
+            )
+            ->when(
+                $schoolName !== null && $schoolName !== '',
+                fn($q) =>
+                $q->where('school_name', 'like', '%' . $schoolName . '%')
+            )
+            ->when(
+                $title !== null && $title !== '',
+                fn($q) =>
+                $q->where('title', 'like', '%' . $title . '%')
+            )
+            ->when(
+                $lesson !== null && $lesson !== '',
+                fn($q) =>
+                $q->where('Lesson', 'like', '%' . $lesson . '%')
+            )
+            ->orderByDesc('event_date')
+            ->orderBy('school_name')
+            ->orderBy('start_time') // 効かない：15時が10時より前に来る。FullCalendarも同じ問題。
+            ->orderBy('assigned_user_id')
+            ->paginate(24)
+            ->withQueryString();
+
+        $statusOptions = [
+            'pending' => 'Pending',
+            'in_process' => 'In Process',
+            'fixed' => 'Fixed',
+            'filled' => 'Filled',
+        ];
+        $typeOptions = [
+            'regular_time'         => 'RT',
+            'overtime'             => 'OT',
+            'schedule_change'      => 'SC',
+            'special'              => 'SP',
+            'rostered_working_day' => 'RWD',
+            'none_required'        => 'NS',
+        ];
+
+        return view('calendar.edit', compact('events', 'userOptions', 'statusOptions', 'typeOptions'));
     }
 
     public function update(Request $request, Event $event)
