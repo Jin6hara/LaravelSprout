@@ -131,8 +131,18 @@
                   value="{{ request('event_date') }}">
           </div>
 
-          {{-- 操作ボタン --}}
-          <label class="form-label small mb-1"></label>
+          {{-- Placeholder --}}
+          <div class="col-12 col-md-3"> 
+            <label class="form-label small mb-1"></label>
+          </div>
+          <div class="col-12 col-md-3"> 
+            <label class="form-label small mb-1"></label>
+          </div>
+          <div class="col-12 col-md-3"> 
+            <label class="form-label small mb-1"></label>
+          </div>
+
+          {{-- 操作ボタン --}}  
           <div class="col-12 col-md-3 d-flex gap-2 mt-2">
             <button type="submit" class="btn btn-sm btn-primary flex-fill">検索</button>
             <a href="{{ route('calendar.edit') }}" class="btn btn-sm btn-outline-secondary flex-fill">リセット</a>
@@ -209,7 +219,7 @@
               <div class="col-4">
                 <label class="form-label small mb-0">Total</label>
                 <input type="text" name="total_duration" class="form-control form-control-sm js-total"
-                  placeholder="H:MM" value="{{ old('total_duration',$event->total_duration) }}">
+                  placeholder="H:MM" value="{{ old('total_duration',$event->total_duration) }}" readonly>
               </div>
             </div>
             {{-- 5 --}}
