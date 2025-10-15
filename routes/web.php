@@ -171,5 +171,7 @@ Route::middleware(['auth','role:admin|super_admin'])->group(function () {
     Route::post('/events',        [EventAssignController::class, 'store'])->name('events.store');
     Route::post('/events/blank', [EventAssignController::class, 'storeBlank'])->name('events.store.blank');
     Route::put('/events/{event}', [EventAssignController::class, 'update'])->name('events.update');
+    // ★ 追加：一括更新（このページに表示されている分だけ送る）
+    Route::post('/events/bulk-update', [EventAssignController::class, 'bulkUpdate'])->name('events.bulk_update');
     Route::delete('/events/{event}', [EventAssignController::class, 'destroy'])->name('events.destroy');
 });

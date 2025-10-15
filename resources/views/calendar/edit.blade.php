@@ -39,17 +39,25 @@
   @if($events->count())
   <div class="d-flex justify-content-between align-items-center mb-2">
     <h5 class="mb-0">Event Assigner</h5>
-      <div class="d-flex align-items-center gap-2">
-        <form method="POST" action="{{ route('events.store.blank') }}" class="m-0 p-0">
-          @csrf
-          <button type="submit" class="btn btn-sm btn-success">
-            ＋ 空白イベントを追加
-          </button>
-        </form>
-      </div>
-    </div>
     <small class="text-muted">{{ $events->total() }} 件</small>
   </div>
+  
+  <div class="d-flex align-items-center gap-1 mb-2">
+    {{-- 空白イベント追加 --}}
+    <form method="POST" action="{{ route('events.store.blank') }}" class="m-0 p-0">
+      @csrf
+      <button type="submit" class="btn btn-sm btn-success">
+        ＋ 空白イベントを追加
+      </button>
+    </form>
+    <button type="button"
+      class="btn btn-sm btn-primary"
+      id="js-bulk-save"
+      data-url="{{ route('events.bulk_update') }}">
+      一括保存
+    </button>
+  </div>
+
 
   <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
     @foreach($events as $event)
@@ -305,6 +313,87 @@ document.addEventListener('input', (e) => {
 
     form.submit();
   });
+</script>
+
+<script>
+// 一括保存
+(function(){
+  const bulkBtn = document.getElementById('js-bulk-save');
+  if (!bulkBtn) return;
+
+  // ルートURL
+  const bulkUrl = bulkBtn.dataset.url;
+
+  // CSRFトークン（layouts.app に <meta name="csrf-token"> がある前提）
+  const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+           || document.querySelector('input[name="_token"]')?.value;
+
+  function parseEventIdFromAction(action){
+    // 末尾の数値をIDと解釈（/events/123）
+    const m = String(action).match(/\/events\/(\d+)(?:\?.*)?$/);
+    return m ? parseInt(m[1], 10) : null;
+  }
+
+  function formToObject(form){
+    const fd = new FormData(form);
+    const obj = {};
+    for (const [k,v] of fd.entries()) {
+      if (k === '_token' || k === '_method') continue; // 個別フォームの偽装系は除外
+      obj[k] = v;
+    }
+    return obj;
+  }
+
+  bulkBtn.addEventListener('click', async () => {
+    const cards = document.querySelectorAll('.row .card form'); // 今表示されているカードのみ
+    const items = [];
+
+    cards.forEach(form => {
+      const id = parseEventIdFromAction(form.action);
+      if (!id) return; // 新規POSTフォーム（複写直後未反映など）は対象外
+      const data = formToObject(form);
+      data.id = id;
+      items.push(data);
+    });
+
+    if (!items.length) {
+      alert('保存対象がありません。');
+      return;
+    }
+
+    // 送信
+    try {
+      const res = await fetch(bulkUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': csrf,
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({ items }),
+      });
+      const json = await res.json();
+
+      if (!res.ok) {
+        alert(json?.message || '保存に失敗しました。');
+        return;
+      }
+
+      if (json.failed > 0) {
+        console.warn('一部失敗', json.results);
+        alert(`保存：${json.updated} 件 / 失敗：${json.failed} 件\n内容を確認してください。`);
+      } else {
+        alert(`すべて保存しました（${json.updated} 件）`);
+      }
+
+      // 反映を確実にするならリロード
+      location.reload();
+    } catch (err) {
+      console.error(err);
+      alert('通信に失敗しました。');
+    }
+  });
+})();
 </script>
 
 
