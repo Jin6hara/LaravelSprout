@@ -278,7 +278,7 @@
               </button>
               <button type="submit" class="btn btn-sm btn-primary">保存</button>
             </div>
-            <small class="{{ $cls }} text-center d-block mb-0">
+            <small class="{{ $cls }} text-left d-block mt-1">
               Updated: {{ optional($event->updated_at)->format('Y-m-d H:i') }}
             </small>
           </div>
