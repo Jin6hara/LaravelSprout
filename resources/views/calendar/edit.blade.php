@@ -172,25 +172,62 @@
 
 @push('scripts')
 <script>
-  // Start/End から H:MM を算出（入力時に自動更新）
+  // ---- helpers ----
+  function hhmmToMin(t) {
+    if (!t) return null;
+    const parts = String(t).trim().replace('：',':').split(':');
+    if (parts.length < 2) return null;
+    const h = Number(parts[0]), m = Number(parts[1]);
+    if (Number.isNaN(h) || Number.isNaN(m)) return null;
+    return h*60 + m;
+  }
+  function pad2(n){ return String(n).padStart(2,'0'); }
+
+  function recalcTotal(card, {force=false} = {}) {
+    const start = card.querySelector('input[name="start_time"]')?.value || '';
+    const end   = card.querySelector('input[name="end_time"]')?.value || '';
+    const out   = card.querySelector('input[name="total_duration"]');
+    if (!out) return;
+
+    // 既に Total が入っている場合は、明示的に force のときだけ上書き
+    if (!force && out.value) return;
+
+    const s = hhmmToMin(start);
+    const e = hhmmToMin(end);
+    if (s == null || e == null) return;
+
+    let diff = e - s;
+    if (diff < 0) diff += 1440; // 日跨ぎ
+    out.value = Math.floor(diff/60) + ':' + pad2(diff%60);
+  }
+
+  // 1) ページ読み込み時：Total 未入力なら自動計算
+  function initTotals() {
+    document.querySelectorAll('.card').forEach(card => recalcTotal(card));
+  }
+  document.addEventListener('DOMContentLoaded', initTotals);
+  // Turbo を使っている場合（任意）
+  document.addEventListener('turbo:load', initTotals);
+
+  // 2) Start/End 変更時：常に再計算（上書き）
   document.addEventListener('input', (e) => {
     if (!e.target.classList.contains('js-time')) return;
     const card = e.target.closest('.card');
-    const start = card.querySelector('input[name="start_time"]').value;
-    const end = card.querySelector('input[name="end_time"]').value;
-    const out = card.querySelector('input[name="total_duration"]');
-    if (!start || !end) return;
-    const toMin = (t) => {
-      const [h, m] = t.split(':').map(Number);
-      return h * 60 + m;
-    };
-    const pad = (n) => n.toString().padStart(2, '0');
-    let diff = toMin(end) - toMin(start);
-    if (diff < 0) diff += 1440; // 日跨ぎ
-    out.value = Math.floor(diff / 60) + ':' + pad(diff % 60);
+    if (!card) return;
+    recalcTotal(card, {force:true});
   });
+
+  // 3) Total を空でフォーカスアウトしたとき：再計算（便利オプション）
+  document.addEventListener('blur', (e) => {
+    if (e.target?.name !== 'total_duration') return;
+    const card = e.target.closest('.card');
+    if (!card) return;
+    if (!e.target.value) recalcTotal(card, {force:true});
+  }, true);
 </script>
 @endpush
+
+{{-- 以下はサンプルコードの一部として残しておく --}}
 
 {{-- 1 
             <div class="mb-1">
