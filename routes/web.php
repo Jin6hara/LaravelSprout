@@ -168,6 +168,7 @@ use App\Http\Controllers\EventAssignController;
 
 Route::middleware(['auth','role:admin|super_admin'])->group(function () {
     Route::get('/event_assigner', [EventAssignController::class, 'edit'])->name('calendar.edit');
+    Route::post('/events',        [EventAssignController::class, 'store'])->name('events.store');
     Route::put('/events/{event}', [EventAssignController::class, 'update'])->name('events.update');
     Route::delete('/events/{event}', [EventAssignController::class, 'destroy'])->name('events.destroy');
 });

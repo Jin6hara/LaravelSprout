@@ -138,8 +138,12 @@
               </div>
             </div>
             {{-- 9 --}}
-            <div class="card-footer bg-white d-flex justify-content-between align-items-center py-2 px-2 gap-1">
-              <small class="text-muted">Updated: {{ optional($event->updated_at)->format('Y-m-d H:i') }}</small>
+            <div class="card-footer bg-white d-flex justify-content-between align-items-center py-2 px-2 gap-1">             
+              <button type="button"
+                class="btn btn-sm btn-outline-secondary js-duplicate"
+                data-store="{{ route('events.store') }}">
+                複写
+              </button>
               <button type="button"
                 class="btn btn-sm btn-outline-danger js-delete"
                 data-url="{{ route('events.destroy', $event) }}"
@@ -148,6 +152,7 @@
               </button>
               <button type="submit" class="btn btn-sm btn-primary">保存</button>
             </div>
+            <small class="text-muted">Updated: {{ optional($event->updated_at)->format('Y-m-d H:i') }}</small>
           </div>
           {{-- 10 --}}
         </form>
@@ -262,6 +267,37 @@ document.addEventListener('input', (e) => {
     form.submit();
   });
 </script>
+
+<script>
+  // 複写：現在のフォーム値で /events に POST
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.js-duplicate');
+    if (!btn) return;
+
+    const form = btn.closest('form');
+    if (!form) return;
+
+    // PUT のメソッド偽装を外す
+    const spoof = form.querySelector('input[name="_method"]');
+    if (spoof) spoof.remove();
+
+    // 送信先を store に差し替え、method を POST に
+    form.action = btn.dataset.store;
+    form.method = 'POST';
+
+    // 複写フラグ（必要ならコントローラで分岐可能）
+    if (!form.querySelector('input[name="_duplicate"]')) {
+      const f = document.createElement('input');
+      f.type = 'hidden';
+      f.name = '_duplicate';
+      f.value = '1';
+      form.appendChild(f);
+    }
+
+    form.submit();
+  });
+</script>
+
 
 @endpush
 
