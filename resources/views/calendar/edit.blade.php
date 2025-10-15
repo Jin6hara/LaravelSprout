@@ -225,6 +225,18 @@
     if (!e.target.value) recalcTotal(card, {force:true});
   }, true);
 </script>
+
+<script>
+// 4keta
+document.addEventListener('input', (e) => {
+  if (e.target.name !== 'event_date') return;
+  const val = e.target.value.trim();
+  // 年4桁-月2桁-日2桁 以外をリアルタイムで矯正
+  if (!/^\d{0,4}(-\d{0,2}){0,2}$/.test(val)) {
+    e.target.value = val.replace(/[^0-9-]/g, '').slice(0,10);
+  }
+});
+</script>
 @endpush
 
 {{-- 以下はサンプルコードの一部として残しておく --}}
