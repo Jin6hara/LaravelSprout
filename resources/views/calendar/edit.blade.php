@@ -138,18 +138,28 @@
               </div>
             </div>
             {{-- 9 --}}
-            <div class="card-footer bg-white d-flex justify-content-between align-items-center py-2 px-2">
+            <div class="card-footer bg-white d-flex justify-content-between align-items-center py-2 px-2 gap-1">
               <small class="text-muted">Updated: {{ optional($event->updated_at)->format('Y-m-d H:i') }}</small>
+              <button type="button"
+                class="btn btn-sm btn-outline-danger js-delete"
+                data-url="{{ route('events.destroy', $event) }}"
+                data-date="{{ $event->event_date?->format('Y-m-d') ?? '未設定' }}">
+                削除
+              </button>
               <button type="submit" class="btn btn-sm btn-primary">保存</button>
             </div>
           </div>
-          {{-- 9 --}}
+          {{-- 10 --}}
         </form>
-
       </div>
     </div>
     @endforeach
   </div>
+
+  <form id="js-delete-form" method="POST" style="display:none;">
+    @csrf
+    @method('DELETE')
+  </form>
 
   <div class="mt-3">
     {{ $events->withQueryString()->links() }}
@@ -237,6 +247,22 @@ document.addEventListener('input', (e) => {
   }
 });
 </script>
+
+<script>
+  // 削除確認ダイアログ（日付表示）
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.js-delete');
+    if (!btn) return;
+
+    const date = btn.dataset.date || 'このイベント';
+    if (!confirm(`${date} のイベントを削除します。よろしいですか？`)) return;
+
+    const form = document.getElementById('js-delete-form');
+    form.action = btn.dataset.url;
+    form.submit();
+  });
+</script>
+
 @endpush
 
 {{-- 以下はサンプルコードの一部として残しておく --}}

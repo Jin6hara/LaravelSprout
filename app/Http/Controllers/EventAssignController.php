@@ -81,4 +81,11 @@ class EventAssignController extends Controller
 
         return back()->with('status', 'イベントを更新しました。');
     }
+
+    public function destroy(Request $request, Event $event)
+    {
+        // 必要ならポリシー/権限チェックをここで
+        $event->delete();
+        return back()->with('status', 'イベントを削除しました。');
+    }
 }
