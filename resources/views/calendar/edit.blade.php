@@ -164,6 +164,12 @@
 
   <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
     @foreach($events as $event)
+
+    @php
+      $diff = $event->updated_at?->diffInMinutes(now());
+      $cls = $diff <= 10 ? 'text-danger' : ($diff <= 30 ? 'text-warning' : ($diff <= 60 ? 'text-Dark' : 'text-muted'));
+    @endphp
+
     <div class="col-12 col-sm-6 col-md-4 col-lg-3">
       <div class="card h-100 shadow-sm">
         <form method="POST" action="{{ route('events.update', $event) }}" class="h-100 d-flex flex-column">
@@ -272,7 +278,9 @@
               </button>
               <button type="submit" class="btn btn-sm btn-primary">保存</button>
             </div>
-            <small class="text-muted">Updated: {{ optional($event->updated_at)->format('Y-m-d H:i') }}</small>
+            <small class="{{ $cls }} text-center d-block mb-0">
+              Updated: {{ optional($event->updated_at)->format('Y-m-d H:i') }}
+            </small>
           </div>
           {{-- 10 --}}
         </form>
