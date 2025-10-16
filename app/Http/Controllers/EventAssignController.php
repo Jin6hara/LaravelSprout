@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\User;
-use App\Models\Leave;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Carbon;
@@ -88,7 +87,7 @@ class EventAssignController extends Controller
         $validated = $request->validate([
             'event_date'        => ['required', 'date'],
             'original_user_id'  => ['nullable', 'exists:users,id'],
-            'leave_kind'        => ['nullable', Rule::in(['paid', 'absense_to_paid', 'special', 'absence', 'adjustment', 'other'])],
+            'Leave_type'        => ['nullable', 'string'],
             'title'             => ['nullable', 'string', 'max:255'],
             'school_name'       => ['nullable', 'string', 'max:255'],
 
@@ -133,29 +132,10 @@ class EventAssignController extends Controller
             $validated['total_duration'] = floor($diff / 60) . ':' . str_pad($diff % 60, 2, '0', STR_PAD_LEFT);
         }
 
-        // ⬇︎ Leave Type 同期：フォームの leave_kind を Event.Leave_type に反映（指定があるときだけ）
-        if ($request->filled('leave_kind')) {
-            $event->Leave_type = $request->input('leave_kind'); // ※ Event 側カラムは大文字 L
-        }
-
-        // ⬇︎ その他の項目を一括反映
         $event->fill($validated)->save();
-
-        // ⬇︎ 関連 Leave がある場合は kind も同期（events.source_leave_id 経由）
-        if (!empty($event->source_leave_id) && !empty($event->Leave_type)) {
-            // leave_kind が absence 以外 → excused、absence → unexcused
-            $excused = ($event->Leave_type === 'absence') ? 'unexcused' : 'excused';
-
-            Leave::where('id', $event->source_leave_id)
-                ->update([
-                    'kind'    => $event->Leave_type,
-                    'excused' => $excused,            // excused を同時更新
-                ]);
-        }
 
         return back()->with('status', 'イベントを更新しました。');
     }
-
 
     public function destroy(Request $request, Event $event)
     {
@@ -169,7 +149,7 @@ class EventAssignController extends Controller
         $validated = $request->validate([
             'event_date'        => ['required', 'date'],
             'original_user_id'  => ['nullable', 'exists:users,id'],
-            'leave_kind'        => ['nullable', Rule::in(['paid', 'absense_to_paid', 'special', 'absence', 'adjustment', 'other'])],
+            'Leave_type'        => ['nullable', 'string'],
             'title'             => ['nullable', 'string', 'max:255'],
             'school_name'       => ['nullable', 'string', 'max:255'],
             // 既存：H:i 固定（update と違い、ここは仕様そのまま）
@@ -183,11 +163,6 @@ class EventAssignController extends Controller
             'notes'             => ['nullable', 'string'],
         ]);
 
-        // ⬇︎ フォームの leave_kind を Event.Leave_type に反映（指定があるときだけ）
-        if (array_key_exists('leave_kind', $validated)) {
-            $validated['Leave_type'] = $validated['leave_kind']; // ※ Event 側カラムは大文字 L
-            unset($validated['leave_kind']);
-        }
 
         // ⬇︎ H:i → H:i:s に正規化（nullはそのまま）
         foreach (['start_time', 'end_time'] as $k) {
@@ -235,7 +210,7 @@ class EventAssignController extends Controller
             'id'                => ['required', 'integer', 'exists:events,id'],
             'event_date'        => ['required', 'date'],
             'original_user_id'  => ['nullable', 'exists:users,id'],
-            'leave_kind'        => ['nullable', Rule::in(['paid', 'absense_to_paid', 'special', 'absence', 'adjustment', 'other'])],
+            'Leave_type'        => ['nullable', 'string'],
             'title'             => ['nullable', 'string', 'max:255'],
             'school_name'       => ['nullable', 'string', 'max:255'],
             'start_time'        => ['nullable', 'date_format:H:i'],
@@ -276,26 +251,7 @@ class EventAssignController extends Controller
             }
 
             $event = Event::find($data['id']);
-
-            // ⬇︎ Leave Type 同期：leave_kind → Event.Leave_type へ（指定があるときだけ）
-            if (array_key_exists('leave_kind', $data)) {
-                $event->Leave_type = $data['leave_kind']; // ※ Event 側カラムは大文字 L
-                unset($data['leave_kind']);
-            }
-
-            // ⬇︎ 他の項目を一括反映
-            $event->fill($data)->save(); // Observer があれば最終整合を取ってくれます
-
-            // ⬇︎ 関連 Leave がある場合は kind も同期（events.source_leave_id 経由）
-            if (!empty($event->source_leave_id) && !empty($event->Leave_type)) {
-                $excused = ($event->Leave_type === 'absence') ? 'unexcused' : 'excused';
-
-                Leave::where('id', $event->source_leave_id)
-                    ->update([
-                        'kind'    => $event->Leave_type,
-                        'excused' => $excused,            // excused を同時更新
-                    ]);
-            }
+            $event->fill($data)->save(); // Observerがあれば最終整合を取ってくれます
 
             $results[] = ['id' => $event->id, 'ok' => true];
         }
