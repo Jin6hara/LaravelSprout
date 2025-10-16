@@ -84,6 +84,11 @@ class LeaveSnapshotService
             ->values();
 
         foreach ($lines as $line) {
+            // Subシフトはスナップショット対象外
+            // stripos は大文字小文字区別しない＆一部一致対応 
+            if (stripos($line->school_name, 'sub') !== false) {
+                continue;
+            }
             // 二重生成の保険
             $exists = Event::query()
                 ->whereDate('event_date', $ymd)
