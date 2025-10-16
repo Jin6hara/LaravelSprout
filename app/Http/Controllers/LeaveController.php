@@ -34,8 +34,12 @@ class LeaveController extends Controller
             'approved_by' => auth()->id(), // 簡易に自分で承認した体
         ]);
 
+        // 作成日のカレンダー画面に遷移
+        $date = optional($leave->start_date)->format('Y-m-d');
+
         // Observer が自動でスナップショット生成
-        return redirect()->route('calendar.edit')->with('status', '欠席登録成功。通常シフトある場合はEventが作成されます。');
+        return redirect()->to(route('calendar.edit') . '?event_date=' . urlencode($date))
+            ->with('status', '欠席登録成功。通常シフトある場合はEventが作成されます。');
     }
 
 
