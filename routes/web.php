@@ -10,7 +10,6 @@ use App\Http\Controllers\RoleChangeController;
 use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CalendarController;
-use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\LeaveApplyController;
 
 /*
@@ -56,12 +55,6 @@ Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
     Route::get('/forecast/events', [CalendarController::class, 'forecastEvents'])
         ->name('calendar.forecast.events');
 });
-
-Route::middleware(['auth'])->group(function () {
-    Route::get('/leaves/create', [LeaveController::class, 'create'])->name('leaves.create');
-    Route::post('/leaves',        [LeaveController::class, 'store'])->name('leaves.store');
-});
-
 
 Route::middleware(['auth'])->group(function () {
     // 申請画面（本人用）
@@ -165,6 +158,7 @@ Route::middleware(['auth', 'role:admin|super_admin']) // 権限ミドルウェ�
     ->name('expenses.admin.report');
 
 use App\Http\Controllers\EventAssignController;
+use App\Http\Controllers\LeaveController;
 
 Route::middleware(['auth','role:admin|super_admin'])->group(function () {
     Route::get('/event_assigner', [EventAssignController::class, 'edit'])->name('calendar.edit');
@@ -174,4 +168,5 @@ Route::middleware(['auth','role:admin|super_admin'])->group(function () {
     // ★ 追加：一括更新（このページに表示されている分だけ送る）
     Route::post('/events/bulk-update', [EventAssignController::class, 'bulkUpdate'])->name('events.bulk_update');
     Route::delete('/events/{event}', [EventAssignController::class, 'destroy'])->name('events.destroy');
+    Route::post('/leaves',        [LeaveController::class, 'store'])->name('leaves.store');
 });

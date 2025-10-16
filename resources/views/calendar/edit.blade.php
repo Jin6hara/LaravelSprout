@@ -42,6 +42,60 @@
     <small class="text-muted">{{ $events->total() }} 件</small>
   </div>
 
+  {{-- ▼ 欠席作成 --}}
+  <form method="POST" action="{{ route('leaves.store') }}" class="mb-2">
+    @csrf
+    {{-- 固定項目（hidden） --}}
+    <input type="hidden" name="kind" value="absence">
+    <input type="hidden" name="excused" value="unexcused">
+    <input type="hidden" name="status" value="approved">
+
+    <div class="card">
+      <div class="card-body p-2">
+        <div class="row g-2 align-items-end">
+          {{-- Original User --}}
+          <div class="col-12 col-md-3 col-lg-3">
+            <label class="form-label small mb-1">Original User</label>
+            <select name="user_id" class="form-select form-select-sm" required>
+              <option value="">（選択してください）</option>
+              @foreach($userOptions as $u)
+                <option value="{{ $u->id }}" @selected(request('user_id') == $u->id)>
+                  {{ $u->name }} [{{ $u->employee_code }}]
+                </option>
+              @endforeach
+            </select>
+          </div>
+
+          {{-- Date（= start_date・既定は本日） --}}
+          <div class="col-12 col-md-3 col-lg-3">
+            <label class="form-label small mb-1">Date</label>
+            <input type="date"
+                  name="start_date"
+                  class="form-control form-control-sm"
+                  value="{{ old('start_date', now()->toDateString()) }}"
+                  required>
+          </div>
+
+          {{-- 送信ボタン --}}
+          <div class="col-12 col-md-2 col-lg-2 d-grid">
+            <button type="submit" class="btn btn-sm btn-warning">
+              欠席登録
+            </button>
+          </div>
+
+          {{-- 任意: 期間指定を使うなら end_date も出す（単日は不要） --}}
+          {{-- 
+          <div class="col-12 col-md-4 col-lg-3">
+            <label class="form-label small mb-1">End Date（任意）</label>
+            <input type="date" name="end_date" class="form-control form-control-sm" value="">
+          </div>
+          --}}
+        </div>
+      </div>
+    </div>
+  </form>
+  {{-- ▲ 欠席作成 --}}
+
   {{-- 検索フォーム --}}
   <form method="GET" action="{{ route('calendar.edit') }}" class="search mb-2">
     <div class="card">
@@ -176,8 +230,28 @@
     @foreach($events as $event)
 
     @php
-      $diff = $event->updated_at?->diffInMinutes(now());
-      $cls = $diff <= 10 ? 'text-danger' : ($diff <= 30 ? 'text-warning' : ($diff <= 60 ? 'text-Dark' : 'text-muted'));
+      $now = now();
+
+      $diffUpdated = $event->updated_at?->diffInMinutes($now);
+      $diffCreated = $event->created_at?->diffInMinutes($now);
+
+      $isNew = $event->created_at && $event->created_at->equalTo($event->updated_at);
+
+      if ($event->created_at && $event->created_at->equalTo($event->updated_at)) {
+          $cls = 'text-success';
+      } elseif ($diffUpdated <= 10) {
+          $cls = 'text-danger';    // 10分以内に更新
+      } elseif ($diffUpdated <= 30) {
+          $cls = 'text-warning';   // 30分以内
+      } elseif ($diffUpdated <= 60) {
+          $cls = 'text-dark';      // 1時間以内
+      } else {
+          $cls = 'text-muted';     // それ以降
+      }
+
+      // 表示ラベル
+      $action = $isNew ? 'Created' : 'Updated';
+      $time  = optional($event->updated_at)->format('Y-m-d H:i');
     @endphp
 
     <div class="col-12 col-sm-6 col-md-4 col-lg-3">
@@ -289,7 +363,7 @@
               <button type="submit" class="btn btn-sm btn-primary">保存</button>
             </div>
             <small class="{{ $cls }} text-left d-block mt-1">
-              Updated: {{ optional($event->updated_at)->format('Y-m-d H:i') }}
+              {{ $action }}: {{ $time }}
             </small>
           </div>
           {{-- 10 --}}
