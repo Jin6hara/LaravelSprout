@@ -85,8 +85,8 @@ class LeaveSnapshotService
 
         foreach ($lines as $line) {
             // Subシフトはスナップショット対象外
-            // stripos は大文字小文字区別しない＆一部一致対応 
-            if (stripos($line->school_name, 'sub') !== false) {
+            $school = (string)($line->school_name ?? '');
+            if (strcasecmp(trim($school), 'sub') === 0) {  // ← 完全一致（大文字小文字無視）
                 continue;
             }
             // 二重生成の保険
