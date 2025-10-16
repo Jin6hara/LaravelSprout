@@ -5,6 +5,7 @@ namespace App\Services\Calendar;
 use App\Models\Event;
 use App\Models\EventDetail;
 use App\Models\Leave;
+use App\Models\Lesson;
 use App\Models\ScheduleLine;
 use App\Models\UserScheduleAssignment;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +15,7 @@ use Carbon\CarbonPeriod;
 class LeaveSnapshotService
 {
     /**
-     * Leaveに紐づく'required'を安全に作り直す
+     * Leaveに紐づくスナップショットを再生成
      */
     public function rebuildSnapshotsForLeave(Leave $leave): void
     {
@@ -37,7 +38,7 @@ class LeaveSnapshotService
     }
 
     /**
-     * 指定Leaveが作った'required'を削除
+     * Leaveに紐づく'snapshot'を削除
      */
     public function deleteSnapshotsForLeave(Leave $leave): void
     {
@@ -49,7 +50,7 @@ class LeaveSnapshotService
     }
 
     /**
-     * 1日分のスナップショット: 当日のRegular Plan(ON)をevent/event_detailsにコピー
+     * 特定日のスナップショット生成
      */
     private function snapshotDay(Leave $leave, Carbon $date): void
     {
@@ -89,12 +90,14 @@ class LeaveSnapshotService
                 ->where('source_schedule_line_id', $line->id)
                 ->where('source_leave_id', $leave->id)
                 ->exists();
-            if ($exists) {continue;} // ブロック構文（波かっこあり）
+            if ($exists) {
+                continue;
+            } // ブロック構文（波かっこあり）
 
             // event 作成
             $event = Event::create([
                 'event_date'              => $ymd,
-                'title'                   => null,
+                'title'                   => 'null',
                 'school_name'             => $line->school_name,
                 'start_time'              => substr($line->start_time, 0, 8), // H:i[:s]対策で正規化
                 'end_time'                => substr($line->end_time,   0, 8),
@@ -109,6 +112,7 @@ class LeaveSnapshotService
             ]);
 
             // details コピー（lesson_start_time_id / lesson_id をスナップショットに保持）
+            $lessonCodes = []; // ← lesson_code 収集用
             foreach ($line->details as $d) {
                 // line 時間帯内の detail のみ（WorkProvider と同じ基準）
                 $startHm = $d->start?->start_time?->format('H:i');
@@ -129,7 +133,19 @@ class LeaveSnapshotService
                         'lesson_start_time_id' => $d->lesson_start_time_id,
                         'lesson_id'            => $d->lesson_id,
                     ]);
+
+                    // lesson_code を取得して配列に追加
+                    if ($d->lesson_id) {
+                        $code = Lesson::where('id', $d->lesson_id)->value('lesson_code');
+                        if ($code) $lessonCodes[] = $code;
+                    }
                 }
+            }
+
+            // Lesson列に "AAA, BBB, CCC" のように保存
+            if (!empty($lessonCodes)) {
+                $event->Lesson = implode(', ', $lessonCodes);
+                $event->save();
             }
         }
     }
