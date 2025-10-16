@@ -36,6 +36,10 @@
   ];
   @endphp
 
+  @php
+    $leaveKindOptions = ['paid','absense_to_paid', 'special', 'absence', 'adjustment', 'other' ];
+  @endphp
+
   @if($events->count())
   <div class="d-flex justify-content-between align-items-center mb-2">
     <h5 class="mb-0">Event Assigner</h5>
@@ -122,11 +126,17 @@
             </select>
           </div>
 
-          {{-- Leave type（部分一致） --}}
+          {{-- Leave type（等価一致） --}}
           <div class="col-12 col-md-3">
             <label class="form-label small mb-1">Leave type</label>
-            <input type="text" name="Leave_type" class="form-control form-control-sm"
-                  value="{{ request('Leave_type') }}" placeholder="例: 有給, 欠勤 など">
+            <select name="Leave_type" class="form-select form-select-sm">
+              <option value="">（指定なし）</option>
+              @foreach($leaveKindOptions as $k)
+                <option value="{{ $k }}" @selected(request('Leave_type')===$k)>
+                  {{ ucfirst($k) }}
+                </option>
+              @endforeach
+            </select>
           </div>
 
           {{-- School（部分一致） --}}
@@ -275,7 +285,15 @@
               {{-- 2 --}}
               <div class="mb-0">
                 <label class="form-label small mb-0">Leave Type</label>
-                <textarea name="Leave_type" class="form-control form-control-sm" rows="1">{{ old('Leave_type',$event->Leave_type) }}</textarea>
+                <select name="leave_kind" class="form-select form-select-sm">
+                  <option value="">—</option>
+                  @foreach($leaveKindOptions as $k)
+                    <option value="{{ $k }}"
+                      @selected(old('leave_kind', $event->Leave_type) === $k)>
+                      {{ ucfirst($k) }}
+                    </option>
+                  @endforeach
+                </select>
               </div>
               {{-- 3 --}}
               <div class="mb-0">
