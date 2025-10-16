@@ -21,7 +21,7 @@ return new class extends Migration
 
             // 休暇の種別（前3項目はPaid,その他はUnpaid扱い）
             // paid=有給, absense_to_paid=欠席から有給へ, special=特別休暇(結婚/忌引など), absence=欠席, adjustment=調整, other=その他
-            $table->enum('kind', ['paid','absense_to_paid', 'special', 'absence', 'adjustment', 'other' ])->index();
+            $table->enum('kind', ['paid', 'absense_to_paid', 'special', 'absence', 'adjustment', 'other' ])->index();
 
             // 会社としての扱い
             $table->enum('excused', ['excused', 'unexcused'])->default('unexcused')->index();

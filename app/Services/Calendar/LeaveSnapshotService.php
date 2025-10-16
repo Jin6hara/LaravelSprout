@@ -101,6 +101,7 @@ class LeaveSnapshotService
                 'type'                    => 'regular_time',
                 'assigned_user_id'        => null, // 後ほどSubシフトに担当してもらう
                 'original_user_id'        => $userId,
+                'Leave_type'              => (string) $leave->kind,
                 'source_schedule_line_id' => $line->id,
                 'source_leave_id'         => $leave->id,
                 'status'                  => 'pending', // 後ほどSubシフトに担当してもらう  
