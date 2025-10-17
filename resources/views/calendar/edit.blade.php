@@ -40,7 +40,6 @@
     $leaveKindOptions = ['paid','absense_to_paid', 'special', 'absence', 'adjustment', 'other' ];
   @endphp
 
-  @if($events->count())
   <div class="d-flex justify-content-between align-items-center mb-2">
     <h5 class="mb-0">Event Assigner</h5>
     <small class="text-muted">{{ $events->total() }} 件</small>
@@ -186,7 +185,7 @@
           <div class="col-12 col-md-3">
             <label class="form-label small mb-1">Date</label>
             <input type="date" name="event_date" class="form-control form-control-sm"
-                  value="{{ request('event_date') }}">
+                  value="{{ old('event_date', now()->toDateString()) }}">
           </div>
 
           {{-- Placeholder --}}
@@ -229,7 +228,7 @@
     </button>
   </div>
 
-
+  @if($events->count())
   <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
     @foreach($events as $event)
 
