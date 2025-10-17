@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\User;
+use App\Models\School;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Carbon;
@@ -13,11 +14,18 @@ class EventAssignController extends Controller
 {
     public function edit(Request $request)
     {
-        $userOptions = \App\Models\User::query()
+        $userOptions = User::query()
             ->select('id', 'name', 'employee_code')
             ->orderBy('employee_code')
             ->limit(500)
             ->get();
+
+        // ★追加：School名の候補（重複除去＆名前順）
+        $schoolNames = School::query()
+            ->where('is_active', true)
+            ->orderBy('school_name')
+            ->distinct()
+            ->pluck('school_name');
 
         // 検索パラメータ取得
         $originalUserId = $request->input('original_user_id');
@@ -47,7 +55,7 @@ class EventAssignController extends Controller
                 ->withInput();
         }
 
-        $events = \App\Models\Event::query()
+        $events = Event::query()
             ->with(['assignedUser:id,name,employee_code', 'originalUser:id,name,employee_code'])
             ->when($originalUserId, fn($q) => $q->where('original_user_id', $originalUserId))
             ->when($assignedUserId, fn($q) => $q->where('assigned_user_id', $assignedUserId))
@@ -102,7 +110,8 @@ class EventAssignController extends Controller
             'none_required'        => 'NS',
         ];
 
-        return view('calendar.edit', compact('events', 'userOptions', 'statusOptions', 'typeOptions'));
+        // $schoolNames を view に渡す
+        return view('calendar.edit', compact('events', 'userOptions', 'statusOptions', 'typeOptions', 'schoolNames'));
     }
 
     public function update(Request $request, Event $event)

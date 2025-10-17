@@ -308,7 +308,18 @@
               {{-- 3 --}}
               <div class="mb-0">
                 <label class="form-label small mb-0">School</label>
-                <input type="text" name="school_name" class="form-control form-control-sm" value="{{ old('school_name',$event->school_name) }}">
+                <input
+                  list="schoolOptions"
+                  name="school_name"
+                  class="form-control form-control-sm"
+                  value="{{ old('school_name', $event->school_name) }}"
+                  placeholder="選択または直接入力"
+                />
+                <datalist id="schoolOptions">
+                  @foreach ($schoolNames as $s)
+                    <option value="{{ $s }}">
+                  @endforeach
+                </datalist>
               </div>
             </div>
             {{-- 4 --}}
