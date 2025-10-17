@@ -207,7 +207,15 @@ class SubCountProvider implements CalendarEventProvider
             $count_rwd   = isset($rwdUsersCounted[$day])   ? count($rwdUsersCounted[$day])   : 0;
 
             $total = $count_event + $count_line + $count_rwd;
-            if ($total <= 0) continue;
+
+            // ★追加: 欠席で除外された“候補”の件数も集計（候補が1件以上なら0件でも描画）
+            $abs_event = isset($eventUsersAbsent[$day]) ? count($eventUsersAbsent[$day]) : 0;   // ★追加
+            $abs_line  = isset($lineUsersAbsent[$day])  ? count($lineUsersAbsent[$day])  : 0;   // ★追加
+            $abs_rwd   = isset($rwdUsersAbsent[$day])   ? count($rwdUsersAbsent[$day])   : 0;   // ★追加
+            $totalCandidates = $total + $abs_event + $abs_line + $abs_rwd;                      // ★追加
+
+            // ★変更: もともとSub候補が全くない日はスキップ。候補があれば total=0 でも描画する
+            if ($totalCandidates === 0) continue;                                               // ★変更
 
             $makeList = function ($set) use ($nameById) {
                 $arr = [];
@@ -234,7 +242,10 @@ class SubCountProvider implements CalendarEventProvider
                 'title' => 'Sub ' . $total,
                 'start' => $day,
                 'allDay' => true,
-                'classNames' => ['ev-subcount'],
+                'classNames' => array_filter([
+                    'ev-subcount',
+                    $total === 0 ? 'ev-subcount-zero' : null, // ★追加: 0件の見分け用（任意CSS）
+                ]),
                 'extendedProps' => [
                     'category' => 'subcount',
                     'count' => $total,

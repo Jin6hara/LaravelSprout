@@ -16,7 +16,6 @@ return new class extends Migration
             $t->date('event_date')->index();
             $t->foreignId('original_user_id')->nullable()->constrained('users')->nullOnDelete();
             $t->text('Leave_type')->nullable();
-            $t->enum('sub', ['none_required', 'required', 'other'])->index();
             $t->string('title')->nullable();        // 例: 撮影、OPPT/ML
             $t->string('school_name')->nullable();
             $t->time('start_time')->nullable();
@@ -25,7 +24,7 @@ return new class extends Migration
             $t->text('Lesson')->nullable();
             $t->foreignId('assigned_user_id')->nullable()->constrained('users')->nullOnDelete();
             $t->enum('status', ['pending', 'fixed', 'filled', 'in_process'])->default('pending')->index();
-            $t->enum('type', ['regular_time', 'overtime', 'schedule_change', 'special'])->index();
+            $t->enum('type', ['regular_time', 'none_required', 'overtime', 'schedule_change', 'rostered_working_day', 'special'])->index();
             $t->text('notes')->nullable();
             // 欠席時コピー元（正規コマ追跡用）
             $t->foreignId('source_schedule_line_id')->nullable()->constrained('schedule_lines')->nullOnDelete();

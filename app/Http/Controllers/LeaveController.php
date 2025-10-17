@@ -25,7 +25,7 @@ class LeaveController extends Controller
             'start_date'  => $request->date('start_date'),
             'end_date'    => $request->input('end_date') ? $request->date('end_date') : null,
             'kind'        => $request->input('kind'),
-            'excused'     => $request->input('excused', 'unknown'),
+            'excused'     => $request->input('excused', 'unexcused'),
             'special_type' => $request->input('special_type'),
             'reason'      => $request->input('reason'),
             'time_start'  => $request->input('time_start'),
@@ -34,8 +34,12 @@ class LeaveController extends Controller
             'approved_by' => auth()->id(), // 簡易に自分で承認した体
         ]);
 
+        // 作成日のカレンダー画面に遷移
+        $date = optional($leave->start_date)->format('Y-m-d');
+
         // Observer が自動でスナップショット生成
-        return redirect()->route('leaves.create')->with('success', 'Leave created and snapshots processed.');
+        return redirect()->to(route('calendar.edit') . '?event_date=' . urlencode($date))
+            ->with('status', '欠席登録成功。通常シフトある場合はEventが作成されます。');
     }
 
 

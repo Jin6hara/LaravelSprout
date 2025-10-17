@@ -53,13 +53,13 @@
   }
 }
 
-/* ユーザー休日: 法定休（背景青・区別しやすい色） */
+/* ユーザー休日: 法定休 */
 .fc-off-statutory {
   background-color: rgba(107, 107, 107, 0.47) !important;
   border: 1px solid rgba(255, 255, 255, 1) !important;
 }
 
-/* ユーザー休日: 所定休（背景薄青・区別しやすい色） */
+/* ユーザー休日: 所定休 */
 .fc-off-prescribed {
   background-color: rgba(173, 173, 173, 0.51) !important;
   border: 1px solid rgba(255, 255, 255, 1) !important;
@@ -72,35 +72,57 @@
   font-weight: 600;
 }
 
-/* RWD（黄色）/ ORDは所定休と同じ色=fc-off-prescribed を使用 */
+/* RWD（黄色）/ ORD（調整）は所定休と同じ色=fc-off-prescribed を使用 */
 .fc-rwd {
-  background-color: rgba(230, 226, 0, 0.5) !important;
+  background-color: rgba(230, 157, 0, 0.5) !important;
   border: 1px solid rgba(105, 107, 0, 0.45) !important;
   font-weight: 600;
 }
 
 /* Regular shift (level5) */
 .fc-regular-shift {
-  background-color: rgba(0, 255, 13, 0.5) !important;
+  background-color: rgba(0, 216, 11, 0.5) !important;
   border: 1px solid rgba(25, 135, 84, .35) !important;
 }
 
+/* Regular shift - Sub (level5) */
 .fc-regular-shift-sub {
-  background-color: rgba(230, 226, 0, 0.5) !important;
+  background-color: rgba(230, 157, 0, 0.5) !important;
   border: 1px solid rgba(105, 107, 0, 0.45) !important;
   font-weight: 600;
 }
 
-/* （未使用）Overtime shift  */
-.fc-overtime {
-  background-color: rgba(25, 135, 84, .12) !important;
-  border: 1px solid rgba(25, 135, 84, .35)
+/* Event Overtime shift  */
+.fc-event-overtime {
+  background-color: rgba(137, 46, 255, 0.5) !important;
+  border: 1px solid rgba(194, 103, 255, 0.5)
+}
+/* Event RT & Others shift  */
+.fc-event-regular_time,
+.fc-event-schedule_change,
+.fc-event-rostered_working_day,
+.fc-event-special {
+  background-color: rgba(0, 218, 127, 0.5) !important;
+  border: 1px solid rgba(72, 255, 155, 0.5)
 }
 
-/* カレンダー高さ調整 */
+/* Leave Paid & Special */
+.fc-leave-paid,
+.fc-leave-special {
+  background-color: rgba(2, 159, 221, 0.644) !important;
+  border: 1px solid rgba(0, 107, 150, 0.644)
+}
+
+.fc-leave-absence {
+  background-color: rgba(88, 88, 88, 0.658) !important;
+  border: 1px solid rgba(102, 102, 102, 0.568)
+}
+
+
+/* カレンダー横幅調整 */
 #calendar {
   max-width: auto;
-  margin: 30 auto;
+  margin: auto;
 }
  
 /* カレンダーセル内余白を-1にする */
@@ -126,6 +148,7 @@
 /* イベント全体（枠） */
 .fc-daygrid-event {
   margin-top: -2px;                 /* イベントの上部余白（セル内の日付数字との間隔）[-2] */
+  margin-bottom: 1px;              /* イベントの下部余白（セル下端との間隔）[3] */
   white-space: nowrap;              /* イベントテキストの折り返しを禁止（1行表示）[pre-line] */
   overflow: hidden;                 /* 内容が枠を超えた場合は非表示にする [pre-line, scroll]*/
   text-overflow: ellipsis;          /* 枠を超えた場合「...」で省略表示する [clip] */

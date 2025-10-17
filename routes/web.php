@@ -10,7 +10,6 @@ use App\Http\Controllers\RoleChangeController;
 use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CalendarController;
-use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\LeaveApplyController;
 
 /*
@@ -56,12 +55,6 @@ Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
     Route::get('/forecast/events', [CalendarController::class, 'forecastEvents'])
         ->name('calendar.forecast.events');
 });
-
-Route::middleware(['auth'])->group(function () {
-    Route::get('/leaves/create', [LeaveController::class, 'create'])->name('leaves.create');
-    Route::post('/leaves',        [LeaveController::class, 'store'])->name('leaves.store');
-});
-
 
 Route::middleware(['auth'])->group(function () {
     // 申請画面（本人用）
@@ -165,15 +158,15 @@ Route::middleware(['auth', 'role:admin|super_admin']) // 権限ミドルウェ�
     ->name('expenses.admin.report');
 
 use App\Http\Controllers\EventAssignController;
-use App\Http\Controllers\EventApiController;
+use App\Http\Controllers\LeaveController;
 
-Route::middleware(['auth'])->group(function () {
-    // 編集画面
-    Route::get('/events_subs/edit', [EventAssignController::class, 'edit'])
-        ->name('events.edit');
-
-    // API（命名を expenses→events に修正）
-    Route::post('/api/events',               [EventApiController::class, 'store'])->name('api.events.store');
-    Route::put('/api/events/{event}',        [EventApiController::class, 'update'])->name('api.events.update');
-    Route::delete('/api/events/{event}',     [EventApiController::class, 'destroy'])->name('api.events.destroy');
+Route::middleware(['auth','role:admin|super_admin'])->group(function () {
+    Route::get('/event_assigner', [EventAssignController::class, 'edit'])->name('calendar.edit');
+    Route::post('/events',        [EventAssignController::class, 'store'])->name('events.store');
+    Route::post('/events/blank', [EventAssignController::class, 'storeBlank'])->name('events.store.blank');
+    Route::put('/events/{event}', [EventAssignController::class, 'update'])->name('events.update');
+    // ★ 追加：一括更新（このページに表示されている分だけ送る）
+    Route::post('/events/bulk-update', [EventAssignController::class, 'bulkUpdate'])->name('events.bulk_update');
+    Route::delete('/events/{event}', [EventAssignController::class, 'destroy'])->name('events.destroy');
+    Route::post('/leaves',        [LeaveController::class, 'store'])->name('leaves.store');
 });

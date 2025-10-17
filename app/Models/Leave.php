@@ -68,14 +68,14 @@ class Leave extends Model
         return is_null($this->time_start) || is_null($this->time_end);
     }
 
-    public function displayTitle(): string
+    public function displayTitle(): string //表示タイトルは再利用のためモデルに置くのが推奨される
     {
         return match ($this->kind) {
-            'paid'    => '有給',
-            'special' => $this->special_type ? "特別休暇（{$this->special_type}）" : '特別休暇',
-            'absence' => '欠席',
-            'late'    => '遅刻',
-            default   => '休暇',
+            'paid'    => 'ALP',
+            'special' => $this->special_type ? "Special Leave（{$this->special_type}）" : 'Special Leave',
+            'absence' => 'Absence',
+            'late'    => 'Late',
+            default   => 'Absence',
         };
     }
 
