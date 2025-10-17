@@ -23,7 +23,7 @@ class UserRequest extends FormRequest
     {
         return [
             'family_name'   => 'required|string|max:255',
-            'first_middle_name'=> 'required|string|max:255',
+            'first_name'    => 'required|string|max:255',
             'name_in_kana'  => 'nullable|string|max:255',
             'email'         => 'required|string|email|max:255|unique:users',
             'password'      => 'required|string|min:8|confirmed',

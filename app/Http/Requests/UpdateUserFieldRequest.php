@@ -31,7 +31,7 @@ class UpdateUserFieldRequest extends FormRequest
             'email' => ['value' => "required|email|max:255|ascii|unique:users,email,{$targetUser->id}"],
             'phone_number' => ['value' => 'nullable|numeric|digits_between:10,11'],
             'address' => ['value' => 'nullable|string|max:255'],
-            'self_introduction' => ['value' => 'nullable|string|max:1000'],
+            'note' => ['value' => 'nullable|string|max:1000'],
             default => ['value' => 'nullable|string'],
         };
     }

@@ -62,7 +62,7 @@
   <div class="header-box mb-4">
     @if($hasReport)
       <div class="meta">
-        <div>講師: <strong>{{ $report->employee_family_name }} {{ $report->employee_first_middle_name }}</strong></div>
+        <div>講師: <strong>{{ $report->employee_family_name }} {{ $report->employee_first_name }}</strong></div>
         <div>社員コード: <strong>{{ $report->employee_code }}</strong></div>
         <div>ステータス:
           <strong>{{ strtoupper($report->status->value ?? $report->status) }}</strong>

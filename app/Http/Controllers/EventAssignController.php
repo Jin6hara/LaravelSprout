@@ -15,7 +15,7 @@ class EventAssignController extends Controller
     public function edit(Request $request)
     {
         $userOptions = User::query()
-            ->select('id', 'name', 'employee_code')
+            ->select('id', 'first_name', 'family_name', 'employee_code')
             ->orderBy('employee_code')
             ->limit(500)
             ->get();

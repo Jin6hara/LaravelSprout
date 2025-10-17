@@ -18,7 +18,7 @@ class ExpenseReport extends Model
         'user_id',
         'employee_code',
         'employee_family_name',
-        'employee_first_middle_name',
+        'employee_first_name',
         'year',
         'month',
         'status',
@@ -49,7 +49,7 @@ class ExpenseReport extends Model
     /* Accessors */
     public function getEmployeeNameAttribute(): string
     {
-        return trim($this->employee_family_name . ' ' . $this->employee_first_middle_name);
+        return trim($this->employee_family_name . ' ' . $this->employee_first_name);
     }
 
     /* Scopes */

@@ -45,15 +45,15 @@
                         </td>
                     </tr>
                     <tr>
-                        <th>自己紹介</th>
+                        <th>備考</th>
                         <td>
-                            <span id="self_introduction_display">{{ $user->self_introduction }}</span>
-                            <input type="text" id="self_introduction_input" class="form-control d-none" value="{{ $user->self_introduction }}">
+                            <span id="note_display">{{ $user->note }}</span>
+                            <input type="text" id="note_input" class="form-control d-none" value="{{ $user->note }}">
                         </td>
                         <td style="width: 100px; text-align: center;">
-                            <button class="btn btn-sm btn-outline-secondary" id="self_introduction_edit" onclick="editField('self_introduction')">✏️</button>
-                            <button class="btn btn-sm btn-primary d-none" id="self_introduction_save" onclick="saveField('self_introduction')">✅</button>
-                            <button class="btn btn-sm btn-danger d-none" id="self_introduction_cancel" onclick="cancelField('self_introduction')">❌</button>
+                            <button class="btn btn-sm btn-outline-secondary" id="note_edit" onclick="editField('note')">✏️</button>
+                            <button class="btn btn-sm btn-primary d-none" id="note_save" onclick="saveField('note')">✅</button>
+                            <button class="btn btn-sm btn-danger d-none" id="note_cancel" onclick="cancelField('note')">❌</button>
                         </td>
                     </tr>
                 </table>

@@ -22,7 +22,8 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'family_name',
-        'first_middle_name',
+        'first_name',
+        'middle_name',
         'name_in_kana',
         'email',
         'employee_code',
@@ -32,7 +33,7 @@ class User extends Authenticatable
         'phone_number',
         'address',
         'profile_picture',
-        'self_introduction',
+        'note',
         'created_at',
     ];
 
@@ -65,17 +66,38 @@ class User extends Authenticatable
      */
     protected string $guard_name = 'web';
 
-    // family_name, first_middle_name のどちらかが更新されたら name は自動更新する
+    // family_name, first_name, middle_name のどれかが更新されたら name は自動更新する
     public function setFamilyNameAttribute($value)
     {
         $this->attributes['family_name'] = $value;
-        $this->attributes['name'] = trim($value . ' ' . ($this->first_middle_name ?? ''));
+        $this->updateFullName();
     }
 
-    public function setFirstMiddleNameAttribute($value)
+    public function setFirstNameAttribute($value)
     {
-        $this->attributes['first_middle_name'] = $value;
-        $this->attributes['name'] = trim(($this->family_name ?? '') . ' ' . $value);
+        $this->attributes['first_name'] = $value;
+        $this->updateFullName();
+    }
+
+    public function setMiddleNameAttribute($value)
+    {
+        $this->attributes['middle_name'] = $value;
+        $this->updateFullName();
+    }
+
+    /**
+     * family_name, first_name, middle_name のどれかが更新されたら name を自動更新
+     */
+    protected function updateFullName(): void
+    {
+        $last   = $this->attributes['family_name'] ?? '';
+        $first  = $this->attributes['first_name'] ?? '';
+        $middle = $this->attributes['middle_name'] ?? '';
+
+        // 順番: Last → First → Middle
+        $fullName = trim(implode(' ', array_filter([$last, $first, $middle])));
+
+        $this->attributes['name'] = $fullName;
     }
 
     public function getRouteKeyName()

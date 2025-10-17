@@ -47,7 +47,7 @@
               <option value="">（選択してください）</option>
               @foreach($userOptions as $u)
                 <option value="{{ $u->id }}" @selected(request('user_id') == $u->id)>
-                  {{ $u->name }} [{{ $u->employee_code }}]
+                  {{ $u->first_name }} {{ $u->family_name }} [{{ $u->employee_code }}]
                 </option>
               @endforeach
             </select>
@@ -103,7 +103,7 @@
               <option value="">（指定なし）</option>
               @foreach($userOptions as $u)
                 <option value="{{ $u->id }}" @selected(request('original_user_id') == $u->id)>
-                  {{ $u->name }} [{{ $u->employee_code }}]
+                  {{ $u->first_name }} {{ $u->family_name }} [{{ $u->employee_code }}]
                 </option>
               @endforeach
             </select>
@@ -130,7 +130,7 @@
               <option value="">（指定なし）</option>
               @foreach($userOptions as $u)
                 <option value="{{ $u->id }}" @selected(request('assigned_user_id') == $u->id)>
-                  {{ $u->name }} [{{ $u->employee_code }}]
+                  {{ $u->first_name }} {{ $u->family_name }} [{{ $u->employee_code }}]
                 </option>
               @endforeach
             </select>
@@ -280,7 +280,7 @@
                 <select name="original_user_id" class="form-select form-select-sm">
                   <option value="">—</option>
                   @foreach($userOptions as $u)
-                  <option value="{{ $u->id }}" @selected($event->original_user_id===$u->id)>{{ $u->name }} [{{ $u->employee_code }}]</option>
+                  <option value="{{ $u->id }}" @selected($event->original_user_id===$u->id)>{{ $u->first_name }} {{ $u->family_name }} [{{ $u->employee_code }}]</option>
                   @endforeach
                 </select>
               </div>
@@ -348,7 +348,7 @@
                 <select name="assigned_user_id" class="form-select form-select-sm">
                   <option value="">—</option>
                   @foreach($userOptions as $u)
-                  <option value="{{ $u->id }}" @selected($event->assigned_user_id===$u->id)>{{ $u->name }} [{{ $u->employee_code }}]</option>
+                  <option value="{{ $u->id }}" @selected($event->assigned_user_id===$u->id)>{{ $u->first_name }} {{ $u->family_name }} [{{ $u->employee_code }}]</option>
                   @endforeach
                 </select>
               </div>

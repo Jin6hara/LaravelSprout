@@ -16,6 +16,9 @@ class ExpenseReportSeptemberSeeder extends Seeder
         $now   = Carbon::now($tz);
         $year  = (int) $now->format('Y');
         $month = 10; // 10月
+        // 1=>A, 2=>B, ... 19=>S
+        $y = array_combine(range(1, 19), range('A', 'S'));
+
 
         for ($i = 1; $i <= 10; $i++) {
             $user = User::find($i);
@@ -34,8 +37,8 @@ class ExpenseReportSeptemberSeeder extends Seeder
                 ],
                 [
                     'employee_code'             => $employeeCode,
-                    'employee_family_name'      => 'hara',
-                    'employee_first_middle_name' => "job{$i}",
+                    'employee_family_name'      => "{$i}hara",
+                    'employee_first_name'       => "{$y[$i]}im",
                     'status'                    => ExpenseReportStatus::DRAFT->value,
                     'submitted_at'              => null,
                     'approved_at'               => null,
