@@ -77,6 +77,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const calendar = new FullCalendar.Calendar(calendarEl, {
         locale: 'en',
         initialView: 'dayGridMonth',
+        initialDate: window.initialDate,
         height: 'auto',
         firstDay: 0,
         slotDuration: '00:10:00',
@@ -89,6 +90,9 @@ document.addEventListener('DOMContentLoaded', function () {
         dayMaxEventRows: true,
         navLinks: true,
         nowIndicator: true,
+        validRange: { start: '2025-04-01', end: '' },
+        editable: true, //eventDrop: (info) => updateEvent(info.event), // ← updateもできるらしい
+        //その他面白い機能：selectable, selectMirror, dayMaxEvents, weekends, businessHours, etc.
 
         views: {
             listWeek: {
@@ -203,8 +207,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const fmt = d => d ? d.toLocaleDateString('ja-JP') : '';
                 //if (e.start || e.end) html += `<div>日付：${fmt(e.start)}${e.end ? ' 〜 ' + fmt(e.end) : ''}</div>`; //endは使わないので削除
                 if (e.start || e.end) html += `<div>Date: ${fmt(e.start)}</div>`;
-            }
-                // ▲▲ 詳細がないときは従来の簡易情報 ▲▲
+            }   // ▲▲ 詳細がないときは従来の簡易情報 ▲▲
 
             document.getElementById('eventModalBody').innerHTML = html;
             new bootstrap.Modal(document.getElementById('eventModal')).show();

@@ -121,8 +121,8 @@
 
 /* カレンダー横幅調整 */
 #calendar {
-  max-width: auto;
-  margin: auto;
+  max-width: 1300px; /* autoは無効なので具体値を */
+  margin: 20px auto;
 }
  
 /* カレンダーセル内余白を-1にする */
