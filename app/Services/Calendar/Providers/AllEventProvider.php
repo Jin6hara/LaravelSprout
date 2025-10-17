@@ -19,13 +19,17 @@ class AllEventProvider implements CalendarEventProvider
     {
         $rows = Event::query()
             ->whereBetween('event_date', [$start->toDateString(), $end->toDateString()])
-            // status は列挙：pending/fixed/filled/in_process（cancelledは仕様外なので除外不要）
-            ->with(['details.start', 'details.lesson'])
+            ->with([
+                'details.start',
+                'details.lesson',
+                'originalUser:id,first_name,family_name',
+                'assignedUser:id,first_name,family_name' 
+            ])
             ->orderBy('event_date')
             ->orderBy('start_time')
             ->get();
 
-        $events = [];
+        $events = []; // CandidateEvent 配列（イベント枠、背景枠、モーダルなどに必要な情報）
 
         foreach ($rows as $e) {
             $ymd = $e->event_date->toDateString();
@@ -81,6 +85,13 @@ class AllEventProvider implements CalendarEventProvider
                 $classNames[] = 'status-assigned'; // 黄色枠専用クラス
             }
 
+            //original_user_name, assigned_user_name の取得
+            $orig = $e->originalUser;
+            $origName = $orig ? trim(($orig->family_name ?? '') . ' ' . ($orig->first_name ?? '')) : null;
+            //assigned_user_name の取得
+            $assign = $e->assignedUser;
+            $assignName = $assign ? trim(($assign->family_name ?? '') . ' ' . ($assign->first_name ?? '')) : null;
+
             $events[] = new CandidateEvent([
                 'title'   => $title,
                 'start'   => $startAt,
@@ -90,7 +101,7 @@ class AllEventProvider implements CalendarEventProvider
                 'classNames' => $classNames,
                 'extendedProps' => [
                     'category'  => 'event',
-                    'type'      => $e->type,                 // regular_time / overtime / schedule_change / special
+                    'type'      => $e->type,
                     'school'    => $e->school_name,
                     'status'    => $e->status,               // pending / fixed / filled / in_process
                     'source_schedule_line_id' => $e->source_schedule_line_id,
@@ -98,6 +109,18 @@ class AllEventProvider implements CalendarEventProvider
                     'assigned_user_id'        => $e->assigned_user_id,
                     'details'   => $details,
                     'sort_order' => $this->sortOrderForType($e->type),
+
+                    'original_user_name'  => $origName,
+                    'assigned_user_name'  => $assignName,
+
+                    // ▼ モーダル表示用に最小追加
+                    'event_id'        => $e->id,
+                    'event_date'      => $ymd,
+                    'start_time'      => $startHm,
+                    'end_time'        => $endHm,
+                    'total_duration'  => $e->total_duration,
+                    'notes'           => $e->notes,
+                    'title_raw'       => $e->title,
                 ],
                 // Resolver 側で上書きされても良いようにデフォ値を付与
                 'level'     => 1,
