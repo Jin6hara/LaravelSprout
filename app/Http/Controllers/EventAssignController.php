@@ -210,16 +210,19 @@ class EventAssignController extends Controller
         return back()->with('status', 'イベントを複写しました。');
     }
 
-    public function storeBlank()
+    public function storeBlank(Request $request)
     {
-        // 空白イベントを作成（最低限: 今日の日付・status=pending）
+        // リクエストやURLクエリから event_date を取得（POSTでもGETでも対応）
+        $date = $request->input('event_date', now()->toDateString());
+
+        // 空白イベントを作成
         $event = Event::create([
-            'event_date' => now()->toDateString(),
+            'event_date' => $date,
             'status'     => 'pending',
             'type'       => 'regular_time',
         ]);
 
-        return back()->with('status', '空白イベントを追加しました。');
+        return back()->with('status', "空白イベントを {$date} に追加しました。");
     }
 
     public function bulkUpdate(Request $request)

@@ -216,6 +216,7 @@
     {{-- 空白イベント追加 --}}
     <form method="POST" action="{{ route('events.store.blank') }}" class="m-0 p-0">
       @csrf
+      <input type="hidden" name="event_date" value="{{ request('event_date', now()->toDateString()) }}">
       <button type="submit" class="btn btn-sm btn-success">
         ＋ 空白イベントを追加
       </button>
