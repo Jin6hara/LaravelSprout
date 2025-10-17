@@ -170,3 +170,9 @@ Route::middleware(['auth','role:admin|super_admin'])->group(function () {
     Route::delete('/events/{event}', [EventAssignController::class, 'destroy'])->name('events.destroy');
     Route::post('/leaves',        [LeaveController::class, 'store'])->name('leaves.store');
 });
+
+use App\Http\Controllers\SchoolProfileController;
+
+Route::get('/schools/search', [SchoolProfileController::class, 'search'])
+    ->name('schools.search');
+
