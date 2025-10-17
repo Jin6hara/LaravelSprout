@@ -17,9 +17,9 @@
 
             <div class="mb-3">
                 <label class="form-label">名</label>
-                <input type="text" name="first_middle_name" class="form-control @error('first_middle_name') is-invalid @enderror"
-                    value="{{ old('first_middle_name') }}">
-                @error('first_middle_name') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                <input type="text" name="first_name" class="form-control @error('first_name') is-invalid @enderror"
+                    value="{{ old('first_name') }}">
+                @error('first_name') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>
 
             <div class="mb-3">

@@ -58,7 +58,7 @@ class UsersController extends Controller
         $field = $request->input('field');
         $validated = $request->validated(); // バリデーション通過後のデータ
 
-        $allowedFields = ['email', 'phone_number', 'address', 'self_introduction'];
+        $allowedFields = ['email', 'phone_number', 'address', 'note'];
 
         if (!in_array($field, $allowedFields)) {
             return response()->json(['error' => '更新できません'], 400);

@@ -30,7 +30,7 @@ class ExpenseReportController extends Controller
                 'id',
                 'employee_code',
                 'employee_family_name',
-                'employee_first_middle_name',
+                'employee_first_name',
                 'total_amount',
                 'status',
                 'submitted_at',

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\User;
+use App\Models\School;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Carbon;
@@ -13,11 +14,18 @@ class EventAssignController extends Controller
 {
     public function edit(Request $request)
     {
-        $userOptions = \App\Models\User::query()
-            ->select('id', 'name', 'employee_code')
+        $userOptions = User::query()
+            ->select('id', 'first_name', 'family_name', 'employee_code')
             ->orderBy('employee_code')
             ->limit(500)
             ->get();
+
+        // ★追加：School名の候補（重複除去＆名前順）
+        $schoolNames = School::query()
+            ->where('is_active', true)
+            ->orderBy('school_name')
+            ->distinct()
+            ->pluck('school_name');
 
         // 検索パラメータ取得
         $originalUserId = $request->input('original_user_id');
@@ -47,7 +55,7 @@ class EventAssignController extends Controller
                 ->withInput();
         }
 
-        $events = \App\Models\Event::query()
+        $events = Event::query()
             ->with(['assignedUser:id,name,employee_code', 'originalUser:id,name,employee_code'])
             ->when($originalUserId, fn($q) => $q->where('original_user_id', $originalUserId))
             ->when($assignedUserId, fn($q) => $q->where('assigned_user_id', $assignedUserId))
@@ -88,10 +96,10 @@ class EventAssignController extends Controller
             ->withQueryString();
 
         $statusOptions = [
-            'pending' => 'Pending',
+            'filled'     => 'Filled',
+            'fixed'      => 'Fixed',
+            'pending'    => 'Pending',
             'in_process' => 'In Process',
-            'fixed' => 'Fixed',
-            'filled' => 'Filled',
         ];
         $typeOptions = [
             'regular_time'         => 'RT',
@@ -102,7 +110,8 @@ class EventAssignController extends Controller
             'none_required'        => 'NS',
         ];
 
-        return view('calendar.edit', compact('events', 'userOptions', 'statusOptions', 'typeOptions'));
+        // $schoolNames を view に渡す
+        return view('calendar.edit', compact('events', 'userOptions', 'statusOptions', 'typeOptions', 'schoolNames'));
     }
 
     public function update(Request $request, Event $event)
@@ -190,7 +199,7 @@ class EventAssignController extends Controller
         // ⬇︎ H:i → H:i:s に正規化（nullはそのまま）
         foreach (['start_time', 'end_time'] as $k) {
             if ($request->filled($k)) {
-                $validated[$k] = \Illuminate\Support\Carbon::createFromFormat('H:i', $request->input($k))->format('H:i:s');
+                $validated[$k] = Carbon::createFromFormat('H:i', $request->input($k))->format('H:i:s');
             } else {
                 $validated[$k] = null;
             }
@@ -198,8 +207,8 @@ class EventAssignController extends Controller
 
         // ⬇︎ total_duration 未入力なら自動計算（Observer があれば最終整合はそちらでも取れます）
         if (!$request->filled('total_duration') && $validated['start_time'] && $validated['end_time']) {
-            $start = \Illuminate\Support\Carbon::createFromFormat('H:i:s', $validated['start_time']);
-            $end   = \Illuminate\Support\Carbon::createFromFormat('H:i:s', $validated['end_time']);
+            $start = Carbon::createFromFormat('H:i:s', $validated['start_time']);
+            $end   = Carbon::createFromFormat('H:i:s', $validated['end_time']);
             if ($end->lt($start)) $end->addDay(); // 日跨ぎ
             $mins = $start->diffInMinutes($end);
             $validated['total_duration'] = sprintf('%d:%02d', intdiv($mins, 60), $mins % 60);

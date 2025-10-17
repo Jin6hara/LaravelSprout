@@ -20,7 +20,8 @@ return new class extends Migration
 
             $t->string('employee_code')->index();
             $t->string('employee_family_name');
-            $t->string('employee_first_middle_name')->nullable();
+            $t->string('employee_first_name')->nullable();
+            $t->string('employee_middle_name')->nullable();
 
             $t->unsignedSmallInteger('year');
             $t->unsignedTinyInteger('month');

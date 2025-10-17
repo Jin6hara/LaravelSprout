@@ -22,22 +22,6 @@
   // DBの生値（time型なら "HH:MM:SS"）を使いたい場合のフォールバック
   return '';
   };
-
-  $userOptions = $userOptions ?? collect();
-
-  $statusOptions = ['pending'=>'Pending','in_process'=>'In Process','fixed'=>'Fixed','filled'=>'Filled'];
-  $typeOptions = [
-  'regular_time' => 'RT',
-  'none_required' => 'NS',
-  'overtime' => 'OT',
-  'schedule_change' => 'SC',
-  'rostered_working_day' => 'RWD',
-  'special' => 'SP'
-  ];
-  @endphp
-
-  @php
-    $leaveKindOptions = ['paid','absense_to_paid', 'special', 'absence', 'adjustment', 'other' ];
   @endphp
 
   <div class="d-flex justify-content-between align-items-center mb-2">
@@ -63,7 +47,7 @@
               <option value="">（選択してください）</option>
               @foreach($userOptions as $u)
                 <option value="{{ $u->id }}" @selected(request('user_id') == $u->id)>
-                  {{ $u->name }} [{{ $u->employee_code }}]
+                  {{ $u->first_name }} {{ $u->family_name }} [{{ $u->employee_code }}]
                 </option>
               @endforeach
             </select>
@@ -119,7 +103,7 @@
               <option value="">（指定なし）</option>
               @foreach($userOptions as $u)
                 <option value="{{ $u->id }}" @selected(request('original_user_id') == $u->id)>
-                  {{ $u->name }} [{{ $u->employee_code }}]
+                  {{ $u->first_name }} {{ $u->family_name }} [{{ $u->employee_code }}]
                 </option>
               @endforeach
             </select>
@@ -146,7 +130,7 @@
               <option value="">（指定なし）</option>
               @foreach($userOptions as $u)
                 <option value="{{ $u->id }}" @selected(request('assigned_user_id') == $u->id)>
-                  {{ $u->name }} [{{ $u->employee_code }}]
+                  {{ $u->first_name }} {{ $u->family_name }} [{{ $u->employee_code }}]
                 </option>
               @endforeach
             </select>
@@ -296,7 +280,7 @@
                 <select name="original_user_id" class="form-select form-select-sm">
                   <option value="">—</option>
                   @foreach($userOptions as $u)
-                  <option value="{{ $u->id }}" @selected($event->original_user_id===$u->id)>{{ $u->name }} [{{ $u->employee_code }}]</option>
+                  <option value="{{ $u->id }}" @selected($event->original_user_id===$u->id)>{{ $u->first_name }} {{ $u->family_name }} [{{ $u->employee_code }}]</option>
                   @endforeach
                 </select>
               </div>
@@ -308,7 +292,18 @@
               {{-- 3 --}}
               <div class="mb-0">
                 <label class="form-label small mb-0">School</label>
-                <input type="text" name="school_name" class="form-control form-control-sm" value="{{ old('school_name',$event->school_name) }}">
+                <input
+                  list="schoolOptions"
+                  name="school_name"
+                  class="form-control form-control-sm"
+                  value="{{ old('school_name', $event->school_name) }}"
+                  placeholder="選択または直接入力"
+                />
+                <datalist id="schoolOptions">
+                  @foreach ($schoolNames as $s)
+                    <option value="{{ $s }}">
+                  @endforeach
+                </datalist>
               </div>
             </div>
             {{-- 4 --}}
@@ -353,7 +348,7 @@
                 <select name="assigned_user_id" class="form-select form-select-sm">
                   <option value="">—</option>
                   @foreach($userOptions as $u)
-                  <option value="{{ $u->id }}" @selected($event->assigned_user_id===$u->id)>{{ $u->name }} [{{ $u->employee_code }}]</option>
+                  <option value="{{ $u->id }}" @selected($event->assigned_user_id===$u->id)>{{ $u->first_name }} {{ $u->family_name }} [{{ $u->employee_code }}]</option>
                   @endforeach
                 </select>
               </div>

@@ -14,7 +14,8 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('family_name');
-            $table->string('first_middle_name')->nullable();
+            $table->string('first_name')->nullable();
+            $table->string('middle_name')->nullable();
             $table->string('name_in_kana')->nullable();
             $table->string('name'); // ←既存互換用、結合した値を保持
             $table->string('email')->unique();
@@ -24,7 +25,7 @@ return new class extends Migration
             $table->timestamps();
             $table->enum('gender', ['male', 'female', 'other', 'unknown'])->default('unknown');
             $table->string('profile_picture')->nullable();
-            $table->text('self_introduction')->nullable();
+            $table->text('note')->nullable();
             $table->softDeletes();
             // 交通費精算に関連する最低限の情報
             $table->string('employee_code', 6)->unique(); // 社員コード
