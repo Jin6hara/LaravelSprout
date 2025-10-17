@@ -45,7 +45,7 @@
     <small class="text-muted">{{ $events->total() }} 件</small>
   </div>
 
-  {{-- ▼ 欠席作成 --}}
+  {{-- ▼ 欠席作成 -------------------------------------------------------------------------------------------}}
   <form method="POST" action="{{ route('leaves.store') }}" class="mb-2">
     @csrf
     {{-- 固定項目（hidden） --}}
@@ -97,9 +97,9 @@
       </div>
     </div>
   </form>
-  {{-- ▲ 欠席作成 --}}
+  {{-- ▲ 欠席作成 -------------------------------------------------------------------------------------------}}
 
-  {{-- 検索フォーム --}}
+  {{-- 検索フォーム -------------------------------------------------------------------------------------------}}
   <form method="GET" action="{{ route('calendar.edit') }}" class="search mb-2">
     <div class="card">
       <div class="card-body p-2">
@@ -209,11 +209,11 @@
       </div>
     </div>
   </form>
-  {{-- ▲ ここまで検索フォーム --}}
+  {{-- ▲ ここまで検索フォーム -----------------------------------------------------------------------------------------}}
 
   
   <div class="d-flex align-items-center gap-1 mb-2">
-    {{-- 空白イベント追加 --}}
+    {{-- 空白イベント追加 -------------------------------------------------------------------------------------------}}
     <form method="POST" action="{{ route('events.store.blank') }}" class="m-0 p-0">
       @csrf
       <input type="hidden" name="event_date" value="{{ request('event_date', now()->toDateString()) }}">
@@ -268,8 +268,27 @@
             <div class="mb-0 d-grid gap-0"> {{-- gapは下記四項目すべてに適用する --}}
               {{-- 0 --}}
               <div class="mb-0">
+                @php
+                    $titleOptions = [
+                        'Support Shift',
+                        'OPPT/ML',
+                        '#Memo',
+                        'Cover Shift',
+                    ];
+                @endphp
                 <label class="form-label small mb-0">Title</label>
-                <input type="text" name="title" class="form-control form-control-sm" value="{{ old('title',$event->title) }}">
+                <input
+                  list="titleOptions"
+                  name="title"
+                  class="form-control form-control-sm"
+                  value="{{ old('title', $event->title) }}"
+                  placeholder="選択または直接入力"
+                />
+                <datalist id="titleOptions">
+                  @foreach ($titleOptions as $opt)
+                    <option value="{{ $opt }}">
+                  @endforeach
+                </datalist>
               </div>
               {{-- 1 --}}
               <div class="col-12">
