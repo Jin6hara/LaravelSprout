@@ -24,11 +24,28 @@ class EventAssignController extends Controller
         $assignedUserId = $request->input('assigned_user_id');
         $status         = $request->input('status');
         $type           = $request->input('type');
-        $eventDate      = $request->input('event_date');
+
         $leaveType      = $request->input('Leave_type');
         $schoolName     = $request->input('school_name');
         $title          = $request->input('title');
         $lesson         = $request->input('Lesson');
+
+        // 期間検索（from/to）。どちらか一方だけでもOK
+        $eventDateFrom  = $request->input('event_date');
+        $eventDateTo    = $request->input('end_date');
+
+        // 1. end_day のみ指定 → エラー
+        if ($eventDateTo && !$eventDateFrom) {
+            return back()
+                ->withErrors(['event_date' => '対象日を入力してください。'])
+                ->withInput();
+        }
+        // 2. start_day > end_day → エラー
+        if ($eventDateFrom && $eventDateTo && $eventDateFrom > $eventDateTo) {
+            return back()
+                ->withErrors(['event_date' => '開始日は終了日より前の日付を指定してください。'])
+                ->withInput();
+        }
 
         $events = \App\Models\Event::query()
             ->with(['assignedUser:id,name,employee_code', 'originalUser:id,name,employee_code'])
@@ -36,7 +53,13 @@ class EventAssignController extends Controller
             ->when($assignedUserId, fn($q) => $q->where('assigned_user_id', $assignedUserId))
             ->when($status,         fn($q) => $q->where('status', $status))
             ->when($type,           fn($q) => $q->where('type', $type))
-            ->when($eventDate,      fn($q) => $q->whereDate('event_date', $eventDate))
+            // ⬇︎ 日付フィルタ（優先順位：1) from+to 期間 2) fromのみ 単日
+            ->when($eventDateFrom && $eventDateTo, function ($q) use ($eventDateFrom, $eventDateTo) {
+                $q->whereBetween('event_date', [$eventDateFrom, $eventDateTo]);
+            })
+            ->when($eventDateFrom && !$eventDateTo, function ($q) use ($eventDateFrom) {
+                $q->whereDate('event_date', $eventDateFrom);
+            })
             ->when(
                 $leaveType !== null && $leaveType !== '',
                 fn($q) =>

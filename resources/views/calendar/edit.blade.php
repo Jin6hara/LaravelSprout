@@ -105,12 +105,12 @@
       <div class="card-body p-2">
         <div class="row g-2 align-items-end">
 
-          {{-- title（部分一致） 
+          {{-- title（部分一致）--}}
           <div class="col-12 col-md-3">
             <label class="form-label small mb-1">Title</label>
             <input type="text" name="title" class="form-control form-control-sm"
                   value="{{ request('title') }}" placeholder="例: 撮影, OPPT など">
-          </div> --}}
+          </div>
 
           {{-- Original User --}}
           <div class="col-12 col-md-3">
@@ -183,18 +183,18 @@
 
           {{-- Date（当日一致） --}}
           <div class="col-12 col-md-3">
-            <label class="form-label small mb-1">Date</label>
+            <label class="form-label small mb-1">Date / Start Date</label>
             <input type="date" name="event_date" class="form-control form-control-sm"
-                  value="{{ old('event_date', now()->toDateString()) }}">
+                  value="{{ old('event_date', request('event_date', now()->toDateString())) }}">
+          </div>
+
+          <div class="col-12 col-md-3">
+            <label class="form-label small mb-1">End Date</label>
+            <input type="date" name="end_date" class="form-control form-control-sm"
+                  value="{{ old('end_date', request('end_date')) }}">
           </div>
 
           {{-- Placeholder --}}
-          <div class="col-12 col-md-3"> 
-            <label class="form-label small mb-1"></label>
-          </div>
-          <div class="col-12 col-md-3"> 
-            <label class="form-label small mb-1"></label>
-          </div>
           <div class="col-12 col-md-3"> 
             <label class="form-label small mb-1"></label>
           </div>
@@ -264,8 +264,13 @@
           @method('PUT')
 
           <div class="card-body p-2 light-blue">
-            {{-- 1 --}}
-            <div class="mb-0 d-grid gap-0"> {{-- gapは下記三項目すべてに適用する --}}
+            <div class="mb-0 d-grid gap-0"> {{-- gapは下記四項目すべてに適用する --}}
+              {{-- 0 --}}
+              <div class="mb-0">
+                <label class="form-label small mb-0">Title</label>
+                <input type="text" name="title" class="form-control form-control-sm" value="{{ old('title',$event->title) }}">
+              </div>
+              {{-- 1 --}}
               <div class="col-12">
                 <label class="form-label small mb-0">Original User</label>
                 <select name="original_user_id" class="form-select form-select-sm">
@@ -278,7 +283,7 @@
               {{-- 2 --}}
               <div class="mb-0">
                 <label class="form-label small mb-0">Leave Type</label>
-                <textarea name="Leave_type" class="form-control form-control-sm" rows="1">{{ old('Leave_type',$event->Leave_type) }}</textarea>
+                <input type="text" name="Leave_type" class="form-control form-control-sm" value="{{ old('Leave_type',$event->Leave_type) }}">
               </div>
               {{-- 3 --}}
               <div class="mb-0">
@@ -599,14 +604,4 @@ document.addEventListener('input', (e) => {
   });
 })();
 </script>
-
-
 @endpush
-
-{{-- 以下はサンプルコードの一部として残しておく --}}
-
-{{-- 1 
-            <div class="mb-1">
-              <label class="form-label small mb-0">Title</label>
-              <input type="text" name="title" class="form-control form-control-sm" value="{{ old('title',$event->title) }}">
-</div> --}}
