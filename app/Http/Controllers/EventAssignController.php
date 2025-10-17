@@ -96,10 +96,10 @@ class EventAssignController extends Controller
             ->withQueryString();
 
         $statusOptions = [
-            'pending' => 'Pending',
+            'filled'     => 'Filled',
+            'fixed'      => 'Fixed',
+            'pending'    => 'Pending',
             'in_process' => 'In Process',
-            'fixed' => 'Fixed',
-            'filled' => 'Filled',
         ];
         $typeOptions = [
             'regular_time'         => 'RT',
@@ -199,7 +199,7 @@ class EventAssignController extends Controller
         // ⬇︎ H:i → H:i:s に正規化（nullはそのまま）
         foreach (['start_time', 'end_time'] as $k) {
             if ($request->filled($k)) {
-                $validated[$k] = \Illuminate\Support\Carbon::createFromFormat('H:i', $request->input($k))->format('H:i:s');
+                $validated[$k] = Carbon::createFromFormat('H:i', $request->input($k))->format('H:i:s');
             } else {
                 $validated[$k] = null;
             }
@@ -207,8 +207,8 @@ class EventAssignController extends Controller
 
         // ⬇︎ total_duration 未入力なら自動計算（Observer があれば最終整合はそちらでも取れます）
         if (!$request->filled('total_duration') && $validated['start_time'] && $validated['end_time']) {
-            $start = \Illuminate\Support\Carbon::createFromFormat('H:i:s', $validated['start_time']);
-            $end   = \Illuminate\Support\Carbon::createFromFormat('H:i:s', $validated['end_time']);
+            $start = Carbon::createFromFormat('H:i:s', $validated['start_time']);
+            $end   = Carbon::createFromFormat('H:i:s', $validated['end_time']);
             if ($end->lt($start)) $end->addDay(); // 日跨ぎ
             $mins = $start->diffInMinutes($end);
             $validated['total_duration'] = sprintf('%d:%02d', intdiv($mins, 60), $mins % 60);
