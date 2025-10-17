@@ -102,7 +102,7 @@ class LeaveSnapshotService
             // event 作成
             $event = Event::create([
                 'event_date'              => $ymd,
-                'title'                   => 'null',
+                'title'                   => 'Cover Shift',
                 'school_name'             => $line->school_name,
                 'start_time'              => substr($line->start_time, 0, 8), // H:i[:s]対策で正規化
                 'end_time'                => substr($line->end_time,   0, 8),
