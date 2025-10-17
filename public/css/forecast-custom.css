@@ -31,7 +31,7 @@
 
 /* イベントの角を少し四角くする */
 .fc .fc-event {
-  border-radius: 6px !important;
+  border-radius: 5px !important;
 }
 
 /* イベント色分け Over Time */
@@ -68,8 +68,15 @@
   border-width: 3px; border-style: solid; border-color: #fabd15;
 }
 
-/* 共通 */
-.fc .fc-event { border-radius: 8px; }
+/* SubCount背景色 */
+.fc .ev-subcount.fc-bg-event {
+  background-color: rgba(131, 250, 120, 0.35) !important;
+  border: 1px solid rgba(120, 250, 120, 0.55) !important;
+}
+.fc .ev-subcount-zero.fc-bg-event {
+  background-color: rgba(131, 250, 120, 0.35) !important;
+  border: 1px solid rgb(255, 0, 0) !important;
+}
 
 /* カレンダー外観 */
 #calendar {
