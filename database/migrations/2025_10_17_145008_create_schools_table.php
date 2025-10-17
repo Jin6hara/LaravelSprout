@@ -31,6 +31,7 @@ return new class extends Migration
             $t->text('address');
             $t->text('description')->nullable();
             $t->string('map_image_path')->nullable();
+            $t->string('station_url', 2048)->nullable();
             $t->dateTime('valid_from')->useCurrent();
             $t->dateTime('valid_to')->nullable(); // null=現行
             $t->timestamps();

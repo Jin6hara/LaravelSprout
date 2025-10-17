@@ -14,12 +14,14 @@ class SchoolSeeder extends Seeder
     {
         $now = Carbon::now();
 
-        // 15 schools (picked from the map area; English labels; addresses are sample-friendly)
+        // ✅ fixed image paths
+        $profileMapImage = '/image/Map.png';
+        $stationGuideImage = '/image/Transit_Logo.png';
+
         $schools = [
             [
                 'name' => 'Umeda GB',
                 'address' => 'Kita-ku, Osaka, Japan',
-                'map' => 'storage/maps/umeda.jpg',
                 'stations' => [
                     ['station_name' => 'Osaka-Umeda', 'line' => 'Hankyu Lines', 'walk_minutes' => 3, 'guide_text' => 'Direct access via Hankyu Grand Bldg concourse.'],
                     ['station_name' => 'Umeda', 'line' => 'Osaka Metro Midosuji Line', 'walk_minutes' => 6, 'guide_text' => 'North ticket gate → Hankyu area → Grand Bldg.'],
@@ -28,7 +30,6 @@ class SchoolSeeder extends Seeder
             [
                 'name' => 'Namba',
                 'address' => 'Chuo-ku, Osaka, Japan',
-                'map' => 'storage/maps/namba.jpg',
                 'stations' => [
                     ['station_name' => 'Namba', 'line' => 'Osaka Metro Midosuji Line', 'walk_minutes' => 3, 'guide_text' => 'South ticket gate → underground mall → exit to street level.'],
                     ['station_name' => 'Osaka-Namba', 'line' => 'Kintetsu / Hanshin Namba Line', 'walk_minutes' => 6, 'guide_text' => 'East gate → walk toward Midosuji line connection.'],
@@ -37,7 +38,6 @@ class SchoolSeeder extends Seeder
             [
                 'name' => 'Tennoji MP',
                 'address' => 'Tennoji-ku, Osaka, Japan',
-                'map' => 'storage/maps/tennoji.jpg',
                 'stations' => [
                     ['station_name' => 'Tennoji', 'line' => 'JR Lines', 'walk_minutes' => 2, 'guide_text' => 'Central gate → MIO Plaza passage (direct).'],
                     ['station_name' => 'Tennoji', 'line' => 'Osaka Metro Midosuji / Tanimachi', 'walk_minutes' => 4, 'guide_text' => 'West gate → JR connection passage.'],
@@ -46,7 +46,6 @@ class SchoolSeeder extends Seeder
             [
                 'name' => 'Shijo',
                 'address' => 'Shimogyo-ku, Kyoto, Japan',
-                'map' => 'storage/maps/shijo-karasuma.jpg',
                 'stations' => [
                     ['station_name' => 'Shijo', 'line' => 'Kyoto Subway Karasuma Line', 'walk_minutes' => 2, 'guide_text' => 'North gate → Exit 23, building above.'],
                     ['station_name' => 'Karasuma', 'line' => 'Hankyu Kyoto Line', 'walk_minutes' => 3, 'guide_text' => 'East gate → underground link to Shijo.'],
@@ -55,7 +54,6 @@ class SchoolSeeder extends Seeder
             [
                 'name' => 'Sannomiya',
                 'address' => 'Chuo-ku, Kobe, Japan',
-                'map' => 'storage/maps/sannomiya.jpg',
                 'stations' => [
                     ['station_name' => 'Sannomiya', 'line' => 'JR Kobe Line', 'walk_minutes' => 4, 'guide_text' => 'Central exit → Flower Road south.'],
                     ['station_name' => 'Kobe-Sannomiya', 'line' => 'Hankyu / Hanshin', 'walk_minutes' => 5, 'guide_text' => 'East gate → walk along Sankita Street.'],
@@ -64,7 +62,6 @@ class SchoolSeeder extends Seeder
             [
                 'name' => 'Nishinomiya',
                 'address' => 'Nishinomiya, Hyogo, Japan',
-                'map' => 'storage/maps/nishikita.jpg',
                 'stations' => [
                     ['station_name' => 'Nishinomiya-Kitaguchi', 'line' => 'Hankyu Kobe / Imazu Lines', 'walk_minutes' => 2, 'guide_text' => 'Northwest exit → deck to Gardens area.'],
                 ],
@@ -72,7 +69,6 @@ class SchoolSeeder extends Seeder
             [
                 'name' => 'Kyoto Ekimae',
                 'address' => 'Shimogyo-ku, Kyoto, Japan',
-                'map' => 'storage/maps/kyoto-station.jpg',
                 'stations' => [
                     ['station_name' => 'Kyoto', 'line' => 'JR Lines', 'walk_minutes' => 3, 'guide_text' => 'Central gate → Karasuma side → head to Yodobashi area.'],
                     ['station_name' => 'Kyoto', 'line' => 'Kintetsu / Subway Karasuma', 'walk_minutes' => 5, 'guide_text' => 'From Kintetsu gates follow connection to JR central gate.'],
@@ -81,7 +77,6 @@ class SchoolSeeder extends Seeder
             [
                 'name' => 'Hirakata',
                 'address' => 'Hirakata, Osaka, Japan',
-                'map' => 'storage/maps/hirakata.jpg',
                 'stations' => [
                     ['station_name' => 'Hirakata-shi', 'line' => 'Keihan Main Line', 'walk_minutes' => 2, 'guide_text' => 'Central gate → T-SITE deck connection.'],
                 ],
@@ -89,7 +84,6 @@ class SchoolSeeder extends Seeder
             [
                 'name' => 'Takatsuki Kids',
                 'address' => 'Takatsuki, Osaka, Japan',
-                'map' => 'storage/maps/takatsuki.jpg',
                 'stations' => [
                     ['station_name' => 'Takatsuki-shi', 'line' => 'Hankyu Kyoto Line', 'walk_minutes' => 4, 'guide_text' => 'North gate → walk toward Minage area.'],
                     ['station_name' => 'Takatsuki', 'line' => 'JR Kyoto Line', 'walk_minutes' => 8, 'guide_text' => 'South exit → Keyaki-dori eastbound.'],
@@ -98,7 +92,6 @@ class SchoolSeeder extends Seeder
             [
                 'name' => 'Senri-Chuo',
                 'address' => 'Toyonaka, Osaka, Japan',
-                'map' => 'storage/maps/senri-chuo.jpg',
                 'stations' => [
                     ['station_name' => 'Senri-Chuo', 'line' => 'Kita-Osaka Kyuko / Osaka Monorail', 'walk_minutes' => 3, 'guide_text' => 'North concourse → S. entrance of shopping mall.'],
                 ],
@@ -106,7 +99,6 @@ class SchoolSeeder extends Seeder
             [
                 'name' => 'Kita-Senri',
                 'address' => 'Suita, Osaka, Japan',
-                'map' => 'storage/maps/kitasenri.jpg',
                 'stations' => [
                     ['station_name' => 'Kita-Senri', 'line' => 'Hankyu Senri Line', 'walk_minutes' => 2, 'guide_text' => 'East exit → cross the plaza to the building.'],
                 ],
@@ -114,7 +106,6 @@ class SchoolSeeder extends Seeder
             [
                 'name' => 'Ibaraki',
                 'address' => 'Ibaraki, Osaka, Japan',
-                'map' => 'storage/maps/ibaraki.jpg',
                 'stations' => [
                     ['station_name' => 'Ibaraki', 'line' => 'JR Kyoto Line', 'walk_minutes' => 5, 'guide_text' => 'Central exit → proceed south along station road.'],
                 ],
@@ -122,7 +113,6 @@ class SchoolSeeder extends Seeder
             [
                 'name' => 'Esaka',
                 'address' => 'Suita, Osaka, Japan',
-                'map' => 'storage/maps/esaka.jpg',
                 'stations' => [
                     ['station_name' => 'Esaka', 'line' => 'Osaka Metro Midosuji Line', 'walk_minutes' => 3, 'guide_text' => 'South ticket gate → Exit 7 → office tower.'],
                 ],
@@ -130,7 +120,6 @@ class SchoolSeeder extends Seeder
             [
                 'name' => 'Kuzuha',
                 'address' => 'Hirakata, Osaka, Japan',
-                'map' => 'storage/maps/kuzuha.jpg',
                 'stations' => [
                     ['station_name' => 'Kuzuha', 'line' => 'Keihan Main Line', 'walk_minutes' => 2, 'guide_text' => 'From the gate, follow signs to Kuzuha Mall.'],
                 ],
@@ -138,14 +127,13 @@ class SchoolSeeder extends Seeder
             [
                 'name' => 'Nagao',
                 'address' => 'Hirakata, Osaka, Japan',
-                'map' => 'storage/maps/nagao.jpg',
                 'stations' => [
                     ['station_name' => 'Nagao', 'line' => 'JR Gakkentoshi Line', 'walk_minutes' => 4, 'guide_text' => 'West exit → straight along shopping street.'],
                 ],
             ],
         ];
 
-        // helper to make unique random 3-digit codes (string)
+        // helper to make unique random 3-digit codes
         $used = [];
         $makeCode = function () use (&$used): string {
             do {
@@ -155,9 +143,8 @@ class SchoolSeeder extends Seeder
             return $code;
         };
 
-        DB::transaction(function () use ($schools, $now, $makeCode) {
+        DB::transaction(function () use ($schools, $now, $makeCode, $profileMapImage, $stationGuideImage) {
             foreach ($schools as $s) {
-                // create or reuse by school_name to avoid duplicates on rerun
                 $school = School::firstOrCreate(
                     ['school_name' => $s['name']],
                     [
@@ -168,11 +155,12 @@ class SchoolSeeder extends Seeder
                     ]
                 );
 
+                // ✅ map_image_path fixed
                 $profile = SchoolProfile::create([
                     'school_id'      => $school->id,
                     'address'        => $s['address'],
                     'description'    => null,
-                    'map_image_path' => $s['map'],
+                    'map_image_path' => $profileMapImage,
                     'valid_from'     => $now,
                     'valid_to'       => null,
                 ]);
@@ -183,8 +171,9 @@ class SchoolSeeder extends Seeder
                         'line'             => $st['line'] ?? null,
                         'walk_minutes'     => $st['walk_minutes'] ?? null,
                         'guide_text'       => $st['guide_text'] ?? null,
-                        'guide_image_path' => $st['guide_image_path'] ?? null,
-                        'sort_order'       => $i, // 0,1,2...
+                        // ✅ all stations use Transit_logo.png
+                        'guide_image_path' => $stationGuideImage,
+                        'sort_order'       => $i,
                     ]);
                 }
             }

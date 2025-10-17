@@ -66,62 +66,106 @@
         @php
         $p = $s->currentProfile;
         $map = $p?->map_image_path;
-        // storageパスなら Storage::url を使う
         if ($map && !Str::startsWith($map, ['http://','https://','/'])) {
-        $map = Storage::disk(config('filesystems.default'))->url($map);
+        $map = Storage::url($map);
         }
         @endphp
-        <div class="col-12 col-md-6 col-lg-4">
-            <div class="card h-100 school-card">
-                <div class="p-2">
-                    @if($map)
-                    <img class="map" src="{{ $map }}" alt="map">
-                    @else
-                    <div class="map d-flex align-items-center justify-content-center text-muted">
-                        No Map Image
-                    </div>
-                    @endif
-                </div>
-                <div class="card-body pt-0">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <div class="small text-muted">Code: {{ $s->school_code }}</div>
-                            <h6 class="mb-1">{{ $s->school_name }}</h6>
-                        </div>
-                        <span class="badge bg-{{ $s->is_active ? 'success' : 'secondary' }}">
-                            {{ $s->is_active ? 'Active' : 'Inactive' }}
-                        </span>
-                    </div>
+        <div class="col-12">
+            <div class="card shadow-sm h-100">
+                <div class="row g-0 align-items-stretch">
 
-                    @if($p)
-                    <div class="mb-2">
-                        <i class="fa fa-location-dot me-1 text-secondary"></i>
-                        <span class="small">{{ $p->address }}</span>
-                    </div>
+                    {{-- ✅ 左：Map画像（移動済） --}}
+                    <div class="col-12 col-lg-5">
+                        <div class="h-100 p-3 text-center">
+                            @if($map)
+                            <img src="{{ $map }}" class="w-100 rounded-3 mb-2"
+                                alt="map" style="object-fit:cover; min-height:220px;">
+                            @else
+                            <div class="w-100 rounded-3 d-flex align-items-center justify-content-center text-muted"
+                                style="background:#f3f4f6; min-height:220px;">
+                                No Map Image
+                            </div>
+                            @endif
 
-                    {{-- stations --}}
-                    @if($p->stations->count())
-                    <div class="mb-2">
-                        @foreach($p->stations as $st)
-                        <div class="station-chip" title="{{ $st->line }}">
-                            {{ $st->station_name }}
-                            @if(!is_null($st->walk_minutes)) · {{ $st->walk_minutes }}m
+                            {{-- ✅ ③「マップを見る」リンク --}}
+                            @if($p?->station_url)
+                            <a href="{{ $p->station_url }}" target="_blank" rel="noopener noreferrer"
+                                class="btn btn-sm btn-outline-primary mt-2">
+                                <i class="fa fa-map-location-dot me-1"></i> View Map
+                            </a>
                             @endif
                         </div>
-                        @endforeach
                     </div>
-                    @endif
 
-                    {{-- guide (最初の駅の説明を短く表示、詳細はモーダルなどに拡張可) --}}
-                    @php $firstGuide = $p->stations->first()?->guide_text; @endphp
-                    @if($firstGuide)
-                    <div class="guide-text">{{ Str::limit($firstGuide, 180) }}</div>
-                    @endif
-                    @endif
-                </div>
-                <div class="card-footer bg-white border-0 pt-0">
-                    {{-- 詳細ページがあればここにリンクを置く --}}
-                    {{-- <a href="{{ route('schools.show', $s) }}" class="btn btn-sm btn-outline-secondary">Details</a> --}}
+                    {{-- ✅ 右：プロフィール＋駅ボックス群 --}}
+                    <div class="col-12 col-lg-7">
+                        <div class="p-3 h-100 d-flex flex-column">
+
+                            {{-- 上段：学校プロフィール --}}
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <div class="small text-muted">Code: {{ $s->school_code }}</div>
+                                        <h5 class="mb-1">{{ $s->school_name }}</h5>
+                                    </div>
+                                    <span class="badge bg-{{ $s->is_active ? 'success' : 'secondary' }}">
+                                        {{ $s->is_active ? 'Active' : 'Inactive' }}
+                                    </span>
+                                </div>
+                                @if($p)
+                                <div class="mt-1">
+                                    <i class="fa fa-location-dot me-1 text-secondary"></i>
+                                    <span class="small">{{ $p->address }}</span>
+                                </div>
+                                @if($p->description)
+                                <div class="small text-muted mt-1">{{ $p->description }}</div>
+                                @endif
+                                @endif
+                            </div>
+
+                            {{-- 下段：駅情報（✅縦並び化 col-12固定） --}}
+                            <div class="row g-2">
+                                @forelse(($p?->stations ?? collect()) as $st)
+                                <div class="col-12">
+                                    <div class="border rounded-3 p-2 h-100 bg-white">
+                                        <div class="d-flex justify-content-between">
+                                            <strong class="me-2">{{ $st->station_name }}</strong>
+                                            @if(!is_null($st->walk_minutes))
+                                            <span class="badge bg-light text-dark">{{ $st->walk_minutes }} min</span>
+                                            @endif
+                                        </div>
+                                        @if($st->line)
+                                        <div class="text-muted small">{{ $st->line }}</div>
+                                        @endif
+                                        @if($st->guide_image_path)
+                                        <div class="mt-2">
+                                            <img src="{{ Str::startsWith($st->guide_image_path, ['http://','https://','/'])
+                                      ? $st->guide_image_path
+                                      : Storage::url($st->guide_image_path) }}"
+                                                alt="guide"
+                                                class="img-fluid rounded-2"
+                                                style="max-height:120px; object-fit:cover;">
+                                        </div>
+                                        @endif
+                                        @if($st->guide_text)
+                                        <div class="small mt-2" style="white-space:pre-wrap;">
+                                            {{ $st->guide_text }}
+                                        </div>
+                                        @endif
+                                    </div>
+                                </div>
+                                @empty
+                                <div class="col-12">
+                                    <div class="border rounded-3 p-2 bg-light small text-muted">
+                                        No station info.
+                                    </div>
+                                </div>
+                                @endforelse
+                            </div>
+
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>

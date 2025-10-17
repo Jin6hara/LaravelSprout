@@ -32,7 +32,7 @@ class SchoolProfileController extends Controller
             // 現行プロファイル + 駅リストを eager load
             ->with([
                 'currentProfile' => function ($p) {
-                    $p->select('id','school_id','address','description','map_image_path','valid_from','valid_to');
+                    $p->select('id','school_id','address','description','map_image_path','station_url', 'valid_from','valid_to');
                 },
                 'currentProfile.stations' => function ($s) {
                     $s->select('id','school_profile_id','station_name','line','walk_minutes','guide_text','guide_image_path','sort_order')
