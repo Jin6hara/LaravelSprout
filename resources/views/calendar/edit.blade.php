@@ -22,22 +22,6 @@
   // DBの生値（time型なら "HH:MM:SS"）を使いたい場合のフォールバック
   return '';
   };
-
-  $userOptions = $userOptions ?? collect();
-
-  $statusOptions = ['pending'=>'Pending','in_process'=>'In Process','fixed'=>'Fixed','filled'=>'Filled'];
-  $typeOptions = [
-  'regular_time' => 'RT',
-  'none_required' => 'NS',
-  'overtime' => 'OT',
-  'schedule_change' => 'SC',
-  'rostered_working_day' => 'RWD',
-  'special' => 'SP'
-  ];
-  @endphp
-
-  @php
-    $leaveKindOptions = ['paid','absense_to_paid', 'special', 'absence', 'adjustment', 'other' ];
   @endphp
 
   <div class="d-flex justify-content-between align-items-center mb-2">
