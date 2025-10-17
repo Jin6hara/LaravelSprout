@@ -26,7 +26,7 @@ class DatabaseSeeder extends Seeder
             RestPatternAdjustmentSeeder::class,
             ScheduleSeeder::class,
             LeaveSeeder::class,
-            EventSeeder::class,
+            //EventSeeder::class, //LeaveSnapshotServiceで生成されるのでコメントアウト
             LessonStartTimeSeeder::class,
             LessonSeeder::class,
             ScheduleDetailSeeder::class,
