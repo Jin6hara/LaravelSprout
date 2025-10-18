@@ -127,11 +127,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
             let who = '';
             if (nameOrig && (nameAssign || idAssign)) {
-                who = ` <span class="text-muted small ms-1">(${nameOrig} → ${nameAssign ?? idAssign})</span>`;
+                who = ` <span class="text-white small ms-1">(${nameOrig} → ${nameAssign ?? idAssign})</span>`;
             } else if (nameOrig) {
-                who = ` <span class="text-muted small ms-1">(${nameOrig})</span>`;
+                who = ` <span class="text-white small ms-1">(${nameOrig})</span>`;
             } else if (nameAssign || idAssign) {
-                who = ` <span class="text-muted small ms-1">(→ ${nameAssign ?? idAssign})</span>`;
+                who = ` <span class="text-white small ms-1">(→ ${nameAssign ?? idAssign})</span>`;
             }
 
             // ③ lesson_code（details からユニーク抽出して横に表示）
