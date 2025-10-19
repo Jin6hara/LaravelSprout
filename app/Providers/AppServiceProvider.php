@@ -11,10 +11,12 @@ use App\Models\Event;
 use App\Observers\LeaveObserver;
 use App\Observers\EventObserver;
 use App\Services\Calendar\ForecastResolver;
+use App\Services\Calendar\LeaveResolver;
 use App\Services\Calendar\Providers\HolidayProvider;
 use App\Services\Calendar\Providers\ClosureProvider;
 use App\Services\Calendar\Providers\SubCountProvider;
 use App\Services\Calendar\Providers\AllEventProvider;
+use App\Services\Calendar\Providers\AllLeaveProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -49,6 +51,16 @@ class AppServiceProvider extends ServiceProvider
                 $app->make(AllEventProvider::class),
             ];
             return new ForecastResolver($providers);
+        });
+
+        $this->app->singleton(LeaveResolver::class, function ($app) {
+            // ここで「祝日」と「会社長期休み」だけに限定
+            $providers = [
+                $app->make(HolidayProvider::class),
+                $app->make(ClosureProvider::class), 
+                $app->make(AllLeaveProvider::class),
+            ];
+            return new LeaveResolver($providers);
         });
     }
 

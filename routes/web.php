@@ -56,6 +56,15 @@ Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
         ->name('calendar.forecast.events');
 });
 
+// LeaveCalender関連
+Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
+    Route::get('/leave', [CalendarController::class, 'Leave'])
+        ->name('calendar.leaves');
+
+    Route::get('/leave/events', [CalendarController::class, 'LeaveEvents']) //KSON
+        ->name('calendar.leave.events');
+});
+
 Route::middleware(['auth'])->group(function () {
     // 申請画面（本人用）
     Route::get('/leaveApply', [LeaveApplyController::class, 'create'])->name('leave.apply.create');

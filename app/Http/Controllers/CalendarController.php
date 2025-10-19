@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers;
 
-namespace App\Http\Controllers;
-
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use App\Models\User;
@@ -67,6 +65,26 @@ class CalendarController extends Controller
     public function forecastEvents(
         \Illuminate\Http\Request $request,
         \App\Services\Calendar\ForecastResolver $resolver
+    ) {
+        $user  = auth()->user(); // 祝日/会社休みはユーザーに依存しないが、将来の拡張のため合わせておく
+        $start = \Carbon\Carbon::parse($request->query('start'));
+        $end   = \Carbon\Carbon::parse($request->query('end'));
+
+        $events = $resolver->build($user, $start, $end);
+        return response()->json($events);
+    }
+
+    public function leave()
+    {
+        // index.blade.php と同じレイアウト・構成を流用
+        // 役割バッジなどもそのままでOK
+        $viewUser = auth()->user();
+        return view('calendar.leave', compact('viewUser'));
+    }
+
+    public function leaveEvents(
+        \Illuminate\Http\Request $request,
+        \App\Services\Calendar\LeaveResolver $resolver
     ) {
         $user  = auth()->user(); // 祝日/会社休みはユーザーに依存しないが、将来の拡張のため合わせておく
         $start = \Carbon\Carbon::parse($request->query('start'));
