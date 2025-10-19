@@ -59,9 +59,16 @@ class AllLeaveProvider
 
                 // CSS クラス（既存 LeaveProvider と揃える）
                 $classes = ['fc-leave', "fc-leave-{$leave->kind}"];
+
                 if ($leave->excused !== 'unknown') {
                     $classes[] = "fc-leave-{$leave->excused}";
                 }
+
+                // ✅ statusクラスを追加（例: status-approved / status-pending / status-rejected）
+                if (!empty($leave->status)) {
+                    $classes[] = "status-{$leave->status}";
+                }
+
 
                 $events->push([
                     'title'      => $title,
