@@ -54,10 +54,11 @@
         <div class="col-12 col-sm-6 col-md-4 col-lg-3">
             <div class="card h-100 shadow-sm">
                 {{-- まだ保存先ルート未定のため actionは空。後で PUT/PATCH に差し替え可能 --}}
-                <form class="h-100 d-flex flex-column js-leave-form"
-                    data-leave-id="{{ $leave->id }}">
-                    @csrf
-                    {{-- @method('PUT') ← 更新ルート作成後に有効化 --}}
+                <form method="POST"
+                    action="{{ route('leaves.update', $leave) }}"
+                    class="h-100 d-flex flex-column js-leave-form">
+                @csrf
+                @method('PUT')
 
                     <div class="card-body p-2 light-blue">
                         <div class="mb-0 d-grid gap-0">
@@ -159,26 +160,28 @@
 
                         {{-- フッタ操作（後でルート紐付け可） --}}
                         <div class="card-footer bg-white d-flex justify-content-between align-items-center py-2 px-2 gap-1 mt-2">
-                            {{-- 削除ボタン --}}
+                            {{-- 削除ボタン：クラスとdata属性をJSに合わせる --}}
                             <button type="button"
-                                class="btn btn-sm btn-outline-danger js-delete-leave"
-                                data-url="{{ route('leaves.destroy', $leave) }}">
-                                削除
+                                    class="btn btn-sm btn-outline-danger js-delete"
+                                    data-url="{{ route('leaves.destroy', $leave) }}"
+                                    data-date="{{ $leave->start_date?->format('Y-m-d') ?? 'この休暇' }}">
+                            削除
                             </button>
 
-                            {{-- 保存ボタン --}}
-                            <button type="button"
-                                class="btn btn-sm btn-primary js-save-leave"
-                                data-url="{{ route('leaves.update', $leave) }}">
-                                保存
-                            </button>
+                            {{-- 保存は通常送信 --}}
+                            <button type="submit" class="btn btn-sm btn-primary">保存</button>
                         </div>
-
                         <small class="{{ $cls }} text-left d-block mt-1">
                             {{ $action }}: {{ $time }}
                         </small>
                     </div>
                 </form>
+
+                <form id="js-delete-form" method="POST" class="d-none">
+                    @csrf
+                    @method('DELETE')
+                </form>
+
             </div>
         </div>
         @endforeach
@@ -189,77 +192,20 @@
 </div>
 @endif
 
-{{-- Ajax保存/削除 --}}
 @push('scripts')
 <script>
-document.addEventListener('click', async (e) => {
-  const saveBtn = e.target.closest('.js-save-leave');
-  const deleteBtn = e.target.closest('.js-delete-leave');
+  // 削除確認ダイアログ（日付表示）
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.js-delete');
+    if (!btn) return;
 
-  // 保存処理
-  if (saveBtn) {
-    const url = saveBtn.dataset.url;
-    const card = saveBtn.closest('.card');
-    const form = card.querySelector('form.js-leave-form');
-    const data = Object.fromEntries(new FormData(form));
+    const date = btn.dataset.date || 'この休暇';
+    if (!confirm(`${date} を削除します。よろしいですか？`)) return;
 
-    if (!url) return alert('URLが設定されていません。');
-    if (!confirm('この内容で保存しますか？')) return;
-
-    try {
-      const res = await fetch(url, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(data)
-      });
-      const json = await res.json();
-
-      if (res.ok && json.ok) {
-        alert('保存しました。');
-        location.reload();
-      } else {
-        alert('保存に失敗しました。\n' + (json.message || 'Validation error'));
-        console.error(json);
-      }
-    } catch (err) {
-      console.error(err);
-      alert('通信エラーが発生しました。');
-    }
-  }
-
-  // 削除処理
-  if (deleteBtn) {
-    const url = deleteBtn.dataset.url;
-    if (!url) return alert('URLが設定されていません。');
-    if (!confirm('この休暇データを削除しますか？')) return;
-
-    try {
-      const res = await fetch(url, {
-        method: 'DELETE',
-        headers: {
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-          'Accept': 'application/json'
-        }
-      });
-      const json = await res.json();
-
-      if (res.ok && json.ok) {
-        alert('削除しました。');
-        location.reload();
-      } else {
-        alert('削除に失敗しました。\n' + (json.message || 'Error'));
-        console.error(json);
-      }
-    } catch (err) {
-      console.error(err);
-      alert('通信エラーが発生しました。');
-    }
-  }
-});
+    const form = document.getElementById('js-delete-form');
+    form.action = btn.dataset.url;
+    form.submit();
+  });
 </script>
 @endpush
 

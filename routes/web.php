@@ -189,7 +189,6 @@ Route::middleware(['auth','role:admin|super_admin'])->group(function () {
     // ★ 一括更新（このページに表示されている分だけ送る）
     Route::post('/leaves/bulk-update', [LeaveManageController::class, 'bulkUpdate'])->name('leaves.bulk_update');
     Route::delete('/leaves/{leave}', [LeaveManageController::class, 'destroy'])->name('leaves.destroy');
-    Route::post('/detailLeaves',        [LeaveController::class, 'detailStore'])->name('leaves.store');
 });
 
 use App\Http\Controllers\SchoolProfileController;

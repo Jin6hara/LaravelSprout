@@ -125,14 +125,6 @@ class LeaveManageController extends Controller
         $leave->fill($data);
         $leave->save();
 
-        if ($request->wantsJson()) {
-            return response()->json([
-                'ok' => true,
-                'message' => 'Leave updated.',
-                'leave' => $leave->fresh(),
-            ]);
-        }
-
         return back()->with('status', 'Leave updated.');
     }
 
@@ -144,13 +136,6 @@ class LeaveManageController extends Controller
         }
 
         $leave->delete();
-
-        if ($request->wantsJson()) {
-            return response()->json([
-                'ok' => true,
-                'message' => 'Leave deleted.',
-            ]);
-        }
 
         return back()->with('status', 'Leave deleted.');
     }
