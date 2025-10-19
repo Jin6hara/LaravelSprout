@@ -35,6 +35,27 @@
     </div>
 </form>
 
+<div class="d-flex align-items-center gap-1 mb-2">
+  {{-- 空白Leave追加 --}}
+  <form method="POST" action="{{ route('leaves.store.blank') }}" class="m-0 p-0">
+    @csrf
+    {{-- 現在のフィルタを保持（なければ今日/ログインユーザーにフォールバック） --}}
+    <input type="hidden" name="start_date" value="{{ request('start_date', request('month', now()->toDateString())) }}">
+    <input type="hidden" name="user_id" value="{{ request('user_id', auth()->id()) }}">
+    <button type="submit" class="btn btn-sm btn-success">
+      ＋ Add Blank
+    </button>
+  </form>
+
+  {{-- 一括保存 --}}
+  <button type="button"
+    class="btn btn-sm btn-primary"
+    id="js-bulk-save"
+    data-url="{{ route('leaves.bulk_update') }}">
+    Bulk Save
+  </button>
+</div>
+
 @if($leaves->count())
 <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
     @foreach($leaves as $leave)
@@ -59,6 +80,9 @@
                     class="h-100 d-flex flex-column js-leave-form">
                 @csrf
                 @method('PUT')
+
+                {{-- Add Bulk 用ID隠しフィールド --}}
+                <input type="hidden" name="id" value="{{ $leave->id }}">
 
                     <div class="card-body p-2 light-blue">
                         <div class="mb-0 d-grid gap-0">
@@ -206,6 +230,47 @@
     form.action = btn.dataset.url;
     form.submit();
   });
+</script>
+<script>
+document.getElementById('js-bulk-save')?.addEventListener('click', async (e) => {
+  const url = e.currentTarget.dataset.url;
+  const forms = Array.from(document.querySelectorAll('form.js-leave-form'));
+  if (!url || forms.length === 0) return;
+
+  const items = forms.map(f => {
+    const fd = new FormData(f);
+    // FormData → 普通のオブジェクトへ
+    const obj = Object.fromEntries(fd.entries());
+    // time/date の空文字は null に正規化（サーババリデーション対策）
+    ['end_date','time_start','time_end','special_type','handle_type','reason'].forEach(k => {
+      if (obj[k] === '') obj[k] = null;
+    });
+    return obj;
+  });
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type':'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ items })
+    });
+    const json = await res.json();
+    if (res.ok && json.ok) {
+      // PRG + flash を使うためにリロード
+      location.reload();
+    } else {
+      console.error(json);
+      alert(json.message || '一括保存に失敗しました。');
+    }
+  } catch (err) {
+    console.error(err);
+    alert('通信エラーが発生しました。');
+  }
+});
 </script>
 @endpush
 
