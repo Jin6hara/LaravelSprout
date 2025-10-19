@@ -211,17 +211,16 @@ public function edit(Request $request)
 
         // デフォルト値（必要ならここを調整）
         $leave = Leave::create([
-            'user_id'     => $data['user_id'],
-            'start_date'  => $data['start_date'],
-            'end_date'    => null,
-            'reason'      => null,
-            'kind'        => 'other',        // 既定で other
-            'excused'     => 'unexcused',    // 既定で非公認
-            'special_type' => null,
-            'time_start'  => null,
-            'time_end'    => null,
-            'handle_type' => null,
-            'status'      => 'pending',      // 既定で pending（承認フローに載せるなら）
+            'user_id'      => null,
+            'start_date'   => $data['start_date'],
+            'end_date'     => null,
+            'reason'       => null,
+            'kind'         => 'special',
+            'excused'      => 'excused',
+            'time_start'   => null,
+            'time_end'     => null,
+            'handle_type'  => null,
+            'status'       => 'pending',
         ]);
 
         return back()->with('status', "空白Leaveを {$leave->start_date->format('Y-m-d')} に追加しました。");

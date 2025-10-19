@@ -13,10 +13,10 @@ return new class extends Migration
     {
         Schema::create('leaves', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->nullable()->constrained()->cascadeOnDelete();
 
             // 期間（単日OK・連休OK）
-            $table->date('start_date');
+            $table->date('start_date')->nullable();
             $table->date('end_date')->nullable(); // nullなら単日扱い
 
            // 発生理由/メモ（遅刻の詳細理由、有給の任意理由など）

@@ -147,13 +147,15 @@
                             {{-- 0: User --}}
                             <div class="mb-0">
                                 <label class="form-label small mb-0">User</label>
-                                <select name="user_id" class="form-select form-select-sm">
-                                    @foreach($userOptions as $u)
-                                    <option value="{{ $u->id }}" @selected($leave->user_id===$u->id)>
+                            <select name="user_id" class="form-select form-select-sm">
+                                {{-- 空白オプション --}}
+                                <option value="">—</option>
+                                @foreach($userOptions as $u)
+                                    <option value="{{ $u->id }}" @selected($leave->user_id === $u->id)>
                                         {{ $u->first_name }} {{ $u->family_name }} [{{ $u->employee_code }}]
                                     </option>
-                                    @endforeach
-                                </select>
+                                @endforeach
+                            </select>
                             </div>
 
                             {{-- 1: Kind / Special Type --}}
