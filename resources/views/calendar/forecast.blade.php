@@ -1,4 +1,3 @@
-{{-- resources/views/calendar/forecast.blade.php --}}
 @extends('layouts.app')
 
 @section('content')
@@ -6,6 +5,24 @@
     <h2 class="mb-0">Forecast Calendar</h2>
     <span class="badge text-bg-info">Admin View</span>
 </div>
+
+{{-- ▼▼ 月選択フォーム（GET） ▼▼ --}}
+<form method="GET" action="{{ url()->current() }}" class="mb-1">
+  <div class="row g-2 align-items-end">
+    <div class="col-6 col-md-3 col-lg-2">
+      <label class="form-label small mb-1">Month</label>
+      <input type="month"
+             name="month"
+             class="form-control form-control-sm"
+             value="{{ old('month', request('month', now()->format('Y-m'))) }}"
+             required>
+    </div>
+    <div class="col-auto">
+      <button type="submit" class="btn btn-sm btn-primary">Select</button>
+    </div>
+  </div>
+</form>
+{{-- ▲▲ 月選択フォーム（GET） ▲▲ --}}
 
 <div id="calendar"></div>
 
@@ -17,7 +34,7 @@
                 <h5 class="modal-title">Details</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body" id="eventModalBody">読み込み中…</div>
+            <div class="modal-body" id="eventModalBody">Reading…</div>
         </div>
     </div>
 </div>
@@ -32,6 +49,7 @@
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js"></script>
   <script>
     window.calendarEventsUrl = "{{ route('calendar.forecast.events') }}";
+    window.initialDate = "{{ request('month', now()->format('Y-m')) }}";
   </script>
   <script src="{{ asset('js/forecast.js') }}?v={{ filemtime(public_path('js/forecast.js')) }}"></script>
 @endpush

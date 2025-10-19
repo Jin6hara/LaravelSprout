@@ -21,8 +21,22 @@ class CalendarController extends Controller
         if (!$viewer->hasRole(['admin', 'super_admin']) && $viewUser->id !== $viewer->id) {
             abort(403);
         }
-        return view('calendar.index', ['viewUser' => $viewUser]);
+
+        // ★ 追加：管理者だけにセレクト用リストを渡す（一般は空のコレクション）
+        $userOptions = $viewer->hasRole(['admin', 'super_admin'])
+            ? User::query()
+            ->select('id', 'first_name', 'family_name', 'employee_code')
+            ->orderBy('employee_code')
+            ->limit(500)
+            ->get()
+            : collect();
+
+        return view('calendar.index', [
+            'viewUser'    => $viewUser,
+            'userOptions' => $userOptions, // ← 常に渡す（一般は空）
+        ]);
     }
+
     public function events(Request $request, \App\Services\Calendar\CalendarResolver $resolver)
     {
         try {

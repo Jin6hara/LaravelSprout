@@ -81,11 +81,11 @@
 /* カレンダー外観 */
 #calendar {
   max-width: 1300px; /* autoは無効なので具体値を */
-  margin: 30px auto;
+  margin: 20px auto;
 }
 
 /* セル内余白 */
-.fc .fc-daygrid-day-frame { padding: 0; }
+.fc .fc-daygrid-day-frame { padding: -1; }
 
 /* ヘッダー */
 .fc-col-header-cell-cushion {

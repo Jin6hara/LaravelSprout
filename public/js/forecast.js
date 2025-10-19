@@ -2,40 +2,39 @@ document.addEventListener('DOMContentLoaded', function () {
     const calendarEl = document.getElementById('calendar');
     console.log('[] loaded - forecast.js:3');
     function openSubModal(ev) {
-        console.log('[] openSubModal - forecast.js:5', ev.extendedProps); // ← 追加
-        // ...（モーダル生成はそのまま）
+        console.log('[] openSubModal - forecast.js:5', ev.extendedProps);
     }
 
-    // ---- Sub 明細モーダル ----
+    // ▼▼ Total Subs 明細モーダル ▼▼
     function openSubModal(ev) {
         const p = ev.extendedProps || {};
         const bd = p.count_breakdown || {};
         const users = p.users || {};
         const absent = p.absent_users || {};
 
-        // 件数を決定（countがなければ内訳合計） // ← 追加
+        // 件数を決定（countがなければ内訳合計）
         const count = (typeof p.count === 'number')
             ? p.count
-            : ((bd.event || 0) + (bd.line || 0) + (bd.work_instead || 0)); // ← 追加
-        const displayTitle = `Total Subs ${count}`; // ← 追加
+            : ((bd.event || 0) + (bd.line || 0) + (bd.work_instead || 0));
+        const displayTitle = `Total Subs ${count}`; 
 
-        // モーダルヘッダのタイトルも更新（要素があれば） // ← 追加
-        const titleEl = document.querySelector('#eventModal .modal-title'); // ← 追加
-        if (titleEl) titleEl.textContent = displayTitle; // ← 追加
+        // モーダルヘッダのタイトルも更新（要素があれば）
+        const titleEl = document.querySelector('#eventModal .modal-title'); 
+        if (titleEl) titleEl.textContent = displayTitle; 
 
         const pill = (name) => `<span class="badge text-bg-secondary me-1 mb-1">${name}</span>`;
         const group = (title, list) => {
             const body = (list || []).length ? list.map(u => pill(u.name)).join('') : '<span class="text-muted">—</span>';
             return `<div class="mb-2">
-      <div class="fw-semibold small text-uppercase text-muted">${title}</div>
-      <div>${body}</div>
-    </div>`;
+        <div class="fw-semibold small text-uppercase text-muted">${title}</div>
+            <div>${body}</div>
+        </div>`;
         };
-
+        // ここはTotal Subsのタイトル表示に関連。
         let html = `<div class="mb-2"><strong>${displayTitle}</strong></div>`; // ← 修正（もともとは${ev.title}）
         html += `<div class="mb-2 small text-muted">
-    SC:${bd.event ?? 0} / Regular:${bd.line ?? 0} / RWD:${bd.work_instead ?? 0}
-  </div>`;
+            SC:${bd.event ?? 0} / Regular:${bd.line ?? 0} / RWD:${bd.work_instead ?? 0}
+        </div>`;
         html += `<h6 class="mt-3">Available Subs</h6>`;
         html += group('SC', users.event);
         html += group('Regular', users.line);
@@ -51,14 +50,34 @@ document.addEventListener('DOMContentLoaded', function () {
         const modal = bootstrap.Modal.getOrCreateInstance(modalEl); // ← 再利用
         modal.show();
     }
+    // ▲▲ Total Subs 明細モーダル ▲▲
 
-    // これで十分（背景イベントでも eventClick が飛びます）
+    // ▼▼ これがないとモーダル開けない ▼▼
     function isSubEvt(ev) {
         return ev?.extendedProps?.category === 'subcount' || !!ev?.extendedProps?.users;
     }
+    // ▲▲ これがないとモーダル開けない ▲▲
+
+    // ▼▼ これによりLessonの終了時間を計算 ▼▼
+    // HH:MM 形式の文字列に分数を加算して HH:MM 形式で返す
+    function addMinutesToHHMM(hhmm, minutes) {
+        if (!hhmm || minutes == null) return '';
+        const [h, m] = hhmm.split(':').map(n => parseInt(n, 10));
+        if (Number.isNaN(h) || Number.isNaN(m)) return '';
+        const total = h * 60 + m + Number(minutes);
+        const MIN_DAY = 24 * 60;
+        const norm = ((total % MIN_DAY) + MIN_DAY) % MIN_DAY; // 0..1439 に正規化
+        const hh = Math.floor(norm / 60);
+        const mm = norm % 60;
+        return String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+    }
+    // ▲▲ これによりLessonの終了時間を計算 ▲▲
+
+    // ▼▼ FullCalendar 初期化 ▼▼
     const calendar = new FullCalendar.Calendar(calendarEl, {
-        locale: 'ja',
+        locale: 'en',
         initialView: 'dayGridMonth',
+        initialDate: window.initialDate,
         height: 'auto',
         firstDay: 0,
         slotDuration: '00:10:00',
@@ -66,11 +85,21 @@ document.addEventListener('DOMContentLoaded', function () {
         slotMinTime: '09:00:00',
         slotMaxTime: '23:00:00',
         eventOrder: "extendedProps.category,title,start",
-        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listWeek' },
-        buttonText: { today: '今日', month: '月', week: '週', day: '日', list: 'リスト' },
+        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,listWeek' }, // timeGridWeek（週）は除外
+        //buttonText: { today: 'Today', month: 'Month', week: 'Week', day: 'day', list: 'List' },    // locale: 'en'の為英語設定不要。
         dayMaxEventRows: true,
         navLinks: true,
         nowIndicator: true,
+        validRange: { start: '2025-04-01', end: '' },
+        editable: true, //eventDrop: (info) => updateEvent(info.event), // ← updateもできるらしい
+        //その他面白い機能：selectable, selectMirror, dayMaxEvents, weekends, businessHours, etc.
+
+        views: {
+            listWeek: {
+                listDayFormat: { weekday: 'long' }, // Monday のように
+                listDaySideFormat: { month: 'short', day: 'numeric' } // Jan 1 のように
+            }
+        },
 
         events: {
             url: window.calendarEventsUrl,
@@ -83,23 +112,47 @@ document.addEventListener('DOMContentLoaded', function () {
             return { html: '' };
         },
 
+        // ▼▼ Event枠内の表示 ▼▼
         eventContent(arg) {
-            return { html: arg.event.title };
-        },
+            const p = arg.event.extendedProps || {};
 
-        // 背景イベントは eventClick が発火しないことがあるため DOM に直接 click を bind
-        eventDidMount(info) {
-            if (isSubEvt(info.event)) {
-                info.el.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    console.log('[] bg click - forecast.js:95', info.event.title); // ← 追加
-                    openSubModal(info.event);
-                });
+            // ① タイトル
+            const base = arg.event.title;
+
+            // ② 講師表示（original → assigned）
+            const nameOrig = p.original_user_name || null;
+            const nameAssign = p.assigned_user_name || null;
+            // ない場合はIDでも可（どちらも無ければ省略）
+            const idAssign = p.assigned_user_id != null ? `#${p.assigned_user_id}` : null;
+
+            let who = '';
+            if (nameOrig && (nameAssign || idAssign)) {
+                who = ` <span class="text-white small ms-1">(${nameOrig} → ${nameAssign ?? idAssign})</span>`;
+            } else if (nameOrig) {
+                who = ` <span class="text-white small ms-1">(${nameOrig})</span>`;
+            } else if (nameAssign || idAssign) {
+                who = ` <span class="text-white small ms-1">(→ ${nameAssign ?? idAssign})</span>`;
             }
-        },
 
-        // ★ eventDidMount での click 付与は削除 or 無効化（二重起動防止）
-        // eventDidMount(info) { /* なし */ }
+            // ③ lesson_code（details からユニーク抽出して横に表示）
+            let codesHtml = '';
+            if (Array.isArray(p.details) && p.details.length) {
+                const codes = [...new Set(
+                    p.details.map(d => d?.lesson_code).filter(Boolean)
+                )];
+                if (codes.length) {
+                    // 小さなバッジ風に（控えめ表示）
+                    const pills = codes.map(c => `<span class="badge text-bg-light border ms-1">${c}</span>`).join('');
+                    codesHtml = ` <span class="ms-1">${pills}</span>`;
+                }
+            }
+
+            const html = `${base}${who}${codesHtml}`;
+            return { html };
+        },
+        // ▲▲ Event枠内の表示 ▲▲
+
+        // ▼▼ Sub背景, Event枠クリック時の動作 ▼▼
         eventClick(info) {
             const ev = info.event;
             if (isSubEvt(ev)) {
@@ -109,40 +162,57 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            // 既存の汎用表示（祝日・会社休暇）
-            const e = info.event, p = e.extendedProps || {};
-            let html = `<div class="mb-2"><strong>${e.title}</strong></div>`;
-
-            // ▼▼ 詳細があればリストで表示（別ファイルの実装を最小移植） ▼▼ // ← 追加
-            if (Array.isArray(p.details) && p.details.length) {
-                html += '<ul class="list-group">'; // ← 追加
-                p.details.forEach(d => {
-                    const left = `
-        <span>
-          ${d.start_hm ? `${d.start_hm} → ` : ''}
-          ${d.lesson_name ?? '—'}
-          ${d.lesson_code ? ` (${d.lesson_code})` : ''}
-        </span>
-      `;
-                    const right = `
-        <span class="badge text-bg-primary">
-          ${d.lesson_min != null ? `${d.lesson_min}分` : (d.lesson_type ?? '—')}
-        </span>
-      `;
-                    html += `<li class="list-group-item d-flex justify-content-between">${left}${right}</li>`; // ← 追加
-                });
-                html += '</ul>'; // ← 追加
-            } else {
-                // ▲▲ 詳細がないときは従来の簡易情報 ▲▲
-                html += `<div>種別：${p.kind ?? '—'}</div>`;
-                if (p.closure_code) html += `<div>区分：${p.closure_code}</div>`;
-                const fmt = d => d ? d.toLocaleDateString('ja-JP') : '';
-                if (e.start || e.end) html += `<div>日付：${fmt(e.start)}${e.end ? ' 〜 ' + fmt(e.end) : ''}</div>`;
+            // モーダルの表示内容構築
+            const e = info.event, p = e.extendedProps || {}; //休日背景のモーダル表示
+            const name = p.original_user_name;               //original_user_name を取得
+            const header = name
+                ? `${e.title} <span class="text-muted small ms-1">(${name})</span>`
+                : e.title;
+            // ▼▼　assigned_user_name または assigned_user_id ▼▼  
+            const assignDisp = p.assigned_user_name ?? (p.assigned_user_id != null ? `#${p.assigned_user_id}` : null);
+            let html = `<div class="mb-2"><strong>${header}</strong></div>`;
+            if (assignDisp) {
+                html += `<div class="small text-muted mb-2">Assigned: ${assignDisp}</div>`;
             }
+            // ▲▲ assigned_user_name または assigned_user_id ▲▲
+
+            // ▼▼ 詳細があればリストで表示 ▼▼
+            if (Array.isArray(p.details) && p.details.length) {
+                html += '<ul class="list-group">';
+                p.details.forEach(d => {
+                    const start = d.start_hm || '';
+                    const min = (d.lesson_min != null ? Number(d.lesson_min) : null);
+                    const end = (start && min != null) ? addMinutesToHHMM(start, min) : '';
+                    const range = (start && end) ? `${start}~${end}` : (start || '—');
+
+                    const name = d.lesson_name ?? '—';
+                    const code = d.lesson_code ? ` (${d.lesson_code})` : '';
+
+                    // 青バッジ部（lesson_min が無ければ type を代替表示）
+                    const badge = `<span class="badge text-bg-primary">
+                ${min != null ? `${min}分` : (d.lesson_type ?? '—')}
+                </span>`;
+
+                html += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>${range} ${name}${code}</span>
+                ${badge}
+                </li>`;
+                });
+                html += '</ul>';
+                // ▲▲ 詳細があればリストで表示 ▲▲
+            } else {
+                // ▼▼ 詳細がないときは従来の簡易情報 ▼▼
+                html += `<div>Type: ${p.kind ?? ''}</div>`;
+                if (p.closure_code) html += `<div>Category: ${p.closure_code}</div>`;
+                const fmt = d => d ? d.toLocaleDateString('ja-JP') : '';
+                //if (e.start || e.end) html += `<div>日付：${fmt(e.start)}${e.end ? ' 〜 ' + fmt(e.end) : ''}</div>`; //endは使わないので削除
+                if (e.start || e.end) html += `<div>Date: ${fmt(e.start)}</div>`;
+            }   // ▲▲ 詳細がないときは従来の簡易情報 ▲▲
 
             document.getElementById('eventModalBody').innerHTML = html;
             new bootstrap.Modal(document.getElementById('eventModal')).show();
         }
+        // ▲▲ Sub背景, Event枠クリック時の動作 ▲▲
     });
 
     calendar.render();
