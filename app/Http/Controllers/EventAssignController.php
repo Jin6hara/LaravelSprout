@@ -294,6 +294,10 @@ class EventAssignController extends Controller
         $okCount = collect($results)->where('ok', true)->count();
         $ngCount = count($results) - $okCount;
 
+        // ✅ JSON返却でもフラッシュを仕込む
+        $flash = $ngCount ? "一部保存に失敗しました（保存: {$okCount} / 失敗: {$ngCount}）" : "すべて保存しました（{$okCount} 件）";
+        session()->flash('status', $flash);
+
         return response()->json([
             'ok'      => $ngCount === 0,
             'updated' => $okCount,

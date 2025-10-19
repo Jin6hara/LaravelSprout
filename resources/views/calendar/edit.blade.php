@@ -596,21 +596,12 @@ document.addEventListener('input', (e) => {
         },
         body: JSON.stringify({ items }),
       });
-      const json = await res.json();
-
       if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
         alert(json?.message || '保存に失敗しました。');
         return;
       }
-
-      if (json.failed > 0) {
-        console.warn('一部失敗', json.results);
-        alert(`保存：${json.updated} 件 / 失敗：${json.failed} 件\n内容を確認してください。`);
-      } else {
-        alert(`すべて保存しました（${json.updated} 件）`);
-      }
-
-      // 反映を確実にするならリロード
+      // ✅ 成功時はアラートを出さず、フラッシュ表示のために即リロード
       location.reload();
     } catch (err) {
       console.error(err);
