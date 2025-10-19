@@ -216,6 +216,17 @@
 </div>
 @endif
 
+@push('styles')
+<style>
+/* Leaveカード全体の背景を薄灰色に */
+.row .card {
+  background-color: #ecececc4 !important; /* Bootstrapのlightより少し淡いグレー */
+  border: 1px solid #c1c5caff;           /* 薄い枠線 */
+  border-radius: 6px;
+}
+</style>
+@endpush
+
 @push('scripts')
 <script>
   // 削除確認ダイアログ（日付表示）
