@@ -29,62 +29,6 @@
   font-weight: 600;
 }
 
-/* =======================================================
-   ▼▼ カレンダー全体のグレー化（背景・セル・ヘッダー）▼▼
-   ======================================================= */
-
-/* カレンダー背景全体 */
-#calendar {
-  background-color: #f3f4f6 !important; /* gray-100 */
-  border-radius: 8px;
-  padding: 8px;
-}
-
-/* 曜日ヘッダー部 */
-.fc .fc-col-header-cell {
-  background-color: #e5e7eb !important; /* gray-200 */
-  color: #333 !important;
-  border: 1px solid #d1d5db !important;
-}
-
-/* 日付セルの背景 */
-.fc .fc-daygrid-day {
-  background-color: #f9fafb !important; /* gray-50 */
-  border: 1px solid #d1d5db !important;
-}
-
-/* todayセル（本日）は少し強調） */
-.fc .fc-day-today {
-  background-color: #e5e7eb !important; /* gray-200 */
-  box-shadow: inset 0 0 6px 2px rgba(0,0,0,0.1);
-}
-
-/* 月・週・リストなど共通のヘッダータイトル部 */
-.fc-toolbar {
-  background-color: #e5e7eb !important; /* gray-200 */
-  border-radius: 5px;
-  padding: 6px 10px;
-}
-
-/* ボタン */
-.fc .fc-button {
-  background-color: #d1d5db !important; /* gray-300 */
-  border: 1px solid #9ca3af !important;
-  color: #111 !important;
-}
-.fc .fc-button:hover {
-  background-color: #9ca3af !important;
-  color: #fff !important;
-}
-
-/* リストビュー用の背景 */
-.fc .fc-list-table {
-  background-color: #f3f4f6 !important;
-}
-/* =======================================================
-   ▲▲　カレンダー全体の基本スタイル設定 ▲▲
-   ======================================================= */
-
 /* イベント角丸（基本） */
 .fc .fc-event {
   border-radius: 6px !important;
