@@ -17,89 +17,110 @@ class LeaveManageController extends Controller
      * - 月/ユーザーで絞り込み
      * - イベントカード風スタイルで各行を編集UI化
      */
-    public function edit(Request $request)
-    {
-        $viewer = Auth::user();
-        if (!$viewer->hasRole(['admin', 'super_admin'])) {
-            abort(403);
-        }
+public function edit(Request $request)
+{
+    // 1) ユーザー候補
+    $userOptions = User::query()
+        ->select('id', 'first_name', 'family_name', 'employee_code')
+        ->orderBy('employee_code')
+        ->limit(500)
+        ->get();
 
-        // クエリ: month（YYYY-MM）, user_id
-        $month = (string)($request->input('month', now()->format('Y-m')));
-        $userId = $request->integer('user_id') ?: null;
+    // 2) パラメータ取得
+    $userId      = $request->input('user_id');
+    $kind        = $request->input('kind');
+    $excused     = $request->input('excused');
+    $status      = $request->input('status');
+    $specialType = $request->input('special_type');
+    $handleType  = $request->input('handle_type');
+    $reason      = $request->input('reason');
 
-        // 月→期間
-        try {
-            [$y, $m] = explode('-', $month);
-            $periodStart = Carbon::createFromDate((int)$y, (int)$m, 1)->startOfMonth();
-        } catch (\Throwable $e) {
-            $periodStart = now()->startOfMonth();
-            $month = $periodStart->format('Y-m');
-        }
-        $periodEnd = (clone $periodStart)->endOfMonth();
+    $startDate   = $request->input('start_date');
+    $endDate     = $request->input('end_date');
 
-        // ユーザー選択用
-        $userOptions = User::query()
-            ->select('id', 'first_name', 'family_name', 'employee_code')
-            ->orderBy('employee_code')
-            ->get();
-
-        // 一覧取得（start_dateが月内にかかるもの中心、end_dateも考慮）
-        $leaves = Leave::query()
-            ->when($userId, fn($q) => $q->where('user_id', $userId))
-            ->where(function ($q) use ($periodStart, $periodEnd) {
-                // 期間重なり（start<=月末 && (end>=月初 || end nullでstartが月内)）
-                $q->whereDate('start_date', '<=', $periodEnd->toDateString())
-                    ->where(function ($qq) use ($periodStart) {
-                        $qq->whereDate('end_date', '>=', $periodStart->toDateString())
-                            ->orWhereNull('end_date');
-                    });
-            })
-            ->with('user:id,first_name,family_name,employee_code')
-            ->orderBy('start_date')
-            ->orderBy('time_start')
-            ->get();
-
-        // セレクト用オプション
-        $kindOptions = [
-            'paid'            => 'ALP',
-            'absense_to_paid' => 'MT → ALP',
-            'special'         => 'Special',
-            'absence'         => 'MT',
-            'adjustment'      => 'Adjustment',
-            'left_early'      => 'Left Early',
-            'late'            => 'Late',
-            'other'           => 'Other',
-        ];
-        $excusedOptions = [
-            'excused'   => 'Excused',
-            'unexcused' => 'Unexcused',
-        ];
-        $statusOptions = [
-            'approved' => 'Approved',
-            'pending'  => 'Pending',
-            'rejected' => 'Rejected',
-            'other'    => 'Other',
-        ];
-
-        // Blade内で使う簡易フォーマッタ
-        $fmtDate = fn($v) => $v ? Carbon::parse($v)->format('Y-m-d') : '';
-        $fmtTime = fn($v) => $v ? Carbon::parse($v)->format('H:i') : '';
-
-        return view('calendar.leaveEdit', [
-            'month'          => $month,
-            'periodStart'    => $periodStart,
-            'periodEnd'      => $periodEnd,
-            'leaves'         => $leaves,
-            'userOptions'    => $userOptions,
-            'kindOptions'    => $kindOptions,
-            'excusedOptions' => $excusedOptions,
-            'statusOptions'  => $statusOptions,
-            'fmtDate'        => $fmtDate,
-            'fmtTime'        => $fmtTime,
-        ]);
+    // 3) 日付ルール
+    // end のみ → エラー
+    if ($endDate && !$startDate) {
+        return back()
+            ->withErrors(['start_date' => '開始日を指定してください。'])
+            ->withInput();
     }
 
+    // start > end → エラー
+    if ($startDate && $endDate && $startDate > $endDate) {
+        return back()
+            ->withErrors(['start_date' => '開始日は終了日より前に設定してください。'])
+            ->withInput();
+    }
+
+    // 日付フォーマット関数
+    $fmtDate = fn($v) => $v ? Carbon::parse($v)->format('Y-m-d') : '';
+    $fmtTime = fn($v) => $v ? Carbon::parse($v)->format('H:i')   : '';
+
+    // 4) クエリ（Event版と同順序・構成）
+    $leaves = Leave::query()
+        ->with(['user:id,first_name,family_name,employee_code'])
+        ->when($userId,      fn($q) => $q->where('user_id', $userId))
+        ->when($kind,        fn($q) => $q->where('kind', $kind))
+        ->when($excused,     fn($q) => $q->where('excused', $excused))
+        ->when($status,      fn($q) => $q->where('status', $status))
+        ->when($specialType, fn($q) => $q->where('special_type', 'like', '%'.$specialType.'%'))
+        ->when($handleType,  fn($q) => $q->where('handle_type',  'like', '%'.$handleType.'%'))
+        ->when($reason,      fn($q) => $q->where('reason',      'like', '%'.$reason.'%'))
+        // ⬇︎ 日付フィルタ（start & end ⇒ 期間, startのみ ⇒ 当日）
+        ->when($startDate && $endDate, function ($q) use ($startDate, $endDate) {
+            $q->whereDate('start_date', '<=', $endDate)
+              ->where(function($qq) use ($startDate) {
+                  $qq->whereDate('end_date', '>=', $startDate)
+                     ->orWhereNull('end_date');
+              });
+        })
+        ->when($startDate && !$endDate, function ($q) use ($startDate) {
+            $q->whereDate('start_date', '<=', $startDate)
+              ->where(function($qq) use ($startDate) {
+                  $qq->whereDate('end_date', '>=', $startDate)
+                     ->orWhereNull('end_date');
+              });
+        })
+        ->orderByDesc('start_date')
+        ->orderBy('time_start')
+        ->orderBy('user_id')
+        ->paginate(24)
+        ->withQueryString();
+
+    // 5) オプション
+    $statusOptions = [
+        'approved' => 'Approved',
+        'pending'  => 'Pending',
+        'rejected' => 'Rejected',
+        'other'    => 'Other',
+    ];
+    $kindOptions = [
+        'paid'            => 'Paid',
+        'absense_to_paid' => 'Absence→Paid',
+        'special'         => 'Special',
+        'absence'         => 'Absence',
+        'adjustment'      => 'Adjustment',
+        'left_early'      => 'Left Early',
+        'late'            => 'Late',
+        'other'           => 'Other',
+    ];
+    $excusedOptions = [
+        'excused'   => 'Excused',
+        'unexcused' => 'Unexcused',
+    ];
+
+    // 6) 表示
+    return view('calendar.leaveEdit', compact(
+        'leaves',
+        'userOptions',
+        'statusOptions',
+        'kindOptions',
+        'excusedOptions',
+        'fmtDate',
+        'fmtTime'
+    ));
+}
     /** 保存（更新） */
     public function update(Request $request, Leave $leave)
     {

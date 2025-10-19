@@ -6,33 +6,91 @@
     <span class="badge text-bg-primary">Admin View</span>
 </div>
 
-{{-- ▼ 検索フォーム（月・ユーザー） --}}
-<form method="GET" action="{{ route('leaves.edit') }}" class="mb-3">
-    <div class="card">
-        <div class="card-body p-2">
-            <div class="row g-2 align-items-end">
-                <div class="col-12 col-md-3">
-                    <label class="form-label small mb-1">Month</label>
-                    <input type="month" name="month" class="form-control form-control-sm"
-                        value="{{ $month }}">
-                </div>
-                <div class="col-12 col-md-4">
-                    <label class="form-label small mb-1">User</label>
-                    <select name="user_id" class="form-select form-select-sm">
-                        <option value="">—</option>
-                        @foreach($userOptions as $u)
-                        <option value="{{ $u->id }}" @selected(request('user_id')==$u->id)>
-                            {{ $u->first_name }} {{ $u->family_name }} [{{ $u->employee_code }}]
-                        </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-12 col-md-2">
-                    <button class="btn btn-sm btn-primary w-100">Search</button>
-                </div>
-            </div>
+{{-- ▼ 検索フォーム --}}
+<form method="GET" action="{{ route('leaves.edit') }}" class="mb-2" id="leave-search-form">
+  <div class="card">
+    <div class="card-body p-2">
+      <div class="row g-2 align-items-end">
+
+        {{-- User --}}
+        <div class="col-12 col-md-3">
+          <label class="form-label small mb-1">User</label>
+          <select name="user_id" class="form-select form-select-sm">
+            <option value="">—</option>
+            @foreach($userOptions as $u)
+              <option value="{{ $u->id }}" @selected(request('user_id')==$u->id)>
+                {{ $u->first_name }} {{ $u->family_name }} [{{ $u->employee_code }}]
+              </option>
+            @endforeach
+          </select>
         </div>
+
+        {{-- Kind / Excused / Status --}}
+        <div class="col-6 col-md-2">
+          <label class="form-label small mb-1">Kind</label>
+          <select name="kind" class="form-select form-select-sm">
+            <option value="">—</option>
+            @foreach($kindOptions as $v => $label)
+              <option value="{{ $v }}" @selected(request('kind')===$v)>{{ $label }}</option>
+            @endforeach
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label small mb-1">Excused</label>
+          <select name="excused" class="form-select form-select-sm">
+            <option value="">—</option>
+            @foreach($excusedOptions as $v => $label)
+              <option value="{{ $v }}" @selected(request('excused')===$v)>{{ $label }}</option>
+            @endforeach
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label small mb-1">Status</label>
+          <select name="status" class="form-select form-select-sm">
+            <option value="">—</option>
+            @foreach($statusOptions as $v => $label)
+              <option value="{{ $v }}" @selected(request('status')===$v)>{{ $label }}</option>
+            @endforeach
+          </select>
+        </div>
+
+        {{-- Special / Handle / Reason --}}
+        <div class="col-6 col-md-3">
+          <label class="form-label small mb-1">Special Type</label>
+          <input type="text" name="special_type" value="{{ request('special_type') }}" class="form-control form-control-sm" placeholder="例: 結婚, 忌引">
+        </div>
+        <div class="col-6 col-md-3">
+          <label class="form-label small mb-1">Handle Type</label>
+          <input type="text" name="handle_type" value="{{ request('handle_type') }}" class="form-control form-control-sm" placeholder="例: 後日調整">
+        </div>
+        <div class="col-12 col-md-3">
+          <label class="form-label small mb-1">Reason</label>
+          <input type="text" name="reason" value="{{ request('reason') }}" class="form-control form-control-sm" placeholder="理由を部分一致で検索">
+        </div>
+
+        {{-- Start/End --}}
+        <div class="col-6 col-md-2">
+          <label class="form-label small mb-1">Start Date</label>
+          <input type="date" name="start_date" value="{{ request('start_date') }}" class="form-control form-control-sm" id="filter-start-date">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label small mb-1">End Date</label>
+          <input type="date" name="end_date" value="{{ request('end_date') }}" class="form-control form-control-sm" id="filter-end-date">
+        </div>
+
+        {{-- Buttons --}}
+        <div class="col-12 col-md-2 d-flex gap-1">
+          <button class="btn btn-sm btn-primary flex-fill">Search</button>
+          <button type="button" id="js-clear-filters" class="btn btn-sm btn-outline-secondary flex-fill">Clear</button>
+        </div>
+
+        <div class="col-12">
+          <div class="invalid-feedback d-block" id="date-error" style="display:none;"></div>
+        </div>
+
+      </div>
     </div>
+  </div>
 </form>
 
 <div class="d-flex align-items-center gap-1 mb-2">
@@ -74,14 +132,14 @@
 
         <div class="col-12 col-sm-6 col-md-4 col-lg-3">
             <div class="card h-100 shadow-sm">
-                {{-- まだ保存先ルート未定のため actionは空。後で PUT/PATCH に差し替え可能 --}}
+                {{-- Leave Manager --}}
                 <form method="POST"
                     action="{{ route('leaves.update', $leave) }}"
                     class="h-100 d-flex flex-column js-leave-form">
                 @csrf
                 @method('PUT')
 
-                {{-- Add Bulk 用ID隠しフィールド --}}
+                {{-- Add Bulk 用ID隠しフィールド (JS用？) --}}
                 <input type="hidden" name="id" value="{{ $leave->id }}">
 
                     <div class="card-body p-2 light-blue">
@@ -98,13 +156,32 @@
                                 </select>
                             </div>
 
-                            {{-- 1: Kind / Status --}}
+                            {{-- 1: Kind / Special Type --}}
                             <div class="row g-1 mb-0">
                                 <div class="col-6">
                                     <label class="form-label small mb-0">Kind</label>
                                     <select name="kind" class="form-select form-select-sm">
                                         @foreach($kindOptions as $v => $label)
                                         <option value="{{ $v }}" @selected($leave->kind===$v)>{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small mb-0">Special Type</label>
+                                    <input type="text" name="special_type" class="form-control form-control-sm"
+                                        value="{{ old('special_type', $leave->special_type) }}"
+                                        placeholder="Details for special leave">
+                                </div>
+
+                            </div>
+
+                            {{-- 2: Excused / Status --}}
+                            <div class="row g-1 mb-0">
+                                <div class="col-6">
+                                    <label class="form-label small mb-0">Excused</label>
+                                    <select name="excused" class="form-select form-select-sm">
+                                        @foreach($excusedOptions as $v => $label)
+                                        <option value="{{ $v }}" @selected($leave->excused===$v)>{{ $label }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -118,24 +195,6 @@
                                 </div>
                             </div>
 
-                            {{-- 2: Excused / Special Type --}}
-                            <div class="row g-1 mb-0">
-                                <div class="col-6">
-                                    <label class="form-label small mb-0">Excused</label>
-                                    <select name="excused" class="form-select form-select-sm">
-                                        @foreach($excusedOptions as $v => $label)
-                                        <option value="{{ $v }}" @selected($leave->excused===$v)>{{ $label }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label small mb-0">Special Type</label>
-                                    <input type="text" name="special_type" class="form-control form-control-sm"
-                                        value="{{ old('special_type', $leave->special_type) }}"
-                                        placeholder="Details for special leave">
-                                </div>
-                            </div>
-
                             {{-- 3: Dates --}}
                             <div class="row g-1 mb-0">
                                 <div class="col-6">
@@ -144,7 +203,7 @@
                                         value="{{ old('start_date', $fmtDate($leave->start_date)) }}">
                                 </div>
                                 <div class="col-6">
-                                    <label class="form-label small mb-0">End Date (Optional)</label>
+                                    <label class="form-label small mb-0">End Date</label>
                                     <input type="date" name="end_date" class="form-control form-control-sm"
                                         value="{{ old('end_date', $fmtDate($leave->end_date)) }}">
                                 </div>
@@ -153,13 +212,13 @@
                             {{-- 4: Times --}}
                             <div class="row g-1 mb-0">
                                 <div class="col-6">
-                                    <label class="form-label small mb-0">Time Start (Optional)</label>
+                                    <label class="form-label small mb-0">Time Start</label>
                                     <input type="time" name="time_start" class="form-control form-control-sm"
                                         value="{{ old('time_start', $fmtTime($leave->time_start)) }}"
                                         inputmode="numeric" step="60">
                                 </div>
                                 <div class="col-6">
-                                    <label class="form-label small mb-0">Time End (Optional)</label>
+                                    <label class="form-label small mb-0">Time End</label>
                                     <input type="time" name="time_end" class="form-control form-control-sm"
                                         value="{{ old('time_end', $fmtTime($leave->time_end)) }}"
                                         inputmode="numeric" step="60">
@@ -170,7 +229,7 @@
                             <div class="mb-0">
                                 <label class="form-label small mb-0">Reason</label>
                                 <textarea name="reason" class="form-control form-control-sm" rows="2"
-                                    placeholder="理由">{{ old('reason', $leave->reason) }}</textarea>
+                                    placeholder="Reason">{{ old('reason', $leave->reason) }}</textarea>
                             </div>
 
                             {{-- 6: Handle Type --}}
@@ -178,11 +237,11 @@
                                 <label class="form-label small mb-0">Handle Type</label>
                                 <input type="text" name="handle_type" class="form-control form-control-sm"
                                     value="{{ old('handle_type', $leave->handle_type) }}"
-                                    placeholder="後日調整、給与控除等の備考">
+                                    placeholder="Absence handling type">
                             </div>
                         </div>
 
-                        {{-- フッタ操作（後でルート紐付け可） --}}
+                        {{-- フッタ操作 --}}
                         <div class="card-footer bg-white d-flex justify-content-between align-items-center py-2 px-2 gap-1 mt-2">
                             {{-- 削除ボタン：クラスとdata属性をJSに合わせる --}}
                             <button type="button"
@@ -212,7 +271,7 @@
 </div>
 @else
 <div class="alert alert-light border">
-    対象月（{{ $periodStart->format('Y-m-d') }}〜{{ $periodEnd->format('Y-m-d') }}）に該当する休暇はありません。
+    データがありません。
 </div>
 @endif
 
@@ -282,6 +341,48 @@ document.getElementById('js-bulk-save')?.addEventListener('click', async (e) => 
     alert('通信エラーが発生しました。');
   }
 });
+</script>
+
+<script>
+(() => {
+  const form = document.getElementById('leave-search-form');
+  const startEl = document.getElementById('filter-start-date');
+  const endEl = document.getElementById('filter-end-date');
+  const errEl = document.getElementById('date-error');
+  const clearBtn = document.getElementById('js-clear-filters');
+
+  function showError(msg){
+    errEl.textContent = msg;
+    errEl.style.display = 'block';
+  }
+  function clearError(){
+    errEl.textContent = '';
+    errEl.style.display = 'none';
+  }
+
+  // ✅ 検索フォーム送信前の軽いチェック
+  form?.addEventListener('submit', (e) => {
+    clearError();
+    const s = startEl?.value?.trim() || '';
+    const d = endEl?.value?.trim() || '';
+
+    if (!s && d) {
+      e.preventDefault();
+      showError('Start Date を指定してください。');
+      return;
+    }
+    if (s && d && d < s) {
+      e.preventDefault();
+      showError('End Date は Start Date 以降で指定してください。');
+    }
+  });
+
+  // ✅ 条件クリア（URLリロード）
+  clearBtn?.addEventListener('click', () => {
+    const baseUrl = "{{ route('leaves.edit') }}";
+    window.location.href = baseUrl; // クエリ無しで再読み込み
+  });
+})();
 </script>
 @endpush
 
