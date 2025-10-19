@@ -20,7 +20,7 @@ class AllLeaveProvider
     ) {}
 
     /**
-     * 指定期間内の「全ユーザー分の承認済みLeave」を FullCalendar event[] 形式で返す
+     * 指定期間内の「全ユーザー分の Leave（全ステータス）」を FullCalendar event[] 形式で返す
      *
      * @return \Illuminate\Support\Collection<int, array>
      */
@@ -28,7 +28,7 @@ class AllLeaveProvider
     {
         // 全ユーザー分を対象にするため user_id フィルタは掛けない
         $leaves = Leave::query()
-            ->approved()
+            // ->approved()  // ← 承認済み限定を撤去（全件取得）
             ->between($start, $end)
             ->with(['user:id,name,first_name,family_name,employee_code']) // 表示用
             ->get();
@@ -91,7 +91,8 @@ class AllLeaveProvider
                             'end_date'     => $leave->end_date?->toDateString(),
                             'time_start'   => $leave->time_start,
                             'time_end'     => $leave->time_end,
-                            'status'       => $leave->status,
+                            'status'       => $leave->status, // ← 後段の検索用に保持
+                            'handle_type'  => $leave->handle_type, // 共有された新カラムも保持
                         ],
                     ],
                 ]);
