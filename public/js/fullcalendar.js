@@ -43,7 +43,6 @@ document.addEventListener('DOMContentLoaded', function () {
         navLinks: true,
         nowIndicator: true,
         editable: false,
-        selectable: true,
         events: {
             url: window.calendarEventsUrl, // テンプレート埋め込み用
             extraParams: { user_id: window.calendarUserId }, // テンプレート埋め込み用

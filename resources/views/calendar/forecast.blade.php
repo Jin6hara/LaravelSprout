@@ -14,7 +14,7 @@
       <input type="month"
              name="month"
              class="form-control form-control-sm"
-             value="{{ old('month', request('month', now()->toDateString())) }}"
+             value="{{ old('month', request('month', now()->format('Y-m'))) }}"
              required>
     </div>
     <div class="col-auto">
@@ -49,7 +49,7 @@
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js"></script>
   <script>
     window.calendarEventsUrl = "{{ route('calendar.forecast.events') }}";
-    window.initialDate = "{{ request('month', now()->toDateString()) }}";
+    window.initialDate = "{{ request('month', now()->format('Y-m')) }}";
   </script>
   <script src="{{ asset('js/forecast.js') }}?v={{ filemtime(public_path('js/forecast.js')) }}"></script>
 @endpush
