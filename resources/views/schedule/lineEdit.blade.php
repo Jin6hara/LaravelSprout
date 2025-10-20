@@ -5,7 +5,7 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
         <h2 class="mb-0">Schedule Lines</h2>
-        <div class="text-muted small">一行＝一カード（編集可 / 横並び）</div>
+        <div class="text-muted small">一行＝一カード（編集：上段 / 閲覧：下段 詳細）</div>
     </div>
 </div>
 
@@ -15,15 +15,15 @@
         <div class="row g-2 align-items-end">
             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                 <label class="form-label small mb-1">有効日（Active On）</label>
-                <input type="date" name="active_on" class="form-control form-control-sm" value="{{ $activeOn }}">
+                <input type="date" name="active_on" class="form-control form-control-sm"
+                    value="{{ $activeOn }}">
             </div>
             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                 <label class="form-label small mb-1">Schedule</label>
                 <select name="schedule_id" class="form-select form-select-sm">
                     <option value="">（すべて）</option>
                     @foreach($scheduleOptions as $opt)
-                    <option value="{{ $opt->id }}" @selected($scheduleId==$opt->
-                        id)>{{ $opt->label ?? 'Schedule #'.$opt->id }}</option>
+                    <option value="{{ $opt->id }}" @selected($scheduleId==$opt->id)>{{ $opt->label ?? 'Schedule #'.$opt->id }}</option>
                     @endforeach
                 </select>
             </div>
@@ -80,8 +80,8 @@
                 @csrf
                 @method('PUT')
 
-                {{-- ★ 変更項目を横並び（レスポンシブで折り返し） --}}
-                <div class="card-body py-2">
+                {{-- ★ 編集行（横並び） --}}
+                <div class="card-body py-2 border-bottom">
                     <div class="row g-2 align-items-end">
                         <div class="col-12 col-md-2 col-lg-1">
                             <label class="form-label small mb-1">DOW</label>
@@ -121,14 +121,58 @@
                             <input type="date" name="effective_end" class="form-control form-control-sm"
                                 value="{{ old('effective_end', optional($line->effective_end)->toDateString()) }}">
                         </div>
+
+                        <div class="col-12 col-lg-2 d-flex justify-content-end">
+                            <button class="btn btn-sm btn-success mt-3 mt-lg-0">保存</button>
+                        </div>
                     </div>
                 </div>
-
-                <div class="card-footer d-flex justify-content-between align-items-center py-2">
-                    <small class="text-muted">更新: {{ $line->updated_at?->format('Y-m-d H:i') }}</small>
-                    <button class="btn btn-sm btn-success">保存</button>
-                </div>
             </form>
+
+            {{-- ▼▼▼ 閲覧専用：Schedule Details（高密度） ▼▼▼ --}}
+            <div class="card-body py-2">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="fw-semibold small">Details</div>
+                    <div class="small text-muted">count: {{ $line->details->count() }}</div>
+                </div>
+
+                @if($line->details->isEmpty())
+                <div class="text-muted small">（詳細は登録されていません）</div>
+                @else
+                <div class="d-flex flex-wrap gap-2">
+                    @foreach($line->details as $d)
+                    @php
+                    $time = optional($d->start)->start_time
+                    ? \Illuminate\Support\Str::of($d->start->start_time)->substr(0,5)
+                    : '--:--';
+                    $lesson = $d->lesson;
+                    @endphp
+
+                    <div class="border rounded-3 px-2 py-1 bg-light small d-flex flex-column"
+                        style="min-width: 180px; max-width: 200px; line-height: 1.2;">
+                        <div class="fw-semibold text-monospace">{{ $time }}</div>
+                        <div class="text-truncate">
+                            {{ $lesson->lesson_name ?? '—' }}
+                        </div>
+                        @if(!empty($lesson?->lesson_code))
+                        <div class="text-muted">{{ $lesson->lesson_code }}</div>
+                        @endif
+                        <div class="d-flex justify-content-between mt-1">
+                            <span class="badge bg-secondary">{{ $lesson->lesson_minute ?? '—' }}m</span>
+                            @if(!empty($lesson?->lesson_type))
+                            <span class="badge bg-info text-dark">{{ $lesson->lesson_type }}</span>
+                            @endif
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+                @endif
+            </div>
+            {{-- ▲▲▲ 詳細ここまで ▲▲▲ --}}
+
+            <div class="card-footer d-flex justify-content-between align-items-center py-2">
+                <small class="text-muted">更新: {{ $line->updated_at?->format('Y-m-d H:i') }}</small>
+            </div>
         </div>
     </div>
     @endforeach

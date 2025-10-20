@@ -17,7 +17,16 @@ class ScheduleLineController extends Controller
         $scheduleId = $request->integer('schedule_id') ?: null;
 
         $linesQuery = \App\Models\ScheduleLine::query()
-            ->with(['schedule:id,label,effective_start,effective_end'])
+            ->with([
+                'schedule:id,label,effective_start,effective_end',
+                // ▼ details + 開始時刻/レッスン情報を同時ロード（開始時刻順）
+                'details' => function ($q) {
+                    $q->with([
+                        'start:id,start_time',
+                        'lesson:id,lesson_name,lesson_code,lesson_minute,lesson_type',
+                    ])->orderBy('lesson_start_time_id');
+                },
+            ])
             ->when($scheduleId, fn($q) => $q->where('schedule_id', $scheduleId))
             ->orderBy('schedule_id')->orderBy('dow')->orderBy('start_time');
 
