@@ -69,6 +69,28 @@ class AllLeaveProvider
                     $classes[] = "status-{$leave->status}";
                 }
 
+                /**
+                 * ★ absence だけ例外処理（枠線色を handle_type + excused で決定）
+                 *  1) handle_type = null/'' → yellow
+                 *  2) handle_type != null → excused=excused → green
+                 *  3) handle_type != null → excused=unexcused → red
+                 */
+                if ($leave->kind === 'absence') {
+                    $handled = !empty($leave->handle_type);
+
+                    if (!$handled) {
+                        // 1) 未ハンドル
+                        $classes[] = 'absence-unhandled';
+                    } else {
+                        // 2) / 3) ハンドル済み（excused / unexcused）
+                        if ($leave->excused === 'excused') {
+                            $classes[] = 'absence-handled-excused';
+                        } else { // 'unexcused' 想定
+                            $classes[] = 'absence-handled-unexcused';
+                        }
+                    }
+                }
+
 
                 $events->push([
                     'title'      => $title,

@@ -111,41 +111,59 @@
 
 .fc .fc-event.fc-leave-paid {
   background-color: #93c5fd !important; /* light blue */
-  border-color: #93c5fd !important;
+  border-color: #93c5fd;
   color: #000 !important;
 }
 
 .fc .fc-event.fc-leave-absense_to_paid {
   background-color: #3b82f6 !important; /* blue */
-  border-color: #3b82f6 !important;
+  border-color: #3b82f6;
   color: #fff !important;
 }
 
 .fc .fc-event.fc-leave-special {
   background-color: #f472b6 !important; /* pink */
-  border-color: #f472b6 !important;
+  border-color: #f472b6;
   color: #fff !important;
 }
 
 .fc .fc-event.fc-leave-adjustment {
   background-color: #9ca3af !important; /* gray */
-  border-color: #9ca3af !important;
+  border-color: #9ca3af;
   color: #000 !important;
-}
-
-/* absence / left_early / late: yellow */
-.fc .fc-event.fc-leave-absence .fc-event-main,
-.fc .fc-event.fc-leave-left_early .fc-event-main,
-.fc .fc-event.fc-leave-late .fc-event-main {
-  background-color: #4b4b4b96 !important; /* yellow */
-  border-color: #fde047; /* !importantつけないことによりstatus + excused枠線が適応される */
-  color: #ffffff !important;
 }
 
 /* other: purple */
 .fc .fc-event.fc-leave-other {
   background-color: #a855f7 !important; /* purple */
-  border-color: #a855f7 !important;
+  border-color: #a855f7;
+  color: #fff !important;
+}
+
+/* =======================================================
+   Absence だけ：枠線色を handle_type + excused で上書き
+   （status の色付けより後に書く／!important で確実に上書き）
+   ======================================================= */
+
+/* 1) handle_type = null/空 → yellow */
+.fc .fc-event.fc-leave.fc-leave-absence.absence-unhandled {
+  border-color: #facc15 !important; /* yellow */
+}
+
+/* 2) handle_type あり && excused → green */
+.fc .fc-event.fc-leave.fc-leave-absence.absence-handled-excused {
+  border-color: #22c55e !important; /* green */
+}
+
+/* 3) handle_type あり && unexcused → red */
+.fc .fc-event.fc-leave.fc-leave-absence.absence-handled-unexcused {
+  border-color: #ef4444 !important; /* red */
+}
+
+/* other: purple */
+.fc .fc-event.fc-leave-other {
+  background-color: #a855f7 !important; /* purple */
+  border-color: #a855f7;
   color: #fff !important;
 }
 
