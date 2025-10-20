@@ -64,7 +64,12 @@ class WorkProvider implements CalendarEventProvider
                     $lineEndMin   = $toMinutes($lineEndHM);
 
                     $details = $ln->details
-                        ->filter(function ($d) use ($toMinutes, $lineStartMin, $lineEndMin) {
+                        ->filter(function ($d) use ($toMinutes, $lineStartMin, $lineEndMin, $cur) {
+                            // ★ detail も effective_start / effective_end の期間に絞る
+                            $inRange = $d->effective_start->lte($cur) &&
+                                (is_null($d->effective_end) || $d->effective_end->gte($cur));
+                            if (!$inRange) return false;
+
                             $startObj = $d->start?->start_time; // cast: datetime:H:i
                             if (!$startObj) return false;
                             $hm = $startObj->format('H:i');
