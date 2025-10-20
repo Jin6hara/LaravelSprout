@@ -156,8 +156,8 @@ use App\Http\Controllers\ExpenseApiController;
 
 Route::middleware(['auth'])->group(function () {
     Route::post('/api/expenses',        [ExpenseApiController::class, 'store'])->name('api.expenses.store');
-    Route::put('/api/expenses/{expense}',[ExpenseApiController::class, 'update'])->name('api.expenses.update');
-    Route::delete('/api/expenses/{expense}',[ExpenseApiController::class, 'destroy'])->name('api.expenses.destroy');
+    Route::put('/api/expenses/{expense}', [ExpenseApiController::class, 'update'])->name('api.expenses.update');
+    Route::delete('/api/expenses/{expense}', [ExpenseApiController::class, 'destroy'])->name('api.expenses.destroy');
 });
 
 use App\Http\Controllers\ExpenseReportController;
@@ -169,7 +169,7 @@ Route::middleware(['auth', 'role:admin|super_admin']) // 権限ミドルウェ�
 use App\Http\Controllers\EventAssignController;
 use App\Http\Controllers\LeaveController;
 
-Route::middleware(['auth','role:admin|super_admin'])->group(function () {
+Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
     Route::get('/event_assigner', [EventAssignController::class, 'edit'])->name('calendar.edit');
     Route::post('/events',        [EventAssignController::class, 'store'])->name('events.store');
     Route::post('/events/blank', [EventAssignController::class, 'storeBlank'])->name('events.store.blank');
@@ -182,7 +182,7 @@ Route::middleware(['auth','role:admin|super_admin'])->group(function () {
 
 use App\Http\Controllers\LeaveManageController;
 
-Route::middleware(['auth','role:admin|super_admin'])->group(function () {
+Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
     Route::get('/leave_manager', [LeaveManageController::class, 'edit'])->name('leaves.edit');
     Route::post('/leaves/blank', [LeaveManageController::class, 'storeBlank'])->name('leaves.store.blank');
     Route::put('/leaves/{leave}', [LeaveManageController::class, 'update'])->name('leaves.update');
@@ -202,3 +202,13 @@ use App\Http\Controllers\SchoolProfileController;
 Route::get('/schools/search', [SchoolProfileController::class, 'search'])
     ->name('schools.search');
 
+use App\Http\Controllers\ScheduleLineController;
+
+Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
+    Route::get('/schedule_manager', [ScheduleLineController::class, 'edit'])->name('schedules.edit');
+    Route::post('/schedules/blank', [ScheduleLineController::class, 'storeBlank'])->name('schedules.store.blank');
+    Route::put('/schedule_lines/{line}', [ScheduleLineController::class, 'update'])->name('schedule_lines.update');
+    // ★ 一括更新（このページに表示されている分だけ送る）
+    Route::post('/schedules/bulk-update', [ScheduleLineController::class, 'bulkUpdate'])->name('schedules.bulk_update');
+    Route::delete('/schedules/{schedule}', [ScheduleLineController::class, 'destroy'])->name('schedules.destroy');
+});
