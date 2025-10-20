@@ -1,0 +1,169 @@
+/* 今日の日付背景 */
+.fc-day-today {
+  outline-offset: -2px;
+  animation: today-glow-inset 2s infinite;
+}
+@keyframes today-glow-inset {
+  20% { box-shadow: inset 0 0 3px 2px rgba(255, 128, 128, 0.5); }
+  50% { box-shadow: inset 0 0 15px 6px rgba(255, 180, 180, 0.53); }
+  100% { box-shadow: inset 0 0 3px 2px rgba(254, 255, 180, 0.53); }
+}
+
+/* 祝日背景（アニメにしたい場合はこちらだけ残す） */
+.fc-holiday {
+  animation: rainbow-bg 3s linear infinite;
+}
+@keyframes rainbow-bg {
+  0%   { background-color: #ffaaaa; }
+  20%  { background-color: #ffd700; }
+  40%  { background-color: #aaffaa; }
+  60%  { background-color: #aaaaff; }
+  80%  { background-color: #ffaaff; }
+  100% { background-color: #ffaaaa; }
+}
+
+/* 会社休業日（背景用・基本） */
+.fc-company-break {
+  background-color: rgba(173, 173, 173, 0.5) !important;
+  border: 1px solid #fff !important;
+  font-weight: 600;
+}
+
+/* イベント角丸（基本） */
+.fc .fc-event {
+  border-radius: 6px !important;
+}
+
+/* カレンダー外観 */
+#calendar {
+  max-width: 1300px;  /* autoは無効なので具体値を */
+  margin: 20px auto;
+}
+
+/* セル内余白（最小） */
+.fc .fc-daygrid-day-frame { padding: 0; }
+
+/* ヘッダー（最小） */
+.fc-col-header-cell-cushion {
+  text-decoration: none !important;
+  color: #222 !important;
+  font-size: 0.95em !important;
+}
+
+/* 日付数字（最小） */
+.fc-daygrid-day-number {
+  margin-top: -2px !important;
+  color: #222 !important;
+  font-size: 0.90em !important;
+  text-decoration: none !important;
+}
+
+/* イベント枠（最小） */
+.fc-daygrid-event {
+  margin-top: -2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.90em;
+  padding: 0;
+  border-radius: 6px;
+  max-width: 95%;
+  box-sizing: border-box;
+}
+
+/* =======================================================
+   Leave カラーリング設定
+   status + excused（優先） → kind（補助）
+   ======================================================= */
+
+/* --- Status / Excused 組み合わせ ---------------------------------- */
+
+/* Leave の枠線は常に 3px */
+.fc .fc-event.fc-leave {
+  border-width: 3px !important;
+  border-style: solid !important;
+}
+
+/* pending: yellow */
+.fc .fc-event.fc-leave.status-pending {
+  border-color: #facc15;
+}
+
+/* approved + excused: green */
+.fc .fc-event.fc-leave.status-approved.fc-leave-excused {
+  border-color: #22c55e;
+}
+
+/* approved + unexcused: red */
+.fc .fc-event.fc-leave.status-approved.fc-leave-unexcused {
+  border-color: #ef4444;
+}
+/* rejected: gray */
+.fc .fc-event.fc-leave.status-rejected {
+  border-color: #6b7280;
+}
+
+/* その他の status: kind 色で処理するため特別指定なし */
+
+/* --- Kind（休暇種別） --------------------------------------------- */
+/* .fc-event-main 付けると枠線は適応外となる */
+/* kind に応じた基本カラー。status による上書きを許容する。 */
+
+.fc .fc-event.fc-leave-paid {
+  background-color: #93c5fd !important; /* light blue */
+  border-color: #93c5fd;
+  color: #000 !important;
+}
+
+.fc .fc-event.fc-leave-absense_to_paid {
+  background-color: #3b82f6 !important; /* blue */
+  border-color: #3b82f6;
+  color: #fff !important;
+}
+
+.fc .fc-event.fc-leave-special {
+  background-color: #f472b6 !important; /* pink */
+  border-color: #f472b6;
+  color: #fff !important;
+}
+
+.fc .fc-event.fc-leave-adjustment {
+  background-color: #9ca3af !important; /* gray */
+  border-color: #9ca3af;
+  color: #000 !important;
+}
+
+/* other: purple */
+.fc .fc-event.fc-leave-other {
+  background-color: #a855f7 !important; /* purple */
+  border-color: #a855f7;
+  color: #fff !important;
+}
+
+/* =======================================================
+   Absence だけ：枠線色を handle_type + excused で上書き
+   （status の色付けより後に書く／!important で確実に上書き）
+   ======================================================= */
+
+/* 1) handle_type = null/空 → yellow */
+.fc .fc-event.fc-leave.fc-leave-absence.absence-unhandled {
+  border-color: #facc15 !important; /* yellow */
+}
+
+/* 2) handle_type あり && excused → green */
+.fc .fc-event.fc-leave.fc-leave-absence.absence-handled-excused {
+  border-color: #22c55e !important; /* green */
+}
+
+/* 3) handle_type あり && unexcused → red */
+.fc .fc-event.fc-leave.fc-leave-absence.absence-handled-unexcused {
+  border-color: #ef4444 !important; /* red */
+}
+
+/* other: purple */
+.fc .fc-event.fc-leave-other {
+  background-color: #a855f7 !important; /* purple */
+  border-color: #a855f7;
+  color: #fff !important;
+}
+

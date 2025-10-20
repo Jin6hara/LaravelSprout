@@ -26,6 +26,7 @@ class Leave extends Model
         'time_end',
         'status',
         'approved_by',
+        'handle_type'
     ];
 
     protected $casts = [

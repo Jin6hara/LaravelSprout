@@ -56,6 +56,15 @@ Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
         ->name('calendar.forecast.events');
 });
 
+// LeaveCalender関連
+Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
+    Route::get('/leave', [CalendarController::class, 'Leave'])
+        ->name('calendar.leaves');
+
+    Route::get('/leave/events', [CalendarController::class, 'LeaveEvents']) //KSON
+        ->name('calendar.leave.events');
+});
+
 Route::middleware(['auth'])->group(function () {
     // 申請画面（本人用）
     Route::get('/leaveApply', [LeaveApplyController::class, 'create'])->name('leave.apply.create');
@@ -165,10 +174,27 @@ Route::middleware(['auth','role:admin|super_admin'])->group(function () {
     Route::post('/events',        [EventAssignController::class, 'store'])->name('events.store');
     Route::post('/events/blank', [EventAssignController::class, 'storeBlank'])->name('events.store.blank');
     Route::put('/events/{event}', [EventAssignController::class, 'update'])->name('events.update');
-    // ★ 追加：一括更新（このページに表示されている分だけ送る）
+    // ★ 一括更新（このページに表示されている分だけ送る）
     Route::post('/events/bulk-update', [EventAssignController::class, 'bulkUpdate'])->name('events.bulk_update');
     Route::delete('/events/{event}', [EventAssignController::class, 'destroy'])->name('events.destroy');
     Route::post('/leaves',        [LeaveController::class, 'store'])->name('leaves.store');
+});
+
+use App\Http\Controllers\LeaveManageController;
+
+Route::middleware(['auth','role:admin|super_admin'])->group(function () {
+    Route::get('/leave_manager', [LeaveManageController::class, 'edit'])->name('leaves.edit');
+    Route::post('/leaves/blank', [LeaveManageController::class, 'storeBlank'])->name('leaves.store.blank');
+    Route::put('/leaves/{leave}', [LeaveManageController::class, 'update'])->name('leaves.update');
+    // ★ 一括更新（このページに表示されている分だけ送る）
+    Route::post('/leaves/bulk-update', [LeaveManageController::class, 'bulkUpdate'])->name('leaves.bulk_update');
+    Route::delete('/leaves/{leave}', [LeaveManageController::class, 'destroy'])->name('leaves.destroy');
+});
+
+// Absence Report
+Route::middleware(['auth'])->group(function () {
+    Route::get('/absence_report/{user}', [LeaveController::class, 'absence'])->name('absence.edit');
+    Route::put('/handle_type/{leave}', [LeaveController::class, 'report'])->name('report.update');
 });
 
 use App\Http\Controllers\SchoolProfileController;
