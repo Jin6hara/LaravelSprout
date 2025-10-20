@@ -220,7 +220,7 @@ public function edit(Request $request)
             'time_start'   => null,
             'time_end'     => null,
             'handle_type'  => null,
-            'status'       => 'pending',
+            'status'       => 'approved',
         ]);
 
         return back()->with('status', "空白Leaveを {$leave->start_date->format('Y-m-d')} に追加しました。");

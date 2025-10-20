@@ -189,7 +189,8 @@
                                 </div>
                                 <div class="col-6">
                                     <label class="form-label small mb-0">Status</label>
-                                    <select name="status" class="form-select form-select-sm">
+                                    <input type="hidden" name="status" value="approved">
+                                    <select name="status" class="form-select form-select-sm" disabled>
                                         @foreach($statusOptions as $v => $label)
                                         <option value="{{ $v }}" @selected($leave->status===$v)>{{ $label }}</option>
                                         @endforeach
@@ -197,29 +198,29 @@
                                 </div>
                             </div>
 
-                            {{-- 3: Dates --}}
+                            {{-- 3: Start --}}
                             <div class="row g-1 mb-0">
-                                <div class="col-6">
+                                <div class="col-7">
                                     <label class="form-label small mb-0">Start Date</label>
                                     <input type="date" name="start_date" class="form-control form-control-sm"
                                         value="{{ old('start_date', $fmtDate($leave->start_date)) }}">
                                 </div>
-                                <div class="col-6">
-                                    <label class="form-label small mb-0">End Date</label>
-                                    <input type="date" name="end_date" class="form-control form-control-sm"
-                                        value="{{ old('end_date', $fmtDate($leave->end_date)) }}">
-                                </div>
-                            </div>
-
-                            {{-- 4: Times --}}
-                            <div class="row g-1 mb-0">
-                                <div class="col-6">
+                                <div class="col-5">
                                     <label class="form-label small mb-0">Time Start</label>
                                     <input type="time" name="time_start" class="form-control form-control-sm"
                                         value="{{ old('time_start', $fmtTime($leave->time_start)) }}"
                                         inputmode="numeric" step="60">
                                 </div>
-                                <div class="col-6">
+                            </div>
+
+                            {{-- 4: End --}}
+                            <div class="row g-1 mb-0">
+                                <div class="col-7">
+                                    <label class="form-label small mb-0">End Date</label>
+                                    <input type="date" name="end_date" class="form-control form-control-sm"
+                                        value="{{ old('end_date', $fmtDate($leave->end_date)) }}">
+                                </div>
+                                <div class="col-5">
                                     <label class="form-label small mb-0">Time End</label>
                                     <input type="time" name="time_end" class="form-control form-control-sm"
                                         value="{{ old('time_end', $fmtTime($leave->time_end)) }}"
