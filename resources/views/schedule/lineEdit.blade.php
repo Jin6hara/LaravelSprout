@@ -34,10 +34,6 @@
     </div>
 </form>
 
-@if (session('status'))
-<div class="alert alert-success py-2">{{ session('status') }}</div>
-@endif
-
 @if($lines->isEmpty())
 <div class="alert alert-secondary">該当する Schedule Line はありません。</div>
 @else
@@ -46,6 +42,8 @@
     @foreach($lines as $line)
     <div class="col-12">
         <div class="card h-100">
+
+            {{-- ヘッダー --}}
             <div class="card-header py-2">
                 <div class="d-flex justify-content-between align-items-center">
                     <strong>#{{ $line->id }}</strong>
@@ -75,19 +73,26 @@
                     @endif
                 </div>
             </div>
+            {{-- ヘッダー --}}
 
             <form method="POST" action="{{ route('schedule_lines.update', $line) }}">
                 @csrf
                 @method('PUT')
 
-                {{-- ★ 編集行（横並び） --}}
+                {{-- 自分のフォーム識別用（oldスコープ） --}}
+                <input type="hidden" name="__line_id" value="{{ $line->id }}">
+
+                @php $isMyOld = old('__line_id') == $line->id; @endphp
+
                 <div class="card-body py-2 border-bottom">
                     <div class="row g-2 align-items-end">
                         <div class="col-12 col-md-2 col-lg-1">
                             <label class="form-label small mb-1">DOW</label>
                             <select name="dow" class="form-select form-select-sm">
                                 @foreach($dowOptions as $val => $label)
-                                <option value="{{ $val }}" @selected($line->dow === $val)>{{ $label }}</option>
+                                <option value="{{ $val }}" @selected(($isMyOld ? (int)old('dow') : $line->dow) === $val)>
+                                    {{ $label }}
+                                </option>
                                 @endforeach
                             </select>
                         </div>
@@ -95,35 +100,35 @@
                         <div class="col-12 col-md-3 col-lg-3">
                             <label class="form-label small mb-1">School</label>
                             <input type="text" name="school_name" class="form-control form-control-sm"
-                                value="{{ old('school_name', $line->school_name) }}">
+                                value="{{ $isMyOld ? old('school_name') : $line->school_name }}">
                         </div>
 
                         <div class="col-6 col-md-2 col-lg-1">
                             <label class="form-label small mb-1">Start</label>
                             <input type="time" name="start_time" class="form-control form-control-sm"
-                                value="{{ old('start_time', \Illuminate\Support\Str::of($line->start_time)->substr(0,5)) }}">
+                                value="{{ $isMyOld ? old('start_time') : \Illuminate\Support\Str::of($line->start_time)->substr(0,5) }}">
                         </div>
 
                         <div class="col-6 col-md-2 col-lg-1">
                             <label class="form-label small mb-1">End</label>
                             <input type="time" name="end_time" class="form-control form-control-sm"
-                                value="{{ old('end_time', \Illuminate\Support\Str::of($line->end_time)->substr(0,5)) }}">
+                                value="{{ $isMyOld ? old('end_time') : \Illuminate\Support\Str::of($line->end_time)->substr(0,5) }}">
                         </div>
 
                         <div class="col-6 col-md-2 col-lg-2">
                             <label class="form-label small mb-1">Effective Start</label>
                             <input type="date" name="effective_start" class="form-control form-control-sm"
-                                value="{{ old('effective_start', optional($line->effective_start)->toDateString()) }}">
+                                value="{{ $isMyOld ? old('effective_start') : optional($line->effective_start)->toDateString() }}">
                         </div>
 
                         <div class="col-6 col-md-2 col-lg-2">
                             <label class="form-label small mb-1">Effective End</label>
                             <input type="date" name="effective_end" class="form-control form-control-sm"
-                                value="{{ old('effective_end', optional($line->effective_end)->toDateString()) }}">
+                                value="{{ $isMyOld ? old('effective_end') : optional($line->effective_end)->toDateString() }}">
                         </div>
 
                         <div class="col-12 col-lg-2 d-flex justify-content-end">
-                            <button class="btn btn-sm btn-success mt-3 mt-lg-0">保存</button>
+                            <button type="submit" class="btn btn-sm btn-success mt-3 mt-lg-0">保存</button>
                         </div>
                     </div>
                 </div>
