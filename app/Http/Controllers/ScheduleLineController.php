@@ -193,20 +193,61 @@ class ScheduleLineController extends Controller
             }
 
             // 4) 表示アイテム（開始時刻順）
-            $items = $active
-                ->sortBy(fn($d) => optional($d->start)->start_time ?? '99:99:99')
+            $items = $active->sortBy(function ($d) {
+                return optional($d->start)->start_time ?? '99:99:99';
+            })
                 ->map(function ($d) {
-                    $time = optional($d->start)->start_time
-                        ? \Illuminate\Support\Str::of($d->start->start_time)->substr(0, 5)
-                        : '--:--';
+                    // 1) start_time を多様な入力から "HH:MM" に正規化
+                    $raw = optional($d->start)->start_time; // 文字列/Carbon/null の可能性
+                    $startStr = null;
+
+                    if ($raw instanceof \DateTimeInterface) {
+                        $startStr = \Carbon\Carbon::instance($raw)->format('H:i');
+                    } else if ($raw !== null) {
+                        $s = trim((string)$raw);
+
+                        // 全角コロン対策
+                        $s = str_replace('：', ':', $s);
+
+                        if (preg_match('/^\d{1,2}:\d{2}$/', $s)) {
+                            // 09:00
+                            $startStr = $s;
+                        } elseif (preg_match('/^\d{1,2}:\d{2}:\d{2}$/', $s)) {
+                            // 09:00:00 -> 09:00
+                            $startStr = substr($s, 0, 5);
+                        } elseif (preg_match('/^\d{3,4}$/', $s)) {
+                            // 900 / 0900 -> 09:00
+                            $s = str_pad($s, 4, '0', STR_PAD_LEFT);
+                            $startStr = substr($s, 0, 2) . ':' . substr($s, 2, 2);
+                        } else {
+                            // どうしても不明なら Carbon::parse に賭けて H:i に整形（失敗は無視）
+                            try {
+                                $startStr = \Carbon\Carbon::parse($s)->format('H:i');
+                            } catch (\Throwable $e) {
+                                $startStr = null;
+                            }
+                        }
+                    }
+
+                    // 2) lesson_minute を取得
                     $lesson = $d->lesson;
+                    $minute = $lesson->lesson_minute ?? null;
+                    $minute = is_numeric($minute) ? (int)$minute : null;
+
+                    // 3) 終了時刻 = start + minute （両方そろっている時だけ算出）
+                    $endStr = null;
+                    if ($startStr && $minute !== null) {
+                        $endStr = \Carbon\Carbon::createFromFormat('H:i', $startStr)
+                            ->addMinutes($minute)
+                            ->format('H:i');
+                    }
 
                     return [
-                        'time'   => (string) $time,
-                        'name'   => $lesson->lesson_name ?? '—',
+                        'name'   => $lesson->lesson_name ?? null,
                         'code'   => $lesson->lesson_code ?? null,
-                        'minute' => $lesson->lesson_minute ?? null,
-                        'type'   => $lesson->lesson_type ?? null,
+                        'minute' => $minute,
+                        'start'  => $startStr,   // "HH:MM" or null
+                        'end'    => $endStr,     // "HH:MM" or null
                     ];
                 })
                 ->values()
