@@ -132,36 +132,52 @@
             {{-- ▼▼▼ 閲覧専用：Schedule Details（高密度） ▼▼▼ --}}
             <div class="card-body py-2">
                 <div class="d-flex justify-content-between align-items-center mb-1">
-                    <div class="fw-semibold small">Details</div>
-                    <div class="small text-muted">count: {{ $line->details->count() }}</div>
+                    <div class="fw-semibold small">Details (Time-series)</div>
+                    <div class="small text-muted">
+                        segments: {{ count($seriesByLine[$line->id] ?? []) }}
+                    </div>
                 </div>
 
-                @if($line->details->isEmpty())
+                @php $segments = $seriesByLine[$line->id] ?? []; @endphp
+
+                @if(empty($segments))
                 <div class="text-muted small">（詳細は登録されていません）</div>
                 @else
-                <div class="d-flex flex-wrap gap-2">
-                    @foreach($line->details as $d)
+                <div class="d-flex flex-column gap-2">
+                    @foreach($segments as $seg)
                     @php
-                    $time = optional($d->start)->start_time
-                    ? \Illuminate\Support\Str::of($d->start->start_time)->substr(0,5)
-                    : '--:--';
-                    $lesson = $d->lesson;
+                    $segStart = $seg['start']?->toDateString();
+                    $segEnd = $seg['end']?->toDateString();
+                    $period = $segStart . ' 〜 ' . ($segEnd ?? 'Open');
+                    $items = $seg['items'];
                     @endphp
 
-                    <div class="border rounded-3 px-2 py-1 bg-light small d-flex flex-column"
-                        style="min-width: 180px; max-width: 200px; line-height: 1.2;">
-                        <div class="fw-semibold text-monospace">{{ $time }}</div>
-                        <div class="text-truncate">
-                            {{ $lesson->lesson_name ?? '—' }}
+                    <div class="border rounded-3 p-2">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <div class="small fw-semibold">
+                                期間：{{ $period }}
+                            </div>
+                            <div class="small text-muted">items: {{ count($items) }}</div>
                         </div>
-                        @if(!empty($lesson?->lesson_code))
-                        <div class="text-muted">{{ $lesson->lesson_code }}</div>
-                        @endif
-                        <div class="d-flex justify-content-between mt-1">
-                            <span class="badge bg-secondary">{{ $lesson->lesson_minute ?? '—' }}m</span>
-                            @if(!empty($lesson?->lesson_type))
-                            <span class="badge bg-info text-dark">{{ $lesson->lesson_type }}</span>
-                            @endif
+
+                        {{-- 横方向に高密度で並べる --}}
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach($items as $it)
+                            <div class="border rounded-3 px-2 py-1 bg-light small"
+                                style="min-width: 170px; max-width: 200px; line-height: 1.2;">
+                                <div class="fw-semibold text-monospace">{{ $it['time'] }}</div>
+                                <div class="text-truncate">{{ $it['name'] }}</div>
+                                @if(!empty($it['code']))
+                                <div class="text-muted">{{ $it['code'] }}</div>
+                                @endif
+                                <div class="d-flex justify-content-between mt-1">
+                                    <span class="badge bg-secondary">{{ $it['minute'] ?? '—' }}m</span>
+                                    @if(!empty($it['type']))
+                                    <span class="badge bg-info text-dark">{{ $it['type'] }}</span>
+                                    @endif
+                                </div>
+                            </div>
+                            @endforeach
                         </div>
                     </div>
                     @endforeach

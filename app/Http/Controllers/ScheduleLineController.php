@@ -7,61 +7,90 @@ use App\Models\Schedule;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Collection;
 use Carbon\Carbon;
 
 class ScheduleLineController extends Controller
 {
+    /**
+     * ScheduleLine 編集 + 閲覧（詳細は時間系列でグループ化）
+     */
     public function edit(Request $request)
     {
-        $activeOn   = $request->date('active_on'); // null許容
+        // フィルタ
+        $activeOn   = $request->input('active_on');                 // Y-m-d or null
         $scheduleId = $request->integer('schedule_id') ?: null;
 
-        $linesQuery = \App\Models\ScheduleLine::query()
+        // ScheduleLine 本体 + 関連ロード
+        $linesQuery = ScheduleLine::query()
             ->with([
                 'schedule:id,label,effective_start,effective_end',
-                // ▼ details + 開始時刻/レッスン情報を同時ロード（開始時刻順）
+                // details（開始時刻/レッスン情報を一緒に）
                 'details' => function ($q) {
                     $q->with([
-                        'start:id,start_time',
+                        'start:id,start_time', // lesson_start_times
                         'lesson:id,lesson_name,lesson_code,lesson_minute,lesson_type',
                     ])->orderBy('lesson_start_time_id');
                 },
             ])
             ->when($scheduleId, fn($q) => $q->where('schedule_id', $scheduleId))
-            ->orderBy('schedule_id')->orderBy('dow')->orderBy('start_time');
+            ->orderBy('schedule_id')
+            ->orderBy('dow')
+            ->orderBy('start_time');
 
-        if ($activeOn) {
+        // 有効日フィルタ（line 自体の有効期間で絞る）
+        if (!empty($activeOn)) {
             $linesQuery->whereDate('effective_start', '<=', $activeOn)
                 ->whereDate('effective_end', '>=', $activeOn);
         }
 
         $lines = $linesQuery->get();
 
-        // ▼ 担当ユーザー（基準日）… active_on が無ければ「今日」を採用
-        $baseDate = \Carbon\Carbon::parse($activeOn ?? now())->toDateString();
+        // 担当ユーザー（active_on が未指定なら今日を基準）
+        $baseDate = Carbon::parse($activeOn ?? now())->toDateString();
 
         $usersBySchedule = [];
         if ($lines->isNotEmpty()) {
-            $scheduleIds = $lines->pluck('schedule_id')->unique()->all();
+            $scheduleIds = $lines->pluck('schedule_id')->unique()->values()->all();
 
-            // schedule_id ごとに、その日に有効な割当ユーザー
-            $schedules = \App\Models\Schedule::with([
-                'assignments' => function ($q) use ($baseDate) {
-                    $q->whereDate('start_date', '<=', $baseDate)
-                        ->whereDate('end_date', '>=', $baseDate)
-                        ->with(['user:id,first_name,family_name,employee_code']);
-                }
-            ])->whereIn('id', $scheduleIds)->get();
+            // Schedule に紐づく当日有効な割当（assignments）をロード
+            $schedules = Schedule::query()
+                ->with([
+                    'assignments' => function ($q) use ($baseDate) {
+                        $q->whereDate('start_date', '<=', $baseDate)
+                            ->whereDate('end_date', '>=', $baseDate)
+                            ->with(['user:id,first_name,family_name,employee_code']);
+                    },
+                ])
+                ->whereIn('id', $scheduleIds)
+                ->get(['id']);
 
             foreach ($schedules as $sch) {
-                // 重複除去・null除外
                 $usersBySchedule[$sch->id] = $sch->assignments
-                    ->pluck('user')->filter()->unique('id')->values();
+                    ->pluck('user')
+                    ->filter()
+                    ->unique('id')
+                    ->values();
             }
         }
 
-        $dowOptions = [0 => '日', 1 => '月', 2 => '火', 3 => '水', 4 => '木', 5 => '金', 6 => '土'];
-        $scheduleOptions = \App\Models\Schedule::orderBy('id')->get(['id', 'label']);
+        // details を「期間の変化点」で区切った時間系列へ整形
+        $seriesByLine = [];
+        foreach ($lines as $line) {
+            $seriesByLine[$line->id] = $this->buildTimeSeries($line->details);
+        }
+
+        // セレクト等
+        $dowOptions = [
+            0 => '日',
+            1 => '月',
+            2 => '火',
+            3 => '水',
+            4 => '木',
+            5 => '金',
+            6 => '土',
+        ];
+        $scheduleOptions = Schedule::orderBy('id')->get(['id', 'label']);
 
         return view('schedule.lineEdit', [
             'lines'           => $lines,
@@ -70,6 +99,7 @@ class ScheduleLineController extends Controller
             'activeOn'        => $activeOn,
             'scheduleId'      => $scheduleId,
             'usersBySchedule' => $usersBySchedule,
+            'seriesByLine'    => $seriesByLine,
         ]);
     }
 
@@ -96,5 +126,99 @@ class ScheduleLineController extends Controller
         $line->fill($data)->save();
 
         return back()->with('status', "Line #{$line->id} を更新しました。");
+    }
+
+    /**
+     * schedule_details を内容の変化点で分割して「時間系列」へ整形
+     *
+     * @param  \Illuminate\Support\Collection  $details  // of ScheduleDetail (with ->start, ->lesson)
+     * @return array<int, array{start:?Carbon, end:?Carbon, items:array<int,array{time:string,name:?string,code:?string,minute:?int,type:?string}>}>
+     */
+    private function buildTimeSeries(Collection $details): array
+    {
+        if ($details->isEmpty()) {
+            return [];
+        }
+
+        // 1) 変化点候補（start, end+1日）を収集
+        $points = collect();
+        $maxEnd = null;
+        $hasOpenEnd = false;
+
+        foreach ($details as $d) {
+            $s = Carbon::parse($d->effective_start)->startOfDay();
+            $points->push($s->copy());
+
+            if ($d->effective_end) {
+                $e = Carbon::parse($d->effective_end)->startOfDay();
+                $points->push($e->copy()->addDay()); // 終了日の翌日を区切り点に
+                $maxEnd = $maxEnd ? $e->max($maxEnd) : $e;
+            } else {
+                $hasOpenEnd = true; // オープンエンドあり
+            }
+        }
+
+        $points = $points
+            ->unique(fn($c) => $c->toDateString())
+            ->sort()
+            ->values();
+
+        if ($points->isEmpty()) {
+            return [];
+        }
+
+        // 2) 区間生成：[points[i], points[i+1]-1]、末尾は open もしくは maxEnd
+        $segments = [];
+        for ($i = 0; $i < $points->count(); $i++) {
+            $start = $points[$i]->copy();
+            if ($i + 1 < $points->count()) {
+                $end = $points[$i + 1]->copy()->subDay();
+            } else {
+                $end = $hasOpenEnd ? null : $maxEnd;
+            }
+
+            // 3) 区間に有効な details を抽出（重なり判定）
+            $active = $details->filter(function ($d) use ($start, $end) {
+                $ds = Carbon::parse($d->effective_start)->startOfDay();
+                $de = $d->effective_end ? Carbon::parse($d->effective_end)->startOfDay() : null;
+
+                // 重なり: [ds, de(または∞)] と [start, end(または∞)] が交差
+                $leftOk  = $de ? $de >= $start : true;      // detail の終端が start 以降
+                $rightOk = $end ? $ds <= $end : true;       // detail の始端が end 以前
+                return $leftOk && $rightOk;
+            });
+
+            if ($active->isEmpty()) {
+                continue;
+            }
+
+            // 4) 表示アイテム（開始時刻順）
+            $items = $active
+                ->sortBy(fn($d) => optional($d->start)->start_time ?? '99:99:99')
+                ->map(function ($d) {
+                    $time = optional($d->start)->start_time
+                        ? \Illuminate\Support\Str::of($d->start->start_time)->substr(0, 5)
+                        : '--:--';
+                    $lesson = $d->lesson;
+
+                    return [
+                        'time'   => (string) $time,
+                        'name'   => $lesson->lesson_name ?? '—',
+                        'code'   => $lesson->lesson_code ?? null,
+                        'minute' => $lesson->lesson_minute ?? null,
+                        'type'   => $lesson->lesson_type ?? null,
+                    ];
+                })
+                ->values()
+                ->all();
+
+            $segments[] = [
+                'start' => $start,
+                'end'   => $end,
+                'items' => $items,
+            ];
+        }
+
+        return $segments;
     }
 }
