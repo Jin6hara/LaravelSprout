@@ -22,6 +22,7 @@
                 <label class="form-label small mb-1">Schedule</label>
                 <select name="schedule_id" class="form-select form-select-sm">
                     <option value="">（すべて）</option>
+                    <option value="null" @selected($scheduleId==='null' || is_null($scheduleId))>Not Assigned</option>
                     @foreach($scheduleOptions as $opt)
                     <option value="{{ $opt['id'] }}" @selected($scheduleId==$opt['id'])>
                         {{ $opt['label'] ?? ('Schedule #' . $opt['id']) }}
