@@ -14,7 +14,7 @@ return new class extends Migration
         // 1) schedules
         Schema::create('schedules', function (Blueprint $t) {
             $t->id();
-            $t->foreignId('user_id')->constrained()->cascadeOnDelete();         
+            $t->foreignId('user_id')->constrained()->cascadeOnDelete();
             $t->string('label')->nullable();               // 表示用 (例: "James weekly")
             $t->unsignedInteger('total_minutes')->default(0);
             $t->date('effective_start');
@@ -27,7 +27,7 @@ return new class extends Migration
         // 2) schedule_lines
         Schema::create('schedule_lines', function (Blueprint $t) {
             $t->id();
-            $t->foreignId('schedule_id')->constrained()->cascadeOnDelete();
+            $t->foreignId('schedule_id')->nullable()->constrained()->restrictOnDelete();
             $t->tinyInteger('dow');                        // 0(日)〜6(土)
             $t->string('school_name');
             $t->time('start_time');

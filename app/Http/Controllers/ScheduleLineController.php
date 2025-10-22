@@ -125,7 +125,7 @@ class ScheduleLineController extends Controller
     {
         // バリデーション
         $data = $request->validate([
-            'schedule_id'     => ['required', 'exists:schedules,id'],
+            'schedule_id'     => ['nullable', 'exists:schedules,id'], //'required',
             'dow'             => ['required', 'integer', Rule::in([0, 1, 2, 3, 4, 5, 6])],
             'school_name'     => ['required', 'string', 'max:255'],
             'start_time'      => ['required', 'date_format:H:i'],
