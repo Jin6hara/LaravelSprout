@@ -7,10 +7,10 @@ use App\Models\EventDetail;
 use App\Models\Leave;
 use App\Models\Lesson;
 use App\Models\ScheduleLine;
-use App\Models\UserScheduleAssignment;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
+use App\Models\Schedule; // 直付けスキーマ対応（Schedule を直接参照）
 
 class LeaveSnapshotService
 {
@@ -58,22 +58,19 @@ class LeaveSnapshotService
         $dow    = $date->dayOfWeek; // 0..6
         $ymd    = $date->toDateString();
 
-        // その日有効な割当（end_date null も許容）
-        $asg = UserScheduleAssignment::with(['schedule.lines.details' /* ★ */, 'schedule.lines.details.start', 'schedule.lines.details.lesson'])
+        // ▼ assignments を使わず、schedules.user_id 直付け＋期間で取得
+        $sch = Schedule::with(['lines.details' /* ★ */, 'lines.details.start', 'lines.details.lesson'])
             ->where('user_id', $userId)
-            ->whereDate('start_date', '<=', $ymd)
-            ->where(function ($q) use ($ymd) {
-                $q->whereNull('end_date')
-                    ->orWhereDate('end_date', '>=', $ymd);
-            })
+            ->whereDate('effective_start', '<=', $ymd)
+            ->whereDate('effective_end', '>=', $ymd)
             ->first();
 
-        if (!$asg || !$asg->schedule) {
+        if (!$sch) {
             return; // 割当なし → スナップショット対象なし
         }
 
         /** @var \Illuminate\Support\Collection<int,\App\Models\ScheduleLine> $lines */
-        $lines = $asg->schedule->lines
+        $lines = $sch->lines
             ->filter(function ($ln) use ($dow, $ymd) {
                 // DOW一致 + effective_start <= 日付 <= (effective_end or null=無期限)
                 $okDow = (int)$ln->dow === (int)$dow;

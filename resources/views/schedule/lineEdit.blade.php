@@ -10,7 +10,7 @@
 </div>
 
 {{-- 検索フォーム（基準日/スケジュール） --}}
-<form method="GET" action="{{ route('schedules.edit') }}" class="card mb-3">
+<form method="GET" action="{{ route('schedules.edit') }}" class="card mb-2">
     <div class="card-body py-2">
         <div class="row g-2 align-items-end">
             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
@@ -23,7 +23,9 @@
                 <select name="schedule_id" class="form-select form-select-sm">
                     <option value="">（すべて）</option>
                     @foreach($scheduleOptions as $opt)
-                    <option value="{{ $opt->id }}" @selected($scheduleId==$opt->id)>{{ $opt->label ?? 'Schedule #'.$opt->id }}</option>
+                    <option value="{{ $opt['id'] }}" @selected($scheduleId==$opt['id'])>
+                        {{ $opt['label'] ?? ('Schedule #' . $opt['id']) }}
+                    </option>
                     @endforeach
                 </select>
             </div>
@@ -38,13 +40,13 @@
 <div class="alert alert-secondary">該当する Schedule Line はありません。</div>
 @else
 {{-- ★ 1カード/行に固定 --}}
-<div class="row g-3">
+<div class="row g-2">
     @foreach($lines as $line)
     <div class="col-12">
         <div class="card h-100">
 
             {{-- ヘッダー --}}
-            <div class="card-header py-2">
+            <div class="card-header py-1">
                 <div class="d-flex justify-content-between align-items-center">
                     <strong>#{{ $line->id }}</strong>
                     <span class="badge text-bg-light">
@@ -63,8 +65,9 @@
                     <div class="d-flex flex-wrap gap-1">
                         @foreach($chips as $u)
                         <span class="badge rounded-pill text-bg-secondary">
-                            {{ $u->family_name }} {{ $u->first_name }}
-                            @if(!empty($u->employee_code)) [{{ $u->employee_code }}] @endif
+                            {{ $u->family_name }}
+                            @if(!empty($u->first_name)) {{ $u->first_name }} @endif
+                            [{{ $u->employee_code }}]
                         </span>
                         @endforeach
                     </div>
@@ -86,6 +89,19 @@
 
                 <div class="card-body py-2 border-bottom">
                     <div class="row g-2 align-items-end">
+
+                        <div class="col-12 col-md-4 col-lg-2">
+                            <label class="form-label small mb-1">Schedule (Owner)</label>
+                            <select name="schedule_id" class="form-select form-select-sm">
+                                <option value="">— Select —</option>
+                                @foreach($scheduleOptions as $opt)
+                                <option value="{{ $opt['id'] }}" @selected($line->schedule_id === $opt['id'])>
+                                    {{ $opt['label'] }}
+                                </option>
+                                @endforeach
+                            </select>
+                        </div>
+
                         <div class="col-12 col-md-2 col-lg-1">
                             <label class="form-label small mb-1">DOW</label>
                             <select name="dow" class="form-select form-select-sm">
@@ -97,7 +113,7 @@
                             </select>
                         </div>
 
-                        <div class="col-12 col-md-3 col-lg-3">
+                        <div class="col-12 col-md-3 col-lg-2">
                             <label class="form-label small mb-1">School</label>
                             <input type="text" name="school_name" class="form-control form-control-sm"
                                 value="{{ $isMyOld ? old('school_name') : $line->school_name }}">
@@ -127,7 +143,7 @@
                                 value="{{ $isMyOld ? old('effective_end') : optional($line->effective_end)->toDateString() }}">
                         </div>
 
-                        <div class="col-12 col-lg-2 d-flex justify-content-end">
+                        <div class="col-12 col-lg-1 d-flex justify-content-end">
                             <button type="submit" class="btn btn-sm btn-success mt-3 mt-lg-0">保存</button>
                         </div>
                     </div>

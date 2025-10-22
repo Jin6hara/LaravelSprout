@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Carbon\Carbon;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -242,6 +243,11 @@ class User extends Authenticatable
     {
         $state = $this->employment_state; // 上のアクセサで取得
         return $state === 'active';
+    }
+
+    public function schedules(): HasMany
+    {
+        return $this->hasMany(Schedule::class);
     }
 
     public function expenseReports()

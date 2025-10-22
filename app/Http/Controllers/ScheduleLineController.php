@@ -12,9 +12,6 @@ use Carbon\Carbon;
 
 class ScheduleLineController extends Controller
 {
-    /**
-     * ScheduleLine 編集 + 閲覧（詳細は時間系列でグループ化）
-     */
     public function edit(Request $request)
     {
         // フィルタ
@@ -24,7 +21,9 @@ class ScheduleLineController extends Controller
         // ScheduleLine 本体 + 関連ロード
         $linesQuery = ScheduleLine::query()
             ->with([
-                'schedule:id,label,effective_start,effective_end',
+                'schedule:id,label,effective_start,effective_end,user_id',
+                // ▼ 追加: schedule 所有ユーザーを同時ロード
+                'schedule.user:id,first_name,family_name,employee_code',
                 // details（開始時刻/レッスン情報を一緒に）
                 'details' => function ($q) {
                     $q->with([
@@ -37,6 +36,31 @@ class ScheduleLineController extends Controller
             ->orderBy('schedule_id')
             ->orderBy('dow')
             ->orderBy('start_time');
+
+        // ▼ Schedule 所有ユーザーを取得（user_id 経由）
+        $scheduleOptions = Schedule::query()
+            ->with(['user:id,first_name,family_name,employee_code'])
+            ->get()
+            ->map(function ($s) {
+                $u = $s->user;
+                if ($u) {
+                    // 表示を「family first [code]」に
+                    $label = trim($u->family_name . ' ' . ($u->first_name ?? ''));
+                    if (!empty($u->employee_code)) {
+                        $label .= " [{$u->employee_code}]";
+                    }
+                } else {
+                    // ユーザーが紐づいていない場合
+                    $label = "(未割当) Schedule #{$s->id}";
+                }
+
+                return [
+                    'id'    => $s->id,
+                    'label' => $label,
+                ];
+            })
+            ->sortBy('label')
+            ->values();
 
         // 有効日フィルタ（line 自体の有効期間で絞る）
         if (!empty($activeOn)) {
@@ -53,24 +77,16 @@ class ScheduleLineController extends Controller
         if ($lines->isNotEmpty()) {
             $scheduleIds = $lines->pluck('schedule_id')->unique()->values()->all();
 
-            // Schedule に紐づく当日有効な割当（assignments）をロード
+            // assignments を使わず、Schedule に直付けされた user を取得
             $schedules = Schedule::query()
-                ->with([
-                    'assignments' => function ($q) use ($baseDate) {
-                        $q->whereDate('start_date', '<=', $baseDate)
-                            ->whereDate('end_date', '>=', $baseDate)
-                            ->with(['user:id,first_name,family_name,employee_code']);
-                    },
-                ])
+                ->with(['user:id,first_name,family_name,employee_code'])
                 ->whereIn('id', $scheduleIds)
-                ->get(['id']);
+                ->get(['id', 'user_id']);
 
             foreach ($schedules as $sch) {
-                $usersBySchedule[$sch->id] = $sch->assignments
-                    ->pluck('user')
-                    ->filter()
-                    ->unique('id')
-                    ->values();
+                $u = $sch->user;
+                // 旧来の chips 互換のため Collection を渡す（0 or 1件）
+                $usersBySchedule[$sch->id] = collect($u ? [$u] : [])->values();
             }
         }
 
@@ -90,7 +106,8 @@ class ScheduleLineController extends Controller
             5 => '金',
             6 => '土',
         ];
-        $scheduleOptions = Schedule::orderBy('id')->get(['id', 'label']);
+        // ▼ 重複定義を避けるため、既に上で生成した $scheduleOptions をそのまま利用
+        // $scheduleOptions = Schedule::orderBy('id')->get(['id', 'label']);
 
         return view('schedule.lineEdit', [
             'lines'           => $lines,
@@ -100,6 +117,7 @@ class ScheduleLineController extends Controller
             'scheduleId'      => $scheduleId,
             'usersBySchedule' => $usersBySchedule,
             'seriesByLine'    => $seriesByLine,
+            // 'scheduleOptions' => $scheduleOptions, // ▼ 重複キー削除
         ]);
     }
 
@@ -107,6 +125,7 @@ class ScheduleLineController extends Controller
     {
         // バリデーション
         $data = $request->validate([
+            'schedule_id'     => ['required', 'exists:schedules,id'],
             'dow'             => ['required', 'integer', Rule::in([0, 1, 2, 3, 4, 5, 6])],
             'school_name'     => ['required', 'string', 'max:255'],
             'start_time'      => ['required', 'date_format:H:i'],
@@ -127,6 +146,7 @@ class ScheduleLineController extends Controller
 
         return back()->with('status', "Line #{$line->id} を更新しました。");
     }
+
 
     /**
      * schedule_details を内容の変化点で分割して「時間系列」へ整形
