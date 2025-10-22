@@ -132,44 +132,28 @@ class ScheduleLineController extends Controller
 
     public function update(Request $request, ScheduleLine $line)
     {
-        // ▼▼ DBエラー処理用 (コードとmigrationは更新したが、migrateしていなかったっ場合のDBエラー処理) ▼▼
-        // 主にschedule_idのnull制約違反を検知するため。今はもう必要ないが、一応残しておく。
-        try {
+        // バリデーション
+        $data = $request->validate([
+            'schedule_id'     => ['nullable', 'exists:schedules,id'], //'required',
+            'dow'             => ['required', 'integer', Rule::in([0, 1, 2, 3, 4, 5, 6])],
+            'school_name'     => ['required', 'string', 'max:255'],
+            'start_time'      => ['required', 'date_format:H:i'],
+            'end_time'        => ['required', 'date_format:H:i', function ($attr, $val, $fail) use ($request) {
+                if ($request->input('start_time') && $val <= $request->input('start_time')) {
+                    $fail('end_time は start_time より後である必要があります。');
+                }
+            }],
+            'effective_start' => ['required', 'date'],
+            'effective_end'   => ['required', 'date', function ($attr, $val, $fail) use ($request) {
+                if ($request->input('effective_start') && $val < $request->input('effective_start')) {
+                    $fail('effective_end は effective_start 以降である必要があります。');
+                }
+            }],
+        ]);
 
-            // バリデーション
-            $data = $request->validate([
-                'schedule_id'     => ['nullable', 'exists:schedules,id'], //'required',
-                'dow'             => ['required', 'integer', Rule::in([0, 1, 2, 3, 4, 5, 6])],
-                'school_name'     => ['required', 'string', 'max:255'],
-                'start_time'      => ['required', 'date_format:H:i'],
-                'end_time'        => ['required', 'date_format:H:i', function ($attr, $val, $fail) use ($request) {
-                    if ($request->input('start_time') && $val <= $request->input('start_time')) {
-                        $fail('end_time は start_time より後である必要があります。');
-                    }
-                }],
-                'effective_start' => ['required', 'date'],
-                'effective_end'   => ['required', 'date', function ($attr, $val, $fail) use ($request) {
-                    if ($request->input('effective_start') && $val < $request->input('effective_start')) {
-                        $fail('effective_end は effective_start 以降である必要があります。');
-                    }
-                }],
-            ]);
+        $line->fill($data)->save();
 
-            $line->fill($data)->save();
-
-            return back()->with('status', "Line #{$line->id} を更新しました。");
-
-        // ▼▲ DBエラー処理 ▼▲
-        } catch (\Illuminate\Database\QueryException $e) {
-            // schedule_id の null によるIntegrity制約違反を検知
-            if (str_contains($e->getMessage(), 'schedule_id') && str_contains($e->getMessage(), 'cannot be null')) {
-                return back()->withErrors(['schedule_id' => 'Schedule は必須項目です。'])->withInput();
-            }
-
-            // それ以外のDBエラー
-            return back()->withErrors(['db' => 'データベースエラーが発生しました。'])->withInput();
-        }
-        // ▲▲ DBエラー処理 ▲▲
+        return back()->with('status', "Line #{$line->id} を更新しました。");
     }
 
 
