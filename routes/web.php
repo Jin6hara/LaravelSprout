@@ -211,4 +211,5 @@ Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
     // ★ 一括更新（このページに表示されている分だけ送る）
     Route::post('/schedules/bulk-update', [ScheduleLineController::class, 'bulkUpdate'])->name('schedules.bulk_update');
     Route::delete('/schedule_lines/{line}', [ScheduleLineController::class, 'destroy'])->name('schedule_lines.destroy');
+    Route::post('/schedule_lines/{line}/copy', [ScheduleLineController::class, 'copy'])->name('schedule_lines.copy');
 });

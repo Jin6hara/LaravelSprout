@@ -91,7 +91,7 @@
                 <div class="card-body py-2 border-bottom">
                     <div class="row g-2 align-items-end">
 
-                        <div class="col-12 col-md-4 col-lg-2">
+                        <div class="col-12 col-md-4 col-lg-3">
                             <label class="form-label small mb-1">Schedule (Owner)</label>
                             <select name="schedule_id" class="form-select form-select-sm">
                                 <option value="">— Select —</option>
@@ -144,16 +144,26 @@
                                 value="{{ $isMyOld ? old('effective_end') : optional($line->effective_end)->toDateString() }}">
                         </div>
 
-                        <div class="col-12 col-lg-2 d-flex justify-content-end gap-1">
+                        <div class="col-12 col-lg-2 d-flex t gap-1">
                             <button type="submit" class="btn btn-sm btn-success mt-3 mt-lg-0">保存</button>
 
-                            {{-- ★ 追加: 削除（AJAX） --}}
+                            {{-- ★  削除（AJAX） --}}
                             <button
                                 type="button"
                                 class="btn btn-sm btn-outline-danger mt-3 mt-lg-0 js-delete-line"
                                 data-delete-url="{{ route('schedule_lines.destroy', $line) }}"
                                 data-line-id="{{ $line->id }}">
                                 削除
+                            </button>
+
+                            {{-- ★ 複写ボタン（AJAX） --}}
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-secondary mt-3 mt-lg-0 js-copy-line"
+                                data-copy-url="{{ route('schedule_lines.copy', $line) }}"
+                                data-line-id="{{ $line->id }}"
+                                data-suggest-start="{{ optional($line->effective_end)->copy()?->addDay()->toDateString() }}">
+                                複写
                             </button>
                         </div>
                     </div>
@@ -172,6 +182,46 @@
     @endforeach
 </div>
 @endif
+
+{{-- 複写入力モーダル --}}
+<div class="modal fade" id="copyLineModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h5 class="modal-title">Schedule Line を複写</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-2">
+                    <label class="form-label small">コピー先 Schedule</label>
+                    <select id="copy-schedule-id" class="form-select form-select-sm">
+                        <option value="">（Not Assigned / NULL）</option>
+                        @foreach($scheduleOptions as $opt)
+                        <option value="{{ $opt['id'] }}">{{ $opt['label'] ?? ('Schedule #'.$opt['id']) }}</option>
+                        @endforeach
+                    </select>
+                    <div class="form-text">別のスケジュール所有者へ複写する場合はここで選択。</div>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label small">Effective Start</label>
+                    <input type="date" class="form-control form-control-sm" id="copy-start">
+                </div>
+                <div>
+                    <label class="form-label small">Effective End</label>
+                    <input type="date" class="form-control form-control-sm" id="copy-end">
+                </div>
+                <div class="form-text mt-2">
+                    複写後、元行は <strong>開始日の前日</strong> で自動クローズされます。
+                </div>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-sm btn-primary" id="copy-submit">複写する</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 @push('scripts')
 <script>
@@ -249,6 +299,153 @@
                 handleDelete(t);
             }
         }, false);
+    })();
+</script>
+
+<script>
+    /**
+     * Schedule Line 複写 + リロード越しフラッシュ（対象A）
+     * 依存: Bootstrap JS（Modal, Alert）
+     * 前提: <div id="flash-area"> がページ内に1ヶ所あること
+     */
+    (function() {
+        // ========= 共通ユーティリティ =========
+        const csrf =
+            document.querySelector('meta[name="csrf-token"]')?.content ||
+            document.querySelector('input[name="_token"]')?.value;
+
+        function showFlash(message, type = 'success') {
+            const area = document.getElementById('flash-area');
+            if (!area || !message) return;
+            const wrap = document.createElement('div');
+            wrap.innerHTML = `
+      <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>`;
+            area.prepend(wrap.firstElementChild);
+        }
+
+        function persistFlash(message, type = 'success') {
+            try {
+                sessionStorage.setItem('flash', JSON.stringify({
+                    message,
+                    type,
+                    t: Date.now()
+                }));
+            } catch (e) {}
+        }
+
+        function restoreFlashOnce() {
+            try {
+                const raw = sessionStorage.getItem('flash');
+                if (!raw) return;
+                const {
+                    message,
+                    type
+                } = JSON.parse(raw);
+                if (message) showFlash(message, type || 'success');
+                sessionStorage.removeItem('flash');
+            } catch (e) {}
+        }
+
+        // ========= ページロード時：保存済みフラッシュを表示 =========
+        restoreFlashOnce();
+
+        // ========= 複写モーダルコンテキスト =========
+        let copyCtx = {
+            url: null,
+            lineId: null,
+            currentSchedule: ''
+        };
+
+        // 複写ボタン → モーダル起動＆初期値セット
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('.js-copy-line');
+            if (!btn) return;
+
+            copyCtx.url = btn.getAttribute('data-copy-url');
+            copyCtx.lineId = btn.getAttribute('data-line-id');
+            copyCtx.currentSchedule = btn.getAttribute('data-current-schedule') || '';
+
+            // 日付初期値
+            const suggest = btn.getAttribute('data-suggest-start') || '';
+            const startEl = document.getElementById('copy-start');
+            const endEl = document.getElementById('copy-end');
+            if (startEl) startEl.value = suggest;
+            if (endEl) endEl.value = '';
+
+            // schedule 初期選択（元の schedule_id）
+            const sel = document.getElementById('copy-schedule-id');
+            if (sel) sel.value = copyCtx.currentSchedule;
+
+            const modalEl = document.getElementById('copyLineModal');
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        });
+
+        // 「複写する」
+        document.getElementById('copy-submit')?.addEventListener('click', async () => {
+            const startEl = document.getElementById('copy-start');
+            const endEl = document.getElementById('copy-end');
+            const sel = document.getElementById('copy-schedule-id');
+
+            const start = startEl?.value;
+            const end = endEl?.value;
+            const scheduleId = (sel?.value || '') || null; // '' → null
+
+            if (!start || !end) {
+                showFlash('開始日と終了日を入力してください。', 'danger');
+                return;
+            }
+            if (start > end) {
+                showFlash('終了日は開始日以降にしてください。', 'danger');
+                return;
+            }
+            if (!copyCtx.url) return;
+
+            const modalEl = document.getElementById('copyLineModal');
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+            try {
+                const res = await fetch(copyCtx.url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrf,
+                    },
+                    body: JSON.stringify({
+                        effective_start: start,
+                        effective_end: end,
+                        schedule_id: scheduleId,
+                    }),
+                });
+
+                const data = await res.json().catch(() => ({
+                    ok: false,
+                    message: 'Unexpected response'
+                }));
+
+                if (!res.ok || !data.ok) {
+                    // 失敗をリロード越しに見せたい場合は下2行のコメントアウトを外す
+                    // persistFlash(data?.message || '複写に失敗しました。', 'danger');
+                    // return window.location.reload();
+                    throw new Error(data?.message || '複写に失敗しました。');
+                }
+
+                // 成功：フラッシュを保存してリロード
+                persistFlash(data.message || '複写が完了しました。', 'success');
+                window.location.reload();
+
+            } catch (err) {
+                console.error(err);
+                // 失敗は画面内に即表示（※リロードしたいなら persist + reload に切替）
+                showFlash(err.message || '複写に失敗しました。', 'danger');
+            } finally {
+                modal.hide();
+            }
+        });
     })();
 </script>
 @endpush

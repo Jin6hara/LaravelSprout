@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
 
 class ScheduleLineController extends Controller
@@ -186,6 +188,106 @@ class ScheduleLineController extends Controller
                 'ok'      => false,
                 'message' => '削除に失敗しました。関連データや制約をご確認ください。',
                 'error'   => $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    /**
+     * ScheduleLine を期間指定で複写（JSON）。
+     * - 新規行: 入力期間で作成
+     * - 元行: 新規開始日の前日でクローズ（effective_end を詰める）
+     * - details も複写し、入れ替え期間にクリップ
+     */
+    public function copy(Request $request, ScheduleLine $line): \Illuminate\Http\JsonResponse
+    {
+        $data = $request->validate([
+            'effective_start' => ['required', 'date'],
+            'effective_end'   => ['required', 'date', 'after_or_equal:effective_start'],
+            'schedule_id'     => ['nullable', 'exists:schedules,id'],
+        ]);
+
+        $newStart = \Carbon\Carbon::parse($data['effective_start'])->startOfDay();
+        $newEnd   = \Carbon\Carbon::parse($data['effective_end'])->startOfDay();
+        $targetScheduleId = $data['schedule_id'] ?? null; // ★ コピー先 schedule（NULL 可）
+
+        DB::beginTransaction();
+        try {
+            // 1) 元行クローズ（newStart 前日）
+            $lineStart = \Carbon\Carbon::parse($line->effective_start)->startOfDay();
+            $lineEnd   = $line->effective_end ? \Carbon\Carbon::parse($line->effective_end)->startOfDay() : null;
+
+            if ($newStart->gt($lineStart) && (!$lineEnd || $lineEnd->gte($newStart))) {
+                $line->effective_end = $newStart->copy()->subDay()->toDateString();
+                $line->save();
+            }
+
+            // 2) 重複チェック（比較キー：コピー先 schedule + 同一属性）
+            $sameAttrs = \App\Models\ScheduleLine::query()
+                ->when(
+                    is_null($targetScheduleId),
+                    fn($q) => $q->whereNull('schedule_id'),
+                    fn($q) => $q->where('schedule_id', $targetScheduleId)
+                )
+                ->where('dow', $line->dow)
+                ->where('school_name', $line->school_name)
+                ->where('start_time', $line->start_time)
+                ->where('end_time', $line->end_time)
+                ->where(function ($q) use ($newStart, $newEnd) {
+                    $q->whereDate('effective_start', '<=', $newEnd)
+                        ->where(function ($qq) use ($newStart) {
+                            $qq->whereDate('effective_end', '>=', $newStart)
+                                ->orWhereNull('effective_end');
+                        });
+                })
+                ->exists();
+
+            if ($sameAttrs) {
+                DB::rollBack();
+                return response()->json([
+                    'ok' => false,
+                    'message' => '同一内容の行が指定期間に既に存在します（重複回避ルール）。'
+                ], 422);
+            }
+
+            // 3) 新規作成（schedule_id をコピー先へ）
+            $created = $line->replicate(['effective_start', 'effective_end', 'created_at', 'updated_at', 'id']);
+            $created->schedule_id     = $targetScheduleId;                    // ★ ここがポイント
+            $created->effective_start = $newStart->toDateString();
+            $created->effective_end   = $newEnd->toDateString();
+            $created->save();
+
+            // 4) details クリップ複写
+            $line->loadMissing(['details']);
+            foreach ($line->details as $d) {
+                $dStart = \Carbon\Carbon::parse($d->effective_start)->startOfDay();
+                $dEnd   = $d->effective_end ? \Carbon\Carbon::parse($d->effective_end)->startOfDay() : null;
+
+                $overlapStart = $dStart->max($newStart);
+                $overlapEnd   = $dEnd ? $dEnd->min($newEnd) : $newEnd;
+
+                if ($overlapStart->gt($overlapEnd)) continue;
+
+                $newDetail = $d->replicate(['id', 'created_at', 'updated_at']);
+                $newDetail->schedule_line_id = $created->id;                  // 実FK名に合わせる
+                $newDetail->effective_start  = $overlapStart->toDateString();
+                $newDetail->effective_end    = $overlapEnd ? $overlapEnd->toDateString() : null;
+                $newDetail->save();
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'ok' => true,
+                'message' => "Line #{$line->id} を複写して新規 Line #{$created->id} を作成しました（schedule: " . ($targetScheduleId ?? 'NULL') . "）。",
+                'new_id' => $created->id,
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            report($e);
+            return response()->json([
+                'ok' => false,
+                'message' => '複写に失敗しました。入力期間や関連データをご確認ください。',
+                'error' => $e->getMessage(),
             ], 422);
         }
     }
