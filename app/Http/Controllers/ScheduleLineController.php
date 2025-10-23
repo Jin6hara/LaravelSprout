@@ -6,6 +6,7 @@ use App\Models\ScheduleLine;
 use App\Models\Schedule;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Collection;
 use Carbon\Carbon;
@@ -156,6 +157,38 @@ class ScheduleLineController extends Controller
         return back()->with('status', "Line #{$line->id} を更新しました。");
     }
 
+    /**
+     * ScheduleLine を削除（JSON）
+     */
+    public function destroy(Request $request, ScheduleLine $line): JsonResponse
+    {
+        // （必要なら）ポリシー等
+        // $this->authorize('delete', $line);
+
+        try {
+            // 参照整合: details が外部キー制約の場合は先に削除
+            // （migrations で cascadeOnDelete なら不要だが安全側で）
+            if (method_exists($line, 'details')) {
+                $line->details()->delete();
+            }
+
+            $id = $line->id;
+            $line->delete();
+
+            return response()->json([
+                'ok'      => true,
+                'message' => "Line #{$id} を削除しました。",
+                'id'      => $id,
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json([
+                'ok'      => false,
+                'message' => '削除に失敗しました。関連データや制約をご確認ください。',
+                'error'   => $e->getMessage(),
+            ], 422);
+        }
+    }
 
     /**
      * schedule_details を内容の変化点で分割して「時間系列」へ整形

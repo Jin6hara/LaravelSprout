@@ -144,8 +144,17 @@
                                 value="{{ $isMyOld ? old('effective_end') : optional($line->effective_end)->toDateString() }}">
                         </div>
 
-                        <div class="col-12 col-lg-1 d-flex justify-content-end">
+                        <div class="col-12 col-lg-2 d-flex justify-content-end gap-1">
                             <button type="submit" class="btn btn-sm btn-success mt-3 mt-lg-0">保存</button>
+
+                            {{-- ★ 追加: 削除（AJAX） --}}
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-danger mt-3 mt-lg-0 js-delete-line"
+                                data-delete-url="{{ route('schedule_lines.destroy', $line) }}"
+                                data-line-id="{{ $line->id }}">
+                                削除
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -163,4 +172,84 @@
     @endforeach
 </div>
 @endif
+
+@push('scripts')
+<script>
+    (function() {
+        // CSRF トークンを取得
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
+            document.querySelector('input[name="_token"]')?.value;
+
+        function showFlash(message, type = 'success') {
+            const area = document.getElementById('flash-area');
+            if (!area) return;
+
+            // Bootstrap alert を生成（success / danger）
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = `
+      <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>`;
+            // 先頭に差し込む
+            area.prepend(wrapper.firstElementChild);
+        }
+
+        async function handleDelete(btn) {
+            const url = btn.getAttribute('data-delete-url');
+            const lineId = btn.getAttribute('data-line-id');
+
+            if (!url) return;
+
+            // 確認ダイアログ
+            const ok = window.confirm(`Line #${lineId} を削除します。よろしいですか？`);
+            if (!ok) return;
+
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(url, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrf,
+                        'Accept': 'application/json',
+                    },
+                });
+
+                const data = await res.json().catch(() => ({
+                    ok: false,
+                    message: 'Unexpected response'
+                }));
+
+                if (!res.ok || !data.ok) {
+                    throw new Error(data?.message || '削除に失敗しました。');
+                }
+
+                // カードDOMを削除
+                // ボタン-> col -> row -> card -> col-12 を辿る（構造に応じて調整）
+                let card = btn.closest('.card');
+                let col = card?.closest('.col-12') || card?.parentElement;
+                (col || card)?.remove();
+
+                // “フラッシュ風”に表示
+                showFlash(data.message || `Line #${lineId} を削除しました。`, 'success');
+
+            } catch (err) {
+                console.error(err);
+                showFlash(err.message || '削除に失敗しました。', 'danger');
+                btn.disabled = false;
+            }
+        }
+
+        // クリック委譲
+        document.addEventListener('click', function(e) {
+            const t = e.target;
+            if (t && t.classList.contains('js-delete-line')) {
+                handleDelete(t);
+            }
+        }, false);
+    })();
+</script>
+@endpush
 @endsection
