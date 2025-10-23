@@ -162,7 +162,8 @@
                                 class="btn btn-sm btn-outline-secondary mt-3 mt-lg-0 js-copy-line"
                                 data-copy-url="{{ route('schedule_lines.copy', $line) }}"
                                 data-line-id="{{ $line->id }}"
-                                data-suggest-start="{{ optional($line->effective_end)->copy()?->addDay()->toDateString() }}">
+                                data-current-schedule="{{ $line->schedule_id ?? '' }}"
+                                data-effective-end="{{ optional($line->effective_end)?->toDateString() ?? '' }}" {{-- ★ 新規追加 --}}>
                                 複写
                             </button>
                         </div>
@@ -368,12 +369,13 @@
             copyCtx.lineId = btn.getAttribute('data-line-id');
             copyCtx.currentSchedule = btn.getAttribute('data-current-schedule') || '';
 
-            // 日付初期値
-            const suggest = btn.getAttribute('data-suggest-start') || '';
+            // ✅ suggest = effective_end（複写元）を取得して終了日にセット
+            const srcEnd = btn.getAttribute('data-effective-end') || ''; // ★ ボタン側で渡す
             const startEl = document.getElementById('copy-start');
             const endEl = document.getElementById('copy-end');
-            if (startEl) startEl.value = suggest;
-            if (endEl) endEl.value = '';
+
+            if (startEl) startEl.value = ''; // 開始日は空白
+            if (endEl) endEl.value = srcEnd; // 終了日は元行に合わせる
 
             // schedule 初期選択（元の schedule_id）
             const sel = document.getElementById('copy-schedule-id');
