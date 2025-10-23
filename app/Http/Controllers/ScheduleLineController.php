@@ -18,11 +18,16 @@ class ScheduleLineController extends Controller
     public function edit(Request $request)
     {
         // フィルタ
-        $activeOn   = $request->input('active_on');                 // Y-m-d or null
+        $activeOn   = $request->input('active_on', now()->toDateString());   // Y-m-d or today
+        $activeUntil = $request->input('active_until');                      // Y-m-d or null
 
         // 「Not Assigned」は 'null' 文字列で送られる想定
-        $scheduleIdRaw = $request->input('schedule_id');            // '', 'null', '12' など
+        $scheduleIdRaw = $request->input('schedule_id', ''); // '', 'null', '12' など
         $scheduleId    = $scheduleIdRaw;
+
+        // 追加フィルタ
+        $fDow         = $request->filled('dow') ? (int)$request->input('dow') : null;               // 0-6 or null
+        $fSchoolName  = trim((string)$request->input('school_name', ''));                           // 部分一致
 
         // ScheduleLine 本体 + 関連ロード
         $linesQuery = ScheduleLine::query()
@@ -47,6 +52,14 @@ class ScheduleLineController extends Controller
             $linesQuery->whereNull('schedule_id');
         } elseif (is_numeric($scheduleIdRaw) && $scheduleIdRaw !== '') {
             $linesQuery->where('schedule_id', (int)$scheduleIdRaw);
+        }
+
+        // ▼ DOW / School / フィルタ（デフォルト空白＝無条件）
+        if (!is_null($fDow)) {
+            $linesQuery->where('dow', $fDow);
+        }
+        if ($fSchoolName !== '') {
+            $linesQuery->where('school_name', 'like', "%{$fSchoolName}%");
         }
 
         // ▼ Schedule 所有ユーザーを取得（user_id 経由）
@@ -76,8 +89,16 @@ class ScheduleLineController extends Controller
 
         // 有効日フィルタ（line 自体の有効期間で絞る）
         if (!empty($activeOn)) {
-            $linesQuery->whereDate('effective_start', '<=', $activeOn)
-                ->whereDate('effective_end', '>=', $activeOn);
+            // 期間指定：active_until が空なら active_on と同日扱い
+            $periodStart = \Carbon\Carbon::parse($activeOn)->toDateString();
+            $periodEnd   = $activeUntil ? \Carbon\Carbon::parse($activeUntil)->toDateString() : $periodStart;
+
+            $linesQuery
+                ->whereDate('effective_start', '<=', $periodEnd)
+                ->where(function ($q) use ($periodStart) {
+                    $q->whereDate('effective_end', '>=', $periodStart)
+                        ->orWhereNull('effective_end'); // オープンエンドを含む
+                });
         }
 
         $lines = $linesQuery->get();
@@ -129,7 +150,6 @@ class ScheduleLineController extends Controller
             'scheduleId'      => $scheduleId,
             'usersBySchedule' => $usersBySchedule,
             'seriesByLine'    => $seriesByLine,
-            // 'scheduleOptions' => $scheduleOptions, // ▼ 重複キー削除
         ]);
     }
 

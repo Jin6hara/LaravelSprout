@@ -13,16 +13,21 @@
 <form method="GET" action="{{ route('schedules.edit') }}" class="card mb-2">
     <div class="card-body py-2">
         <div class="row g-2 align-items-end">
-            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                <label class="form-label small mb-1">有効日（Active On）</label>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                <label class="form-label small mb-1">Active On</label>
                 <input type="date" name="active_on" class="form-control form-control-sm"
                     value="{{ $activeOn }}">
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                <label class="form-label small mb-1">Active Until</label>
+                <input type="date" name="active_until" class="form-control form-control-sm"
+                    value="{{ request('active_until') }}">
             </div>
             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                 <label class="form-label small mb-1">Schedule</label>
                 <select name="schedule_id" class="form-select form-select-sm">
-                    <option value="">（すべて）</option>
-                    <option value="null" @selected($scheduleId==='null' || is_null($scheduleId))>Not Assigned</option>
+                    <option value="">(All)</option>
+                    <option value="null" @selected($scheduleId==='null' )>Not Assigned</option>
                     @foreach($scheduleOptions as $opt)
                     <option value="{{ $opt['id'] }}" @selected($scheduleId==$opt['id'])>
                         {{ $opt['label'] ?? ('Schedule #' . $opt['id']) }}
@@ -30,8 +35,27 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-12 col-sm-6 col-md-3 col-lg-2">
-                <button class="btn btn-sm btn-primary w-100">検索</button>
+            <div class="col-12 col-sm-6 col-md-3 col-lg-1">
+                <label class="form-label small mb-1">DOW</label>
+                <select name="dow" class="form-select form-select-sm">
+                    <option value="">(All)</option>
+                    @foreach($dowOptions as $val => $label)
+                    <option value="{{ $val }}" @selected((string)request('dow','')===(string)$val)>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                <label class="form-label small mb-1">School</label>
+                <input type="text" name="school_name" class="form-control form-control-sm"
+                    value="{{ request('school_name','') }}" placeholder="部分一致">
+            </div>
+            <div class="col-12 col-sm-6 col-md-3 col-lg-1">
+                <button class="btn btn-sm btn-primary w-100">Search</button>
+            </div>
+            <div class="col-12 col-sm-6 col-md-3 col-lg-1">
+                <a href="{{ route('schedules.edit') }}" class="btn btn-sm btn-outline-secondary w-100">
+                    Clear
+                </a>
             </div>
         </div>
     </div>
