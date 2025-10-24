@@ -60,6 +60,15 @@
     </div>
 </form>
 
+<div class="text-start mb-2">
+    {{-- ★ 新規追加ボタン --}}
+    <button type="button"
+        id="add-line-btn"
+        class="btn btn-sm btn-outline-primary">
+        ＋ Add Blank Line
+    </button>
+</div>
+
 @if($lines->isEmpty())
 <div class="alert alert-secondary">該当する Schedule Line はありません。</div>
 @else
@@ -501,6 +510,56 @@
             }
         });
     })();
+</script>
+<script>
+    // ========= 空白Line追加 =========
+    document.getElementById('add-line-btn')?.addEventListener('click', async () => {
+        const csrf =
+            document.querySelector('meta[name="csrf-token"]')?.content ||
+            document.querySelector('input[name="_token"]')?.value;
+
+        const sel = document.querySelector('select[name="schedule_id"]');
+        const scheduleId = sel?.value || null;
+
+        try {
+            const res = await fetch('/schedule_lines', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                },
+                body: JSON.stringify({
+                    schedule_id: scheduleId
+                }),
+            });
+            const data = await res.json();
+
+            if (!res.ok || !data.ok) throw new Error(data?.message || '追加に失敗しました。');
+
+            // フラッシュ保存 + 再読み込み（既存と同様）
+            sessionStorage.setItem('flash', JSON.stringify({
+                message: data.message || '追加が完了しました。',
+                type: 'success',
+            }));
+
+            const currentUrl = new URL(window.location.href);
+            window.location.href = currentUrl.toString(); // クエリ維持リロード
+
+        } catch (err) {
+            console.error(err);
+            const area = document.getElementById('flash-area');
+            if (area) {
+                const wrap = document.createElement('div');
+                wrap.innerHTML = `
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          ${err.message || '追加に失敗しました。'}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>`;
+                area.prepend(wrap.firstElementChild);
+            }
+        }
+    });
 </script>
 @endpush
 @endsection

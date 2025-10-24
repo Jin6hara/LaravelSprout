@@ -181,6 +181,30 @@ class ScheduleLineController extends Controller
         return back()->with('status', "Line #{$line->id} を更新しました。");
     }
 
+    public function store(Request $request)
+    {   
+
+        $data = $request->validate([
+            'schedule_id' => ['nullable', 'exists:schedules,id'],
+        ]);
+
+        $line = new ScheduleLine();
+        $line->schedule_id     = $data['schedule_id'] ?? null; // 新講師用に役立つ
+        $line->dow             = 0;           // ディフォルト日曜
+        $line->school_name     = '';          // 空文字
+        $line->start_time      = '00:00:00';  // 空扱い
+        $line->end_time        = '00:00:00';
+        $line->effective_start = now()->toDateString();
+        $line->effective_end   = now()->addMonths(1)->toDateString(); // 仮の1ヶ月（後で編集可）
+        $line->save();
+
+        return response()->json([
+            'ok' => true,
+            'message' => "新しい ScheduleLine (#{$line->id}) を追加しました。",
+            'line_id' => $line->id,
+        ]);
+    }
+
     /**
      * ScheduleLine を削除（JSON）
      */

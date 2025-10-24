@@ -206,7 +206,7 @@ use App\Http\Controllers\ScheduleLineController;
 
 Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
     Route::get('/schedule_manager', [ScheduleLineController::class, 'edit'])->name('schedules.edit');
-    Route::post('/schedules/blank', [ScheduleLineController::class, 'storeBlank'])->name('schedules.store.blank');
+    Route::post('/schedule_lines', [ScheduleLineController::class, 'store'])->name('schedule_lines.store');
     Route::put('/schedule_lines/{line}', [ScheduleLineController::class, 'update'])->name('schedule_lines.update');
     // ★ 一括更新（このページに表示されている分だけ送る）
     Route::post('/schedules/bulk-update', [ScheduleLineController::class, 'bulkUpdate'])->name('schedules.bulk_update');
