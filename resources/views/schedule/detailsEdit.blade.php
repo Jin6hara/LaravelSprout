@@ -7,6 +7,10 @@
     </div>
     <div class="d-flex gap-2">
         <a href="{{ url()->previous() }}" class="btn btn-sm btn-outline-secondary">戻る</a>
+        <button type="button" id="details-add-blank" class="btn btn-sm btn-outline-success"
+            data-create-url="{{ route('schedule_details.store_blank', $line) }}">
+            空白追加
+        </button>
         <button type="button" id="details-bulk-save" class="btn btn-sm btn-primary">一括保存</button>
     </div>
 </div>
@@ -92,6 +96,19 @@
                     <div class="col-3 col-md-2 col-lg-2">
                         <label class="form-label small mb-1">Until</label>
                         <input type="date" class="form-control form-control-sm js-eff-end" value="{{ $effEnd }}">
+                    </div>
+
+                    <div class="btn-group btn-group-sm col-3 col-md-2 col-lg-1">
+                        <button type="button"
+                            class="btn btn-outline-secondary js-copy-detail"
+                            data-copy-url="{{ route('schedule_details.copy', $d) }}">
+                            複写
+                        </button>
+                        <button type="button"
+                            class="btn btn-outline-danger js-delete-detail"
+                            data-delete-url="{{ route('schedule_details.destroy', $d) }}">
+                            削除
+                        </button>
                     </div>
 
                     {{-- ★ 追加：合計分は表示しないが、End再計算のため hidden で保持 --}}
@@ -241,6 +258,108 @@
             } catch (err) {
                 console.error(err);
                 showFlash(err.message || '一括保存に失敗しました。', 'danger');
+            }
+        });
+        
+        // ★ 空白追加（単純追加 → 成功したらリロード）
+        document.getElementById('details-add-blank')?.addEventListener('click', async (e) => {
+            const url = e.currentTarget.getAttribute('data-create-url');
+            if (!url) return;
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrf,
+                    },
+                });
+                const data = await res.json().catch(() => ({
+                    ok: false,
+                    message: 'Unexpected response'
+                }));
+                if (!res.ok || !data.ok) throw new Error(data?.message || '追加に失敗しました。');
+
+                sessionStorage.setItem('flash', JSON.stringify({
+                    message: data.message || '追加しました。',
+                    type: 'success'
+                }));
+                const u = new URL(window.location.href);
+                window.location.href = u.toString();
+            } catch (err) {
+                console.error(err);
+                showFlash(err.message || '追加に失敗しました。', 'danger');
+            }
+        });
+
+        // ★ 複写（カード内ボタン → 成功したらリロード）
+        document.addEventListener('click', async (e) => {
+            const btn = e.target.closest('.js-copy-detail');
+            if (!btn) return;
+            const url = btn.getAttribute('data-copy-url');
+            if (!url) return;
+
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrf,
+                    },
+                });
+                const data = await res.json().catch(() => ({
+                    ok: false,
+                    message: 'Unexpected response'
+                }));
+                if (!res.ok || !data.ok) throw new Error(data?.message || '複写に失敗しました。');
+
+                sessionStorage.setItem('flash', JSON.stringify({
+                    message: data.message || '複写しました。',
+                    type: 'success'
+                }));
+                const u = new URL(window.location.href);
+                window.location.href = u.toString();
+            } catch (err) {
+                console.error(err);
+                showFlash(err.message || '複写に失敗しました。', 'danger');
+            }
+        });
+
+        // ★ 削除（カード内ボタン → 成功したらリロード）
+        document.addEventListener('click', async (e) => {
+            const btn = e.target.closest('.js-delete-detail');
+            if (!btn) return;
+            const url = btn.getAttribute('data-delete-url');
+            if (!url) return;
+
+            // 簡易確認（alert dialog）
+            if (!window.confirm('この明細を削除します。よろしいですか？')) return;
+
+            try {
+                const res = await fetch(url, {
+                    method: 'DELETE',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrf,
+                    },
+                });
+                const data = await res.json().catch(() => ({
+                    ok: false,
+                    message: 'Unexpected response'
+                }));
+                if (!res.ok || !data.ok) throw new Error(data?.message || '削除に失敗しました。');
+
+                sessionStorage.setItem('flash', JSON.stringify({
+                    message: data.message || '削除しました。',
+                    type: 'success'
+                }));
+                const u = new URL(window.location.href);
+                window.location.href = u.toString();
+            } catch (err) {
+                console.error(err);
+                showFlash(err.message || '削除に失敗しました。', 'danger');
             }
         });
 

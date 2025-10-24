@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Support\TimeString;
 
 class ScheduleDetail extends Model
 {
@@ -25,6 +26,10 @@ class ScheduleDetail extends Model
         'effective_end'   => 'date',
     ];
 
+    public function getStartHmAttribute(): string
+    {
+        return TimeString::normalizeToHm(optional($this->start)->start_time);
+    }
 
     public function scheduleLine(): BelongsTo
     {

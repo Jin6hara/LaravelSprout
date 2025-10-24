@@ -218,9 +218,10 @@ use App\Http\Controllers\ScheduleDetailController;
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/schedule_lines/{line}/details', [ScheduleDetailController::class, 'edit'])->name('schedule_details.edit');
-
-    // 一括保存
     Route::post('/schedule_lines/{line}/details/bulk-update', [ScheduleDetailController::class, 'bulkUpdate'])->name('schedule_details.bulk_update');
+    Route::post('/schedule_lines/{line}/details', [ScheduleDetailController::class, 'storeBlank'])->name('schedule_details.store_blank');
+    Route::post('/schedule_details/{detail}/copy', [ScheduleDetailController::class, 'copy'])->name('schedule_details.copy');
+    Route::delete('/schedule_details/{detail}', [ScheduleDetailController::class, 'destroy'])->name('schedule_details.destroy');
 
     // レッスンコード検索（メモや種別、分数を取得）
     Route::get('/lessons/by-code/{code}', [ScheduleDetailController::class, 'findLessonByCode'])->name('lessons.by_code');

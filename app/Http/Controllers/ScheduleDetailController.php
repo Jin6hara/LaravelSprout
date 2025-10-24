@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Carbon\Carbon;
+use App\Support\TimeString;
 
 class ScheduleDetailController extends Controller
 {
@@ -142,5 +143,138 @@ class ScheduleDetailController extends Controller
             'ok' => true,
             'lesson' => $lesson,
         ]);
+    }
+
+    public function storeBlank(Request $request, ScheduleLine $line)
+    {
+        DB::beginTransaction();
+        try {
+            // start_time: 既存の最小 or 00:00 を作成
+            $start = LessonStartTime::query()->orderBy('start_time')->first();
+            if (!$start) {
+                $start = LessonStartTime::create(['start_time' => '00:00:00']);
+            }
+
+            // lesson: 既存の先頭 or プレースホルダ作成
+            $lesson = Lesson::query()->orderBy('id')->first();
+            if (!$lesson) {
+                $lesson = Lesson::create([
+                    'lesson_name'   => '未設定',
+                    'lesson_code'   => 'TEMP',
+                    'note'          => null,
+                    'lesson_minute' => 0,
+                    'lesson_type'   => 'other',
+                ]);
+            }
+
+            $detail = ScheduleDetail::create([
+                'schedule_line_id'     => $line->id,
+                'lesson_start_time_id' => $start->id,
+                'lesson_id'            => $lesson->id,
+                'effective_start'      => Carbon::today()->toDateString(),
+                'effective_end'        => null,
+            ]);
+
+            DB::commit();
+            $startDisplay = TimeString::normalizeToHm($start->start_time);
+            return response()->json([
+                'ok' => true,
+                'message' => sprintf("空白明細を追加しました（%s %s）。", $startDisplay, $lesson->lesson_code),
+                'new_id' => $detail->id,
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            report($e);
+            return response()->json([
+                'ok' => false,
+                'message' => '空白の追加に失敗しました。',
+                'error' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
+
+    public function copy(Request $request, ScheduleDetail $detail)
+    {
+        DB::beginTransaction();
+        try {
+            $created = $detail->replicate(['id', 'created_at', 'updated_at']);
+
+            // ユニーク制約を避けるために日付をずらす（必要なら）
+            $baseStart = Carbon::parse($detail->effective_start);
+            $baseEnd   = $detail->effective_end ? Carbon::parse($detail->effective_end) : null;
+
+            $delta = 0;
+            do {
+                $candidateStart = $baseStart->copy()->addDays($delta)->toDateString();
+                $exists = ScheduleDetail::query()
+                    ->where('schedule_line_id',     $detail->schedule_line_id)
+                    ->where('lesson_start_time_id', $detail->lesson_start_time_id)
+                    ->where('lesson_id',            $detail->lesson_id)
+                    ->whereDate('effective_start',  $candidateStart)
+                    ->exists();
+
+                if (!$exists) {
+                    $created->effective_start = $candidateStart;
+                    $created->effective_end = $baseEnd ? $baseEnd->copy()->addDays($delta)->toDateString() : null;
+                    break;
+                }
+                $delta++;
+            } while ($delta < 3650);
+
+            if (!isset($created->effective_start)) {
+                throw new \RuntimeException('複写先の日付を確保できませんでした。');
+            }
+
+            $created->save();
+
+            // start_timeとlesson_codeを取得
+
+            $lessonCode = optional($detail->lesson)->lesson_code ?? '-';
+
+            DB::commit();
+            $detail->loadMissing(['start', 'lesson']);
+            $startDisplay = $detail->start_hm ?? TimeString::normalizeToHm(optional($detail->start)->start_time);
+            $lessonCode   = optional($detail->lesson)->lesson_code ?? '-';
+            return response()->json([
+                'ok' => true,
+                'message' => sprintf("明細を複写しました（%s %s）。", $startDisplay, $lessonCode),
+                'new_id' => $created->id,
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            report($e);
+            return response()->json([
+                'ok' => false,
+                'message' => '複写に失敗しました。',
+                'error' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
+
+    public function destroy(Request $request, ScheduleDetail $detail)
+    {
+        try {
+
+            $lessonCode = optional($detail->lesson)->lesson_code ?? '-';
+
+            $detail->delete();
+            $detail->loadMissing(['start', 'lesson']);
+            $startDisplay = $detail->start_hm ?? TimeString::normalizeToHm(optional($detail->start)->start_time);
+            $lessonCode   = optional($detail->lesson)->lesson_code ?? '-';
+            $detail->delete();
+            return response()->json([
+                'ok' => true,
+                'message' => sprintf("明細を削除しました（%s %s）。", $startDisplay, $lessonCode),
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json([
+                'ok' => false,
+                'message' => '削除に失敗しました。',
+                'error' => $e->getMessage(),
+            ], 422);
+        }
     }
 }

@@ -24,10 +24,10 @@ return new class extends Migration
             $t->timestamps();
 
             // ▼ 重複防止（完全同一の開始日での二重登録を禁止）
-            $t->unique(
-                ['schedule_line_id', 'lesson_start_time_id', 'lesson_id', 'effective_start'],
-                'sch_details_unique_start'
-            );
+            //$t->unique(
+                //['schedule_line_id', 'lesson_start_time_id', 'lesson_id', 'effective_start'],
+                //'sch_details_unique_start'
+            //);
 
             // ▼ 期間検索のための複合インデックス（範囲→行絞り込みの順で効きやすい並び）
             $t->index(
