@@ -175,6 +175,7 @@ class ScheduleLineController extends Controller
                     $fail('effective_end は effective_start 以降である必要があります。');
                 }
             }],
+            'handover_memo'   => ['nullable', 'string', 'max:2000'],
         ]);
 
         $line->fill($data)->save();
@@ -231,6 +232,7 @@ class ScheduleLineController extends Controller
                             $fail('effective_end は effective_start 以降である必要があります。');
                         }
                     }],
+                    'handover_memo'   => ['nullable', 'string', 'max:2000'],
                 ]);
 
                 if ($v->fails()) {
@@ -287,6 +289,7 @@ class ScheduleLineController extends Controller
         $line->end_time        = '00:00:00';
         $line->effective_start = now()->toDateString();
         $line->effective_end   = now()->addMonths(1)->toDateString(); // 仮の1ヶ月（後で編集可）
+        $line->handover_memo   = null;        // 空
         $line->save();
 
         return response()->json([
@@ -391,6 +394,7 @@ class ScheduleLineController extends Controller
             $created->schedule_id     = $targetScheduleId;                    // ★ ここがポイント
             $created->effective_start = $newStart->toDateString();
             $created->effective_end   = $newEnd->toDateString();
+            $created->parent_line_id  = $line->id;                            // 親IDをセット
             $created->save();
 
             // 4) details クリップ複写

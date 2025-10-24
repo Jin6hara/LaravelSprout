@@ -168,7 +168,7 @@
                             </select>
                         </div>
 
-                        <div class="col-12 col-md-2 col-lg-1">
+                        <div class="col-12 col-md-4 col-lg-1">
                             <label class="form-label small mb-1">DOW</label>
                             <select name="dow" class="form-select form-select-sm">
                                 @foreach($dowOptions as $val => $label)
@@ -179,34 +179,42 @@
                             </select>
                         </div>
 
-                        <div class="col-12 col-md-3 col-lg-2">
+                        <div class="col-12 col-md-4 col-lg-2">
                             <label class="form-label small mb-1">School</label>
                             <input type="text" name="school_name" class="form-control form-control-sm"
                                 value="{{ $isMyOld ? old('school_name') : $line->school_name }}">
                         </div>
 
-                        <div class="col-6 col-md-2 col-lg-1">
+                        <div class="col-6 col-md-3 col-lg-1">
                             <label class="form-label small mb-1">Start</label>
                             <input type="time" name="start_time" class="form-control form-control-sm"
                                 value="{{ $isMyOld ? old('start_time') : \Illuminate\Support\Str::of($line->start_time)->substr(0,5) }}">
                         </div>
 
-                        <div class="col-6 col-md-2 col-lg-1">
+                        <div class="col-6 col-md-3 col-lg-1">
                             <label class="form-label small mb-1">End</label>
                             <input type="time" name="end_time" class="form-control form-control-sm"
                                 value="{{ $isMyOld ? old('end_time') : \Illuminate\Support\Str::of($line->end_time)->substr(0,5) }}">
                         </div>
 
-                        <div class="col-6 col-md-2 col-lg-2">
+                        <div class="col-6 col-md-3 col-lg-2">
                             <label class="form-label small mb-1">Effective Start</label>
                             <input type="date" name="effective_start" class="form-control form-control-sm"
                                 value="{{ $isMyOld ? old('effective_start') : optional($line->effective_start)->toDateString() }}">
                         </div>
 
-                        <div class="col-6 col-md-2 col-lg-2">
+                        <div class="col-6 col-md-3 col-lg-2">
                             <label class="form-label small mb-1">Effective End</label>
                             <input type="date" name="effective_end" class="form-control form-control-sm"
                                 value="{{ $isMyOld ? old('effective_end') : optional($line->effective_end)->toDateString() }}">
+                        </div>
+
+                        <div class="col-12 mt-9 col-lg-10">
+                            <label class="form-label small mb-1">Memo</label>
+                            <textarea name="handover_memo"
+                                class="form-control form-control-sm"
+                                rows="1"
+                                placeholder="Memo">{{ old('handover_memo', $line->handover_memo) }}</textarea>
                         </div>
 
                         <div class="col-12 col-lg-2 d-flex t gap-1">
@@ -566,7 +574,6 @@
     });
 </script>
 <script>
-    // ========= 一括保存 =========
     (function() {
         const csrf =
             document.querySelector('meta[name="csrf-token"]')?.content ||
@@ -596,8 +603,10 @@
 
         // ★ 一括保存
         document.getElementById('bulk-save-btn')?.addEventListener('click', async () => {
-            // 収集: 各行のフォーム（既存の per-line フォームを活用）
-            const forms = document.querySelectorAll('form[action*="schedule_lines"][method="post"], form[action*="schedule_lines"][method="POST"], form[action*="schedule_lines"][method="put"], form[action*="schedule_lines"][method="PUT"]');
+            // 収集: 表示されている各行フォームから値を集める
+            const forms = document.querySelectorAll(
+                'form[action*="schedule_lines"][method="post"], form[action*="schedule_lines"][method="POST"], form[action*="schedule_lines"][method="put"], form[action*="schedule_lines"][method="PUT"]'
+            );
 
             const items = [];
             forms.forEach((f) => {
@@ -612,8 +621,8 @@
                     const et = f.querySelector('input[name="end_time"]')?.value ?? '';
                     const es = f.querySelector('input[name="effective_start"]')?.value ?? '';
                     const ee = f.querySelector('input[name="effective_end"]')?.value ?? '';
+                    const memo = f.querySelector('textarea[name="handover_memo"]')?.value ?? ''; // ★ 追加：メモ
 
-                    // 空や未変更でも送る（サーバ側でバリデ）
                     items.push({
                         id: Number(id),
                         schedule_id: scheduleId === '' ? null : scheduleId,
@@ -623,6 +632,7 @@
                         end_time: et, // 'HH:MM'
                         effective_start: es,
                         effective_end: ee,
+                        handover_memo: memo, // ★ 追加：メモ
                     });
                 } catch (e) {
                     console.warn('collect error:', e);
@@ -634,7 +644,6 @@
                 return;
             }
 
-            // 送信
             try {
                 const res = await fetch(`{{ route('schedule_lines.bulk_update') }}`, {
                     method: 'POST',
@@ -653,18 +662,14 @@
                     message: 'Unexpected response'
                 }));
 
-                // 成功・部分成功
                 if (res.ok && (data.ok || data.updated > 0)) {
-                    // 個別エラーがあるなら画面でも見せる
                     if (data.errors && data.errors.length) {
-                        // 行IDごとにまとめた簡易表示
                         const list = data.errors.map(e => `#${e.id ?? '-'}: ${e.messages.join(' / ')}`).join('<br>');
                         showFlash(`${data.message}<br>${list}`, 'warning');
                     } else {
-                        // 完全成功
                         persistFlash(data.message || '一括保存が完了しました。', 'success');
-                        const currentUrl = new URL(window.location.href);
-                        window.location.href = currentUrl.toString(); // クエリ維持リロード
+                        const currentUrl = new URL(window.location.href); // クエリ維持
+                        window.location.href = currentUrl.toString();
                         return;
                     }
                 } else {
