@@ -5,7 +5,6 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
         <h2 class="mb-0">Schedule Lines</h2>
-        <div class="text-muted small">一行＝一カード（編集：上段 / 閲覧：下段 詳細）</div>
     </div>
 </div>
 
@@ -72,33 +71,62 @@
 
             {{-- ヘッダー --}}
             <div class="card-header py-1">
-                <div class="d-flex justify-content-between align-items-center">
-                    <strong>#{{ $line->id }}</strong>
-                    <span class="badge text-bg-light">
-                        {{ $line->schedule->label ?? ('Schedule '.$line->schedule_id) }}
-                    </span>
-                </div>
-
-                {{-- 担当ユーザー（active_on が無ければ today 基準） --}}
                 @php
+                // 担当ユーザー（active_on が無ければ today 基準）
                 $chips = collect($usersBySchedule[$line->schedule_id] ?? []);
                 $baseLabel = $activeOn ?: 'today';
+
+                // 検索期間（active_until が無ければ active_on と同じ日）
+                $searchStart = $activeOn ?: now()->toDateString();
+                $searchEnd = request('active_until') ?: $searchStart;
+
+                // Line の有効期間
+                $lineStart = optional($line->effective_start)->toDateString();
+                $lineEnd = optional($line->effective_end)->toDateString(); // NULL想定なら '—' にする
                 @endphp
-                <div class="mt-2">
-                    <div class="small text-muted mb-1">User（{{ $baseLabel }} 時点）</div>
-                    @if($chips->isNotEmpty())
-                    <div class="d-flex flex-wrap gap-1">
-                        @foreach($chips as $u)
-                        <span class="badge rounded-pill text-bg-secondary">
-                            {{ $u->family_name }}
-                            @if(!empty($u->first_name)) {{ $u->first_name }} @endif
-                            [{{ $u->employee_code }}]
-                        </span>
-                        @endforeach
+
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <span class="fw-bold">#{{ $line->id }}</span>
+
+                    {{-- 担当ユーザー（横並び・コンパクト） --}}
+                    <div class="mt-1">
+
+                        @if($chips->isNotEmpty())
+                        <div class="d-flex flex-wrap gap-1">
+                            @foreach($chips as $u)
+                            <span class="badge rounded-pill text-bg-secondary">
+                                {{ $u->family_name }}@if(!empty($u->first_name)) {{ ' ' . $u->first_name }} @endif
+                                @if(!empty($u->employee_code)) [{{ $u->employee_code }}] @endif
+                            </span>
+                            @endforeach
+                        </div>
+                        @else
+                        <div class="text-muted small">—</div>
+                        @endif
                     </div>
-                    @else
-                    <div class="text-muted small">—</div>
-                    @endif
+
+                    <span class="badge text-bg-light text-truncate" style="max-width: 240px;">
+                        {{ $line->schedule->label ?? 'Not Assigned' }}
+                    </span>
+
+                    <span class="badge bg-secondary-subtle text-body-secondary">
+                        {{ $dowOptions[$line->dow] ?? $line->dow }}
+                    </span>
+
+                    <span class="badge bg-info-subtle text-body">
+                        {{ $line->school_name }}
+                    </span>
+
+                    <span class="badge bg-light text-body-secondary">
+                        {{ \Illuminate\Support\Str::of($line->start_time)->substr(0,5) }}
+                        –
+                        {{ \Illuminate\Support\Str::of($line->end_time)->substr(0,5) }}
+                    </span>
+
+                    {{-- 期間（Lineの有効期間） --}}
+                    <span class="ms-auto small text-muted">
+                        期間: {{ $lineStart }} 〜 {{ $lineEnd ?: '—' }}
+                    </span>
                 </div>
             </div>
             {{-- ヘッダー --}}
@@ -112,8 +140,8 @@
 
                 @php $isMyOld = old('__line_id') == $line->id; @endphp
 
-                <div class="card-body py-2 border-bottom">
-                    <div class="row g-2 align-items-end">
+                <div class="card-body py-1 border-bottom">
+                    <div class="row g-1 align-items-end">
 
                         <div class="col-12 col-md-4 col-lg-3">
                             <label class="form-label small mb-1">Schedule (Owner)</label>

@@ -1,6 +1,6 @@
             {{-- ▼▼▼ 閲覧専用：Schedule Details（高密度） ▼▼▼ --}}
             <div class="card-body py-1">
-                <div class="d-flex justify-content-between align-items-center mb-0">
+                <div class="d-flex justify-content-between align-items-center mb-1">
                     <div class="fw-semibold small">Details (Time-series)</div>
                     <div class="small text-muted">
                         Segments: {{ count($seriesByLine[$line->id] ?? []) }}

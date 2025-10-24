@@ -19,6 +19,8 @@ class ScheduleLineController extends Controller
     {
         // フィルタ
         $activeOn   = $request->input('active_on', now()->toDateString());   // Y-m-d or today
+        $activeOn = $request->has('active_on')
+            ? $request->input('active_on') : now()->toDateString();          // 複写後等にactive_onの既定値を上書きしないため
         $activeUntil = $request->input('active_until');                      // Y-m-d or null
 
         // 「Not Assigned」は 'null' 文字列で送られる想定
