@@ -2,16 +2,64 @@
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-        <h2 class="mb-0">Details: Line #{{ $line->id }}</h2>
-    </div>
-    <div class="d-flex gap-2">
-        <a href="{{ url()->previous() }}" class="btn btn-sm btn-outline-secondary">戻る</a>
-        <button type="button" id="details-add-blank" class="btn btn-sm btn-outline-success"
-            data-create-url="{{ route('schedule_details.store_blank', $line) }}">
-            空白追加
-        </button>
-        <button type="button" id="details-bulk-save" class="btn btn-sm btn-primary">一括保存</button>
+    <div class="card col-12 col-md-12 col-lg-12">
+        <div class="card-header py-1">
+            <div class="d-flex flex-wrap align-items-center gap-2">
+
+                {{-- 担当ユーザー（横並び・コンパクト） --}}
+                <div class="mt-1">
+                    @if($chips->isNotEmpty())
+                    <div class="d-flex flex-wrap gap-1">
+                        @foreach($chips as $u)
+                        <span class="badge rounded-pill text-bg-secondary">
+                            {{ $u->family_name }}@if(!empty($u->first_name)) {{ ' ' . $u->first_name }} @endif
+                            @if(!empty($u->employee_code)) [{{ $u->employee_code }}] @endif
+                        </span>
+                        @endforeach
+                    </div>
+                    @else
+                    <div class="text-muted small">—</div>
+                    @endif
+                </div>
+
+                <span class="badge text-bg-light text-truncate" style="max-width: 240px;">
+                    {{ $line->schedule->label ?? 'Not Assigned' }}
+                </span>
+
+                <span class="badge bg-secondary-subtle text-body-secondary">
+                    {{ $dowOptions[$line->dow] ?? $line->dow }}
+                </span>
+
+                <span class="badge bg-info-subtle text-body">
+                    {{ $line->school_name }}
+                </span>
+
+                <span class="badge bg-light text-body-secondary">
+                    {{ \Illuminate\Support\Str::of($line->start_time)->substr(0,5) }}
+                    –
+                    {{ \Illuminate\Support\Str::of($line->end_time)->substr(0,5) }}
+                </span>
+
+                {{-- 期間（Lineの有効期間） --}}
+                <span class="small text-muted">
+                    期間: {{ $lineStart }} 〜 {{ $lineEnd ?: '—' }}
+                </span>
+
+                {{-- ✅ ボタン群を右端に配置 --}}
+                <div class="ms-auto d-flex gap-2 align-items-center">
+                    <a href="{{ url()->previous() }}" class="btn btn-sm btn-outline-secondary">戻る</a>
+                    <button type="button"
+                        id="details-add-blank"
+                        class="btn btn-sm btn-outline-success"
+                        data-create-url="{{ route('schedule_details.store_blank', $line) }}">
+                        空白追加
+                    </button>
+                    <button type="button" id="details-bulk-save" class="btn btn-sm btn-primary">
+                        一括保存
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 

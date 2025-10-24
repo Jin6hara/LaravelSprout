@@ -25,11 +25,35 @@ class ScheduleDetailController extends Controller
             ])
             ->where('schedule_line_id', $line->id)
             ->orderBy('lesson_start_time_id')
+            ->orderBy('schedule_details.effective_start')
             ->get();
+
+        // ★ 追加: ヘッダー表示用の関連と値を用意
+        $line->loadMissing(['schedule.user']); // schedule 所有ユーザー
+
+        $dowOptions = [
+            0 => '日',
+            1 => '月',
+            2 => '火',
+            3 => '水',
+            4 => '木',
+            5 => '金',
+            6 => '土',
+        ];
+
+        // chips 相当（0 or 1件想定）
+        $chips = collect($line->schedule && $line->schedule->user ? [$line->schedule->user] : []);
+
+        $lineStart = optional($line->effective_start)->toDateString();
+        $lineEnd   = optional($line->effective_end)->toDateString();
 
         return view('schedule.detailsEdit', [
             'line'    => $line,
             'details' => $details,
+            'dowOptions' => $dowOptions,
+            'chips'     => $chips,
+            'lineStart' => $lineStart,
+            'lineEnd'   => $lineEnd,
         ]);
     }
 
