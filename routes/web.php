@@ -209,7 +209,7 @@ Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
     Route::post('/schedule_lines', [ScheduleLineController::class, 'store'])->name('schedule_lines.store');
     Route::put('/schedule_lines/{line}', [ScheduleLineController::class, 'update'])->name('schedule_lines.update');
     // ★ 一括更新（このページに表示されている分だけ送る）
-    Route::post('/schedules/bulk-update', [ScheduleLineController::class, 'bulkUpdate'])->name('schedules.bulk_update');
+    Route::post('/schedule_lines/bulk-update', [ScheduleLineController::class, 'bulkUpdate'])->name('schedule_lines.bulk_update');;
     Route::delete('/schedule_lines/{line}', [ScheduleLineController::class, 'destroy'])->name('schedule_lines.destroy');
     Route::post('/schedule_lines/{line}/copy', [ScheduleLineController::class, 'copy'])->name('schedule_lines.copy');
 });

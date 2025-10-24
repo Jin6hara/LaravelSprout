@@ -67,6 +67,10 @@
         class="btn btn-sm btn-outline-primary">
         ＋ Add Blank Line
     </button>
+
+    <button type="button" id="bulk-save-btn" class="btn btn-sm btn-primary">
+        Bulk Save
+    </button>
 </div>
 
 @if($lines->isEmpty())
@@ -561,5 +565,118 @@
         }
     });
 </script>
+<script>
+    // ========= 一括保存 =========
+    (function() {
+        const csrf =
+            document.querySelector('meta[name="csrf-token"]')?.content ||
+            document.querySelector('input[name="_token"]')?.value;
+
+        function showFlash(message, type = 'success') {
+            const area = document.getElementById('flash-area');
+            if (!area || !message) return;
+            const wrap = document.createElement('div');
+            wrap.innerHTML = `
+      <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>`;
+            area.prepend(wrap.firstElementChild);
+        }
+
+        function persistFlash(message, type = 'success') {
+            try {
+                sessionStorage.setItem('flash', JSON.stringify({
+                    message,
+                    type,
+                    t: Date.now()
+                }));
+            } catch (e) {}
+        }
+
+        // ★ 一括保存
+        document.getElementById('bulk-save-btn')?.addEventListener('click', async () => {
+            // 収集: 各行のフォーム（既存の per-line フォームを活用）
+            const forms = document.querySelectorAll('form[action*="schedule_lines"][method="post"], form[action*="schedule_lines"][method="POST"], form[action*="schedule_lines"][method="put"], form[action*="schedule_lines"][method="PUT"]');
+
+            const items = [];
+            forms.forEach((f) => {
+                try {
+                    const id = f.querySelector('input[name="__line_id"]')?.value || null; // 自分のフォーム識別
+                    if (!id) return;
+
+                    const scheduleId = f.querySelector('select[name="schedule_id"]')?.value || null;
+                    const dow = f.querySelector('select[name="dow"]')?.value ?? '';
+                    const school = f.querySelector('input[name="school_name"]')?.value ?? '';
+                    const st = f.querySelector('input[name="start_time"]')?.value ?? '';
+                    const et = f.querySelector('input[name="end_time"]')?.value ?? '';
+                    const es = f.querySelector('input[name="effective_start"]')?.value ?? '';
+                    const ee = f.querySelector('input[name="effective_end"]')?.value ?? '';
+
+                    // 空や未変更でも送る（サーバ側でバリデ）
+                    items.push({
+                        id: Number(id),
+                        schedule_id: scheduleId === '' ? null : scheduleId,
+                        dow: dow === '' ? null : Number(dow),
+                        school_name: school,
+                        start_time: st, // 'HH:MM'
+                        end_time: et, // 'HH:MM'
+                        effective_start: es,
+                        effective_end: ee,
+                    });
+                } catch (e) {
+                    console.warn('collect error:', e);
+                }
+            });
+
+            if (!items.length) {
+                showFlash('保存対象がありません。', 'danger');
+                return;
+            }
+
+            // 送信
+            try {
+                const res = await fetch(`{{ route('schedule_lines.bulk_update') }}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrf,
+                    },
+                    body: JSON.stringify({
+                        items
+                    }),
+                });
+                const data = await res.json().catch(() => ({
+                    ok: false,
+                    message: 'Unexpected response'
+                }));
+
+                // 成功・部分成功
+                if (res.ok && (data.ok || data.updated > 0)) {
+                    // 個別エラーがあるなら画面でも見せる
+                    if (data.errors && data.errors.length) {
+                        // 行IDごとにまとめた簡易表示
+                        const list = data.errors.map(e => `#${e.id ?? '-'}: ${e.messages.join(' / ')}`).join('<br>');
+                        showFlash(`${data.message}<br>${list}`, 'warning');
+                    } else {
+                        // 完全成功
+                        persistFlash(data.message || '一括保存が完了しました。', 'success');
+                        const currentUrl = new URL(window.location.href);
+                        window.location.href = currentUrl.toString(); // クエリ維持リロード
+                        return;
+                    }
+                } else {
+                    throw new Error(data?.message || '一括保存に失敗しました。');
+                }
+            } catch (err) {
+                console.error(err);
+                showFlash(err.message || '一括保存に失敗しました。', 'danger');
+            }
+        });
+    })();
+</script>
+
 @endpush
 @endsection

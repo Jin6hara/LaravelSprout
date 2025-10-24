@@ -11,6 +11,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 
 class ScheduleLineController extends Controller
@@ -181,8 +182,98 @@ class ScheduleLineController extends Controller
         return back()->with('status', "Line #{$line->id} を更新しました。");
     }
 
+    public function bulkUpdate(Request $request): JsonResponse
+    {
+        // payload: { items: [ {id, schedule_id, dow, school_name, start_time, end_time, effective_start, effective_end}, … ] }
+        $items = $request->input('items', []);
+        if (!is_array($items) || empty($items)) {
+            return response()->json([
+                'ok' => false,
+                'message' => '更新対象がありません。',
+            ], 422);
+        }
+
+        $errors = [];
+        $updated = 0;
+
+        DB::beginTransaction();
+        try {
+            foreach ($items as $idx => $raw) {
+                // id 必須
+                $lineId = $raw['id'] ?? null;
+                if (!$lineId) {
+                    $errors[] = ['id' => null, 'messages' => ['行IDが指定されていません。']];
+                    continue;
+                }
+
+                // 行取得
+                /** @var \App\Models\ScheduleLine|null $line */
+                $line = ScheduleLine::find($lineId);
+                if (!$line) {
+                    $errors[] = ['id' => $lineId, 'messages' => ['対象行が見つかりません。']];
+                    continue;
+                }
+
+                // バリデーション
+                $v = Validator::make($raw, [
+                    'schedule_id'     => ['nullable', 'exists:schedules,id'],
+                    'dow'             => ['required', 'integer', Rule::in([0, 1, 2, 3, 4, 5, 6])],
+                    'school_name'     => ['required', 'string', 'max:255'],
+                    'start_time'      => ['required', 'date_format:H:i'],
+                    'end_time'        => ['required', 'date_format:H:i', function ($attr, $val, $fail) use ($raw) {
+                        if (!empty($raw['start_time']) && $val <= $raw['start_time']) {
+                            $fail('end_time は start_time より後である必要があります。');
+                        }
+                    }],
+                    'effective_start' => ['required', 'date'],
+                    'effective_end'   => ['required', 'date', function ($attr, $val, $fail) use ($raw) {
+                        if (!empty($raw['effective_start']) && $val < $raw['effective_start']) {
+                            $fail('effective_end は effective_start 以降である必要があります。');
+                        }
+                    }],
+                ]);
+
+                if ($v->fails()) {
+                    $errors[] = ['id' => $lineId, 'messages' => $v->errors()->all()];
+                    continue;
+                }
+
+                // 正規化
+                $data = $v->validated();
+                $data['start_time'] = $data['start_time'] . ':00';
+                $data['end_time']   = $data['end_time']   . ':00';
+
+                // 更新
+                $line->fill($data)->save();
+                $updated++;
+            }
+
+            // 一部でも更新できていればコミット（要件次第で all-or-nothing にしてもOK）
+            DB::commit();
+
+            $msg = "一括保存が完了しました（{$updated} 件更新";
+            if (!empty($errors)) $msg .= "・エラー " . count($errors) . " 件";
+            $msg .= "）。";
+
+            return response()->json([
+                'ok'      => empty($errors),
+                'message' => $msg,
+                'updated' => $updated,
+                'errors'  => $errors, // [{id, messages:[]}, …]
+            ], empty($errors) ? 200 : 207); // 207 Multi-Status 風に扱う
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            report($e);
+            return response()->json([
+                'ok'      => false,
+                'message' => '一括保存に失敗しました。',
+                'error'   => $e->getMessage(),
+            ], 422);
+        }
+    }
+
     public function store(Request $request)
-    {   
+    {
 
         $data = $request->validate([
             'schedule_id' => ['nullable', 'exists:schedules,id'],
