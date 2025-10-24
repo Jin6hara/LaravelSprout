@@ -247,10 +247,12 @@
                             </button>
 
                             <a href="{{ route('schedule_details.edit', $line) }}"
-                                class="btn btn-sm btn-outline-info mt-3 mt-lg-0">
+                                class="btn btn-sm btn-outline-info mt-3 mt-lg-0"
+                                target="_blank" {{-- ← 新しいタブで開く --}}
+                                rel="noopener noreferrer" {{-- ← セキュリティ推奨 --}}>
                                 詳細
                             </a>
-                            
+
                         </div>
                     </div>
                 </div>

@@ -40,4 +40,21 @@ final class TimeString
             return '00:00';
         }
     }
+
+    /**
+     * "HH:MM" に指定分数を加算して "HH:MM" で返す。
+     * 不正な値は '00:00' を返す。
+     */
+    public static function addMinutesHm(string $hm, int $minutes): string
+    {
+        $base = self::normalizeToHm($hm);
+
+        try {
+            return Carbon::createFromFormat('H:i', $base)
+                ->addMinutes($minutes)
+                ->format('H:i');
+        } catch (\Throwable $e) {
+            return '00:00';
+        }
+    }
 }

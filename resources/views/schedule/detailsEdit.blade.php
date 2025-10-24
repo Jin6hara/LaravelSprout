@@ -23,36 +23,15 @@
 <div class="row g-2">
     @foreach($details as $d)
     @php
-    // start_time を "H:i" に安全正規化
-    $stRaw = optional($d->start)->start_time; // '9:00:00' / '09:00' / DateTime / null
-    $st = '';
-    if ($stRaw instanceof \DateTimeInterface) {
-    $st = \Carbon\Carbon::instance($stRaw)->format('H:i');
-    } elseif (!is_null($stRaw)) {
-    $s = str_replace('：', ':', trim((string)$stRaw)); // 全角コロン対応
-    if (preg_match('/^\d{1,2}:\d{2}(:\d{2})?$/', $s)) {
-    try { $st = \Carbon\Carbon::parse($s)->format('H:i'); } catch (\Throwable $e) { $st = ''; }
-    } elseif (preg_match('/^\d{3,4}$/', $s)) {
-    $s = str_pad($s, 4, '0', STR_PAD_LEFT);
-    $st = substr($s, 0, 2) . ':' . substr($s, 2, 2);
-    } else {
-    try { $st = \Carbon\Carbon::parse($s)->format('H:i'); } catch (\Throwable $e) { $st = ''; }
-    }
-    }
+    // 開始・終了の算出（既に導入済みの TimeString 利用）
+    $st = \App\Support\TimeString::normalizeToHm(optional($d->start)->start_time);
+    $minsVal = optional($d->lesson)->lesson_minute;
+    $mins = is_numeric($minsVal) ? (int)$minsVal : null;
+    $endCalc = ($st && $mins !== null) ? \App\Support\TimeString::addMinutesHm($st, $mins) : '';
 
-    // total_minutes（= lesson_minute）
-    $mins = optional($d->lesson)->lesson_minute;
-    $mins = is_numeric($mins) ? (int)$mins : null;
-
-    // end_time 計算
-    $endCalc = '';
-    if ($st && $mins !== null) {
-    try { $endCalc = \Carbon\Carbon::createFromFormat('H:i', $st)->addMinutes($mins)->format('H:i'); }
-    catch (\Throwable $e) { $endCalc = ''; }
-    }
-
-    $effStart = optional($d->effective_start)->toDateString();
-    $effEnd = optional($d->effective_end)->toDateString();
+    // 期間（無ければ空文字）
+    $effStart = optional($d->effective_start)->toDateString() ?? '';
+    $effEnd = optional($d->effective_end)->toDateString() ?? '';
     @endphp
 
     <div class="col-12 col-md-12 col-lg-12">
@@ -260,7 +239,7 @@
                 showFlash(err.message || '一括保存に失敗しました。', 'danger');
             }
         });
-        
+
         // ★ 空白追加（単純追加 → 成功したらリロード）
         document.getElementById('details-add-blank')?.addEventListener('click', async (e) => {
             const url = e.currentTarget.getAttribute('data-create-url');
