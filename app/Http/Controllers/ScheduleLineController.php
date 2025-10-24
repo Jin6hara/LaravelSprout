@@ -344,6 +344,7 @@ class ScheduleLineController extends Controller
             'effective_start' => ['required', 'date'],
             'effective_end'   => ['required', 'date', 'after_or_equal:effective_start'],
             'schedule_id'     => ['nullable', 'exists:schedules,id'],
+            'handover_memo'   => ['nullable', 'string', 'max:2000'],
         ]);
 
         $newStart = \Carbon\Carbon::parse($data['effective_start'])->startOfDay();
@@ -395,6 +396,7 @@ class ScheduleLineController extends Controller
             $created->effective_start = $newStart->toDateString();
             $created->effective_end   = $newEnd->toDateString();
             $created->parent_line_id  = $line->id;                            // 親IDをセット
+            $created->handover_memo   = $data['handover_memo'] ?? null;       // 未入力は空白
             $created->save();
 
             // 4) details クリップ複写

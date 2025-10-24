@@ -236,7 +236,8 @@
                                 data-copy-url="{{ route('schedule_lines.copy', $line) }}"
                                 data-line-id="{{ $line->id }}"
                                 data-current-schedule="{{ $line->schedule_id ?? '' }}"
-                                data-effective-end="{{ optional($line->effective_end)?->toDateString() ?? '' }}" {{-- ★ 新規追加 --}}>
+                                data-effective-end="{{ optional($line->effective_end)?->toDateString() ?? '' }}"
+                                data-handover-memo="{{ $line->handover_memo }}" {{-- ★ Memo --}}>
                                 複写
                             </button>
                         </div>
@@ -287,6 +288,11 @@
                 </div>
                 <div class="form-text mt-2">
                     複写後、元行は <strong>開始日の前日</strong> で自動クローズされます。
+                </div>
+                <div class="mt-2">
+                    <label class="form-label small">メモ（任意・理由など）</label>
+                    <textarea id="copy-memo" class="form-control form-control-sm" rows="2"
+                        placeholder="例）元担当"></textarea>
                 </div>
             </div>
             <div class="modal-footer py-2">
@@ -442,13 +448,16 @@
             copyCtx.lineId = btn.getAttribute('data-line-id');
             copyCtx.currentSchedule = btn.getAttribute('data-current-schedule') || '';
 
-            // ✅ suggest = effective_end（複写元）を取得して終了日にセット
-            const srcEnd = btn.getAttribute('data-effective-end') || ''; // ★ ボタン側で渡す
+            // 開始は空白、終了は元行の effective_end
+            const srcEnd = btn.getAttribute('data-effective-end') || '';
             const startEl = document.getElementById('copy-start');
             const endEl = document.getElementById('copy-end');
+            if (startEl) startEl.value = '';
+            if (endEl) endEl.value = srcEnd;
 
-            if (startEl) startEl.value = ''; // 開始日は空白
-            if (endEl) endEl.value = srcEnd; // 終了日は元行に合わせる
+            // ★ メモ初期値（ボタンの data-handover-memo から）
+            const memoEl = document.getElementById('copy-memo');
+            if (memoEl) memoEl.value = btn.getAttribute('data-handover-memo') || '';
 
             // schedule 初期選択（元の schedule_id）
             const sel = document.getElementById('copy-schedule-id');
@@ -460,13 +469,14 @@
 
         // 「複写する」
         document.getElementById('copy-submit')?.addEventListener('click', async () => {
-            const startEl = document.getElementById('copy-start');
-            const endEl = document.getElementById('copy-end');
-            const sel = document.getElementById('copy-schedule-id');
+            const start = document.getElementById('copy-start')?.value;
+            const end = document.getElementById('copy-end')?.value;
+            const scheduleId = document.getElementById('copy-schedule-id')?.value || null;
 
-            const start = startEl?.value;
-            const end = endEl?.value;
-            const scheduleId = (sel?.value || '') || null; // '' → null
+            // ★ 空なら null
+            const memoInput = document.getElementById('copy-memo');
+            const memoValue = memoInput?.value?.trim() || '';
+            const memo = memoValue === '' ? null : memoValue;
 
             if (!start || !end) {
                 showFlash('開始日と終了日を入力してください。', 'danger');
@@ -477,9 +487,6 @@
                 return;
             }
             if (!copyCtx.url) return;
-
-            const modalEl = document.getElementById('copyLineModal');
-            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
 
             try {
                 const res = await fetch(copyCtx.url, {
@@ -494,6 +501,7 @@
                         effective_start: start,
                         effective_end: end,
                         schedule_id: scheduleId,
+                        handover_memo: memo, // ← これが実際に null または文字列で送信されます
                     }),
                 });
 
@@ -501,21 +509,15 @@
                     ok: false,
                     message: 'Unexpected response'
                 }));
+                if (!res.ok || !data.ok) throw new Error(data?.message || '複写に失敗しました。');
 
-                if (!res.ok || !data.ok) {
-                    // 失敗をリロード越しに見せたい場合は下2行のコメントアウトを外す
-                    // persistFlash(data?.message || '複写に失敗しました。', 'danger');
-                    // return window.location.reload();
-                    throw new Error(data?.message || '複写に失敗しました。');
-                }
-
-                // 成功：フラッシュを保存してリロード
+                // 既存のフラッシュ保存＆クエリ維持リロード（そのまま）
                 persistFlash(data.message || '複写が完了しました。', 'success');
-                window.location.reload();
+                const currentUrl = new URL(window.location.href);
+                window.location.href = currentUrl.toString();
 
             } catch (err) {
                 console.error(err);
-                // 失敗は画面内に即表示（※リロードしたいなら persist + reload に切替）
                 showFlash(err.message || '複写に失敗しました。', 'danger');
             } finally {
                 modal.hide();
