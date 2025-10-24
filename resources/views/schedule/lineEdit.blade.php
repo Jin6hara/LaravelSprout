@@ -22,7 +22,7 @@
                 <input type="date" name="active_until" class="form-control form-control-sm"
                     value="{{ request('active_until') }}">
             </div>
-            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
                 <label class="form-label small mb-1">Schedule</label>
                 <select name="schedule_id" class="form-select form-select-sm">
                     <option value="">(All)</option>
@@ -47,6 +47,11 @@
                 <label class="form-label small mb-1">School</label>
                 <input type="text" name="school_name" class="form-control form-control-sm"
                     value="{{ request('school_name','') }}" placeholder="部分一致">
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-1">
+                <label class="form-label small mb-1">Related to</label>
+                <input type="number" name="schedule_line_id" class="form-control form-control-sm"
+                    value="{{ request('schedule_line_id','') }}" placeholder="例) 123">
             </div>
             <div class="col-12 col-sm-6 col-md-3 col-lg-1">
                 <button class="btn btn-sm btn-primary w-100">Search</button>

@@ -32,6 +32,11 @@ class ScheduleLineController extends Controller
         $fDow         = $request->filled('dow') ? (int)$request->input('dow') : null;               // 0-6 or null
         $fSchoolName  = trim((string)$request->input('school_name', ''));                           // 部分一致
 
+        // ★ 追加: 関連検索用（このIDの前後＝親子系統を表示）
+        $refLineId = $request->filled('schedule_line_id')
+            ? (int)$request->input('schedule_line_id')
+            : null;
+
         // ScheduleLine 本体 + 関連ロード
         $linesQuery = ScheduleLine::query()
             ->with([
@@ -46,9 +51,10 @@ class ScheduleLineController extends Controller
                     ])->orderBy('lesson_start_time_id');
                 },
             ])
-            ->orderBy('schedule_id')
+            // 並び順
             ->orderBy('dow')
-            ->orderBy('start_time');
+            ->orderBy('school_name')
+            ->orderBy('effective_start');
 
         // ▼ schedule_id フィルタ（'null' は未割当のみ、数値はそのID、空はすべて）
         if ($scheduleIdRaw === 'null') {
@@ -90,18 +96,64 @@ class ScheduleLineController extends Controller
             ->sortBy('label')
             ->values();
 
-        // 有効日フィルタ（line 自体の有効期間で絞る）
-        if (!empty($activeOn)) {
-            // 期間指定：active_until が空なら active_on と同日扱い
-            $periodStart = \Carbon\Carbon::parse($activeOn)->toDateString();
-            $periodEnd   = $activeUntil ? \Carbon\Carbon::parse($activeUntil)->toDateString() : $periodStart;
+        // ★ 追加：関連 ScheduleLine（祖先・子孫）で絞り込み
+        if ($refLineId) {
+            // 種行取得（無ければ全て空にする）
+            $seed = ScheduleLine::query()->select(['id', 'parent_line_id'])->find($refLineId);
 
-            $linesQuery
-                ->whereDate('effective_start', '<=', $periodEnd)
-                ->where(function ($q) use ($periodStart) {
-                    $q->whereDate('effective_end', '>=', $periodStart)
-                        ->orWhereNull('effective_end'); // オープンエンドを含む
-                });
+            if ($seed) {
+                $relatedIds = [];
+
+                // 1) 祖先を遡る
+                $cur = $seed;
+                while ($cur && $cur->parent_line_id) {
+                    $relatedIds[] = $cur->parent_line_id;
+                    $cur = ScheduleLine::query()->select(['id', 'parent_line_id'])->find($cur->parent_line_id);
+                }
+
+                // 2) 子孫を辿る（幅優先）
+                $frontier = [$seed->id];
+                $visited  = [$seed->id => true];
+                do {
+                    $children = ScheduleLine::query()->select(['id', 'parent_line_id'])
+                        ->whereIn('parent_line_id', $frontier)
+                        ->get();
+
+                    $next = [];
+                    foreach ($children as $ch) {
+                        if (!isset($visited[$ch->id])) {
+                            $visited[$ch->id] = true;
+                            $relatedIds[] = $ch->id;
+                            $next[] = $ch->id;
+                        }
+                    }
+                    $frontier = $next;
+                } while (!empty($frontier));
+
+                // 自分自身も含める
+                $relatedIds[] = $seed->id;
+                $relatedIds = array_values(array_unique($relatedIds));
+
+                $linesQuery->whereIn('id', $relatedIds);
+
+                // 系統検索のときは期間フィルタは掛けない（“前と後両方”を漏れなく表示）
+            } else {
+                $linesQuery->whereRaw('1=0'); // 見つからなければ空
+            }
+        } else {
+            // 有効日フィルタ（line 自体の有効期間で絞る）
+            if (!empty($activeOn)) {
+                // 期間指定：active_until が空なら active_on と同日扱い
+                $periodStart = \Carbon\Carbon::parse($activeOn)->toDateString();
+                $periodEnd   = $activeUntil ? \Carbon\Carbon::parse($activeUntil)->toDateString() : $periodStart;
+
+                $linesQuery
+                    ->whereDate('effective_start', '<=', $periodEnd)
+                    ->where(function ($q) use ($periodStart) {
+                        $q->whereDate('effective_end', '>=', $periodStart)
+                            ->orWhereNull('effective_end'); // オープンエンドを含む
+                    });
+            }
         }
 
         $lines = $linesQuery->get();
