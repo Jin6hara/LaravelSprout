@@ -3,7 +3,7 @@
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div class="card col-12 col-md-12 col-lg-12">
-        <div class="card-header py-1">
+        <div class="card-header py-3">
             <div class="d-flex flex-wrap align-items-center gap-2">
 
                 {{-- 担当ユーザー（横並び・コンパクト） --}}
@@ -42,21 +42,25 @@
 
                 {{-- 期間（Lineの有効期間） --}}
                 <span class="small text-muted">
-                    期間: {{ $lineStart }} 〜 {{ $lineEnd ?: '—' }}
+                    Period: {{ $lineStart }} 〜 {{ $lineEnd ?: '—' }}
                 </span>
 
                 {{-- ✅ ボタン群を右端に配置 --}}
-                <div class="ms-auto d-flex gap-2 align-items-center">
-                    <a href="{{ url()->previous() }}" class="btn btn-sm btn-outline-secondary">戻る</a>
-                    <button type="button"
-                        id="details-add-blank"
-                        class="btn btn-sm btn-outline-success"
-                        data-create-url="{{ route('schedule_details.store_blank', $line) }}">
-                        空白追加
-                    </button>
-                    <button type="button" id="details-bulk-save" class="btn btn-sm btn-primary">
-                        一括保存
-                    </button>
+                <div class="col-12 col-md-3 col-lg-2 d-flex align-items-end justify-content-end ms-auto">
+                    {{-- <a href="{{ url()->previous() }}" class="btn btn-sm btn-outline-secondary">戻る</a> --}}
+                    <div class="btn-group btn-group-sm w-100">
+                        <button type="button"
+                            id="details-add-blank"
+                            class="btn btn-outline-success"
+                            data-create-url="{{ route('schedule_details.store_blank', $line) }}">
+                            Add Blank
+                        </button>
+                        <button type="button"
+                            id="details-bulk-save"
+                            class="btn btn-primary">
+                            Bulk Save
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -97,16 +101,17 @@
                         <input type="time" class="form-control form-control-sm js-end-time" value="{{ $endCalc }}" readonly>
                     </div>
 
-                    <div class="col-3 col-md-2 col-lg-1">
-                        <label class="form-label small mb-1">Code</label>
-                        <input type="text" class="form-control form-control-sm js-lesson-code"
-                            value="{{ $d->lesson->lesson_code ?? '' }}">
-                    </div>
-
                     <div class="col-3 col-md-2 col-lg-2">
-                        <label class="form-label small mb-1">Name</label>
-                        <input type="text" class="form-control form-control-sm js-lesson-name"
-                            value="{{ $d->lesson->lesson_name ?? '' }}" readonly>
+                        <label class="form-label small mb-1">Code</label>
+                        <select class="form-select form-select-sm js-lesson-code">
+                            <option value="">— Select —</option>
+                            @foreach($lessonOptions as $opt)
+                            <option value="{{ $opt->lesson_code }}"
+                                @selected(($d->lesson->lesson_code ?? '') === $opt->lesson_code)>
+                                {{ $opt->lesson_code }} — {{ $opt->lesson_name }}
+                            </option>
+                            @endforeach
+                        </select>
                     </div>
 
                     <div class="col-3 col-md-2 col-lg-2">
@@ -125,17 +130,19 @@
                         <input type="date" class="form-control form-control-sm js-eff-end" value="{{ $effEnd }}">
                     </div>
 
-                    <div class="btn-group btn-group-sm col-3 col-md-2 col-lg-1">
-                        <button type="button"
-                            class="btn btn-outline-secondary js-copy-detail"
-                            data-copy-url="{{ route('schedule_details.copy', $d) }}">
-                            複写
-                        </button>
-                        <button type="button"
-                            class="btn btn-outline-danger js-delete-detail"
-                            data-delete-url="{{ route('schedule_details.destroy', $d) }}">
-                            削除
-                        </button>
+                    <div class="col-12 col-md-3 col-lg-2 d-flex align-items-end justify-content-start">
+                        <div class="btn-group btn-group-sm w-100">
+                            <button type="button"
+                                class="btn btn-outline-secondary js-copy-detail"
+                                data-copy-url="{{ route('schedule_details.copy', $d) }}">
+                                Copy
+                            </button>
+                            <button type="button"
+                                class="btn btn-outline-danger js-delete-detail"
+                                data-delete-url="{{ route('schedule_details.destroy', $d) }}">
+                                Delete
+                            </button>
+                        </div>
                     </div>
 
                     {{-- ★ 追加：合計分は表示しないが、End再計算のため hidden で保持 --}}

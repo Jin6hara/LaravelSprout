@@ -28,7 +28,12 @@ class ScheduleDetailController extends Controller
             ->orderBy('schedule_details.effective_start')
             ->get();
 
-        // ★ 追加: ヘッダー表示用の関連と値を用意
+        // レッスン一覧（選択肢用）
+        $lessonOptions = Lesson::query()
+            ->orderBy('lesson_code')
+            ->get(['id', 'lesson_code', 'lesson_name']);
+
+        // ヘッダー表示用の関連と値を用意
         $line->loadMissing(['schedule.user']); // schedule 所有ユーザー
 
         $dowOptions = [
@@ -50,6 +55,7 @@ class ScheduleDetailController extends Controller
         return view('schedule.detailsEdit', [
             'line'    => $line,
             'details' => $details,
+            'lessonOptions' => $lessonOptions,
             'dowOptions' => $dowOptions,
             'chips'     => $chips,
             'lineStart' => $lineStart,
