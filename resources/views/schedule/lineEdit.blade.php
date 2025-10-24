@@ -245,6 +245,12 @@
                                 data-handover-memo="{{ $line->handover_memo }}" {{-- ★ Memo --}}>
                                 複写
                             </button>
+
+                            <a href="{{ route('schedule_details.edit', $line) }}"
+                                class="btn btn-sm btn-outline-info mt-3 mt-lg-0">
+                                詳細
+                            </a>
+                            
                         </div>
                     </div>
                 </div>

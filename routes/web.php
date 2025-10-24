@@ -213,3 +213,16 @@ Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
     Route::delete('/schedule_lines/{line}', [ScheduleLineController::class, 'destroy'])->name('schedule_lines.destroy');
     Route::post('/schedule_lines/{line}/copy', [ScheduleLineController::class, 'copy'])->name('schedule_lines.copy');
 });
+
+use App\Http\Controllers\ScheduleDetailController;
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/schedule_lines/{line}/details', [ScheduleDetailController::class, 'edit'])->name('schedule_details.edit');
+
+    // 一括保存
+    Route::post('/schedule_lines/{line}/details/bulk-update', [ScheduleDetailController::class, 'bulkUpdate'])->name('schedule_details.bulk_update');
+
+    // レッスンコード検索（メモや種別、分数を取得）
+    Route::get('/lessons/by-code/{code}', [ScheduleDetailController::class, 'findLessonByCode'])->name('lessons.by_code');
+});
+
