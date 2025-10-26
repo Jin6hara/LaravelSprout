@@ -40,6 +40,10 @@ class ScheduleController extends Controller
             $until = TimeString::normalizeToYmd($request->input('active_until'));
             $query->whereDate('effective_end', '<=', $until);
         }
+        
+        if ($request->filled('user_id')) {
+            $query->where('user_id', (int) $request->input('user_id'));
+        }
 
         if ($request->filled('username')) {
             $name = $request->input('username');
