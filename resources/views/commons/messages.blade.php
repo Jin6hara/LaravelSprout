@@ -6,8 +6,11 @@
     </ul>
 @endif
 
-@if (session('status'))
-    <div class="alert alert-success">
-        {{ session('status') }}
+<div id="flash-area" class="container px-0 mb-2">
+  @if (session('status'))
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      {{ session('status') }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
-@endif
+  @endif
+</div>

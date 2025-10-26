@@ -11,7 +11,7 @@ class Lesson extends Model
     use HasFactory;
 
     public $timestamps = false;
-    protected $fillable = ['lesson_name', 'lesson_code', 'lesson_minute', 'lesson_type'];
+    protected $fillable = ['lesson_name', 'lesson_code', 'note', 'lesson_minute', 'lesson_type'];
 
     public function scheduleDetails(): HasMany
     {

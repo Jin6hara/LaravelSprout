@@ -120,13 +120,16 @@ class SubCountProvider implements CalendarEventProvider
 
         $scheduleIds = $lines->pluck('schedule_id')->unique()->all();
         $assignments = empty($scheduleIds) ? collect() :
-            DB::table('user_schedule_assignments')
-            ->select('user_id', 'schedule_id', 'start_date', 'end_date')
-            ->whereIn('schedule_id', $scheduleIds)
-            ->whereDate('start_date', '<=', $endDate)
-            ->where(function ($q) use ($startDate) {
-                $q->whereNull('end_date')->orWhereDate('end_date', '>=', $startDate);
-            })
+            DB::table('schedules')
+            ->select([
+                'user_id',
+                DB::raw('id as schedule_id'),
+                DB::raw('effective_start as start_date'),
+                DB::raw('effective_end as end_date'),
+            ])
+            ->whereIn('id', $scheduleIds)
+            ->whereDate('effective_start', '<=', $endDate)
+            ->whereDate('effective_end', '>=', $startDate)
             ->get();
 
         $assignBySchedule = [];
@@ -190,16 +193,19 @@ class SubCountProvider implements CalendarEventProvider
         $collect = function (&$arr) use (&$allIds) {
             foreach ($arr as $d => $set) foreach (array_keys($set) as $uid) $allIds[$uid] = true;
         };
-        $collect($eventUsersCounted); $collect($eventUsersAbsent);
-        $collect($rwdUsersCounted);   $collect($rwdUsersAbsent);
-        $collect($lineUsersCounted);  $collect($lineUsersAbsent);
+        $collect($eventUsersCounted);
+        $collect($eventUsersAbsent);
+        $collect($rwdUsersCounted);
+        $collect($rwdUsersAbsent);
+        $collect($lineUsersCounted);
+        $collect($lineUsersAbsent);
 
         $nameById = empty($allIds) ? [] :
             DB::table('users')->whereIn('id', array_keys($allIds))->pluck('name', 'id')->map(fn($n) => (string)$n)->toArray();
 
         // === (E) 出力：明細を extendedProps に格納 ===
         $out = [];
-        for ($d=$rangeS->copy(); $d < $rangeE; $d->addDay()) {
+        for ($d = $rangeS->copy(); $d < $rangeE; $d->addDay()) {
             $day = $d->toDateString();
 
             $count_event = isset($eventUsersCounted[$day]) ? count($eventUsersCounted[$day]) : 0;
@@ -220,10 +226,10 @@ class SubCountProvider implements CalendarEventProvider
             $makeList = function ($set) use ($nameById) {
                 $arr = [];
                 foreach (array_keys($set ?? []) as $uid) {
-                    $arr[] = ['id' => (int)$uid, 'name' => $nameById[$uid] ?? ('#'.$uid)];
+                    $arr[] = ['id' => (int)$uid, 'name' => $nameById[$uid] ?? ('#' . $uid)];
                 }
                 // 名前で安定ソート
-                usort($arr, fn($a,$b)=>strcmp($a['name'],$b['name']));
+                usort($arr, fn($a, $b) => strcmp($a['name'], $b['name']));
                 return $arr;
             };
 

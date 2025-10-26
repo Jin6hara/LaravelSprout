@@ -10,6 +10,13 @@ class ScheduleDetailSeeder extends Seeder
 {
     public function run(): void
     {
+        // 固定の有効期間（FY2025）
+        $EFFECTIVE_START = '2025-04-01';
+        $EFFECTIVE_END   = '2026-03-31';
+
+        // まとめて使う現在時刻（timestamps 用）
+        $NOW = Carbon::now();
+
         // --- 前提データ読み込み ---------------------------------------------
         // lesson_start_times: 'H:i' => id
         $startIdByHm = DB::table('lesson_start_times')
@@ -87,8 +94,8 @@ class ScheduleDetailSeeder extends Seeder
             return array_map(fn($i)=>$arr[$i], $idxs);
         };
 
-        // 1行分をまとめて投入
-        $insertDetails = function (int $lineId, array $startsHm, array $lessonIds) use ($startIdByHm) {
+        // 1行分をまとめて投入（★有効期間 & timestamps つき）
+        $insertDetails = function (int $lineId, array $startsHm, array $lessonIds) use ($startIdByHm, $EFFECTIVE_START, $EFFECTIVE_END, $NOW) {
             $n = min(count($startsHm), count($lessonIds));
             $rows = [];
             for ($i=0; $i<$n; $i++) {
@@ -99,6 +106,10 @@ class ScheduleDetailSeeder extends Seeder
                     'schedule_line_id'     => $lineId,
                     'lesson_start_time_id' => $startId,
                     'lesson_id'            => $lessonIds[$i],
+                    'effective_start'      => $EFFECTIVE_START,
+                    'effective_end'        => $EFFECTIVE_END,
+                    'created_at'           => $NOW,
+                    'updated_at'           => $NOW,
                 ];
             }
             if ($rows) DB::table('schedule_details')->insertOrIgnore($rows);
@@ -170,7 +181,7 @@ class ScheduleDetailSeeder extends Seeder
                     if (!$ok) break;
                 }
 
-                // ペアリングしてINSERT
+                // ペアリングしてINSERT（★有効期間 & timestamps 付き）
                 $thisIds = array_slice($lessonIds, 0, min(count($filteredStarts), count($lessonIds)));
                 $insertDetails($lineId, $filteredStarts, $thisIds);
             }

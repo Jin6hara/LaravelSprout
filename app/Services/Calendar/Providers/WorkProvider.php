@@ -3,7 +3,7 @@
 namespace App\Services\Calendar\Providers;
 
 use App\Models\User;
-use App\Models\UserScheduleAssignment;
+use App\Models\Schedule; // ★ 追加
 use App\Services\Calendar\{CandidateEvent, EventType, PlanGroup};
 use App\Services\Calendar\Contracts\CalendarEventProvider;
 use Carbon\Carbon;
@@ -12,12 +12,13 @@ class WorkProvider implements CalendarEventProvider
 {
     public function provide(User $user, Carbon $start, Carbon $end): array
     {
-        $asgs = UserScheduleAssignment::with([
-            'schedule.lines.details.start',
-            'schedule.lines.details.lesson',
+        $asgs = Schedule::with([
+            'lines.details.start',
+            'lines.details.lesson',
         ])
             ->where('user_id', $user->id)
-            ->activeBetween($start->toDateString(), $end->toDateString())
+            ->whereDate('effective_start', '<=', $end->toDateString())
+            ->whereDate('effective_end',   '>=', $start->toDateString())
             ->get();
 
         $events = [];
@@ -38,12 +39,12 @@ class WorkProvider implements CalendarEventProvider
             // ★ end_date が null の場合に対応
             $asg = $asgs->first(
                 fn($a) =>
-                $a->start_date->lte($cur) &&
-                    (is_null($a->end_date) || $a->end_date->gte($cur))
+                $a->effective_start->lte($cur) &&
+                    (is_null($a->effective_end) || $a->effective_end->gte($cur))
             );
 
-            if ($asg && $asg->schedule) {
-                $lines = $asg->schedule->lines->filter(
+            if ($asg) {
+                $lines = $asg->lines->filter(
                     fn($ln) =>
                     $ln->dow === $dow &&
                         $ln->effective_start->lte($cur) &&
@@ -64,7 +65,12 @@ class WorkProvider implements CalendarEventProvider
                     $lineEndMin   = $toMinutes($lineEndHM);
 
                     $details = $ln->details
-                        ->filter(function ($d) use ($toMinutes, $lineStartMin, $lineEndMin) {
+                        ->filter(function ($d) use ($toMinutes, $lineStartMin, $lineEndMin, $cur) {
+                            // ★ detail も effective_start / effective_end の期間に絞る
+                            $inRange = $d->effective_start->lte($cur) &&
+                                (is_null($d->effective_end) || $d->effective_end->gte($cur));
+                            if (!$inRange) return false;
+
                             $startObj = $d->start?->start_time; // cast: datetime:H:i
                             if (!$startObj) return false;
                             $hm = $startObj->format('H:i');

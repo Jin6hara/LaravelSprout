@@ -7,10 +7,10 @@ use App\Models\EventDetail;
 use App\Models\Leave;
 use App\Models\Lesson;
 use App\Models\ScheduleLine;
-use App\Models\UserScheduleAssignment;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
+use App\Models\Schedule; // 直付けスキーマ対応（Schedule を直接参照）
 
 class LeaveSnapshotService
 {
@@ -58,22 +58,19 @@ class LeaveSnapshotService
         $dow    = $date->dayOfWeek; // 0..6
         $ymd    = $date->toDateString();
 
-        // その日有効な割当（end_date null も許容）
-        $asg = UserScheduleAssignment::with(['schedule.lines.details'])
+        // ▼ assignments を使わず、schedules.user_id 直付け＋期間で取得
+        $sch = Schedule::with(['lines.details' /* ★ */, 'lines.details.start', 'lines.details.lesson'])
             ->where('user_id', $userId)
-            ->whereDate('start_date', '<=', $ymd)
-            ->where(function ($q) use ($ymd) {
-                $q->whereNull('end_date')
-                    ->orWhereDate('end_date', '>=', $ymd);
-            })
+            ->whereDate('effective_start', '<=', $ymd)
+            ->whereDate('effective_end', '>=', $ymd)
             ->first();
 
-        if (!$asg || !$asg->schedule) {
+        if (!$sch) {
             return; // 割当なし → スナップショット対象なし
         }
 
-        /** @var Collection<int,\App\Models\ScheduleLine> $lines */
-        $lines = $asg->schedule->lines
+        /** @var \Illuminate\Support\Collection<int,\App\Models\ScheduleLine> $lines */
+        $lines = $sch->lines
             ->filter(function ($ln) use ($dow, $ymd) {
                 // DOW一致 + effective_start <= 日付 <= (effective_end or null=無期限)
                 $okDow = (int)$ln->dow === (int)$dow;
@@ -118,7 +115,16 @@ class LeaveSnapshotService
 
             // details コピー（lesson_start_time_id / lesson_id をスナップショットに保持）
             $lessonCodes = []; // ← lesson_code 収集用
+
+            // ★ 同一event内で (lesson_start_time_id, lesson_id) の重複を防止
+            $seen = [];
+
             foreach ($line->details as $d) {
+                // ★ detail も effective_start / effective_end の期間に絞る
+                $okStart = $d->effective_start && $d->effective_start->toDateString() <= $ymd;
+                $okEnd   = is_null($d->effective_end) || $d->effective_end->toDateString() >= $ymd;
+                if (!($okStart && $okEnd)) continue;
+
                 // line 時間帯内の detail のみ（WorkProvider と同じ基準）
                 $startHm = $d->start?->start_time?->format('H:i');
                 if (!$startHm) continue;
@@ -132,6 +138,13 @@ class LeaveSnapshotService
                 $le = $toMin($lineEndHm);
 
                 if ($m !== null && $ls !== null && $le !== null && $m >= $ls && $m <= $le) {
+                    // ★ event_details のユニーク制約 (event_id, lesson_start_time_id, lesson_id) 対策
+                    $k = $d->lesson_start_time_id . '-' . $d->lesson_id;
+                    if (isset($seen[$k])) {
+                        continue;
+                    }
+                    $seen[$k] = true;
+
                     EventDetail::create([
                         'event_id'             => $event->id,
                         'schedule_detail_id'   => $d->id,
