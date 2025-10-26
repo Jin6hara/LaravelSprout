@@ -5,7 +5,7 @@
 <span class="nav-divider">|</span>
 <li class="nav-item"><a class="nav-link" href="{{ route('schools.search') }}">School Map</a></li>
 <span class="nav-divider">|</span>
-<li class="nav-item"><a class="nav-link" href="{{ route('absence.edit', ['user' => auth()->user()->employee_code]) }}">Absense</a></li>
+<li class="nav-item"><a class="nav-link" href="{{ route('absence.edit', ['user' => auth()->user()->employee_code]) }}">Absence</a></li>
 <span class="nav-divider">|</span>
 <li class="nav-item"><a class="nav-link" href="{{ route('leave.apply.create') }}">ALP</a></li>
 <span class="nav-divider">|</span>

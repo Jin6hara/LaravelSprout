@@ -22,11 +22,11 @@
 <span class="nav-divider">|</span>
 
 <li class="nav-item"><a class="nav-link" href="{{ route('leaves.edit') }}">Absence Manager</a></li>
-<li class="nav-item"><a class="nav-link" href="{{ route('calendar.leaves') }}">Absense</a></li>
+<li class="nav-item"><a class="nav-link" href="{{ route('calendar.leaves') }}">Absence</a></li>
 
 <span class="nav-divider">|</span>
 
-<li class="nav-item"><a class="nav-link" href="{{ route('schedules.edit') }}">Schedule Editer</a></li>
+<li class="nav-item"><a class="nav-link" href="{{ route('schedules.edit') }}">Schedule Editor</a></li>
 <li class="nav-item"><a class="nav-link" href="{{ route('calendar.index') }}">Schedule</a></li>
 
 <span class="nav-divider">|</span>
