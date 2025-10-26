@@ -10,7 +10,7 @@ use App\Support\TimeString;
 
 class ScheduleController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $viewer = Auth::user();
 
@@ -19,14 +19,53 @@ class ScheduleController extends Controller
             abort(403, 'You are not authorized to view all schedules.');
         }
 
-        // 全ユーザーのスケジュール一覧（ユーザー別・期間降順）
-        $schedules = Schedule::query()
-            ->with('user')
+        // 全ユーザーをセレクトボックス用に取得
+        $userOptions = User::query()
+            ->orderBy('first_name')
+            ->orderBy('family_name')
+            ->get(['id', 'first_name', 'family_name', 'employee_code']);
+
+        $query = Schedule::query()->with('user');
+
+        // === フィルタ ===
+        // Active On: 指定日が範囲に含まれる
+        if ($request->filled('active_on')) {
+            $on = TimeString::normalizeToYmd($request->input('active_on'));
+            $query->whereDate('effective_start', '<=', $on)
+                ->whereDate('effective_end', '>=', $on);
+        }
+
+        //  Active Until: 指定日以前に終了したスケジュール
+        if ($request->filled('active_until')) {
+            $until = TimeString::normalizeToYmd($request->input('active_until'));
+            $query->whereDate('effective_end', '<=', $until);
+        }
+
+        if ($request->filled('username')) {
+            $name = $request->input('username');
+            $query->whereHas('user', function ($q) use ($name) {
+                $q->where('first_name', 'like', "%{$name}%")
+                    ->orWhere('family_name', 'like', "%{$name}%");
+            });
+        }
+
+        if ($request->filled('active')) {
+            $active = $request->boolean('active');
+            $query->where('is_active', $active);
+        }
+
+        if ($request->filled('label')) {
+            $label = $request->input('label');
+            $query->where('label', 'like', "%{$label}%");
+        }
+
+        // === ソート ===
+        $schedules = $query
             ->orderBy('user_id')
             ->orderByDesc('effective_start')
             ->get();
 
-        return view('schedule.schedule', compact('schedules'));
+        return view('schedule.schedule', compact('schedules', 'userOptions'));
     }
 
     public function update(Request $request, Schedule $schedule)
