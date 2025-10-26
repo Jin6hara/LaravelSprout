@@ -227,3 +227,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/lessons/by-code/{code}', [ScheduleDetailController::class, 'findLessonByCode'])->name('lessons.by_code');
 });
 
+use App\Http\Controllers\ScheduleController;
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/schedules', [ScheduleController::class, 'index'])->name('schedules.index');
+    Route::put('/schedules/{schedule}', [ScheduleController::class, 'update'])->name('schedules.update');
+});

@@ -57,4 +57,23 @@ final class TimeString
             return '00:00';
         }
     }
+
+    public static function normalizeToYmd(mixed $raw): string
+    {
+        if ($raw instanceof DateTimeInterface) {
+            return Carbon::instance($raw)->format('Y-m-d');
+        }
+
+        $s = trim((string)$raw);
+        if ($s === '') {
+            return '';
+        }
+
+        try {
+            return Carbon::parse($s)->format('Y-m-d');
+        } catch (\Throwable $e) {
+            // 不正フォーマット時は空文字（input[type=date]でエラーにならない）
+            return '';
+        }
+    }
 }
