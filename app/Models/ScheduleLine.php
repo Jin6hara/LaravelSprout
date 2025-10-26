@@ -32,7 +32,12 @@ class ScheduleLine extends Model
     {
         return $q->whereDate('effective_start', '<=', $d)->whereDate('effective_end', '>=', $d);
     }
-    
+
+    public function scopeOverlapping($q, string $from, string $to)
+    {
+        return $q->whereDate('effective_start', '<=', $to)->whereDate('effective_end', '>=', $from);
+    }
+
     public function details()
     {
         return $this->hasMany(ScheduleDetail::class);

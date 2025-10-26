@@ -1,0 +1,149 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use App\Support\TimeString;
+
+class CommuterPassAdvisorController extends Controller
+{
+    public function index(Request $request)
+    {
+        // --- 入力値（画面再表示用） ---
+        $inFrom = $request->query('from');
+        $inTo   = $request->query('to');
+
+        // --- 内部ロジック用（正規化＋デフォルト） ---
+        $from = ($inFrom !== null && $inFrom !== '')
+            ? TimeString::normalizeToYmd($inFrom)
+            : now()->toDateString(); // デフォルト: 本日
+
+        $to = ($inTo !== null && $inTo !== '')
+            ? TimeString::normalizeToYmd($inTo)
+            : null; // null = 上限なし（from 以降）
+
+        $min = (int)($request->query('min_count') ?: 5);
+
+        // --- 共通: 期間条件を適用するクロージャ ---
+        $applyPeriod = function ($q) use ($from, $to) {
+            if ($from && !$to) {
+                // from のみ： end >= from
+                $q->whereDate('sl.effective_end', '>=', $from);
+            } elseif (!$from && $to) {
+                // to のみ： start <= to
+                $q->whereDate('sl.effective_start', '<=', $to);
+            } else {
+                // 両方（from=デフォルト本日を含む）： start <= to AND end >= from
+                $q->whereDate('sl.effective_start', '<=', $to)
+                    ->whereDate('sl.effective_end', '>=', $from);
+            }
+            return $q;
+        };
+
+        // --- 1) 候補グループ: user_id × school_name ごとの件数（期間重複あり、min 以上） ---
+        $groupsSub = DB::table('schedule_lines as sl')
+            ->join('schedules as s', 's.id', '=', 'sl.schedule_id')
+            ->tap($applyPeriod)
+            ->groupBy('s.user_id', 'sl.school_name')
+            ->havingRaw('COUNT(*) >= ?', [$min])
+            ->select([
+                's.user_id',
+                'sl.school_name',
+                DB::raw('COUNT(*) as cnt'),
+            ]);
+
+        // 画面上部で使う一覧
+        $groups = DB::query()
+            ->fromSub($groupsSub, 'g')
+            ->orderBy('g.user_id')
+            ->orderByDesc('g.cnt')
+            ->get(); // => user_id, school_name, cnt
+
+        // ▼▼▼▼ 明細取得ロジック：対象外の詳細は含まない ▼▼▼▼
+
+        // --- 2) 明細のための「行ごとに同時稼働曜日数を数える」サブクエリ ---
+        // base 行と同一 user & 同一 school_name の peer 行と期間が重なる曜日を DISTINCT で数える
+        // ※ 同一ユーザー内で同一 school_name をまたいで schedule_id が分かれる可能性があるなら
+        // schedule_id 同士の一致縛りは外し、user_id で合わせるのが安全。
+        $qualSub = DB::table('schedule_lines as base')
+            ->join('schedules as bs', 'bs.id', '=', 'base.schedule_id') // base の user を得る
+            ->join('schedule_lines as peer', function ($join) {
+                $join->on('peer.school_name', '=', 'base.school_name')
+                    ->on('peer.schedule_id', '=', 'base.schedule_id'); // 同一 schedule_id 内で突き合わせ（必要に応じて user_id へ変更）
+            })
+            ->join('schedules as ps', 'ps.id', '=', 'peer.schedule_id')
+            // base と peer の期間が重なる
+            ->whereColumn('peer.effective_start', '<=', 'base.effective_end')
+            ->whereColumn('peer.effective_end', '>=', 'base.effective_start')
+            // 検索期間とも重なる（base 側で代表させる）
+            ->when(true, function ($q) use ($from, $to) {
+                if ($from && !$to) {
+                    $q->whereDate('base.effective_end', '>=', $from);
+                } elseif (!$from && $to) {
+                    $q->whereDate('base.effective_start', '<=', $to);
+                } else {
+                    $q->whereDate('base.effective_start', '<=', $to)
+                        ->whereDate('base.effective_end', '>=', $from);
+                }
+            })
+            ->groupBy('base.id')
+            ->selectRaw('base.id as line_id, COUNT(DISTINCT peer.dow) as dow_cnt');
+
+        // --- 3) 明細: groupsSub（候補グループ）と qualSub（同時稼働曜日数）を join して抽出 ---
+        $details = DB::table('schedule_lines as sl')
+            ->join('schedules as s', 's.id', '=', 'sl.schedule_id')
+            ->joinSub($groupsSub, 'g', function ($join) {
+                $join->on('g.user_id', '=', 's.user_id')
+                    ->on('g.school_name', '=', 'sl.school_name');
+            })
+            ->joinSub($qualSub, 'qual', function ($join) {
+                $join->on('qual.line_id', '=', 'sl.id');
+            })
+            ->where('qual.dow_cnt', '>=', $min)  // ★ “同時稼働の曜日数” が min 以上の行だけ
+            ->tap($applyPeriod)                  // 検索期間適用
+            ->select([
+                's.user_id',
+                'sl.id as line_id',
+                'sl.school_name',
+                'sl.dow',
+                'sl.start_time',
+                'sl.end_time',
+                'sl.effective_start',
+                'sl.effective_end',
+            ])
+            ->orderBy('s.user_id')
+            ->orderBy('sl.school_name')
+            ->orderBy('sl.dow')
+            ->get();
+
+        // ▲▲▲▲ 明細取得ロジック：対象外の詳細は含まない ▲▲▲▲
+
+        // --- 4) 画面用に（user_id → school_name）でグルーピング ---
+        $grouped = $groups->groupBy('user_id')->map(function ($rows, $uid) use ($details) {
+            return $rows->keyBy('school_name')->map(function ($row, $school) use ($details, $uid) {
+                $lines = $details->where('user_id', $uid)->where('school_name', $school)->values();
+                return ['count' => $row->cnt, 'lines' => $lines];
+            });
+        });
+
+        // 表示に必要なユーザー情報を取得
+        $userIds = $groups->pluck('user_id')->unique()->values();
+        $userMap = DB::table('users')
+            ->whereIn('id', $userIds)
+            ->get(['id', 'first_name', 'family_name', 'employee_code'])
+            ->keyBy('id');
+
+        // --- フォーム表示値（old/request を優先） ---
+        $viewFrom = ($inFrom !== null && $inFrom !== '') ? $inFrom : $from;
+        $viewTo   = ($inTo !== null && $inTo !== '') ? $inTo   : '';
+
+        return view('expenses.passAdvisor', [
+            'from'    => $viewFrom,
+            'to'      => $viewTo,
+            'min'     => $min,
+            'grouped' => $grouped,
+            'userMap' => $userMap,
+        ]);
+    }
+}

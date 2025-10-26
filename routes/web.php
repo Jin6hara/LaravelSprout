@@ -233,3 +233,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/schedules', [ScheduleController::class, 'index'])->name('schedules.index');
     Route::put('/schedules/{schedule}', [ScheduleController::class, 'update'])->name('schedules.update');
 });
+
+use App\Http\Controllers\CommuterPassAdvisorController;
+
+Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
+    Route::get('/commuter-pass-advisor', [CommuterPassAdvisorController::class, 'index'])
+        ->name('commuter.advisor.index');
+});
