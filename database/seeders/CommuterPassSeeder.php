@@ -28,10 +28,10 @@ class CommuterPassSeeder extends Seeder
         CommuterPass::updateOrCreate(
             [
                 'user_id'   => 2,
-                'date_from' => '2025-11-03',
+                'date_from' => '2025-10-03',
             ],
             [
-                'date_to'       => '2025-12-02',
+                'date_to'       => '2025-11-02',
                 'station_from'  => 'Higashi-Umeda',
                 'station_to'    => 'Tennoji',
                 'cost'          => 5980,
@@ -43,10 +43,10 @@ class CommuterPassSeeder extends Seeder
         CommuterPass::updateOrCreate(
             [
                 'user_id'   => 2,
-                'date_from' => '2025-12-03',
+                'date_from' => '2025-11-03',
             ],
             [
-                'date_to'       => '2026-01-02',
+                'date_to'       => '2025-12-02',
                 'station_from'  => 'Higashi-Umeda',
                 'station_to'    => 'Tennoji',
                 'cost'          => 5980,

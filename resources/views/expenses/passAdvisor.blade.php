@@ -49,6 +49,15 @@ $userPasses = $passesMap[$userId] ?? collect();
             {{ $u->first_name ?? '' }} {{ $u->family_name ?? '' }}
             [{{ $u->employee_code ?? '' }}]
         </h5>
+        @if(\App\Support\CommuterPassNeedChecker::needsPass(
+        $schools->toArray(), {{-- ← ここ大事 --}}
+        ($passesMap[$userId] ?? collect()),
+        $from, {{-- 検索日 --}}
+        30, {{-- 未来1か月 --}}
+        5 {{-- 週5日以上 --}}
+        ))
+        <span class="badge text-bg-danger">定期券必要</span>
+        @endif
     </div>
 
     <div class="row g-3">

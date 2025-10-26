@@ -130,11 +130,11 @@ class ScheduleSeeder extends Seeder
         );
         $this->lines($sc7, [
             [0, 'Tennoji MP', '10:00', '17:45'], // Sun
-        ],'2025-04-01', '2025-10-31');
+        ],'2025-04-01', '2025-11-30');
 
         $this->lines($sc7, [
             [0, 'Kids Tennoji', '10:00', '17:45'], // Sun
-        ],'2025-11-01', '2026-03-31');
+        ],'2025-12-01', '2026-03-31');
 
         $this->lines($sc7, [
             [6, 'Tennoji MP', '10:00', '17:45'], // Sat
@@ -173,12 +173,12 @@ class ScheduleSeeder extends Seeder
         // 2025-04-01〜2025-11-30: 土=Sub
         $this->lines($sc9, [
             [6, 'Sub',  '10:00', '17:45'], // Sat
-        ], '2025-04-01', '2025-11-30');
+        ], '2025-04-01', '2025-12-31');
 
         // 2025-12-01〜2026-03-31: 土=Fuse（Sub→Fuseに変更）
         $this->lines($sc9, [
             [6, 'Fuse', '10:00', '17:45'], // Sat
-        ], '2025-12-01', '2026-03-31');
+        ], '2026-01-01', '2026-03-31');
     }
 
     private function lines(Schedule $sc, array $rows, string $start, string $end): void
