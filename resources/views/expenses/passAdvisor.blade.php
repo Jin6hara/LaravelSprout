@@ -40,31 +40,54 @@
 @foreach($grouped as $userId => $schools)
 @php
 $u = $userMap[$userId] ?? null;
+$userPasses = $passesMap[$userId] ?? collect();
 @endphp
-<div class="card mb-3">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <strong>
+
+<div class="card mb-4 p-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0 fw-bold">
             {{ $u->first_name ?? '' }} {{ $u->family_name ?? '' }}
             [{{ $u->employee_code ?? '' }}]
-        </strong>
+        </h5>
     </div>
 
-    <div class="card-body">
-        @foreach($schools as $school => $info)
-        <div class="border rounded px-3 py-2 mb-2 bg-light">
-            <div class="d-flex flex-wrap gap-3 small text-secondary">
-                <div class="fw-bold text-dark mb-1">{{ $school }}</div>
-                @foreach($info['lines'] as $line)
-                <div>
-                    <span class="fw-semibold text-dark">
+    <div class="row g-3">
+        {{-- ▼ 左：School情報 --}}
+        <div class="col-md-6">
+            <div class="border rounded p-3 bg-light h-100">
+                <h6 class="fw-bold mb-2 text-primary">School Schedule</h6>
+                @foreach($schools as $school => $info)
+                <div class="mb-2">
+                    <div class="fw-bold text-dark">{{ $school }}</div>
+                    @forelse($info['lines'] as $line)
+                    <div class="small text-secondary">
                         {{ ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][$line->dow] ?? $line->dow }}
-                    </span>
+                        ：{{ $line->effective_start }} → {{ $line->effective_end }}
+                    </div>
+                    @empty
+                    <div class="text-muted small">No lines</div>
+                    @endforelse
                 </div>
                 @endforeach
-                ：{{ $line->effective_start }} → {{ $line->effective_end }}
             </div>
         </div>
-        @endforeach
+
+        {{-- ▼ 右：定期券情報 --}}
+        <div class="col-md-6">
+            <div class="border rounded p-3 bg-light h-100">
+                <h6 class="fw-bold mb-2 text-success">Commuter Pass</h6>
+                @if($userPasses->isNotEmpty())
+                @foreach($userPasses as $p)
+                <div class="small text-secondary mb-1">
+                    {{ $p->station_from }} → {{ $p->station_to }}:
+                    {{ $p->date_from }}〜{{ $p->date_to }}
+                </div>
+                @endforeach
+                @else
+                <div class="text-muted small">No commuter pass registered.</div>
+                @endif
+            </div>
+        </div>
     </div>
 </div>
 @endforeach

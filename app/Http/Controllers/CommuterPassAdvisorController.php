@@ -115,6 +115,10 @@ class CommuterPassAdvisorController extends Controller
             ->orderBy('sl.dow')
             ->get();
 
+        $details = $details->unique(
+            fn($r) =>
+            $r->user_id . '_' . $r->school_name . '_' . $r->dow . '_' . $r->effective_start . '_' . $r->effective_end
+        )->values();
         // ▲▲▲▲ 明細取得ロジック：対象外の詳細は含まない ▲▲▲▲
 
         // --- 4) 画面用に（user_id → school_name）でグルーピング ---
@@ -125,23 +129,51 @@ class CommuterPassAdvisorController extends Controller
             });
         });
 
-        // 表示に必要なユーザー情報を取得
+        // 追加：表示に必要なユーザー情報を取得
         $userIds = $groups->pluck('user_id')->unique()->values();
         $userMap = DB::table('users')
             ->whereIn('id', $userIds)
             ->get(['id', 'first_name', 'family_name', 'employee_code'])
             ->keyBy('id');
 
+        // 追加: この画面に出てくるユーザーの定期券だけ取得
+        // 定期券の期間条件（from/toの解釈は schedule_lines と同じ）
+        $applyPassPeriod = function ($q) use ($from, $to) {
+            if ($from && !$to) {
+                // fromのみ：定期が from 以降に一部でもかかる
+                $q->whereDate('date_to', '>=', $from);
+            } elseif (!$from && $to) {
+                // toのみ：定期が to 以前に一部でもかかる
+                $q->whereDate('date_from', '<=', $to);
+            } else {
+                // 両方（from=本日デフォルト含む）：重なり判定
+                $q->whereDate('date_from', '<=', $to)
+                    ->whereDate('date_to', '>=', $from);
+            }
+            return $q;
+        };
+
+        $passes = DB::table('commuter_passes')
+            ->whereIn('user_id', $userIds)
+            ->tap($applyPassPeriod)
+            ->orderBy('user_id')
+            ->orderBy('date_from')
+            ->get();
+
+        // ユーザー毎にまとめる
+        $passesMap = $passes->groupBy('user_id');
+
         // --- フォーム表示値（old/request を優先） ---
         $viewFrom = ($inFrom !== null && $inFrom !== '') ? $inFrom : $from;
         $viewTo   = ($inTo !== null && $inTo !== '') ? $inTo   : '';
 
         return view('expenses.passAdvisor', [
-            'from'    => $viewFrom,
-            'to'      => $viewTo,
-            'min'     => $min,
-            'grouped' => $grouped,
-            'userMap' => $userMap,
+            'from'       => $viewFrom,
+            'to'         => $viewTo,
+            'min'        => $min,
+            'grouped'    => $grouped,
+            'userMap'    => $userMap,
+            'passesMap'  => $passesMap,
         ]);
     }
 }

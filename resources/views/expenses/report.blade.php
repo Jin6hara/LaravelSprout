@@ -46,6 +46,9 @@
       class="form-control form-control-sm" style="width:170px"
       value="{{ sprintf('%04d-%02d', $y, $m) }}">
     <button id="monthSearchBtn" class="btn btn-sm btn-outline-primary" type="button">検索</button>
+    <a class="btn btn-sm btn-outline-success ms-2" href="{{ route('commuter.advisor.index') }}">
+      Commuter Pass Advisor
+    </a>
   </form>
 
     <div class="header-box mb-4">
