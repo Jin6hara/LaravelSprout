@@ -1,27 +1,27 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-2">
+<div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="mb-0">Commuter Pass Advisor</h2>
     <span class="badge text-bg-success">Candidates by Period</span>
 </div>
 
 {{-- 検索フォーム --}}
-<form method="GET" class="card mb-2 p-2">
+<form method="GET" class="card mb-3 p-3">
     <div class="row g-3 align-items-end">
-        <div class="col-md-3">
+        <div class="col-md-2">
             <label class="form-label small mb-1">From</label>
             <input type="date" name="from" class="form-control form-control-sm"
                 value="{{ old('from', $from) }}">
         </div>
 
-        <div class="col-md-3">
+        <div class="col-md-2">
             <label class="form-label small mb-1">To</label>
             <input type="date" name="to" class="form-control form-control-sm"
                 value="{{ old('to', $to) }}">
         </div>
 
-        <div class="col-md-2">
+        <div class="col-md-1">
             <label class="form-label small mb-1">Min Count</label>
             <input type="number" name="min_count" min="1" class="form-control form-control-sm"
                 value="{{ old('min_count', $min) }}">
@@ -41,7 +41,7 @@
 @php
 $u = $userMap[$userId] ?? null;
 @endphp
-<div class="card mb-1">
+<div class="card mb-3">
     <div class="card-header d-flex justify-content-between align-items-center">
         <strong>
             {{ $u->first_name ?? '' }} {{ $u->family_name ?? '' }}
@@ -49,33 +49,19 @@ $u = $userMap[$userId] ?? null;
         </strong>
     </div>
 
-    <div class="card-body py-1">
+    <div class="card-body">
         @foreach($schools as $school => $info)
-        <div class="mb-1">
-            <div class="d-flex justify-content-between align-items-center">
-                <h6 class="mb-1">{{ $school }}</h6>
-            </div>
-
-            <div class="table-responsive">
-                <table class="table table-sm table-bordered align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            {{-- Line ID削除 --}}
-                            <th style="width: 70px;">DOW</th>
-                            <th>Start–End</th>
-                            <th>Effective</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($info['lines'] as $line)
-                        <tr>
-                            <td>{{ ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][$line->dow] ?? $line->dow }}</td>
-                            <td>{{ substr($line->start_time,0,5) }}–{{ substr($line->end_time,0,5) }}</td>
-                            <td>{{ $line->effective_start }} → {{ $line->effective_end }}</td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+        <div class="border rounded px-3 py-2 mb-2 bg-light">
+            <div class="d-flex flex-wrap gap-3 small text-secondary">
+                <div class="fw-bold text-dark mb-1">{{ $school }}</div>
+                @foreach($info['lines'] as $line)
+                <div>
+                    <span class="fw-semibold text-dark">
+                        {{ ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][$line->dow] ?? $line->dow }}
+                    </span>
+                </div>
+                @endforeach
+                ：{{ $line->effective_start }} → {{ $line->effective_end }}
             </div>
         </div>
         @endforeach

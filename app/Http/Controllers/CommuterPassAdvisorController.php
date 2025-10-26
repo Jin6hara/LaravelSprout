@@ -107,8 +107,6 @@ class CommuterPassAdvisorController extends Controller
                 'sl.id as line_id',
                 'sl.school_name',
                 'sl.dow',
-                'sl.start_time',
-                'sl.end_time',
                 'sl.effective_start',
                 'sl.effective_end',
             ])
