@@ -232,6 +232,7 @@ use App\Http\Controllers\ScheduleController;
 Route::middleware(['auth'])->group(function () {
     Route::get('/schedules', [ScheduleController::class, 'index'])->name('schedules.index');
     Route::put('/schedules/{schedule}', [ScheduleController::class, 'update'])->name('schedules.update');
+    Route::post('/schedules', [ScheduleController::class, 'store'])->name('schedules.store');
 });
 
 use App\Http\Controllers\CommuterPassAdvisorController;

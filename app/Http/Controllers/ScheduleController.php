@@ -25,22 +25,60 @@ class ScheduleController extends Controller
             ->orderBy('family_name')
             ->get(['id', 'first_name', 'family_name', 'employee_code']);
 
+        // 追加：新規追加モーダル用「追加可能ユーザー」
+        // 条件：
+        // 1) 在籍（start_date <= today && (end_date is null || end_date >= today) の term が存在）
+        // 2) 在籍でない場合、start_date が today〜today+1month の term が存在
+        $today = now()->toDateString();
+        $inOneMonth = now()->addMonth()->toDateString();
+
+        $eligibleUsers = User::query()
+            ->where(function ($q) use ($today, $inOneMonth) {
+                $q->whereExists(function ($sq) use ($today) {
+                    $sq->from('employment_terms as et')
+                        ->whereColumn('et.user_id', 'users.id')
+                        ->whereDate('et.start_date', '<=', $today)
+                        ->where(function ($sq2) use ($today) {
+                            $sq2->whereNull('et.end_date')->orWhereDate('et.end_date', '>=', $today);
+                        });
+                })
+                    ->orWhereExists(function ($sq) use ($today, $inOneMonth) {
+                        $sq->from('employment_terms as et')
+                            ->whereColumn('et.user_id', 'users.id')
+                            ->whereDate('et.start_date', '>', $today)
+                            ->whereDate('et.start_date', '<=', $inOneMonth);
+                    });
+            })
+            ->orderBy('first_name')
+            ->orderBy('family_name')
+            ->get(['id', 'first_name', 'family_name', 'employee_code']);
+
         $query = Schedule::query()->with('user');
 
         // === フィルタ ===
         // Active On: 指定日が範囲に含まれる
-        if ($request->filled('active_on')) {
-            $on = TimeString::normalizeToYmd($request->input('active_on'));
-            $query->whereDate('effective_start', '<=', $on)
-                ->whereDate('effective_end', '>=', $on);
+        if ($request->filled('active_on') && $request->filled('active_until')) {
+            // ★ 両方指定 → 期間重複検索（overlap）
+            $from = TimeString::normalizeToYmd($request->input('active_on'));
+            $to   = TimeString::normalizeToYmd($request->input('active_until'));
+            // 重なり条件: schedule.start <= to AND schedule.end >= from
+            $query->whereDate('effective_start', '<=', $to)
+                ->whereDate('effective_end', '>=', $from);
+        } else {
+            if ($request->filled('active_on')) {
+                $on = TimeString::normalizeToYmd($request->input('active_on'));
+                $query->whereDate('effective_start', '<=', $on)
+                    ->whereDate('effective_end', '>=', $on);
+            }
+
+            //  Active Until: 指定日以前に終了したスケジュール
+            if ($request->filled('active_until')) {
+                $until = TimeString::normalizeToYmd($request->input('active_until'));
+                $query->whereDate('effective_end', '<=', $until);
+            }
         }
 
-        //  Active Until: 指定日以前に終了したスケジュール
-        if ($request->filled('active_until')) {
-            $until = TimeString::normalizeToYmd($request->input('active_until'));
-            $query->whereDate('effective_end', '<=', $until);
-        }
-        
+        // ▼ user_id での絞り込み（検索フォームからの選択）
         if ($request->filled('user_id')) {
             $query->where('user_id', (int) $request->input('user_id'));
         }
@@ -69,7 +107,8 @@ class ScheduleController extends Controller
             ->orderByDesc('effective_start')
             ->get();
 
-        return view('schedule.schedule', compact('schedules', 'userOptions'));
+
+        return view('schedule.schedule', compact('schedules', 'userOptions', 'eligibleUsers'));
     }
 
     public function update(Request $request, Schedule $schedule)
@@ -94,5 +133,64 @@ class ScheduleController extends Controller
         $schedule->update($validated);
 
         return back()->with('status', 'Schedule updated successfully.');
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            // 'label' => ['nullable','string','max:255'], // ラベルをモーダルで入れるなら使用
+        ]);
+
+        $uid = (int) $request->input('user_id');
+        $today = now()->toDateString();
+        $inOneMonth = now()->addMonth()->toDateString();
+
+        // サーバー側でも必ず「追加可能ユーザー」条件をチェック
+        $isEligible = User::query()
+            ->where('id', $uid)
+            ->where(function ($q) use ($today, $inOneMonth) {
+                $q->whereExists(function ($sq) use ($today) {
+                    $sq->from('employment_terms as et')
+                        ->whereColumn('et.user_id', 'users.id')
+                        ->whereDate('et.start_date', '<=', $today)
+                        ->where(function ($sq2) use ($today) {
+                            $sq2->whereNull('et.end_date')->orWhereDate('et.end_date', '>=', $today);
+                        });
+                })
+                    ->orWhereExists(function ($sq) use ($today, $inOneMonth) {
+                        $sq->from('employment_terms as et')
+                            ->whereColumn('et.user_id', 'users.id')
+                            ->whereDate('et.start_date', '>', $today)
+                            ->whereDate('et.start_date', '<=', $inOneMonth);
+                    });
+            })
+            ->exists();
+
+        if (!$isEligible) {
+            return back()->withErrors(['user_id' => 'このユーザーは現在新規追加の対象ではありません。'])->withInput();
+        }
+
+        // 最小フィールドで作成（他は後で編集可能）
+        $schedule = Schedule::create([
+            'user_id'         => $uid,
+            'label'           => null, // $request->input('label') ?? null,
+            'total_minutes'   => 0,
+            'effective_start' => now()->toDateString(),
+            'effective_end'   => now()->toDateString(),
+            'is_active'       => true,
+        ]);
+
+        // ★ 検索条件を維持しつつ、user_id は作成ユーザーに固定して一覧へ
+        $qs = array_filter([
+            'active_on'    => $request->input('active_on'),
+            'active_until' => $request->input('active_until'),
+            'active'       => $request->input('active'),
+            'label'        => $request->input('label'),
+            'user_id'      => $uid, // ← 作成ユーザーで固定
+        ], fn($v) => $v !== null && $v !== '');
+
+        return redirect()->route('schedules.index', $qs)
+            ->with('status', 'Schedule created successfully.');
     }
 }
