@@ -6,6 +6,11 @@
     <div>
         <h2 class="mb-0">Schedule Lines</h2>
     </div>
+    <div>
+        <a href="{{ route('schedules.index') }}" class="small text-decoration-none text-primary">
+            Create Schedule
+        </a>
+    </div>
 </div>
 
 {{-- 検索フォーム（基準日/スケジュール） --}}
