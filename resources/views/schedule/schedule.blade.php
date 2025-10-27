@@ -136,11 +136,11 @@ use App\Support\TimeString;
                         <input type="number" class="form-control form-control-sm" value="{{ $schedule->total_minutes }}" readonly>
                     </div>
 
-                    <div class="col-md-1 text-end">
-                        <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                    <div class="col-md-1">
+                        <button type="submit" class="btn btn-sm btn-primary w-100">Save</button>
                     </div>
-                    {{-- Ajax Delete ボタン --}}
-                    <div class="col-md-1 text-end">
+
+                    <div class="col-md-1">
                         <button
                             type="button"
                             class="btn btn-sm btn-outline-danger w-100 js-delete-schedule"
