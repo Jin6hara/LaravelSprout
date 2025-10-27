@@ -103,7 +103,7 @@ use App\Support\TimeString;
                     </div>
                     --}}
 
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label class="form-label small mb-1">Label</label>
                         <input type="text" name="label" class="form-control form-control-sm"
                             value="{{ old('label', $schedule->label) }}">
@@ -139,8 +139,21 @@ use App\Support\TimeString;
                     <div class="col-md-1 text-end">
                         <button type="submit" class="btn btn-sm btn-primary">Save</button>
                     </div>
+                    {{-- Ajax Delete ボタン --}}
+                    <div class="col-md-1 text-end">
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-danger w-100 js-delete-schedule"
+                            data-delete-url="{{ route('schedules.destroy', $schedule) }}"
+                            data-active-on="{{ request('active_on') }}"
+                            data-active-until="{{ request('active_until') }}"
+                            data-active="{{ request('active') }}"
+                            data-label="{{ request('label') }}">
+                            Delete
+                        </button>
+                    </div>
+                </form>
             </div>
-            </form>
         </div>
     </div>
 </div>
@@ -198,3 +211,53 @@ use App\Support\TimeString;
     </div>
 </div>
 @endsection
+@push('scripts')
+<script>
+    document.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.js-delete-schedule');
+        if (!btn) return;
+
+        const msg = 'Are you sure you want to delete this schedule?\n(Deletion will fail if related schedule lines still exist.)';
+        if (!window.confirm(msg)) return;
+
+        const url = btn.dataset.deleteUrl;
+        const payload = {
+            active_on: btn.dataset.activeOn || '',
+            active_until: btn.dataset.activeUntil || '',
+            active: btn.dataset.active || '',
+            label: btn.dataset.label || '',
+        };
+
+        const tokenEl = document.querySelector('meta[name="csrf-token"]');
+        const csrf = tokenEl ? tokenEl.getAttribute('content') : '';
+
+        try {
+            const res = await fetch(url, {
+                method: 'DELETE',
+                credentials: 'same-origin', // ★ これを明示
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                const err = (data && data.message) || 'Delete failed.';
+                alert(err);
+                return;
+            }
+
+            // サーバが flash を積んでいるので、ただリダイレクトすればOK
+            if (data && data.redirect) {
+                window.location.href = data.redirect;
+            }
+        } catch (err) {
+            alert('Network error. Please try again.');
+        }
+    });
+</script>
+@endpush

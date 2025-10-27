@@ -193,4 +193,52 @@ class ScheduleController extends Controller
         return redirect()->route('schedules.index', $qs)
             ->with('status', 'Schedule created successfully.');
     }
+
+    public function destroy(Schedule $schedule)
+    {
+        $viewer = Auth::user();
+        if (!$viewer->hasRole(['admin', 'super_admin'])) {
+            abort(403, 'You are not authorized to delete schedules.');
+        }
+
+        // 検索条件（期間等）はリクエストから受け取り、user_id は付与しない（=全ユーザー）
+        $qs = array_filter([
+            'active_on'    => request('active_on'),
+            'active_until' => request('active_until'),
+            'active'       => request('active'),
+            'label'        => request('label'),
+        ], fn($v) => $v !== null && $v !== '');
+
+        try {
+            \DB::transaction(function () use ($schedule) {
+                $schedule->delete();
+            });
+
+            $redirect = route('schedules.index', $qs);
+
+            if (request()->wantsJson()) {
+                // ★ ここでフラッシュを積んでから JSON を返す（クライアントで遷移）
+                session()->flash('status', 'Schedule deleted successfully.');
+                return response()->json([
+                    'ok' => true,
+                    'redirect' => $redirect,
+                ]);
+            }
+
+            return redirect($redirect)->with('status', 'Schedule deleted successfully.');
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->getCode() === '23000') {
+                $msg = 'Cannot delete this schedule because it has related schedule lines. '
+                    . 'Please remove those lines first.';
+
+                if (request()->wantsJson()) {
+                    // ★ エラー時にリダイレクトする場合は flash＋redirect を返す実装に変えてもOK
+                    return response()->json(['ok' => false, 'message' => $msg], 422);
+                }
+
+                return back()->withErrors(['delete_error' => $msg]);
+            }
+            throw $e;
+        }
+    }
 }
