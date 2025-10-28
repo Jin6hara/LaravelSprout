@@ -155,6 +155,9 @@ document.addEventListener('DOMContentLoaded', function () {
         // ▼▼ Sub背景, Event枠クリック時の動作 ▼▼
         eventClick(info) {
             const ev = info.event;
+            //モーダルタイトルを毎回初期化（背景で "Total Subs ..." を表示したあとに残らないように）
+            const titleEl = document.querySelector('#eventModal .modal-title');
+            if (titleEl) titleEl.textContent = 'Details';
             if (isSubEvt(ev)) {
                 info.jsEvent?.preventDefault();
                 info.jsEvent?.stopPropagation();
@@ -210,7 +213,9 @@ document.addEventListener('DOMContentLoaded', function () {
             }   // ▲▲ 詳細がないときは従来の簡易情報 ▲▲
 
             document.getElementById('eventModalBody').innerHTML = html;
-            new bootstrap.Modal(document.getElementById('eventModal')).show();
+            // 既存のモーダルを再利用（どちらでもOKだが再利用の方が自然）
+            const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('eventModal'));
+            modal.show();
         }
         // ▲▲ Sub背景, Event枠クリック時の動作 ▲▲
     });
