@@ -51,6 +51,15 @@ class ForecastResolver
                 $arr['type']      = $type;
                 $arr['planGroup'] = $planGroup;
 
+                // id を保証（toArray で落ちる場合に extendedProps.event_id から復元）10/28
+                if (empty($arr['id']) && !empty($arr['extendedProps']['event_id'])) {
+                    $arr['id'] = (string)$arr['extendedProps']['event_id'];
+                }
+                // JS フォールバック用に school_name も揃える（欠けていれば補完）10/28
+                if (empty($arr['extendedProps']['school_name']) && !empty($arr['extendedProps']['school'])) {
+                    $arr['extendedProps']['school_name'] = $arr['extendedProps']['school'];
+                }
+
                 // === BACKGROUND は日割り展開・圧縮対象 ===
                 if ($type === EventType::BACKGROUND) {
                     // 背景表示の補完

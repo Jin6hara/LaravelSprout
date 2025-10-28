@@ -16,7 +16,7 @@
         white-space: normal;
         /* 改行を有効化 */
         text-align: center;
-        margin: 0 1px;
+        margin: 1px 1px;
     }
 
     /* li の間隔を少しだけ詰める（任意） */

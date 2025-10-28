@@ -158,6 +158,16 @@ document.addEventListener('DOMContentLoaded', function () {
             //モーダルタイトルを毎回初期化（背景で "Total Subs ..." を表示したあとに残らないように）
             const titleEl = document.querySelector('#eventModal .modal-title');
             if (titleEl) titleEl.textContent = 'Details';
+
+            // ★追加：編集ボタンを毎回初期化（非表示/無効化）
+            const editBtn = document.getElementById('eventEditLink');
+            if (editBtn) {
+                editBtn.href = '#';
+                editBtn.style.display = 'none';
+                editBtn.classList.add('disabled');
+                editBtn.setAttribute('aria-disabled', 'true');
+            }
+
             if (isSubEvt(ev)) {
                 info.jsEvent?.preventDefault();
                 info.jsEvent?.stopPropagation();
@@ -211,6 +221,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 //if (e.start || e.end) html += `<div>日付：${fmt(e.start)}${e.end ? ' 〜 ' + fmt(e.end) : ''}</div>`; //endは使わないので削除
                 if (e.start || e.end) html += `<div>Date: ${fmt(e.start)}</div>`;
             }   // ▲▲ 詳細がないときは従来の簡易情報 ▲▲
+
+            // ★ イベント枠の場合のみ編集リンクを設定して表示
+            if (editBtn) {
+                const eid = e?.id ?? p?.id ?? null; // event.id を最優先、なければ extendedProps.id
+                if (eid) {
+                    editBtn.href = `/event_assigner?event_id=${encodeURIComponent(eid)}`; // name('calendar.edit')
+                    editBtn.style.removeProperty('display'); // display:none を解除
+                    editBtn.classList.remove('disabled');
+                    editBtn.setAttribute('aria-disabled', 'false');
+                }
+            }
 
             document.getElementById('eventModalBody').innerHTML = html;
             // 既存のモーダルを再利用（どちらでもOKだが再利用の方が自然）
