@@ -185,7 +185,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const assignDisp = p.assigned_user_name ?? (p.assigned_user_id != null ? `#${p.assigned_user_id}` : null);
             let html = `<div class="mb-2"><strong>${header}</strong></div>`;
             if (assignDisp) {
-                html += `<div class="small text-muted mb-2">Assigned: ${assignDisp}</div>`;
+                html += `<div class="small text-dark mb-2">Assigned: ${assignDisp}</div>`;
             }
             // ▲▲ assigned_user_name または assigned_user_id ▲▲
 
@@ -212,10 +212,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 </li>`;
                 });
                 html += '</ul>';
+                // イベントのノート（改行は <br> に）
+                if (p.notes) {
+                    const noteHtml = String(p.notes).replace(/\n/g, '<br>');
+                    html += `<div class="mt-2 mb-2 small text-muted">Note: ${noteHtml}</div>`;
+                }
                 // ▲▲ 詳細があればリストで表示 ▲▲
             } else {
                 // ▼▼ 詳細がないときは従来の簡易情報 ▼▼
-                html += `<div>Type: ${p.kind ?? ''}</div>`;
+                if (p.notes) {
+                    const noteHtml = String(p.notes).replace(/\n/g, '<br>');
+                    html += `<div class="mt-2 mb-2 small text-muted">Note: ${noteHtml}</div>`;
+                }
+                //html += `<div>Type: ${p.kind ?? ''}</div>`;　// kind は使わないので削除
                 if (p.closure_code) html += `<div>Category: ${p.closure_code}</div>`;
                 const fmt = d => d ? d.toLocaleDateString('ja-JP') : '';
                 //if (e.start || e.end) html += `<div>日付：${fmt(e.start)}${e.end ? ' 〜 ' + fmt(e.end) : ''}</div>`; //endは使わないので削除
