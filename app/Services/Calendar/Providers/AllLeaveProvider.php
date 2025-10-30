@@ -36,10 +36,16 @@ class AllLeaveProvider
 
         $events = collect();
 
+        // Eager load all relevant Event records to avoid N+1 query
+        $leaveIds = $leaves->pluck('id')->all();
+        $eventMap = Event::whereIn('source_leave_id', $leaveIds)
+            ->pluck('id', 'source_leave_id')
+            ->all();
+            
         foreach ($leaves as $leave) {
             
             // どの Event に紐づくか（存在しない場合もある）
-            $eventId = Event::where('source_leave_id', $leave->id)->value('id');
+            $eventId = $eventMap[$leave->id] ?? null;
 
             // Leave モデル側のユーティリティを流用（LeaveProvider と同一）
             foreach ($leave->eachDate() as $date) {

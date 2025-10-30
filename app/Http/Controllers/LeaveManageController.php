@@ -168,7 +168,7 @@ public function edit(Request $request)
     {
         $kindValues   = ['paid', 'absence_to_paid', 'special', 'absence', 'adjustment', 'left_early', 'late', 'other'];
         $excusedValues = ['excused', 'unexcused'];
-        $statusValues = ['approved', 'pending', 'rejected', 'other'];
+        $statusValues = ['approved', 'pending', 'rejected', 'draft', 'cancelled', 'archived'];
 
         return $request->validate([
             'user_id'      => ['required', 'integer', 'exists:users,id'],
@@ -243,7 +243,7 @@ public function edit(Request $request)
         // 許容値
         $kindValues    = ['paid', 'absence_to_paid', 'special', 'absence', 'adjustment', 'left_early', 'late', 'other'];
         $excusedValues = ['excused', 'unexcused'];
-        $statusValues  = ['approved', 'pending', 'rejected', 'other'];
+        $statusValues  = ['approved', 'pending', 'rejected', 'draft', 'cancelled', 'archived'];
 
         // items.* で配列バリデーション
         $validated = $request->validate([
