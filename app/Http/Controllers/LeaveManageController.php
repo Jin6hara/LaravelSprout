@@ -95,11 +95,11 @@ public function edit(Request $request)
         'approved' => 'Approved',
         'pending'  => 'Pending',
         'rejected' => 'Rejected',
-        'other'    => 'Other',
+        'cancelled'    => 'Cancelled',
     ];
     $kindOptions = [
         'paid'            => 'Paid',
-        'absense_to_paid' => 'Absence→Paid',
+        'absence_to_paid' => 'Absence→Paid',
         'special'         => 'Special',
         'absence'         => 'Absence',
         'adjustment'      => 'Adjustment',
@@ -166,7 +166,7 @@ public function edit(Request $request)
     /** 共通バリデーション */
     private function validateLeave(Request $request): array
     {
-        $kindValues   = ['paid', 'absense_to_paid', 'special', 'absence', 'adjustment', 'left_early', 'late', 'other'];
+        $kindValues   = ['paid', 'absence_to_paid', 'special', 'absence', 'adjustment', 'left_early', 'late', 'other'];
         $excusedValues = ['excused', 'unexcused'];
         $statusValues = ['approved', 'pending', 'rejected', 'other'];
 
@@ -241,7 +241,7 @@ public function edit(Request $request)
         }
 
         // 許容値
-        $kindValues    = ['paid', 'absense_to_paid', 'special', 'absence', 'adjustment', 'left_early', 'late', 'other'];
+        $kindValues    = ['paid', 'absence_to_paid', 'special', 'absence', 'adjustment', 'left_early', 'late', 'other'];
         $excusedValues = ['excused', 'unexcused'];
         $statusValues  = ['approved', 'pending', 'rejected', 'other'];
 

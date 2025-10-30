@@ -79,14 +79,14 @@ class LeaveController extends Controller
         // そのユーザーの leave をすべて表示（必要なら期間フィルタを追加）
         $leaves = Leave::query()
             ->where('user_id', $user->id)
-            ->whereIn('kind', ['absence', 'absense_to_paid', 'other'])
+            ->whereIn('kind', ['absence', 'absence_to_paid', 'other'])
             ->orderByDesc('start_date')
             ->get();
 
         // 表示名マッピング（ご指定）
         $kindLabels = [
             'absence'          => 'Unpaid Leave',
-            'absense_to_paid'  => 'ALP',     // ※ご指定のスペルに合わせています
+            'absence_to_paid'  => 'ALP',     // ※ご指定のスペルに合わせています
             'other'            => 'Others',
         ];
 

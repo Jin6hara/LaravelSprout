@@ -27,7 +27,7 @@
 @php
   $kindLabels = $kindLabels ?? [
     'absence'         => 'Unpaid Leave',
-    'absense_to_paid' => 'ALP',
+    'absence_to_paid' => 'ALP',
     'other'           => 'Others',
   ];
   $handleTypeOptions = $handleTypeOptions ?? [
