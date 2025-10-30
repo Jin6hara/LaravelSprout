@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const titleEl = document.querySelector('#eventModal .modal-title');
             if (titleEl) titleEl.textContent = 'Details';
 
-            // ★追加：編集ボタンを毎回初期化（非表示/無効化）
+            // ★編集ボタンを毎回初期化（非表示/無効化）
             const editBtn = document.getElementById('eventEditLink');
             if (editBtn) {
                 editBtn.href = '#';
@@ -167,6 +167,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 editBtn.classList.add('disabled');
                 editBtn.setAttribute('aria-disabled', 'true');
             }
+            // end ★編集ボタンの初期化
+
+            // ★Leaveボタンの初期化
+            const leaveBtn = document.getElementById('leaveEditLink');
+            if (leaveBtn) {
+                leaveBtn.href = '#';
+                leaveBtn.style.display = 'none';
+                leaveBtn.classList.add('disabled');
+                leaveBtn.setAttribute('aria-disabled', 'true');
+            }
+            // end ★Leaveボタンの初期化
 
             if (isSubEvt(ev)) {
                 info.jsEvent?.preventDefault();
@@ -241,6 +252,19 @@ document.addEventListener('DOMContentLoaded', function () {
                     editBtn.setAttribute('aria-disabled', 'false');
                 }
             }
+            // end ★ イベント枠の場合のみ編集リンクを設定して表示
+
+            // ★対応する Leave へのリンク設定（source_leave_id がある場合のみ）
+            if (leaveBtn) {
+                const lid = p?.source_leave_id ?? null;
+                if (lid) {
+                    leaveBtn.href = `/leave_manager?leave_id=${encodeURIComponent(lid)}`;
+                    leaveBtn.style.removeProperty('display'); // display:none を解除
+                    leaveBtn.classList.remove('disabled');
+                    leaveBtn.setAttribute('aria-disabled', 'false');
+                }
+            }
+            // end ★対応する Leave へのリンク設定
 
             document.getElementById('eventModalBody').innerHTML = html;
             // 既存のモーダルを再利用（どちらでもOKだが再利用の方が自然）

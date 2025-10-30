@@ -37,7 +37,12 @@
                     <a id="eventEditLink" href="#"
                       class="btn btn-sm btn-outline-secondary"
                       style="display:none; color:#6c757d;"
-                      target="_blank" rel="noopener">編集</a>
+                      target="_blank" rel="noopener">Edit</a>
+                    <!-- 対応するLeave編集へのショートカット（JSでhrefをセット） -->
+                    <a id="leaveEditLink" href="#"
+                      class="btn btn-sm btn-outline-secondary"
+                      style="display:none; color:#6c757d;"
+                      target="_blank" rel="noopener">Leave</a>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
             </div>
