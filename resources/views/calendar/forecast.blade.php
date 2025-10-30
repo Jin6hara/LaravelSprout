@@ -37,7 +37,7 @@
                     <a id="eventEditLink" href="#"
                       class="btn btn-sm btn-outline-secondary"
                       style="display:none; color:#6c757d;"
-                      target="_blank" rel="noopener">編集</a>
+                      rel="noopener">編集</a> {{-- target="_blank"を除外 --}}
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
             </div>
