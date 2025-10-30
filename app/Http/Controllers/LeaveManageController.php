@@ -69,20 +69,15 @@ public function edit(Request $request)
         ->when($specialType, fn($q) => $q->where('special_type', 'like', '%'.$specialType.'%'))
         ->when($handleType,  fn($q) => $q->where('handle_type',  'like', '%'.$handleType.'%'))
         ->when($reason,      fn($q) => $q->where('reason',      'like', '%'.$reason.'%'))
-        // ⬇︎ 日付フィルタ（start & end ⇒ 期間, startのみ ⇒ 当日）
+        // ⬇︎ 日付フィルタ（単日= start_date、期間= start_date..end_date）
+        //   → end_effective = COALESCE(end_date, start_date) として区間重なりを一本化
         ->when($startDate && $endDate, function ($q) use ($startDate, $endDate) {
             $q->whereDate('start_date', '<=', $endDate)
-              ->where(function($qq) use ($startDate) {
-                  $qq->whereDate('end_date', '>=', $startDate)
-                     ->orWhereNull('end_date');
-              });
+              ->whereRaw('DATE(COALESCE(end_date, start_date)) >= ?', [$startDate]);
         })
         ->when($startDate && !$endDate, function ($q) use ($startDate) {
             $q->whereDate('start_date', '<=', $startDate)
-              ->where(function($qq) use ($startDate) {
-                  $qq->whereDate('end_date', '>=', $startDate)
-                     ->orWhereNull('end_date');
-              });
+              ->whereRaw('DATE(COALESCE(end_date, start_date)) >= ?', [$startDate]);
         })
         ->orderByDesc('start_date')
         ->orderBy('time_start')
