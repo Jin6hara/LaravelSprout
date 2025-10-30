@@ -4,6 +4,7 @@ namespace App\Services\Calendar\Providers;
 
 use App\Models\Leave;
 use App\Models\User;
+use App\Models\Event;
 use App\Services\Calendar\EventType;
 use App\Services\Calendar\PlanGroup;
 use Carbon\Carbon;
@@ -36,6 +37,10 @@ class AllLeaveProvider
         $events = collect();
 
         foreach ($leaves as $leave) {
+            
+            // どの Event に紐づくか（存在しない場合もある）
+            $eventId = Event::where('source_leave_id', $leave->id)->value('id');
+
             // Leave モデル側のユーティリティを流用（LeaveProvider と同一）
             foreach ($leave->eachDate() as $date) {
                 $isAllDay = $leave->isAllDay();
@@ -123,6 +128,7 @@ class AllLeaveProvider
                             'time_end'     => $leave->time_end,
                             'status'       => $leave->status, // ← 後段の検索用に保持
                             'handle_type'  => $leave->handle_type, // 共有された新カラムも保持
+                            'related_event_id' => $eventId,        // 作成したEventのid
                         ],
                     ],
                 ]);

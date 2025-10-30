@@ -38,7 +38,13 @@
                        href="{{ route('leaves.edit') }}"
                        class="btn btn-sm btn-outline-secondary"
                        style="display:none; color:#6c757d;"
-                       target="_blank" rel="noopener">編集</a>
+                       target="_blank" rel="noopener">Edit</a>
+                    <!-- ★追加：関連 Event へのリンク -->
+                    <a id="relatedEventLink"
+                      href="#"
+                      class="btn btn-sm btn-outline-secondary"
+                      style="display:none; color:#6c757d;"
+                      target="_blank" rel="noopener">Shift</a>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
             </div>

@@ -61,6 +61,16 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             // ★ end here
 
+            // ★関連 Event ボタン初期化
+            const relatedBtn = document.getElementById('relatedEventLink');
+            if (relatedBtn) {
+                relatedBtn.href = '#';
+                relatedBtn.style.display = 'none';
+                relatedBtn.classList.add('disabled');
+                relatedBtn.setAttribute('aria-disabled', 'true');
+            }
+            // ★ end here
+
             const title = e.title || 'Leave';
             const fmt = (d) => d ? d.toLocaleDateString('ja-JP') : '';
 
@@ -102,6 +112,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
             // end here
+
+            // ★対応する Event へのリンク設定
+            const eid = p.leave?.related_event_id ?? null;
+            if (relatedBtn && eid) {
+                relatedBtn.href = `/forecast?event_id=${encodeURIComponent(eid)}`;
+                relatedBtn.style.removeProperty('display');
+                relatedBtn.classList.remove('disabled');
+                relatedBtn.setAttribute('aria-disabled', 'false');
+            }
+            // ★ end here
 
            // 既存のモーダルを再利用
            const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('eventModal'));
