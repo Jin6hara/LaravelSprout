@@ -104,7 +104,7 @@ class AllLeaveProvider
 
 
                 $events->push([
-                    'id'         => (string) $leave->id, // leave calendar edit 用
+                    'id'         => (string) ($leave->id . '-' . $date->toDateString()), // 日別ユニーク
                     'title'      => $title,
                     'start'      => $startAt,
                     'end'        => $endAt,

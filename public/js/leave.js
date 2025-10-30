@@ -100,32 +100,37 @@ document.addEventListener('DOMContentLoaded', function () {
 
             document.getElementById('eventModalBody').innerHTML = html;
             // new bootstrap.Modal(document.getElementById('eventModal')).show();　←削除
-            // 上記の代わり：編集リンク設定（leave.id がある前提）
+            // 上記の代わり：編集リンク設定（期間 + original_user_id で絞り込み）
             if (editBtn) {
-                const lid = e?.id ?? p?.id ?? null; // 念のため extendedProps.id もフォールバック
-                if (lid) {
-                    // Absence Manager（leaves.edit）へ leave_id で絞り込み
-                    editBtn.href = `/leave_manager?leave_id=${encodeURIComponent(lid)}`;
-                    editBtn.style.removeProperty('display');  // display:none を解除
+                const uid   = p.user?.id ?? null; // original_user_id = Leaveのuser_id
+                const sDate = p.leave?.start_date ?? (e.start ? e.start.toISOString().slice(0,10) : null);
+                const eDate = p.leave?.end_date   ?? sDate; // end_date が無ければ単日
+                if (uid && sDate) {
+                    const url = `/leave_manager?user_id=${encodeURIComponent(uid)}&start_date=${encodeURIComponent(sDate)}${eDate ? `&end_date=${encodeURIComponent(eDate)}` : ''}`;
+                    editBtn.href = url;
+                    editBtn.style.removeProperty('display'); // display:none を解除
                     editBtn.classList.remove('disabled');
                     editBtn.setAttribute('aria-disabled', 'false');
                 }
             }
             // end here
 
-            // ★対応する Event へのリンク設定
-            const eid = p.leave?.related_event_id ?? null;
-            if (relatedBtn && eid) {
-                relatedBtn.href = `/forecast?event_id=${encodeURIComponent(eid)}`;
+            // ★対応する Event へのリンク設定（期間 + original_user_id で検索）
+            const uid2   = p.user?.id ?? null;                                   // original_user_id
+            const sDate2 = p.leave?.start_date ?? (e.start ? e.start.toISOString().slice(0,10) : null);
+            const eDate2 = p.leave?.end_date   ?? sDate2;
+            if (relatedBtn && uid2 && sDate2) {
+                const url2 = `/event_assigner?original_user_id=${encodeURIComponent(uid2)}&event_date=${encodeURIComponent(sDate2)}${eDate2 ? `&end_date=${encodeURIComponent(eDate2)}` : ''}`;
+                relatedBtn.href = url2;
                 relatedBtn.style.removeProperty('display');
                 relatedBtn.classList.remove('disabled');
                 relatedBtn.setAttribute('aria-disabled', 'false');
             }
             // ★ end here
 
-           // 既存のモーダルを再利用
-           const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('eventModal'));
-           modal.show();
+            // 既存のモーダルを再利用
+            const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('eventModal'));
+            modal.show();
         }
     });
 
