@@ -172,7 +172,7 @@
                                     <label class="form-label small mb-0">Special Type</label>
                                     <input type="text" name="special_type" class="form-control form-control-sm"
                                         value="{{ old('special_type', $leave->special_type) }}"
-                                        placeholder="Details for special leave">
+                                        placeholder="Wedding...">
                                 </div>
 
                             </div>
@@ -232,7 +232,7 @@
                             <div class="mb-0">
                                 <label class="form-label small mb-0">Reason</label>
                                 <textarea name="reason" class="form-control form-control-sm" rows="2"
-                                    placeholder="Reason">{{ old('reason', $leave->reason) }}</textarea>
+                                    placeholder="Leave this blank for absence">{{ old('reason', $leave->reason) }}</textarea>
                             </div>
 
                             {{-- 6: Handle Type --}}
@@ -240,7 +240,7 @@
                                 <label class="form-label small mb-0">Handle Type</label>
                                 <input type="text" name="handle_type" class="form-control form-control-sm"
                                     value="{{ old('handle_type', $leave->handle_type) }}"
-                                    placeholder="Absence handling type">
+                                    placeholder="Leave this blank">
                             </div>
                         </div>
 

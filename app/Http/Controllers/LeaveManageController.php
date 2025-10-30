@@ -27,6 +27,7 @@ public function edit(Request $request)
         ->get();
 
     // 2) パラメータ取得
+    $leaveId     = $request->input('leave_id'); // ★個別編集用パラメータ
     $userId      = $request->input('user_id');
     $kind        = $request->input('kind');
     $excused     = $request->input('excused');
@@ -60,6 +61,7 @@ public function edit(Request $request)
     // 4) クエリ（Event版と同順序・構成）
     $leaves = Leave::query()
         ->with(['user:id,first_name,family_name,employee_code'])
+        ->when($leaveId,     fn($q) => $q->where('id', $leaveId)) // ★個別編集用パラメータ: leave_id があれば最優先で一意絞り込み
         ->when($userId,      fn($q) => $q->where('user_id', $userId))
         ->when($kind,        fn($q) => $q->where('kind', $kind))
         ->when($excused,     fn($q) => $q->where('excused', $excused))

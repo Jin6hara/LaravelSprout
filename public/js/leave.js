@@ -49,19 +49,63 @@ document.addEventListener('DOMContentLoaded', function () {
             const e = info.event;
             const p = e.extendedProps || {};
 
+            // ★毎回タイトル初期化＆編集ボタンを初期化（非表示/無効化）
+            const titleEl = document.querySelector('#eventModal .modal-title');
+            if (titleEl) titleEl.textContent = 'Details';
+            const editBtn = document.getElementById('eventEditLink');
+            if (editBtn) {
+                editBtn.href = '#';
+                editBtn.style.display = 'none';
+                editBtn.classList.add('disabled');
+                editBtn.setAttribute('aria-disabled', 'true');
+            }
+            // ★ end here
+
             const title = e.title || 'Leave';
             const fmt = (d) => d ? d.toLocaleDateString('ja-JP') : '';
 
             let html = `<div class="mb-2"><strong>${title}</strong></div>`;
             if (e.start || e.end) {
-                html += `<div>Date: ${fmt(e.start)}${e.end ? ' 〜 ' + fmt(e.end) : ''}</div>`;
+                html += `<div class="mt-2 mb-2">Date: ${fmt(e.start)}</div>`; // ${e.end ? ' 〜 ' + fmt(e.end) : ''}
             }
-            if (p.kind)   html += `<div>Kind: ${p.kind}</div>`;
-            if (p.status) html += `<div>Status: ${p.status}</div>`;
-            if (p.user_name) html += `<div>User: ${p.user_name}</div>`;
+            //if (p.leave?.kind)   html += `<div class="small text-muted">Kind: ${p.leave.kind}</div>`; タイトルにあるため削除
+            if (p.leave?.status) html += `<div class="small text-muted">Status: ${p.leave.status}</div>`;
+            //if (p.user?.name) {
+                //const emp = p.user?.employee_code ? ` [${p.user.employee_code}]` : '';
+                //html += `<div>User: ${p.user.name}${emp}</div>`;
+            //}　タイトルにあるため削除、学習用として残しておく。
+            // ★Handle_type
+            if (p.leave?.handle_type) {
+                html += `<div class="small text-muted">Handle Type: ${p.leave.handle_type}</div>`;
+            }
+            // ★excused
+            if (p.leave?.excused) {
+                html += `<div class="small text-muted">Excused: ${p.leave.excused}</div>`;
+            }
+            // ★Reason（改行対応）
+            if (p.leave?.reason) {
+                 const reasonHtml = String(p.leave.reason).replace(/\n/g, '<br>');
+                html += `<div class="mt-2 mb-2 small text-muted">Reason: ${reasonHtml}</div>`;
+            }
 
             document.getElementById('eventModalBody').innerHTML = html;
-            new bootstrap.Modal(document.getElementById('eventModal')).show();
+            // new bootstrap.Modal(document.getElementById('eventModal')).show();　←削除
+            // 上記の代わり：編集リンク設定（leave.id がある前提）
+            if (editBtn) {
+                const lid = e?.id ?? p?.id ?? null; // 念のため extendedProps.id もフォールバック
+                if (lid) {
+                    // Absence Manager（leaves.edit）へ leave_id で絞り込み
+                    editBtn.href = `/leave_manager?leave_id=${encodeURIComponent(lid)}`;
+                    editBtn.style.removeProperty('display');  // display:none を解除
+                    editBtn.classList.remove('disabled');
+                    editBtn.setAttribute('aria-disabled', 'false');
+                }
+            }
+            // end here
+
+           // 既存のモーダルを再利用
+           const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('eventModal'));
+           modal.show();
         }
     });
 

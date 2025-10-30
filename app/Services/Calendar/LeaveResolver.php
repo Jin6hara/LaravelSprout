@@ -50,6 +50,11 @@ class LeaveResolver
                 $arr['type']      = $type;
                 $arr['planGroup'] = $planGroup;
 
+                // ★id を保証（toArray 等で落ちた場合に extendedProps.leave.id から復元）
+                if (empty($arr['id']) && !empty($arr['extendedProps']['leave']['id'])) {
+                    $arr['id'] = (string) $arr['extendedProps']['leave']['id'];
+                }
+
                 if ($type === EventType::BACKGROUND) {
                     // 背景表示の補完
                     if (!isset($arr['display'])) $arr['display'] = 'background';
