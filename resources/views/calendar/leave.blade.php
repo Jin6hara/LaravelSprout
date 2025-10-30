@@ -44,7 +44,7 @@
                       href="#"
                       class="btn btn-sm btn-outline-secondary"
                       style="display:none; color:#6c757d;"
-                      target="_blank" rel="noopener">Shift</a>
+                      rel="noopener">Shift</a> {{--target="_blank" (タブの管理大変の為、削除)--}}
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
             </div>
