@@ -23,8 +23,8 @@ class LeaveSnapshotService
             // まず既存のスナップショットを消す（冪等性）
             $this->deleteSnapshotsForLeave($leave);
 
-            // 承認済みのみ生成（ポリシーは要件に合わせて）
-            if ($leave->status !== 'approved') return;
+            // Approved, Pendingの場合生成（ポリシーは要件に合わせて）
+            if (!in_array($leave->status, ['approved', 'pending'], true)) return;
 
             // 期間生成（end_date が null の場合は単日）
             $start = Carbon::parse($leave->start_date);

@@ -190,7 +190,7 @@
                                 <div class="col-6">
                                     <label class="form-label small mb-0">Status</label>
                                     <input type="hidden" name="status" value="approved">
-                                    <select name="status" class="form-select form-select-sm" disabled>
+                                    <select name="status" class="form-select form-select-sm">
                                         @foreach($statusOptions as $v => $label)
                                         <option value="{{ $v }}" @selected($leave->status===$v)>{{ $label }}</option>
                                         @endforeach
