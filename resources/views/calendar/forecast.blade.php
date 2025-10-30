@@ -37,7 +37,7 @@
                     <a id="eventEditLink" href="#"
                       class="btn btn-sm btn-outline-secondary"
                       style="display:none; color:#6c757d;"
-                      target="_blank" rel="noopener">Edit</a>
+                      rel="noopener">Edit</a> {{--target="_blank" (タブの管理大変の為、削除)--}}
                     <!-- 対応するLeave編集へのショートカット（JSでhrefをセット） -->
                     <a id="leaveEditLink" href="#"
                       class="btn btn-sm btn-outline-secondary"
