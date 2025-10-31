@@ -122,7 +122,7 @@
 
 .fc .fc-event.fc-leave-absence_to_paid {
   background-color: #5db1ff !important; /* blue */
-  border-color: #3a84fcee;
+  border-color: #5db1ff; 
   color: #fff !important;
 }
 
@@ -146,7 +146,7 @@
 }
 
 .fc .fc-event.fc-leave-absence {
-  background-color: #6c7486d0 !important; /* yellow */
+  background-color: #6c7486d0 !important; /* dark grey */
   border-color: #6c7486d0;
   color: #000 !important;
 }
@@ -155,7 +155,7 @@
 
 /* 1) handle_type = null && status = pending → red */
 .fc .fc-event.fc-leave.fc-leave-absence.status-pending.absence-unhandled-pending {
-  border-color: #449cef !important; /* red */
+  border-color: #449cef !important; /* light blue */
 }
 
 /* 2) handle_type != null && status = pending → yellow */

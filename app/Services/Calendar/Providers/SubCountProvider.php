@@ -16,7 +16,7 @@ class SubCountProvider implements CalendarEventProvider
         $startDate = $start->toDateString();
         $endDate   = $end->copy()->subDay()->toDateString(); // FC end は排他
 
-        // === Sub 判定 ===
+        // === Sub 判定（校名に含まれる語） ===
         $kw = (array) config('calendar.sub_keywords', ['sub', 'SUB', 'サブ', '代行']);
         $isSubName = function (?string $name) use ($kw): bool {
             if (!$name) return false;
@@ -38,50 +38,18 @@ class SubCountProvider implements CalendarEventProvider
 
         $leaveUsersByDate = []; // [date][user_id] = true
         foreach ($leaveRows as $lv) {
-            // 全休のみ除外対象
-            if (!is_null($lv->time_start) || !is_null($lv->time_end)) continue;
-
+            if (!is_null($lv->time_start) || !is_null($lv->time_end)) continue; // 全休のみ除外対象
             $ls = Carbon::parse($lv->start_date)->startOfDay();
             $le = $lv->end_date ? Carbon::parse($lv->end_date)->startOfDay()->addDay() : $ls->copy()->addDay();
             $S = $ls->greaterThan($rangeS) ? $ls : $rangeS;
             $E = $le->lessThan($rangeE) ? $le : $rangeE;
             if ($E <= $S) continue;
-
-            for ($d=$S->copy(); $d < $E; $d->addDay()) {
+            for ($d = $S->copy(); $d < $E; $d->addDay()) {
                 $leaveUsersByDate[$d->toDateString()][(int)$lv->user_id] = true;
             }
         }
 
-        // === (A) events: schedule_change & sub校名 & assigned_user_id ===
-        $events = DB::table('events')
-            ->select('id', 'event_date', 'source_schedule_line_id', 'assigned_user_id', 'school_name')
-            ->whereBetween('event_date', [$startDate, $endDate])
-            ->where('type', 'schedule_change')
-            ->whereNotNull('assigned_user_id')
-            ->where(function ($q) use ($kw) {
-                foreach ($kw as $w) $q->orWhere('school_name', 'like', "%{$w}%");
-            })
-            ->get();
-
-        $eventUsersCounted   = []; // [date][user_id]=true
-        $eventUsersAbsent    = []; // [date][user_id]=true
-        $eventUsersByDateLine = []; // [date][line_id][user_id]=true
-        foreach ($events as $e) {
-            if (!$isSubName($e->school_name)) continue;
-            $d   = Carbon::parse($e->event_date)->toDateString();
-            $uid = (int)$e->assigned_user_id;
-
-            if (!empty($leaveUsersByDate[$d][$uid])) {
-                $eventUsersAbsent[$d][$uid] = true;
-            } else {
-                $eventUsersCounted[$d][$uid] = true;
-            }
-            if (!empty($e->source_schedule_line_id)) {
-                $eventUsersByDateLine[$d][(int)$e->source_schedule_line_id][$uid] = true;
-            }
-        }
-
-        // === (B) rest_pattern_adjustments: work_instead を “人数”で ===
+        // === (B) rest_pattern_adjustments: work_instead を人数で ===
         $adjRows = DB::table('rest_pattern_adjustments as rpa')
             ->join('user_rest_patterns as urp', 'urp.rest_pattern_id', '=', 'rpa.rest_pattern_id')
             ->whereBetween('rpa.date', [$startDate, $endDate])
@@ -99,14 +67,11 @@ class SubCountProvider implements CalendarEventProvider
         foreach ($adjRows as $row) {
             $d   = Carbon::parse($row->date)->toDateString();
             $uid = (int)$row->user_id;
-            if (!empty($leaveUsersByDate[$d][$uid])) {
-                $rwdUsersAbsent[$d][$uid] = true;
-            } else {
-                $rwdUsersCounted[$d][$uid] = true;
-            }
+            if (!empty($leaveUsersByDate[$d][$uid])) $rwdUsersAbsent[$d][$uid] = true;
+            else                                    $rwdUsersCounted[$d][$uid] = true;
         }
 
-        // === (C) schedule_lines: “当日割当ユーザー数”で（イベント化＆欠席控除） ===
+        // === (C) schedule_lines: 当日割当ユーザー数（欠席控除） ===
         $lines = DB::table('schedule_lines')
             ->select('id', 'schedule_id', 'dow', 'school_name', 'effective_start', 'effective_end')
             ->whereDate('effective_start', '<=', $endDate)
@@ -152,14 +117,13 @@ class SubCountProvider implements CalendarEventProvider
             $effS = Carbon::parse($ln->effective_start)->startOfDay();
             $effE = Carbon::parse($ln->effective_end)->startOfDay()->addDay(); // 排他
 
-            // line の有効期間 ∩ 集計期間
             $segS = $effS->greaterThan($rangeS) ? $effS : $rangeS;
             $segE = $effE->lessThan($rangeE) ? $effE : $rangeE;
             if ($segE <= $segS) continue;
 
             $as = $assignBySchedule[$ln->schedule_id] ?? [];
 
-            for ($cur=$segS->copy(); $cur < $segE; $cur->addDay()) {
+            for ($cur = $segS->copy(); $cur < $segE; $cur->addDay()) {
                 if ($dbDowOf($cur) !== (int)$ln->dow) continue;
                 $d = $cur->toDateString();
 
@@ -170,63 +134,95 @@ class SubCountProvider implements CalendarEventProvider
                         $users[$rec['user_id']] = true;
                     }
                 }
-                // 同日同 line でイベント化 → 控除
-                if (!empty($eventUsersByDateLine[$d][$ln->id])) {
-                    foreach (array_keys($eventUsersByDateLine[$d][$ln->id]) as $uid) {
-                        unset($users[$uid]);
-                    }
-                }
 
-                // 欠席者とそれ以外に分ける
                 foreach (array_keys($users) as $uid) {
-                    if (!empty($leaveUsersByDate[$d][$uid])) {
-                        $lineUsersAbsent[$d][$uid] = true;
-                    } else {
-                        $lineUsersCounted[$d][$uid] = true;
-                    }
+                    if (!empty($leaveUsersByDate[$d][$uid])) $lineUsersAbsent[$d][$uid] = true;
+                    else                                    $lineUsersCounted[$d][$uid] = true;
                 }
             }
         }
 
-        // === (D) ユーザー名解決（まとめて 1 クエリ） ===
+        // === (D) subs: 直接登録された代行（日付ベース、欠席控除） ===
+        $subsRows = DB::table('subs')
+            ->select('user_id', 'sub_date', 'start_time', 'end_time') // ← 時間も取得（モーダル用）
+            ->whereBetween('sub_date', [$startDate, $endDate])
+            ->get();
+
+        $subsUsersCounted = []; // [date][user_id]=array{start_hm?,end_hm?} | true
+        $subsUsersAbsent  = []; // [date][user_id]=array{start_hm?,end_hm?} | true
+        foreach ($subsRows as $row) {
+            $d   = Carbon::parse($row->sub_date)->toDateString();
+            $uid = (int)$row->user_id;
+
+            // DBの TIME(= 'HH:MM:SS' など) を 'H:i' に正規化（null対応）
+            $fmt = function ($t) {
+                if ($t === null) return null;
+                // 文字列 'HH:MM:SS' の想定だが、Carbon::parse で柔軟に
+                try {
+                    return Carbon::parse($t)->format('H:i');
+                } catch (\Throwable $e) {
+                    return null;
+                }
+            };
+            $startHm = $fmt($row->start_time);
+            $endHm   = $fmt($row->end_time);
+
+            // 欠席なら absent 側、そうでなければ counted 側へ
+            $payload = array_filter(['start_hm' => $startHm, 'end_hm' => $endHm], fn($v) => $v !== null);
+
+            if (!empty($leaveUsersByDate[$d][$uid])) {
+                // start/end が取れなければ true だけでもOK（JS側は自動で時間非表示）
+                $subsUsersAbsent[$d][$uid] = !empty($payload) ? $payload : true;
+            } else {
+                $subsUsersCounted[$d][$uid] = !empty($payload) ? $payload : true;
+            }
+        }
+
+        // === ユーザー名解決（まとめて 1 クエリ） ===
         $allIds = [];
         $collect = function (&$arr) use (&$allIds) {
             foreach ($arr as $d => $set) foreach (array_keys($set) as $uid) $allIds[$uid] = true;
         };
-        $collect($eventUsersCounted);
-        $collect($eventUsersAbsent);
         $collect($rwdUsersCounted);
         $collect($rwdUsersAbsent);
         $collect($lineUsersCounted);
         $collect($lineUsersAbsent);
+        $collect($subsUsersCounted);   // ★ subs_table からの出席Sub数
+        $collect($subsUsersAbsent);    // ★ subs_table からの欠席Sub数
 
         $nameById = empty($allIds) ? [] :
             DB::table('users')->whereIn('id', array_keys($allIds))->pluck('name', 'id')->map(fn($n) => (string)$n)->toArray();
 
-        // === (E) 出力：明細を extendedProps に格納 ===
+        // === 出力（B+C+D） ===
         $out = [];
         for ($d = $rangeS->copy(); $d < $rangeE; $d->addDay()) {
             $day = $d->toDateString();
 
-            $count_event = isset($eventUsersCounted[$day]) ? count($eventUsersCounted[$day]) : 0;
             $count_line  = isset($lineUsersCounted[$day])  ? count($lineUsersCounted[$day])  : 0;
             $count_rwd   = isset($rwdUsersCounted[$day])   ? count($rwdUsersCounted[$day])   : 0;
+            $count_subs  = isset($subsUsersCounted[$day])  ? count($subsUsersCounted[$day])  : 0; // ★ subs_table からの出席数
+            $total       = $count_line + $count_rwd + $count_subs;
 
-            $total = $count_event + $count_line + $count_rwd;
+            $abs_line    = isset($lineUsersAbsent[$day])  ? count($lineUsersAbsent[$day])  : 0;
+            $abs_rwd     = isset($rwdUsersAbsent[$day])   ? count($rwdUsersAbsent[$day])   : 0;
+            $abs_subs    = isset($subsUsersAbsent[$day])  ? count($subsUsersAbsent[$day])  : 0;   // ★ subs_table からの欠席数
+            $totalCandidates = $total + $abs_line + $abs_rwd + $abs_subs;
 
-            // ★追加: 欠席で除外された“候補”の件数も集計（候補が1件以上なら0件でも描画）
-            $abs_event = isset($eventUsersAbsent[$day]) ? count($eventUsersAbsent[$day]) : 0;   // ★追加
-            $abs_line  = isset($lineUsersAbsent[$day])  ? count($lineUsersAbsent[$day])  : 0;   // ★追加
-            $abs_rwd   = isset($rwdUsersAbsent[$day])   ? count($rwdUsersAbsent[$day])   : 0;   // ★追加
-            $totalCandidates = $total + $abs_event + $abs_line + $abs_rwd;                      // ★追加
+            if ($totalCandidates === 0) continue;
 
-            // ★変更: もともとSub候補が全くない日はスキップ。候補があれば total=0 でも描画する
-            if ($totalCandidates === 0) continue;                                               // ★変更
-
+            // ★ subs の場合、値が true のこともあれば ['start_hm'=>..,'end_hm'=>..] のこともあるので両対応
             $makeList = function ($set) use ($nameById) {
                 $arr = [];
-                foreach (array_keys($set ?? []) as $uid) {
-                    $arr[] = ['id' => (int)$uid, 'name' => $nameById[$uid] ?? ('#' . $uid)];
+                foreach (($set ?? []) as $uid => $val) {
+                    $item = [
+                        'id'   => (int)$uid,
+                        'name' => $nameById[$uid] ?? ('#' . $uid),
+                    ];
+                    if (is_array($val)) {
+                        if (!empty($val['start_hm'])) $item['start_hm'] = $val['start_hm'];
+                        if (!empty($val['end_hm']))   $item['end_hm']   = $val['end_hm'];
+                    }
+                    $arr[] = $item;
                 }
                 // 名前で安定ソート
                 usort($arr, fn($a, $b) => strcmp($a['name'], $b['name']));
@@ -234,14 +230,14 @@ class SubCountProvider implements CalendarEventProvider
             };
 
             $users = [
-                'event'        => $makeList($eventUsersCounted[$day] ?? []),
                 'line'         => $makeList($lineUsersCounted[$day]  ?? []),
                 'work_instead' => $makeList($rwdUsersCounted[$day]   ?? []),
+                'subs'         => $makeList($subsUsersCounted[$day]  ?? []), // ★時間付きに対応
             ];
             $absent_users = [
-                'event'        => $makeList($eventUsersAbsent[$day] ?? []),
                 'line'         => $makeList($lineUsersAbsent[$day]  ?? []),
                 'work_instead' => $makeList($rwdUsersAbsent[$day]   ?? []),
+                'subs'         => $makeList($subsUsersAbsent[$day]  ?? []),  // ★時間付きに対応
             ];
 
             $out[] = new CandidateEvent([
@@ -250,19 +246,18 @@ class SubCountProvider implements CalendarEventProvider
                 'allDay' => true,
                 'classNames' => array_filter([
                     'ev-subcount',
-                    $total === 0 ? 'ev-subcount-zero' : null, // ★追加: 0件の見分け用（任意CSS）
+                    $total === 0 ? 'ev-subcount-zero' : null,
                 ]),
                 'extendedProps' => [
                     'category' => 'subcount',
                     'count' => $total,
                     'count_breakdown' => [
-                        'event' => $count_event,
-                        'line' => $count_line,
+                        'line'         => $count_line,
                         'work_instead' => $count_rwd,
+                        'subs'         => $count_subs,   // ★ 追加
                     ],
-                    // 明細
-                    'users' => $users,                 // 各カテゴリの“カウント対象”ユーザー
-                    'absent_users' => $absent_users,   // 各カテゴリの“欠席で除外された”ユーザー
+                    'users'         => $users,
+                    'absent_users'  => $absent_users,
                 ],
             ]);
         }

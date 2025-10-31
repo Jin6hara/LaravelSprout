@@ -42,11 +42,10 @@ class LeaveSnapshotService
      */
     public function deleteSnapshotsForLeave(Leave $leave): void
     {
-        DB::transaction(function () use ($leave) {
-            Event::query()
-                ->where('source_leave_id', $leave->id)
-                ->delete();
-        });
+        // source_leave_id 紐付きイベントを物理削除（SoftDeletesなら ->forceDelete() でも可）
+        Event::query()
+            ->where('source_leave_id', $leave->id)
+            ->delete(); // EventDetail は FK cascade で自動削除
     }
 
     /**
@@ -86,6 +85,20 @@ class LeaveSnapshotService
             if (strcasecmp(trim($school), 'sub') === 0) {  // ← 完全一致（大文字小文字無視）
                 continue;
             }
+
+            // ▼ subsテーブルに同日の記録がある場合はスキップ（ON/OFF可能ブロック）
+            $skipSubs = true; // ← OFFにしたいときは false に
+            if ($skipSubs) {
+                $existsInSubs = DB::table('subs')
+                    ->where('user_id', $userId)
+                    ->whereDate('sub_date', $ymd)
+                    ->exists();
+                if ($existsInSubs) {
+                    // subsテーブルに登録がある → スナップショット作成スキップ
+                    continue;
+                }
+            }
+
             // 二重生成の保険
             $exists = Event::query()
                 ->whereDate('event_date', $ymd)
