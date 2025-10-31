@@ -34,7 +34,7 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\Calendar\Providers\WorkProvider::class,
             \App\Services\Calendar\Providers\LeaveProvider::class,
             \App\Services\Calendar\Providers\EventProvider::class,
-            //\App\Services\Calendar\Providers\SubProvider::class,
+            \App\Services\Calendar\Providers\SubProvider::class,
         ], 'calendar.providers');
 
         // Resolver をシングルトンで用意し、タグ経由で Provider 群を注入
