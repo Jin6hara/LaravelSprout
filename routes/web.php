@@ -242,3 +242,15 @@ Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
     Route::get('/commuter-pass-advisor', [CommuterPassAdvisorController::class, 'index'])
         ->name('commuter.advisor.index');
 });
+
+use App\Http\Controllers\RouteDeclarationController;
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/routes', [RouteDeclarationController::class, 'index'])
+        ->name('routes.index');
+
+    // 管理者専用ルート
+    Route::get('/routes/{user}', [RouteDeclarationController::class, 'showUser'])
+        ->middleware('role:admin|super_admin')
+        ->name('routes.user');
+});
