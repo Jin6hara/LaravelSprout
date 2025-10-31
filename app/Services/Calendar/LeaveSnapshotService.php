@@ -42,11 +42,10 @@ class LeaveSnapshotService
      */
     public function deleteSnapshotsForLeave(Leave $leave): void
     {
-        DB::transaction(function () use ($leave) {
-            Event::query()
-                ->where('source_leave_id', $leave->id)
-                ->delete();
-        });
+        // source_leave_id 紐付きイベントを物理削除（SoftDeletesなら ->forceDelete() でも可）
+        Event::query()
+            ->where('source_leave_id', $leave->id)
+            ->delete(); // EventDetail は FK cascade で自動削除
     }
 
     /**

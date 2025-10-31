@@ -10,7 +10,8 @@ class LeaveObserver
 {
     public function created(Leave $leave): void
     {
-        app(LeaveSnapshotService::class)->rebuildSnapshotsForLeave($leave);
+        // トランザクション確定後にスナップショット生成（新規は無条件でOK）
+        DB::afterCommit(fn() => app(LeaveSnapshotService::class)->rebuildSnapshotsForLeave($leave));
     }
 
     public function updated(Leave $leave): void
@@ -21,9 +22,10 @@ class LeaveObserver
         DB::afterCommit(fn() => app(LeaveSnapshotService::class)->rebuildSnapshotsForLeave($leave));
     }
 
+    // onCascade delete あるため原則不要。
+    // 将来DB連鎖では消せない他テーブルを削除、削除時に通知・ログ記録等を行う場合に利用。
     public function deleted(Leave $leave): void
     {
-        // 紐づく regular_copy を削除
-        app(LeaveSnapshotService::class)->deleteSnapshotsForLeave($leave);
+        DB::afterCommit(fn() => app(LeaveSnapshotService::class)->deleteSnapshotsForLeave($leave));
     }
 }
