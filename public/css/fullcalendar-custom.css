@@ -1,0 +1,160 @@
+/* 今日の日付背景 */
+.fc-day-today {
+  outline-offset: -2px;
+  animation: today-glow-inset 2s infinite;
+}
+
+@keyframes today-glow-inset {
+  20% {
+    box-shadow: inset 0 0 3px 2px rgba(255, 128, 128, 0.5);
+  }
+  50% {
+    box-shadow: inset 0 0 15px 6px rgba(255, 180, 180, 0.53);
+  }
+  100% {
+    box-shadow: inset 0 0 3px 2px rgba(254, 255, 180, 0.53);
+  }
+}
+
+/* (適用中)祝日背景 */
+.fc-holiday {
+  background-color: rgba(255, 122, 122, 0.54) !important;
+  border: 1px solid rgba(255, 255, 255, 1) !important;
+}
+
+/* 上記"!important"を外すと下記が適用される */
+.fc-holiday {
+  animation: rainbow-bg 3s linear infinite;
+}
+
+@keyframes rainbow-bg {
+  0% {
+    background-color: #ffaaaa;
+  }
+
+  20% {
+    background-color: #ffd700;
+  }
+
+  40% {
+    background-color: #aaffaa;
+  }
+
+  60% {
+    background-color: #aaaaff;
+  }
+
+  80% {
+    background-color: #ffaaff;
+  }
+
+  100% {
+    background-color: #ffaaaa;
+  }
+}
+
+/* ユーザー休日: 法定休 */
+.fc-off-statutory {
+  background-color: rgba(107, 107, 107, 0.47) !important;
+  border: 1px solid rgba(255, 255, 255, 1) !important;
+}
+
+/* ユーザー休日: 所定休 */
+.fc-off-prescribed {
+  background-color: rgba(173, 173, 173, 0.51) !important;
+  border: 1px solid rgba(255, 255, 255, 1) !important;
+}
+
+/* 会社休業日 */
+.fc-company-break {
+  background-color: rgba(173, 173, 173, 0.51) !important;
+  border: 1px solid rgba(255, 255, 255, 1) !important;
+  font-weight: 600;
+}
+
+/* RWD（黄色）/ ORD（調整）は所定休と同じ色=fc-off-prescribed を使用 */
+.fc-rwd {
+  background-color: rgba(230, 157, 0, 0.5) !important;
+  border: 1px solid rgba(105, 107, 0, 0.45) !important;
+  font-weight: 600;
+}
+
+/* Regular shift (level5) */
+.fc-regular-shift {
+  background-color: rgba(0, 216, 11, 0.5) !important;
+  border: 1px solid rgba(25, 135, 84, .35) !important;
+}
+
+/* Regular shift - Sub (level5) */
+.fc-regular-shift-sub {
+  background-color: rgba(230, 157, 0, 0.5) !important;
+  border: 1px solid rgba(105, 107, 0, 0.45) !important;
+  font-weight: 600;
+}
+
+/* Event Overtime shift  */
+.fc-event-overtime {
+  background-color: rgba(137, 46, 255, 0.5) !important;
+  border: 1px solid rgba(194, 103, 255, 0.5)
+}
+/* Event RT & Others shift  */
+.fc-event-regular_time,
+.fc-event-schedule_change,
+.fc-event-rostered_working_day,
+.fc-event-special {
+  background-color: rgba(0, 218, 127, 0.5) !important;
+  border: 1px solid rgba(72, 255, 155, 0.5)
+}
+
+/* Leave Paid & Special */
+.fc-leave-paid,
+.fc-leave-special {
+  background-color: rgba(2, 159, 221, 0.644) !important;
+  border: 1px solid rgba(0, 107, 150, 0.644)
+}
+
+.fc-leave-absence {
+  background-color: rgba(88, 88, 88, 0.658) !important;
+  border: 1px solid rgba(102, 102, 102, 0.568)
+}
+
+
+/* カレンダー横幅調整 */
+#calendar {
+  max-width: 1300px; /* autoは無効なので具体値を */
+  margin: 20px auto;
+}
+ 
+/* カレンダーセル内余白を-1にする */
+.fc .fc-daygrid-day-frame {
+  padding: -1px;
+}
+
+/* カレンダー曜日ヘッダーの下線を消す、色を黒く、文字を小さく */
+.fc-col-header-cell-cushion {
+  text-decoration: none !important;
+  color: #222 !important;
+  font-size: 0.95em !important;
+}
+
+/* カレンダー日付（数字）の色を黒く、文字を小さく、underline消す */
+.fc-daygrid-day-number {
+  margin-top: -2px !important;
+  color: #222 !important;
+  font-size: 0.90em !important;
+  text-decoration: none !important;
+}
+
+/* イベント全体（枠） */
+.fc-daygrid-event {
+  margin-top: -2px;                 /* イベントの上部余白（セル内の日付数字との間隔）[-2] */
+  margin-bottom: 1px;              /* イベントの下部余白（セル下端との間隔）[3] */
+  white-space: nowrap;              /* イベントテキストの折り返しを禁止（1行表示）[pre-line] */
+  overflow: hidden;                 /* 内容が枠を超えた場合は非表示にする [pre-line, scroll]*/
+  text-overflow: ellipsis;          /* 枠を超えた場合「...」で省略表示する [clip] */
+  font-size: 0.90em;                /* イベント文字サイズ（基準の90%で少し小さめ） */
+  padding: 0px 0px;                 /* イベント枠内の上下左右余白を0pxにする */
+  border-radius: 6px;               /* イベント枠の角丸指定（6px） */
+  box-sizing: border-box;           /* パディング・ボーダーを含めて幅・高さを計算 */
+  max-width: 95%;                   /* イベント枠の最大幅（セル幅の95%まで） */
+}
