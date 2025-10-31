@@ -37,10 +37,8 @@ return new class extends Migration
             $t->date('effective_end');
             $t->text('handover_memo')->nullable();
             $t->timestamps();
-            $t->index(
-                ['schedule_id', 'dow', 'effective_start', 'effective_end'],
-                'sch_line_idx'
-            );
+            $t->index(['schedule_id', 'dow', 'effective_start', 'effective_end'], 'sch_line_idx');
+            $t->index(['school_name', 'effective_start', 'effective_end'], 'sch_line_school_period_idx');
         });
     }
 

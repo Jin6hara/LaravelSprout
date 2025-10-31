@@ -155,6 +155,30 @@ document.addEventListener('DOMContentLoaded', function () {
         // ▼▼ Sub背景, Event枠クリック時の動作 ▼▼
         eventClick(info) {
             const ev = info.event;
+            //モーダルタイトルを毎回初期化（背景で "Total Subs ..." を表示したあとに残らないように）
+            const titleEl = document.querySelector('#eventModal .modal-title');
+            if (titleEl) titleEl.textContent = 'Details';
+
+            // ★編集ボタンを毎回初期化（非表示/無効化）
+            const editBtn = document.getElementById('eventEditLink');
+            if (editBtn) {
+                editBtn.href = '#';
+                editBtn.style.display = 'none';
+                editBtn.classList.add('disabled');
+                editBtn.setAttribute('aria-disabled', 'true');
+            }
+            // end ★編集ボタンの初期化
+
+            // ★Leaveボタンの初期化
+            const leaveBtn = document.getElementById('leaveEditLink');
+            if (leaveBtn) {
+                leaveBtn.href = '#';
+                leaveBtn.style.display = 'none';
+                leaveBtn.classList.add('disabled');
+                leaveBtn.setAttribute('aria-disabled', 'true');
+            }
+            // end ★Leaveボタンの初期化
+
             if (isSubEvt(ev)) {
                 info.jsEvent?.preventDefault();
                 info.jsEvent?.stopPropagation();
@@ -172,7 +196,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const assignDisp = p.assigned_user_name ?? (p.assigned_user_id != null ? `#${p.assigned_user_id}` : null);
             let html = `<div class="mb-2"><strong>${header}</strong></div>`;
             if (assignDisp) {
-                html += `<div class="small text-muted mb-2">Assigned: ${assignDisp}</div>`;
+                html += `<div class="small text-dark mb-2">Assigned: ${assignDisp}</div>`;
             }
             // ▲▲ assigned_user_name または assigned_user_id ▲▲
 
@@ -199,18 +223,53 @@ document.addEventListener('DOMContentLoaded', function () {
                 </li>`;
                 });
                 html += '</ul>';
+                // イベントのノート（改行は <br> に）
+                if (p.notes) {
+                    const noteHtml = String(p.notes).replace(/\n/g, '<br>');
+                    html += `<div class="mt-2 mb-2 small text-muted">Note: ${noteHtml}</div>`;
+                }
                 // ▲▲ 詳細があればリストで表示 ▲▲
             } else {
                 // ▼▼ 詳細がないときは従来の簡易情報 ▼▼
-                html += `<div>Type: ${p.kind ?? ''}</div>`;
+                if (p.notes) {
+                    const noteHtml = String(p.notes).replace(/\n/g, '<br>');
+                    html += `<div class="mt-2 mb-2 small text-muted">Note: ${noteHtml}</div>`;
+                }
+                //html += `<div>Type: ${p.kind ?? ''}</div>`;　// kind は使わないので削除
                 if (p.closure_code) html += `<div>Category: ${p.closure_code}</div>`;
                 const fmt = d => d ? d.toLocaleDateString('ja-JP') : '';
                 //if (e.start || e.end) html += `<div>日付：${fmt(e.start)}${e.end ? ' 〜 ' + fmt(e.end) : ''}</div>`; //endは使わないので削除
                 if (e.start || e.end) html += `<div>Date: ${fmt(e.start)}</div>`;
             }   // ▲▲ 詳細がないときは従来の簡易情報 ▲▲
 
+            // ★ イベント枠の場合のみ編集リンクを設定して表示
+            if (editBtn) {
+                const eid = e?.id ?? p?.id ?? null; // event.id を最優先、なければ extendedProps.id
+                if (eid) {
+                    editBtn.href = `/event_assigner?event_id=${encodeURIComponent(eid)}`; // name('calendar.edit')
+                    editBtn.style.removeProperty('display'); // display:none を解除
+                    editBtn.classList.remove('disabled');
+                    editBtn.setAttribute('aria-disabled', 'false');
+                }
+            }
+            // end ★ イベント枠の場合のみ編集リンクを設定して表示
+
+            // ★対応する Leave へのリンク設定（source_leave_id がある場合のみ）
+            if (leaveBtn) {
+                const lid = p?.source_leave_id ?? null;
+                if (lid) {
+                    leaveBtn.href = `/leave_manager?leave_id=${encodeURIComponent(lid)}`;
+                    leaveBtn.style.removeProperty('display'); // display:none を解除
+                    leaveBtn.classList.remove('disabled');
+                    leaveBtn.setAttribute('aria-disabled', 'false');
+                }
+            }
+            // end ★対応する Leave へのリンク設定
+
             document.getElementById('eventModalBody').innerHTML = html;
-            new bootstrap.Modal(document.getElementById('eventModal')).show();
+            // 既存のモーダルを再利用（どちらでもOKだが再利用の方が自然）
+            const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('eventModal'));
+            modal.show();
         }
         // ▲▲ Sub背景, Event枠クリック時の動作 ▲▲
     });

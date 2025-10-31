@@ -170,13 +170,13 @@ use App\Http\Controllers\EventAssignController;
 use App\Http\Controllers\LeaveController;
 
 Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
-    Route::get('/event_assigner', [EventAssignController::class, 'edit'])->name('calendar.edit');
-    Route::post('/events',        [EventAssignController::class, 'store'])->name('events.store');
-    Route::post('/events/blank', [EventAssignController::class, 'storeBlank'])->name('events.store.blank');
-    Route::put('/events/{event}', [EventAssignController::class, 'update'])->name('events.update');
+    Route::get('/shift_assigner', [EventAssignController::class, 'edit'])->name('calendar.edit');
+    Route::post('/shift',        [EventAssignController::class, 'store'])->name('events.store');
+    Route::post('/shift/blank', [EventAssignController::class, 'storeBlank'])->name('events.store.blank');
+    Route::put('/shift/{event}', [EventAssignController::class, 'update'])->name('events.update');
     // ★ 一括更新（このページに表示されている分だけ送る）
-    Route::post('/events/bulk-update', [EventAssignController::class, 'bulkUpdate'])->name('events.bulk_update');
-    Route::delete('/events/{event}', [EventAssignController::class, 'destroy'])->name('events.destroy');
+    Route::post('/shifts/bulk-update', [EventAssignController::class, 'bulkUpdate'])->name('events.bulk_update');
+    Route::delete('/shift/{event}', [EventAssignController::class, 'destroy'])->name('events.destroy');
     Route::post('/leaves',        [LeaveController::class, 'store'])->name('leaves.store');
 });
 
@@ -227,3 +227,18 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/lessons/by-code/{code}', [ScheduleDetailController::class, 'findLessonByCode'])->name('lessons.by_code');
 });
 
+use App\Http\Controllers\ScheduleController;
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/schedules', [ScheduleController::class, 'index'])->name('schedules.index');
+    Route::put('/schedules/{schedule}', [ScheduleController::class, 'update'])->name('schedules.update');
+    Route::post('/schedules', [ScheduleController::class, 'store'])->name('schedules.store');
+    Route::delete('/schedules/{schedule}', [ScheduleController::class, 'destroy'])->name('schedules.destroy');
+});
+
+use App\Http\Controllers\CommuterPassAdvisorController;
+
+Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
+    Route::get('/commuter-pass-advisor', [CommuterPassAdvisorController::class, 'index'])
+        ->name('commuter.advisor.index');
+});

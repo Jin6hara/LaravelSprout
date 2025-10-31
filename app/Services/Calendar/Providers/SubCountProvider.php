@@ -29,7 +29,7 @@ class SubCountProvider implements CalendarEventProvider
         $rangeE = $end->copy()->startOfDay(); // 排他
         $leaveRows = DB::table('leaves')
             ->select('user_id', 'start_date', 'end_date', 'time_start', 'time_end', 'status')
-            ->where('status', 'approved')
+            ->whereIn('status', ['approved', 'pending'])
             ->whereDate('start_date', '<=', $endDate)
             ->where(function ($q) use ($startDate) {
                 $q->whereNull('end_date')->orWhereDate('end_date', '>=', $startDate);

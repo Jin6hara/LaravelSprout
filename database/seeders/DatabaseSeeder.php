@@ -33,6 +33,7 @@ class DatabaseSeeder extends Seeder
             ExpenseReportSeptemberSeeder::class,
             ExpenseSeptemberBlankSeeder::class,
             SchoolSeeder::class,
+            CommuterPassSeeder::class,
         ]);
 
         // \App\Models\User::factory(10)->create();

@@ -27,6 +27,7 @@ public function edit(Request $request)
         ->get();
 
     // 2) パラメータ取得
+    $leaveId     = $request->input('leave_id'); // ★個別編集用パラメータ
     $userId      = $request->input('user_id');
     $kind        = $request->input('kind');
     $excused     = $request->input('excused');
@@ -60,6 +61,7 @@ public function edit(Request $request)
     // 4) クエリ（Event版と同順序・構成）
     $leaves = Leave::query()
         ->with(['user:id,first_name,family_name,employee_code'])
+        ->when($leaveId,     fn($q) => $q->where('id', $leaveId)) // ★個別編集用パラメータ: leave_id があれば最優先で一意絞り込み
         ->when($userId,      fn($q) => $q->where('user_id', $userId))
         ->when($kind,        fn($q) => $q->where('kind', $kind))
         ->when($excused,     fn($q) => $q->where('excused', $excused))
@@ -67,20 +69,15 @@ public function edit(Request $request)
         ->when($specialType, fn($q) => $q->where('special_type', 'like', '%'.$specialType.'%'))
         ->when($handleType,  fn($q) => $q->where('handle_type',  'like', '%'.$handleType.'%'))
         ->when($reason,      fn($q) => $q->where('reason',      'like', '%'.$reason.'%'))
-        // ⬇︎ 日付フィルタ（start & end ⇒ 期間, startのみ ⇒ 当日）
+        // ⬇︎ 日付フィルタ（単日= start_date、期間= start_date..end_date）
+        //   → end_effective = COALESCE(end_date, start_date) として区間重なりを一本化
         ->when($startDate && $endDate, function ($q) use ($startDate, $endDate) {
             $q->whereDate('start_date', '<=', $endDate)
-              ->where(function($qq) use ($startDate) {
-                  $qq->whereDate('end_date', '>=', $startDate)
-                     ->orWhereNull('end_date');
-              });
+              ->whereRaw('DATE(COALESCE(end_date, start_date)) >= ?', [$startDate]);
         })
         ->when($startDate && !$endDate, function ($q) use ($startDate) {
             $q->whereDate('start_date', '<=', $startDate)
-              ->where(function($qq) use ($startDate) {
-                  $qq->whereDate('end_date', '>=', $startDate)
-                     ->orWhereNull('end_date');
-              });
+              ->whereRaw('DATE(COALESCE(end_date, start_date)) >= ?', [$startDate]);
         })
         ->orderByDesc('start_date')
         ->orderBy('time_start')
@@ -93,11 +90,11 @@ public function edit(Request $request)
         'approved' => 'Approved',
         'pending'  => 'Pending',
         'rejected' => 'Rejected',
-        'other'    => 'Other',
+        'cancelled'    => 'Cancelled',
     ];
     $kindOptions = [
         'paid'            => 'Paid',
-        'absense_to_paid' => 'Absence→Paid',
+        'absence_to_paid' => 'Absence→Paid',
         'special'         => 'Special',
         'absence'         => 'Absence',
         'adjustment'      => 'Adjustment',
@@ -164,9 +161,9 @@ public function edit(Request $request)
     /** 共通バリデーション */
     private function validateLeave(Request $request): array
     {
-        $kindValues   = ['paid', 'absense_to_paid', 'special', 'absence', 'adjustment', 'left_early', 'late', 'other'];
+        $kindValues   = ['paid', 'absence_to_paid', 'special', 'absence', 'adjustment', 'left_early', 'late', 'other'];
         $excusedValues = ['excused', 'unexcused'];
-        $statusValues = ['approved', 'pending', 'rejected', 'other'];
+        $statusValues = ['approved', 'pending', 'rejected', 'draft', 'cancelled', 'archived'];
 
         return $request->validate([
             'user_id'      => ['required', 'integer', 'exists:users,id'],
@@ -239,9 +236,9 @@ public function edit(Request $request)
         }
 
         // 許容値
-        $kindValues    = ['paid', 'absense_to_paid', 'special', 'absence', 'adjustment', 'left_early', 'late', 'other'];
+        $kindValues    = ['paid', 'absence_to_paid', 'special', 'absence', 'adjustment', 'left_early', 'late', 'other'];
         $excusedValues = ['excused', 'unexcused'];
-        $statusValues  = ['approved', 'pending', 'rejected', 'other'];
+        $statusValues  = ['approved', 'pending', 'rejected', 'draft', 'cancelled', 'archived'];
 
         // items.* で配列バリデーション
         $validated = $request->validate([

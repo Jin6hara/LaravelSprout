@@ -1,6 +1,5 @@
 <?php
 
-// app/Observers/LeaveObserver.php //以前の内容をLeaveSnapShotに分けた？
 namespace App\Observers;
 
 use App\Models\Leave;

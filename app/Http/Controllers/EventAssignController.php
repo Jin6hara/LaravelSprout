@@ -27,6 +27,9 @@ class EventAssignController extends Controller
             ->distinct()
             ->pluck('school_name');
 
+        // モーダルからevent_id を受け取る
+        $eventId        = $request->input('event_id');
+
         // 検索パラメータ取得
         $originalUserId = $request->input('original_user_id');
         $assignedUserId = $request->input('assigned_user_id');
@@ -56,6 +59,10 @@ class EventAssignController extends Controller
         }
 
         $events = Event::query()
+
+            // モーダルからevent_id が来ていれば最優先で絞り込み（ID一致のみ）
+            ->when($eventId, fn($q) => $q->whereKey($eventId))
+
             ->with(['assignedUser:id,name,employee_code', 'originalUser:id,name,employee_code'])
             ->when($originalUserId, fn($q) => $q->where('original_user_id', $originalUserId))
             ->when($assignedUserId, fn($q) => $q->where('assigned_user_id', $assignedUserId))

@@ -86,21 +86,26 @@
 
 /* pending: yellow */
 .fc .fc-event.fc-leave.status-pending {
-  border-color: #facc15;
+  border-color: #facc15e3;
 }
 
 /* approved + excused: green */
 .fc .fc-event.fc-leave.status-approved.fc-leave-excused {
-  border-color: #22c55e;
+  border-color: #22c55ee7;
 }
 
 /* approved + unexcused: red */
 .fc .fc-event.fc-leave.status-approved.fc-leave-unexcused {
-  border-color: #ef4444;
+  border-color: #dd53ffdc;
 }
 /* rejected: gray */
 .fc .fc-event.fc-leave.status-rejected {
-  border-color: #6b7280;
+  border-color: #ff1c1c9c;
+}
+
+/* cancelled: black */
+.fc .fc-event.fc-leave.status-cancelled {
+  border-color: #818181ea;
 }
 
 /* その他の status: kind 色で処理するため特別指定なし */
@@ -110,20 +115,20 @@
 /* kind に応じた基本カラー。status による上書きを許容する。 */
 
 .fc .fc-event.fc-leave-paid {
-  background-color: #93c5fd !important; /* light blue */
-  border-color: #93c5fd;
+  background-color: #3a84fcee !important; /* light blue */
+  border-color: #3a84fcee;
   color: #000 !important;
 }
 
-.fc .fc-event.fc-leave-absense_to_paid {
-  background-color: #3b82f6 !important; /* blue */
-  border-color: #3b82f6;
+.fc .fc-event.fc-leave-absence_to_paid {
+  background-color: #5db1ff !important; /* blue */
+  border-color: #3a84fcee;
   color: #fff !important;
 }
 
 .fc .fc-event.fc-leave-special {
-  background-color: #f472b6 !important; /* pink */
-  border-color: #f472b6;
+  background-color: #ff5fb2e5 !important; /* pink */
+  border-color: #ff5fb2e5;
   color: #fff !important;
 }
 
@@ -135,35 +140,26 @@
 
 /* other: purple */
 .fc .fc-event.fc-leave-other {
-  background-color: #a855f7 !important; /* purple */
-  border-color: #a855f7;
+  background-color: #a955f7d0 !important; /* purple */
+  border-color: #a955f7d0;
   color: #fff !important;
 }
 
-/* =======================================================
-   Absence だけ：枠線色を handle_type + excused で上書き
-   （status の色付けより後に書く／!important で確実に上書き）
-   ======================================================= */
+.fc .fc-event.fc-leave-absence {
+  background-color: #6c7486d0 !important; /* yellow */
+  border-color: #6c7486d0;
+  color: #000 !important;
+}
 
-/* 1) handle_type = null/空 → yellow */
-.fc .fc-event.fc-leave.fc-leave-absence.absence-unhandled {
+/* ================= Absence 専用：handle_type + status + excused ================= */
+
+/* 1) handle_type = null && status = pending → red */
+.fc .fc-event.fc-leave.fc-leave-absence.status-pending.absence-unhandled-pending {
+  border-color: #449cef !important; /* red */
+}
+
+/* 2) handle_type != null && status = pending → yellow */
+.fc .fc-event.fc-leave.fc-leave-absence.status-pending.absence-handled-pending {
   border-color: #facc15 !important; /* yellow */
-}
-
-/* 2) handle_type あり && excused → green */
-.fc .fc-event.fc-leave.fc-leave-absence.absence-handled-excused {
-  border-color: #22c55e !important; /* green */
-}
-
-/* 3) handle_type あり && unexcused → red */
-.fc .fc-event.fc-leave.fc-leave-absence.absence-handled-unexcused {
-  border-color: #ef4444 !important; /* red */
-}
-
-/* other: purple */
-.fc .fc-event.fc-leave-other {
-  background-color: #a855f7 !important; /* purple */
-  border-color: #a855f7;
-  color: #fff !important;
 }
 

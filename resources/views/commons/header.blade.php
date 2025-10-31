@@ -1,3 +1,26 @@
+<style>
+    /* 上下0 / 左右1px に変更 */
+    #navbarNav {
+        padding: 0 1px !important;
+    }
+
+    /* ベースライン起因の微妙な浮きを防ぐ（任意だが効きます） */
+    .navbar-nav {
+        margin-bottom: 0 !important;
+        align-items: center;
+    }
+
+    .navbar .nav-item {
+        display: flex;
+        align-items: center;
+    }
+
+    .header-btn {
+        line-height: 1;
+        vertical-align: middle;
+        margin: 0;
+    }
+</style>
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark py-3">
     <div class="container">
         <a class="navbar-brand" href="{{ url('/') }}">Route Hub</a>

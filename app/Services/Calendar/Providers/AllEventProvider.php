@@ -23,7 +23,7 @@ class AllEventProvider implements CalendarEventProvider
                 'details.start',
                 'details.lesson',
                 'originalUser:id,first_name,family_name',
-                'assignedUser:id,first_name,family_name' 
+                'assignedUser:id,first_name,family_name'
             ])
             ->orderBy('event_date')
             ->orderBy('start_time')
@@ -93,6 +93,7 @@ class AllEventProvider implements CalendarEventProvider
             $assignName = $assign ? trim(($assign->family_name ?? '') . ' ' . ($assign->first_name ?? '')) : null;
 
             $events[] = new CandidateEvent([
+                'id'      => (string)$e->id, // FullCalendar の event.id としてセット（JS の e.id で拾えるように）
                 'title'   => $title,
                 'start'   => $startAt,
                 'end'     => $endAt,
@@ -103,8 +104,10 @@ class AllEventProvider implements CalendarEventProvider
                     'category'  => 'event',
                     'type'      => $e->type,
                     'school'    => $e->school_name,
+                    'school_name' => $e->school_name,        // ▼ JS 側フォールバック（school_name 参照）とも整合させるために併記
                     'status'    => $e->status,               // pending / fixed / filled / in_process
                     'source_schedule_line_id' => $e->source_schedule_line_id,
+                    'source_leave_id'         => $e->source_leave_id, // どのLeaveから生成されたか
                     'original_user_id'        => $e->original_user_id,
                     'assigned_user_id'        => $e->assigned_user_id,
                     'details'   => $details,

@@ -32,7 +32,21 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <div class="ms-auto d-flex align-items-center gap-2">
+                    <!-- 編集リンク（JSでhrefをセット。idが無ければ非表示のまま） -->
+                    <a id="eventEditLink"
+                       href="{{ route('leaves.edit') }}"
+                       class="btn btn-sm btn-outline-secondary"
+                       style="display:none; color:#6c757d;"
+                       rel="noopener">Edit</a> {{--target="_blank" (タブの管理大変の為、削除)--}}
+                    <!-- ★追加：関連 Event へのリンク -->
+                    <a id="relatedEventLink"
+                      href="#"
+                      class="btn btn-sm btn-outline-secondary"
+                      style="display:none; color:#6c757d;"
+                      rel="noopener">Shift</a> {{--target="_blank" (タブの管理大変の為、削除)--}}
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
             </div>
             <div class="modal-body" id="eventModalBody">Reading…</div>
         </div>
