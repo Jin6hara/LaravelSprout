@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\Leave;
 use App\Services\Calendar\LeaveSnapshotService;
+use Illuminate\Support\Facades\DB;
 
 class LeaveObserver
 {
@@ -14,11 +15,10 @@ class LeaveObserver
 
     public function updated(Leave $leave): void
     {
-        // 期間やstatusが変わった場合も安全に作り直す
-        if (!$leave->wasChanged(['status', 'start_date', 'end_date', 'time_start', 'time_end'])) {
+        if (!$leave->wasChanged()) {
             return;
         }
-        app(LeaveSnapshotService::class)->rebuildSnapshotsForLeave($leave);
+        DB::afterCommit(fn() => app(LeaveSnapshotService::class)->rebuildSnapshotsForLeave($leave));
     }
 
     public function deleted(Leave $leave): void
