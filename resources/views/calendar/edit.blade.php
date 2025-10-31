@@ -35,7 +35,7 @@
     {{-- 固定項目（hidden） --}}
     <input type="hidden" name="kind" value="absence">
     <input type="hidden" name="excused" value="unexcused">
-    <input type="hidden" name="status" value="approved">
+    <input type="hidden" name="status" value="pending">
 
     <div class="card">
       <div class="card-body p-2">

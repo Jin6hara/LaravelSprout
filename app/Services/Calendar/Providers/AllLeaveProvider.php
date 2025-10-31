@@ -41,9 +41,9 @@ class AllLeaveProvider
         $eventMap = Event::whereIn('source_leave_id', $leaveIds)
             ->pluck('id', 'source_leave_id')
             ->all();
-            
+
         foreach ($leaves as $leave) {
-            
+
             // どの Event に紐づくか（存在しない場合もある）
             $eventId = $eventMap[$leave->id] ?? null;
 
@@ -81,24 +81,19 @@ class AllLeaveProvider
                 }
 
                 /**
-                 * ★ absence だけ例外処理（枠線色を handle_type + excused で決定）
-                 *  1) handle_type = null/'' → yellow
-                 *  2) handle_type != null → excused=excused → green
-                 *  3) handle_type != null → excused=unexcused → red
+                 * ★ absence だけ例外処理（handle_type + status + excused で枠線色を決定）
+                 *  1) handle_type = null && status = pending → red
+                 *  2) handle_type != null && status = pending → yellow
                  */
                 if ($leave->kind === 'absence') {
                     $handled = !empty($leave->handle_type);
 
-                    if (!$handled) {
-                        // 1) 未ハンドル
-                        $classes[] = 'absence-unhandled';
-                    } else {
-                        // 2) / 3) ハンドル済み（excused / unexcused）
-                        if ($leave->excused === 'excused') {
-                            $classes[] = 'absence-handled-excused';
-                        } else { // 'unexcused' 想定
-                            $classes[] = 'absence-handled-unexcused';
-                        }
+                    if (!$handled && $leave->status === 'pending') {
+                        // 1) 未ハンドル & pending
+                        $classes[] = 'absence-unhandled-pending';
+                    } elseif ($handled && $leave->status === 'pending') {
+                        // 2) ハンドル済み & pending
+                        $classes[] = 'absence-handled-pending';
                     }
                 }
 
