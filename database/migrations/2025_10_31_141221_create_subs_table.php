@@ -23,6 +23,8 @@ return new class extends Migration
             $t->time('start_time')->nullable();
             $t->time('end_time')->nullable();
 
+            $t->string('note')->nullable();
+
             // 合計分（分単位）。アプリ側で計算して保存する想定
             $t->unsignedInteger('total_duration')->default(0)->comment('minutes');
 

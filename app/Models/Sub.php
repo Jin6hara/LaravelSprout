@@ -46,4 +46,17 @@ class Sub extends Model
         $r = $m % 60;
         return sprintf('%d:%02d', $h, $r);
     }
+
+    /** モデルイベント：保存時に total_duration を計算してセット */
+    protected static function booted()
+    {
+        static::saving(function ($sub) {
+            if ($sub->start_time && $sub->end_time) {
+                // Carbonで差分を分単位で算出
+                $start = \Carbon\Carbon::parse($sub->start_time);
+                $end   = \Carbon\Carbon::parse($sub->end_time);
+                $sub->total_duration = $end->diffInMinutes($start);
+            }
+        });
+    }
 }
