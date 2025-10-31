@@ -18,9 +18,9 @@ document.addEventListener('DOMContentLoaded', function () {
             : ((bd.line || 0) + (bd.work_instead || 0) + (bd.subs || 0)); // ← subs 追加
         const displayTitle = `Total Subs ${count}`; 
 
-        // モーダルヘッダのタイトルも更新（要素があれば）
-        const titleEl = document.querySelector('#eventModal .modal-title'); 
-        if (titleEl) titleEl.textContent = displayTitle; 
+        // Detailsの代わりに下記を表示することもできる（ヘッダのタイトルも更新）
+        //const titleEl = document.querySelector('#eventModal .modal-title'); 
+        //if (titleEl) titleEl.textContent = displayTitle; 
 
         const pill = (name) => `<span class="badge text-bg-secondary me-1 mb-1">${name}</span>`;
         const group = (title, list) => {
@@ -31,18 +31,18 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>`;
         };
         // ここはTotal Subsのタイトル表示に関連。
-        let html = `<div class="mb-2"><strong>${displayTitle}</strong></div>`; // ← 修正（もともとは${ev.title}）
+        let html = `<h5 class="mb-2"><strong>${displayTitle}</strong></h5>`; // ← 修正（もともとは${ev.title}）
         html += `<div class="mb-2 small text-muted">
-            Regular:${bd.line ?? 0} / RWD:${bd.work_instead ?? 0} / Subs:${bd.subs ?? 0}
+            Regular:${bd.line ?? 0} / RWD:${bd.work_instead ?? 0} / Extra:${bd.subs ?? 0}
         </div>`;
-        html += `<h6 class="mt-3">Available Subs</h6>`;
-        html += group('Regular', users.line);
-        html += group('RWD', users.work_instead);
-        html += group('Subs', users.subs); // ← subs 追加
-        html += `<h6 class="mt-3">Absence Subs</h6>`;
-        html += group('Regular', absent.line);
-        html += group('RWD', absent.work_instead);
-        html += group('Subs', absent.subs); // ← subs 追加
+        html += `<h5 class="mt-5 mb-2">Available Subs</h5>`;
+        html += group('Regular Subs', users.line);
+        html += group('Rostered Working Day', users.work_instead);
+        html += group('Extra Subs', users.subs); // ← subs 追加
+        html += `<h5 class="mt-5 mb-2">Absence Subs</h5>`;
+        html += group('Regular Subs', absent.line);
+        html += group('Rostered Working Day', absent.work_instead);
+        html += group('Extra Subs', absent.subs); // ← subs 追加
 
         document.getElementById('eventModalBody').innerHTML = html;
 
