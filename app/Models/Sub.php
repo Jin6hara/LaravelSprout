@@ -17,6 +17,7 @@ class Sub extends Model
         'start_time',
         'end_time',
         'total_duration', // minutes
+        'note',
     ];
 
     protected $casts = [

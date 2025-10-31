@@ -23,7 +23,7 @@ class CompanyClosureSeeder extends Seeder
         );
         CompanyClosure::updateOrCreate(
             ['code' => 'CP', 'start_date' => '2025-12-07'],
-            ['name' => 'Chrismas Party', 'end_date' => '2025-12-07', 'is_active' => true]
+            ['name' => 'Christmas Party', 'end_date' => '2025-12-07', 'is_active' => true]
         );
     }
 }

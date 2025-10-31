@@ -23,7 +23,7 @@ class RestPatternAdjustmentSeeder extends Seeder
         foreach (['2025-07-24', '2025-10-16', '2025-11-06'] as $d) {
             RestPatternAdjustment::updateOrCreate(
                 ['rest_pattern_id' => $thuFri->id, 'date' => $d],
-                ['kind' => 'work_instead', 'code' => 'RWD', 'title' => 'Rosterd Working Day', 'is_active' => true]
+                ['kind' => 'work_instead', 'code' => 'RWD', 'title' => 'Rostered Working Day', 'is_active' => true]
             );
         }
 
