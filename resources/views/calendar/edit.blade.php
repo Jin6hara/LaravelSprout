@@ -25,7 +25,7 @@
   @endphp
 
   <div class="d-flex justify-content-between align-items-center mb-2">
-    <h5 class="mb-0">Event Assigner</h5>
+    <h5 class="mb-0">Shift Assigner</h5>
     <small class="text-muted">{{ $events->total() }} 件</small>
   </div>
 
