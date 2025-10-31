@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // 件数を決定（countがなければ内訳合計）
         const count = (typeof p.count === 'number')
             ? p.count
-            : ((bd.event || 0) + (bd.line || 0) + (bd.work_instead || 0));
+            : ((bd.line || 0) + (bd.work_instead || 0) + (bd.subs || 0)); // ← subs 追加
         const displayTitle = `Total Subs ${count}`; 
 
         // モーダルヘッダのタイトルも更新（要素があれば）
@@ -33,16 +33,16 @@ document.addEventListener('DOMContentLoaded', function () {
         // ここはTotal Subsのタイトル表示に関連。
         let html = `<div class="mb-2"><strong>${displayTitle}</strong></div>`; // ← 修正（もともとは${ev.title}）
         html += `<div class="mb-2 small text-muted">
-            SC:${bd.event ?? 0} / Regular:${bd.line ?? 0} / RWD:${bd.work_instead ?? 0}
+            Regular:${bd.line ?? 0} / RWD:${bd.work_instead ?? 0} / Subs:${bd.subs ?? 0}
         </div>`;
         html += `<h6 class="mt-3">Available Subs</h6>`;
-        html += group('SC', users.event);
         html += group('Regular', users.line);
         html += group('RWD', users.work_instead);
+        html += group('Subs', users.subs); // ← subs 追加
         html += `<h6 class="mt-3">Absence Subs</h6>`;
-        html += group('SC', absent.event);
         html += group('Regular', absent.line);
         html += group('RWD', absent.work_instead);
+        html += group('Subs', absent.subs); // ← subs 追加
 
         document.getElementById('eventModalBody').innerHTML = html;
 
