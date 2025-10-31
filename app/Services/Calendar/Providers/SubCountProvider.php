@@ -144,17 +144,38 @@ class SubCountProvider implements CalendarEventProvider
 
         // === (D) subs: 直接登録された代行（日付ベース、欠席控除） ===
         $subsRows = DB::table('subs')
-            ->select('user_id', 'sub_date')
+            ->select('user_id', 'sub_date', 'start_time', 'end_time') // ← 時間も取得（モーダル用）
             ->whereBetween('sub_date', [$startDate, $endDate])
             ->get();
 
-        $subsUsersCounted = []; // [date][user_id]=true
-        $subsUsersAbsent  = []; // [date][user_id]=true
+        $subsUsersCounted = []; // [date][user_id]=array{start_hm?,end_hm?} | true
+        $subsUsersAbsent  = []; // [date][user_id]=array{start_hm?,end_hm?} | true
         foreach ($subsRows as $row) {
             $d   = Carbon::parse($row->sub_date)->toDateString();
             $uid = (int)$row->user_id;
-            if (!empty($leaveUsersByDate[$d][$uid])) $subsUsersAbsent[$d][$uid] = true;
-            else                                    $subsUsersCounted[$d][$uid] = true;
+
+            // DBの TIME(= 'HH:MM:SS' など) を 'H:i' に正規化（null対応）
+            $fmt = function ($t) {
+                if ($t === null) return null;
+                // 文字列 'HH:MM:SS' の想定だが、Carbon::parse で柔軟に
+                try {
+                    return Carbon::parse($t)->format('H:i');
+                } catch (\Throwable $e) {
+                    return null;
+                }
+            };
+            $startHm = $fmt($row->start_time);
+            $endHm   = $fmt($row->end_time);
+
+            // 欠席なら absent 側、そうでなければ counted 側へ
+            $payload = array_filter(['start_hm' => $startHm, 'end_hm' => $endHm], fn($v) => $v !== null);
+
+            if (!empty($leaveUsersByDate[$d][$uid])) {
+                // start/end が取れなければ true だけでもOK（JS側は自動で時間非表示）
+                $subsUsersAbsent[$d][$uid] = !empty($payload) ? $payload : true;
+            } else {
+                $subsUsersCounted[$d][$uid] = !empty($payload) ? $payload : true;
+            }
         }
 
         // === ユーザー名解決（まとめて 1 クエリ） ===
@@ -166,8 +187,8 @@ class SubCountProvider implements CalendarEventProvider
         $collect($rwdUsersAbsent);
         $collect($lineUsersCounted);
         $collect($lineUsersAbsent);
-        $collect($subsUsersCounted);   // ★ 追加
-        $collect($subsUsersAbsent);    // ★ 追加
+        $collect($subsUsersCounted);   // ★ subs_table からの出席Sub数
+        $collect($subsUsersAbsent);    // ★ subs_table からの欠席Sub数
 
         $nameById = empty($allIds) ? [] :
             DB::table('users')->whereIn('id', array_keys($allIds))->pluck('name', 'id')->map(fn($n) => (string)$n)->toArray();
@@ -179,21 +200,31 @@ class SubCountProvider implements CalendarEventProvider
 
             $count_line  = isset($lineUsersCounted[$day])  ? count($lineUsersCounted[$day])  : 0;
             $count_rwd   = isset($rwdUsersCounted[$day])   ? count($rwdUsersCounted[$day])   : 0;
-            $count_subs  = isset($subsUsersCounted[$day])  ? count($subsUsersCounted[$day])  : 0; // ★ 追加
+            $count_subs  = isset($subsUsersCounted[$day])  ? count($subsUsersCounted[$day])  : 0; // ★ subs_table からの出席数
             $total       = $count_line + $count_rwd + $count_subs;
 
             $abs_line    = isset($lineUsersAbsent[$day])  ? count($lineUsersAbsent[$day])  : 0;
             $abs_rwd     = isset($rwdUsersAbsent[$day])   ? count($rwdUsersAbsent[$day])   : 0;
-            $abs_subs    = isset($subsUsersAbsent[$day])  ? count($subsUsersAbsent[$day])  : 0;   // ★ 追加
+            $abs_subs    = isset($subsUsersAbsent[$day])  ? count($subsUsersAbsent[$day])  : 0;   // ★ subs_table からの欠席数
             $totalCandidates = $total + $abs_line + $abs_rwd + $abs_subs;
 
             if ($totalCandidates === 0) continue;
 
+            // ★ subs の場合、値が true のこともあれば ['start_hm'=>..,'end_hm'=>..] のこともあるので両対応
             $makeList = function ($set) use ($nameById) {
                 $arr = [];
-                foreach (array_keys($set ?? []) as $uid) {
-                    $arr[] = ['id' => (int)$uid, 'name' => $nameById[$uid] ?? ('#' . $uid)];
+                foreach (($set ?? []) as $uid => $val) {
+                    $item = [
+                        'id'   => (int)$uid,
+                        'name' => $nameById[$uid] ?? ('#' . $uid),
+                    ];
+                    if (is_array($val)) {
+                        if (!empty($val['start_hm'])) $item['start_hm'] = $val['start_hm'];
+                        if (!empty($val['end_hm']))   $item['end_hm']   = $val['end_hm'];
+                    }
+                    $arr[] = $item;
                 }
+                // 名前で安定ソート
                 usort($arr, fn($a, $b) => strcmp($a['name'], $b['name']));
                 return $arr;
             };
@@ -201,12 +232,12 @@ class SubCountProvider implements CalendarEventProvider
             $users = [
                 'line'         => $makeList($lineUsersCounted[$day]  ?? []),
                 'work_instead' => $makeList($rwdUsersCounted[$day]   ?? []),
-                'subs'         => $makeList($subsUsersCounted[$day]  ?? []), // ★ 追加
+                'subs'         => $makeList($subsUsersCounted[$day]  ?? []), // ★時間付きに対応
             ];
             $absent_users = [
                 'line'         => $makeList($lineUsersAbsent[$day]  ?? []),
                 'work_instead' => $makeList($rwdUsersAbsent[$day]   ?? []),
-                'subs'         => $makeList($subsUsersAbsent[$day]  ?? []),  // ★ 追加
+                'subs'         => $makeList($subsUsersAbsent[$day]  ?? []),  // ★時間付きに対応
             ];
 
             $out[] = new CandidateEvent([
