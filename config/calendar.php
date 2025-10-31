@@ -16,6 +16,7 @@ return [
         // EVENT（例：有給/残業）— まずは空でもOK
         App\Services\Calendar\Providers\LeaveProvider::class      => ['level' => 1, 'type' => EventType::OFF,        'plan' => PlanGroup::EVENT],
         App\Services\Calendar\Providers\EventProvider::class      => ['level' => 2, 'type' => EventType::ON,         'plan' => PlanGroup::EVENT],
+      //App\Services\Calendar\Providers\SubProvider::class        => ['level' => 2, 'type' => EventType::ON,         'plan' => PlanGroup::EVENT],         // 出勤後上書き、非出勤はNS対応
     ],
 
     'rules' => [
