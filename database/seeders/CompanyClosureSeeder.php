@@ -21,5 +21,9 @@ class CompanyClosureSeeder extends Seeder
             ['code' => 'WB', 'start_date' => '2025-12-24'],
             ['name' => 'Winter Break', 'end_date' => '2026-01-04', 'is_active' => true]
         );
+        CompanyClosure::updateOrCreate(
+            ['code' => 'CP', 'start_date' => '2025-12-07'],
+            ['name' => 'Chrismas Party', 'end_date' => '2025-12-07', 'is_active' => true]
+        );
     }
 }
