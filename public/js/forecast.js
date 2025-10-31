@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function () {
         //if (titleEl) titleEl.textContent = displayTitle; 
 
         // name だけ or Extra(=subs)では name + 時間(HH:MM–HH:MM) を小さく表示
-        const pill = (item, showTime = false) => {
+        const pill = (item, showTime = false, isAvailable = true) => {
             // item は {name, start_hm?, end_hm?} もしくは 'string'
             const name = (item && typeof item === 'object') ? (item.name ?? '') : String(item ?? '');
             const timeText = (showTime && item && typeof item === 'object')
@@ -32,24 +32,26 @@ document.addEventListener('DOMContentLoaded', function () {
                     : '')
                 : '';
             const timeHtml = timeText
-                ? `<div class="small text-muted" style="line-height:1;margin-top:0px;">${timeText}</div>`
+                ? `<div class="small text-muted" style="line-height:1;margin-top:2px;">${timeText}</div>`
                 : '';
 
-            // 縦積み（バッジ下に小さく時間）
+            // ★ 出席（＝Available）を黄色にしたいので、isAvailable に応じてクラス変更
+            const badgeClass = isAvailable ? 'text-bg-warning' : 'text-bg-info';
+
             return `<div class="d-inline-flex flex-column align-items-start me-1 mb-1">
-                        <span class="badge text-bg-warning">${name}</span>
+                        <span class="badge ${badgeClass}">${name}</span>
                         ${timeHtml}
                     </div>`;
         };
 
-        const group = (title, list, showTime = false) => {
+        const group = (title, list, showTime = false, isAvailable = true) => {
             const body = (list || []).length
-                ? list.map(u => pill(u, showTime)).join('')
+                ? list.map(u => pill(u, showTime, isAvailable)).join('')
                 : '<span class="text-muted">—</span>';
             return `<div class="mb-2">
-        <div class="fw-semibold small text-uppercase text-muted">${title}</div>
-            <div>${body}</div>
-        </div>`;
+                <div class="fw-semibold small text-uppercase text-muted">${title}</div>
+                <div>${body}</div>
+            </div>`;
         };
         // ここはTotal Subsのタイトル表示に関連。
         let html = `<h5 class="mb-2"><strong>${displayTitle}</strong></h5>`; // ← 修正（もともとは${ev.title}）
@@ -57,14 +59,15 @@ document.addEventListener('DOMContentLoaded', function () {
             Regular:${bd.line ?? 0} / RWD:${bd.work_instead ?? 0} / Extra:${bd.subs ?? 0}
         </div>`;
         html += `<h5 class="mt-5 mb-2">Available Subs</h5>`;
-        html += group('Regular Subs', users.line, /*showTime=*/false);
-        html += group('Rostered Working Day', users.work_instead, /*showTime=*/false);
-        html += group('Extra Subs', users.subs, /*showTime=*/true); // ← Extra(=subs)のみ時間表示
+        html += group('Regular Subs', users.line, /*showTime=*/false, /*isAvailable=*/true);
+        html += group('Rostered Working Day', users.work_instead, /*showTime=*/false, /*isAvailable=*/true);
+        html += group('Extra Subs', users.subs, /*showTime=*/true, /*isAvailable=*/true); // ← time表示あり
+    
 
         html += `<h5 class="mt-5 mb-2">Absence Subs</h5>`;
-        html += group('Regular Subs', absent.line, /*showTime=*/false);
-        html += group('Rostered Working Day', absent.work_instead, /*showTime=*/false);
-        html += group('Extra Subs', absent.subs, /*showTime=*/true); // ← Absence 側も subs は時間表示
+        html += group('Regular Subs', absent.line, /*showTime=*/false, /*isAvailable=*/false);
+        html += group('Rostered Working Day', absent.work_instead, /*showTime=*/false, /*isAvailable=*/false);
+        html += group('Extra Subs', absent.subs, /*showTime=*/true, /*isAvailable=*/false); // ← time表示あり
 
         document.getElementById('eventModalBody').innerHTML = html;
 
