@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const sDate2 = p.leave?.start_date ?? (e.start ? e.start.toISOString().slice(0,10) : null);
             const eDate2 = p.leave?.end_date   ?? sDate2;
             if (relatedBtn && uid2 && sDate2) {
-                const url2 = `/event_assigner?original_user_id=${encodeURIComponent(uid2)}&event_date=${encodeURIComponent(sDate2)}${eDate2 ? `&end_date=${encodeURIComponent(eDate2)}` : ''}`;
+                const url2 = `/shift_assigner?original_user_id=${encodeURIComponent(uid2)}&event_date=${encodeURIComponent(sDate2)}${eDate2 ? `&end_date=${encodeURIComponent(eDate2)}` : ''}`;
                 relatedBtn.href = url2;
                 relatedBtn.style.removeProperty('display');
                 relatedBtn.classList.remove('disabled');

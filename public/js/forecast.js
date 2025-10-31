@@ -246,7 +246,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (editBtn) {
                 const eid = e?.id ?? p?.id ?? null; // event.id を最優先、なければ extendedProps.id
                 if (eid) {
-                    editBtn.href = `/event_assigner?event_id=${encodeURIComponent(eid)}`; // name('calendar.edit')
+                    editBtn.href = `/shift_assigner?event_id=${encodeURIComponent(eid)}`; // name('calendar.edit')
                     editBtn.style.removeProperty('display'); // display:none を解除
                     editBtn.classList.remove('disabled');
                     editBtn.setAttribute('aria-disabled', 'false');
