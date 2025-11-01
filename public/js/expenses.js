@@ -1,179 +1,354 @@
-document.addEventListener('DOMContentLoaded', function () {
-  if (!@json($hasReport)) return; // レポート無い月は何もしない
+(function () {
+  'use strict';
 
-  const csrfToken   = @json(csrf_token());
-  const reportId    = @json($report?->id);
-  const year        = @json($y);
-  const month       = @json($m);
-  const initialRows = @json($rows);
+  // ====== 1) 月検索（元の短いスクリプト） ======
+  document.addEventListener('DOMContentLoaded', function () {
+    const monthInput = document.getElementById('monthPick');
+    const btn = document.getElementById('monthSearchBtn');
 
-  // 英語の曜日
-  function enWeekday(dateStr) {
-    if (!dateStr) return '';
-    const d = new Date(dateStr + 'T00:00:00');
-    if (isNaN(d)) return '';
-    return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
-  }
-
-  // TripType Enum
-  const tripTypeOptions = [
-    { id: 'round_trip', name: 'Round Trip' },
-    { id: 'one_way',    name: 'One Way' },
-  ];
-
-  // 初期データ行（表示列＋非表示の内部列）
-  // 列: Date / Day / From / To / Amount / TripType(ENUM値) / Note / _id / _seq
-  const matrix = initialRows.map(r => {
-    const date = r.expense_date || '';
-    return [
-      date,
-      enWeekday(date),
-      r.station_from || '',
-      r.station_to   || '',
-      Number.isFinite(r.cost) ? r.cost : 0,
-      r.trip_type || '',
-      r.note || '',
-      r.id ?? '',
-      (r.seq ?? 100)
-    ];
+    function doSearch() {
+      const v = monthInput?.value || '';
+      if (!/^\d{4}-\d{2}$/.test(v)) { alert('対象月を選択してください。'); return; }
+      const [yy, mm] = v.split('-');
+      const url = new URL(window.location.href);
+      url.searchParams.set('year', yy);
+      url.searchParams.set('month', Number(mm));
+      window.location = url.toString();
+    }
+    btn?.addEventListener('click', (e) => { e.preventDefault(); doSearch(); });
+    monthInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); doSearch(); } });
   });
 
-  // JSpreadsheet
-  const sheet = jspreadsheet(document.getElementById('sheet'), {
-    worksheets: [
-      {
+  // ====== 2) JSpreadsheet 初期化以降（大部分） ======
+  document.addEventListener('DOMContentLoaded', function () {
+    const boot = window.EXPENSES_BOOTSTRAP || {};
+    if (!boot.hasReport) return; // レポート無い月は何もしない
+
+    const csrfToken = boot.csrfToken;
+    const reportId = boot.reportId;
+    const year = boot.year;
+    const month = boot.month;
+    const initialRows = boot.initialRows || [];
+    const eventOnMap = boot.eventOnMap || {};
+    const passActiveMap = boot.passActiveMap || {};
+
+    // 色定数
+    const COLOR_WORK_ON = '#6b92ff';
+    const COLOR_WORK_OFF = '#e68484';
+    const COLOR_PASS_ON = '#9bf59b';
+    const COLOR_PASS_OFF = '#ffffff';
+
+    // 操作ボタンHTML
+    const ACTION_BTN_HTML = '<button type="button" class="btn btn-outline-danger btn-sm js-row-del" title="この行を削除">Del</button>';
+    const ADD_BTN_HTML = '<button type="button" class="btn btn-outline-primary btn-sm js-row-add" title="この日の行を下に追加">Add</button>';
+
+    // 列定数
+    const COL = Object.freeze({
+      ACTIONS: 0, ADD: 1, DATE: 2, DAY: 3, WORK: 4,
+      FROM: 5, TO: 6, AMOUNT: 7, TRIP: 8, NOTE: 9,
+      ID: 10, SEQ: 11, PASS: 12,
+    });
+
+    function enWeekday(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr + 'T00:00:00');
+      if (isNaN(d)) return '';
+      return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()];
+    }
+
+    const tripTypeOptions = [
+      { id: 'round_trip', name: 'Round Trip' },
+      { id: 'one_way', name: 'One Way' },
+    ];
+
+    // 初期マトリクス
+    const matrix = initialRows.map(r => {
+      const date = r.expense_date || '';
+      const isEventOn = !!eventOnMap[date];
+      const isPassOn = !!passActiveMap[date];
+      const colorWork = isEventOn ? COLOR_WORK_ON : COLOR_WORK_OFF;
+      const colorPass = isPassOn ? COLOR_PASS_ON : COLOR_PASS_OFF;
+      return [
+        ACTION_BTN_HTML, ADD_BTN_HTML,
+        date, enWeekday(date),
+        colorWork,
+        r.station_from || '', r.station_to || '',
+        Number.isFinite(r.cost) ? r.cost : 0,
+        r.trip_type || '',
+        r.note || '',
+        r.id ?? '',
+        (r.seq ?? 100),
+        colorPass,
+      ];
+    });
+
+    // シート生成
+    const sheet = jspreadsheet(document.getElementById('sheet'), {
+      worksheets: [{
         data: matrix,
         columns: [
-          { title:'Date',           type:'text',     width:120, readOnly:true  }, // 0
-          { title:'Day',            type:'text',     width:70,  readOnly:true  }, // 1
-          { title:'From',           type:'text',     width:160                    }, // 2
-          { title:'To',             type:'text',     width:160                    }, // 3
-          { title:'Amount (JPY)',   type:'numeric',  width:130, mask:'#,##0'     }, // 4
-          { title:'Trip Type',      type:'dropdown', width:140, source: tripTypeOptions }, // 5 (値は id が入る)
-          { title:'Note',           type:'text',     width:220                    }, // 6
-          { title:'_id',            type:'text',     visible:false                }, // 7
-          { title:'_seq',           type:'numeric',  visible:false                }, // 8
+          { title: '-', type: 'html', width: 50, readOnly: true },
+          { title: '+', type: 'html', width: 50, readOnly: true },
+          { title: 'Date', type: 'text', width: 110, readOnly: true },
+          { title: 'Day', type: 'text', width: 65, readOnly: true },
+          { title: 'Work', type: 'color', width: 65, render: 'square', readOnly: true },
+          { title: 'From', type: 'text', width: 200 },
+          { title: 'To', type: 'text', width: 200 },
+          { title: 'Amount', type: 'numeric', width: 100, mask: '#,##0' },
+          { title: 'Trip Type', type: 'dropdown', width: 100, source: tripTypeOptions },
+          { title: 'Note', type: 'text', width: 240 },
+          { title: '_id', type: 'text', width: 0, readOnly: true },
+          { title: '_seq', type: 'numeric', width: 0, readOnly: true },
+          { title: 'Pass', type: 'color', width: 65, render: 'square', readOnly: true },
         ],
-        // 表示だけの空行は作らない（保存の判定がややこしくなるため）
-        minDimensions: [9, Math.max(matrix.length, 1)],
+        minDimensions: [13, Math.max(matrix.length, 1)],
+        allowInsertRow: false,
+        allowManualInsertRow: false,
+        allowDeleteRow: false,
+        allowInsertColumn: false,
+        allowDeleteColumn: false,
+        allowRenameColumn: false,
+        allowComments: false,
+        allowSaving: false,
+        freezeColumns: 1,
+        tableOverflow: false,
+        tableHeight: '470px',
+        onselection: function (el, column, row) {
+          lastSelectedRow = (typeof row === 'number') ? row : null;
+        }
+      }]
+    });
+
+    // 隠し列
+    function hideInternalCols() {
+      sheet[0].hideColumn(COL.ID);
+      sheet[0].hideColumn(COL.SEQ);
+    }
+    hideInternalCols();
+
+    // 現在行の読取
+    function readCurrentRows() {
+      const data = sheet[0].getData(false);
+      return data.map(arr => ({
+        date: arr[COL.DATE] || '',
+        day: arr[COL.DAY] || '',
+        colorWork: arr[COL.WORK] || COLOR_WORK_OFF,
+        from: arr[COL.FROM] || '',
+        to: arr[COL.TO] || '',
+        cost: (arr[COL.AMOUNT] === '' || arr[COL.AMOUNT] == null) ? 0 : Number(String(arr[COL.AMOUNT]).replace(/,/g, '')),
+        trip: arr[COL.TRIP] || '',
+        note: arr[COL.NOTE] || '',
+        id: arr[COL.ID] || '',
+        seq: (arr[COL.SEQ] === '' || arr[COL.SEQ] == null) ? 100 : Number(arr[COL.SEQ]),
+        colorPass: arr[COL.PASS] || COLOR_PASS_OFF,
+      })).filter(r => r.date);
+    }
+
+    function sortRowsByDateThenSeq(rows) {
+      return rows.slice().sort((a, b) => {
+        if (a.date < b.date) return -1;
+        if (a.date > b.date) return 1;
+        return (a.seq - b.seq);
+      });
+    }
+
+    function renderRows(rows) {
+      const newMatrix = rows.map(r => {
+        const work = eventOnMap[r.date] ? COLOR_WORK_ON : COLOR_WORK_OFF;
+        const pass = passActiveMap[r.date] ? COLOR_PASS_ON : COLOR_PASS_OFF;
+        return [
+          ACTION_BTN_HTML, ADD_BTN_HTML,
+          r.date, enWeekday(r.date),
+          work,
+          r.from || '', r.to || '',
+          r.cost || 0,
+          r.trip || '',
+          r.note || '',
+          r.id || '',
+          r.seq ?? 100,
+          pass,
+        ];
+      });
+      sheet[0].setData(newMatrix);
+      hideInternalCols();
+    }
+
+    const initialIdSet = new Set((initialRows || []).map(r => String(r.id)));
+
+    // 指定日追加
+    const pickDateEl = document.getElementById('pickDate');
+    const addByDateBtn = document.getElementById('addByDateBtn');
+    let lastSelectedRow = null;
+
+    function isValidDateStr(yyyy_mm_dd) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(yyyy_mm_dd)) return false;
+      const [yy, mm, dd] = yyyy_mm_dd.split('-').map(Number);
+      const d = new Date(yyyy_mm_dd + 'T00:00:00');
+      if (isNaN(d)) return false;
+      return (yy === Number(year) && mm === Number(month) && dd >= 1 && dd <= 31);
+    }
+
+    function enableAddButtonIfValid() {
+      const v = pickDateEl?.value || '';
+      addByDateBtn && (addByDateBtn.disabled = !isValidDateStr(v));
+    }
+    pickDateEl?.addEventListener('input', enableAddButtonIfValid);
+    enableAddButtonIfValid();
+
+    function decideSeqForDate(targetDate, rows, hintAfterSeq = null) {
+      const same = rows.filter(r => r.date === targetDate).sort((a, b) => a.seq - b.seq);
+      if (same.length === 0) return 1024;
+      const maxSeq = same[same.length - 1].seq ?? 100;
+      if (hintAfterSeq == null) return maxSeq + 1024;
+
+      const next = same.find(r => r.seq > hintAfterSeq);
+      if (next && (next.seq - hintAfterSeq) > 1) {
+        return Math.floor((hintAfterSeq + next.seq) / 2);
       }
-    ]
-  });
+      return maxSeq + 1024;
+    }
 
-  // 便利関数：現在の全行データをオブジェクト配列に
-  function readCurrentRows() {
-    const data = sheet[0].getData(false); // 各セルの生値
-    // 値をオブジェクトへマッピング
-    return data.map(arr => ({
-      date:  arr[0] || '',
-      day:   arr[1] || '',
-      from:  arr[2] || '',
-      to:    arr[3] || '',
-      cost:  (arr[4] === '' || arr[4] == null) ? 0 : Number(String(arr[4]).replace(/,/g,'')),
-      trip:  arr[5] || '', // dropdown は id が入る（round_trip / one_way）
-      note:  arr[6] || '',
-      id:    arr[7] || '',
-      seq:   (arr[8] === '' || arr[8] == null) ? 100 : Number(arr[8]),
-    })).filter(r => r.date); // 日付なしは無視
-  }
+    addByDateBtn?.addEventListener('click', () => {
+      const dateStr = pickDateEl?.value || '';
+      if (!isValidDateStr(dateStr)) { alert('この月内の日付を選択してください。'); return; }
 
-  // 既存IDの集合（更新判定用）
-  const initialIdSet = new Set(initialRows.map(r => String(r.id)));
-
-  // 保存処理
-  const saveBtn = document.getElementById('saveBtn');
-  if (saveBtn) {
-    saveBtn.addEventListener('click', async () => {
       const rows = readCurrentRows();
+      let hintAfterSeq = null;
+      if (lastSelectedRow != null) {
+        const selected = rows[lastSelectedRow];
+        if (selected && selected.date === dateStr) hintAfterSeq = selected.seq ?? null;
+      }
+      const newSeq = decideSeqForDate(dateStr, rows, hintAfterSeq);
 
-      // バリデーション（この月内のデータか）
-      for (const r of rows) {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(r.date)) {
-          alert(`日付形式エラー: ${r.date}`); return;
+      const newRow = { date: dateStr, day: enWeekday(dateStr), from: '', to: '', cost: 0, trip: '', note: '', id: '', seq: newSeq };
+      const updated = sortRowsByDateThenSeq([...rows, newRow]);
+      renderRows(updated);
+      enableAddButtonIfValid();
+    });
+
+    // 保存
+    const saveBtn = document.getElementById('saveBtn');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', async () => {
+        const rows = readCurrentRows();
+
+        for (const r of rows) {
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(r.date)) { alert(`日付形式エラー: ${r.date}`); return; }
+          const [yy, mm] = r.date.split('-').map(Number);
+          if (yy !== Number(year) || mm !== Number(month)) { alert(`この月以外の日付が含まれています: ${r.date}`); return; }
+          if (r.cost < 0 || !Number.isFinite(r.cost)) { alert(`金額が不正です: ${r.cost}`); return; }
+          if (!r.trip) { alert(`Trip Type が未選択の日があります: ${r.date}`); return; }
         }
-        const [yy, mm] = r.date.split('-').map(Number);
-        if (yy !== Number(year) || mm !== Number(month)) {
-          alert(`この月以外の日付が含まれています: ${r.date}`); return;
+
+        saveBtn.disabled = true; saveBtn.textContent = '保存中…';
+        try {
+          const updates = rows.filter(r => r.id && initialIdSet.has(String(r.id)));
+          for (const u of updates) {
+            const resp = await fetch(`/api/expenses/${u.id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+              body: JSON.stringify({
+                station_from: u.from || null,
+                station_to: u.to || null,
+                note: u.note || null,
+                cost: u.cost,
+                trip_type: u.trip,
+                seq: u.seq,
+              }),
+            });
+            if (!resp.ok) throw new Error(`更新失敗 (ID:${u.id}): ${resp.status} ${await resp.text()}`);
+          }
+
+          const creates = rows.filter(r => !r.id);
+          for (const c of creates) {
+            const seq = Number.isFinite(c.seq) ? c.seq : 100;
+            const resp = await fetch('/api/expenses', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+              body: JSON.stringify({
+                expense_report_id: reportId,
+                expense_date: c.date,
+                seq: seq,
+                station_from: c.from || null,
+                station_to: c.to || null,
+                note: c.note || null,
+                cost: c.cost,
+                trip_type: c.trip,
+                category: 'regular',
+              }),
+            });
+            if (!resp.ok) throw new Error(`作成失敗 (Date:${c.date}): ${resp.status} ${await resp.text()}`);
+          }
+
+          alert('保存しました。');
+          location.reload();
+
+        } catch (err) {
+          console.error(err);
+          alert('保存でエラーが発生しました。\n' + (err?.message || err));
+        } finally {
+          saveBtn.disabled = false; saveBtn.textContent = '保存';
         }
-        if (r.cost < 0 || !Number.isFinite(r.cost)) {
-          alert(`金額が不正です: ${r.cost}`); return;
+      });
+    }
+
+    // クリック委譲（削除と追加）
+    const sheetEl = document.getElementById('sheet');
+    sheetEl.addEventListener('click', async (e) => {
+      const delBtn = e.target.closest('.js-row-del');
+      const addBtn = e.target.closest('.js-row-add');
+      const td = e.target.closest('td');
+      if (!td) return;
+      const rowIndex = Number(td.getAttribute('data-y'));
+      if (Number.isNaN(rowIndex) || rowIndex < 0) return;
+
+      // 削除
+      if (delBtn) {
+        const rowData = sheet[0].getRowData(rowIndex);
+        const id = rowData[COL.ID];
+        if (!id) { sheet[0].deleteRow(rowIndex); return; }
+        if (!confirm('この行を削除します。よろしいですか？')) return;
+        try {
+          const resp = await fetch(`/api/expenses/${id}`, {
+            method: 'DELETE',
+            headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+          });
+          if (!resp.ok) throw new Error(`削除失敗 (ID:${id}): ${resp.status} ${await resp.text()}`);
+          sheet[0].deleteRow(rowIndex);
+        } catch (err) {
+          console.error(err);
+          alert('削除エラー: ' + (err?.message || err));
         }
-        // TripType は空でも可（サーバー側で拒否されるのでここで促す）
-        if (!r.trip) {
-          alert(`Trip Type が未選択の日があります: ${r.date}`); return;
-        }
+        return;
       }
 
-      saveBtn.disabled = true; saveBtn.textContent = '保存中…';
+      // 追加（同日、直後）
+      if (addBtn) {
+        const rows = readCurrentRows();
+        const rowArr = sheet[0].getRowData(rowIndex);
+        const date = rowArr[COL.DATE];
+        const curSeq = Number(rowArr[COL.SEQ] ?? 100);
 
-      try {
-        // 1) UPDATE: id がある行
-        const updates = rows.filter(r => r.id && initialIdSet.has(String(r.id)));
-        for (const u of updates) {
-          const resp = await fetch(`/api/expenses/${u.id}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-CSRF-TOKEN': csrfToken,
-              'Accept': 'application/json',
-            },
-            body: JSON.stringify({
-              station_from: u.from || null,
-              station_to:   u.to   || null,
-              note:         u.note || null,
-              cost:         u.cost,
-              trip_type:    u.trip,   // 'round_trip' | 'one_way'
-              seq:          u.seq,
-              // category は送らない（保持）
-            }),
-          });
-          if (!resp.ok) {
-            const t = await resp.text();
-            throw new Error(`更新失敗 (ID:${u.id}): ${resp.status} ${t}`);
-          }
+        const same = rows.filter(r => r.date === date).sort((a, b) => a.seq - b.seq);
+        const maxSeq = same.length ? same[same.length - 1].seq : 100;
+
+        let newSeq;
+        if (same.length === 1 || curSeq === maxSeq) {
+          newSeq = maxSeq + 1024;
+        } else {
+          const next = same.find(r => r.seq > curSeq);
+          if (next && (next.seq - curSeq) > 1) newSeq = Math.floor((curSeq + next.seq) / 2);
+          else newSeq = maxSeq + 1024;
         }
 
-        // 2) CREATE: id が無い行
-        const creates = rows.filter(r => !r.id);
-        for (const c of creates) {
-          // seq が未設定なら 100
-          const seq = Number.isFinite(c.seq) ? c.seq : 100;
-          const resp = await fetch('/api/expenses', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-CSRF-TOKEN': csrfToken,
-              'Accept': 'application/json',
-            },
-            body: JSON.stringify({
-              expense_report_id: reportId,
-              expense_date:      c.date,
-              seq:               seq,
-              station_from:      c.from || null,
-              station_to:        c.to   || null,
-              note:              c.note || null,
-              cost:              c.cost,
-              trip_type:         c.trip,      // 'round_trip' | 'one_way'
-              category:          'regular',   // Category列を削除したため既定で regular
-              // commuter_pass_id: null,
-            }),
-          });
-          if (!resp.ok) {
-            const t = await resp.text();
-            throw new Error(`作成失敗 (Date:${c.date}): ${resp.status} ${t}`);
-          }
-        }
+        const newRow = { date, day: enWeekday(date), from: '', to: '', cost: 0, trip: '', note: '', id: '', seq: newSeq };
+        const rowsWithNew = [...rows.slice(0, rowIndex + 1), newRow, ...rows.slice(rowIndex + 1)];
+        const updated = rowsWithNew.slice().sort((a, b) => (a.date === b.date) ? (a.seq - b.seq) : (a.date < b.date ? -1 : 1));
+        renderRows(updated);
 
-        alert('保存しました。');
-        // 画面再読み込みで最新を表示（ID 付与など反映）
-        location.reload();
-
-      } catch (err) {
-        console.error(err);
-        alert('保存でエラーが発生しました。\n' + (err?.message || err));
-      } finally {
-        saveBtn.disabled = false; saveBtn.textContent = '保存';
+        const newIndex = updated.findIndex(r => r.date === date && r.seq === newSeq);
+        if (newIndex >= 0) sheet[0].selectCell(COL.FROM, newIndex);
       }
     });
-  }
-});
+  });
+})();
