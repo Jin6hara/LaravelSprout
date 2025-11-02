@@ -88,8 +88,8 @@
     @endif
   </div>
 
-  {{-- ▼ ルート申請表示カード --}}
-  @include('routes.showCard', ['routeDecl' => $routeDecl])
+  {{-- ▼ ルート申請表示カード: 'showMore' => trueでボタンをactive--}}
+  @include('routes.showCard', ['routeDecl' => $routeDecl, 'showMore' => true])
 
   <div id="sheet"></div>
 
