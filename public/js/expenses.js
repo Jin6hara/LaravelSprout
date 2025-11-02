@@ -322,7 +322,7 @@
 
         // 古いイベントを解除（重複防止）
         const yesBtn = document.getElementById('confirmDeleteYes');
-        yesBtn.replaceWith(yesBtn.cloneNode(true)); 
+        yesBtn.replaceWith(yesBtn.cloneNode(true));
         const newYesBtn = document.getElementById('confirmDeleteYes');
 
         newYesBtn.addEventListener('click', async () => {
@@ -336,20 +336,46 @@
             showToast('未保存の行を削除しました。', 'success');
             return;
           }
-
           try {
             const resp = await fetch(`/api/expenses/${id}`, {
               method: 'DELETE',
               headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
             });
-            if (!resp.ok) throw new Error(`削除失敗 (ID:${id}): ${resp.status} ${await resp.text()}`);
 
+            if (!resp.ok) {
+              // --- 423などのエラーをきれいに扱う ---
+              let apiMsg = '';
+              try {
+                // APP_DEBUG=true でもここで message だけ抽出
+                const data = await resp.json();
+                apiMsg = data?.message || '';
+              } catch (_) {
+                // JSONでない場合のフォールバック（テキスト最大200字に抑制）
+                const t = await resp.text();
+                apiMsg = (t || '').slice(0, 200);
+              }
+
+              if (resp.status === 423) {
+                // ✅ ロック中（提出後）: 長文を出さずに短いトーストで通知
+                showToast('提出済みのため削除できません（ロック中）。', 'warning');
+                console.warn('Delete locked (423):', apiMsg);
+                return;
+              }
+
+              // その他のHTTPエラー
+              console.error('Delete failed:', resp.status, apiMsg);
+              showToast(`削除に失敗しました（${resp.status}）。${apiMsg}`, 'danger');
+              return;
+            }
+
+            // --- 成功時（DOMと合計の再計算） ---
             const current = readCurrentRows();
             const filtered = current.filter(r => String(r.id) !== String(id));
             renderRows(filtered);
             if (initialIdSet) initialIdSet.delete(String(id));
             updateTotal(filtered);
             showToast('削除しました。', 'success');
+
           } catch (err) {
             console.error(err);
             showToast('削除エラー: ' + (err?.message || err), 'danger');
@@ -492,4 +518,14 @@
     // グローバルに公開（既存コードからも呼べるように）
     window.showToast = showToast;
   })();
+
+  // ====== 7) 提出モーダル制御 ======
+  document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('submitConfirmBtn');
+    const modalEl = document.getElementById('confirmSubmitModal');
+    if (btn && modalEl) {
+      const modal = new bootstrap.Modal(modalEl);
+      btn.addEventListener('click', () => modal.show());
+    }
+  });
 })();

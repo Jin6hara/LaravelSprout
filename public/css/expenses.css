@@ -74,3 +74,19 @@
     filter: invert(0.2);
     /* 白すぎ防止 */
 }
+
+/* === 提出モーダル（赤系） === */
+#confirmSubmitModal .modal-header {
+    background-color: #dc3545 !important;
+    /* Bootstrap danger 赤 */
+    color: #fff !important;
+}
+
+#confirmSubmitModal .modal-content {
+    border: 2px solid #dc3545 !important;
+}
+
+#confirmSubmitModal .btn-danger {
+    background-color: #dc3545 !important;
+    border-color: #dc3545 !important;
+}

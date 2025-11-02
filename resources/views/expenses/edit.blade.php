@@ -65,11 +65,9 @@
       <button id="addByDateBtn" class="btn btn-success btn-sm" type="button" disabled>＋指定日を追加</button>
       <button id="saveBtn" class="btn btn-primary btn-sm" type="button">保存</button>
       <div class="ms-auto"></div>
-      <form method="POST" action="{{ route('expenses.submit', ['report' => $report->id]) }}"
-        onsubmit="return confirm('この月の交通費を提出しますか？（提出後は編集できません）');">
-        @csrf @method('PUT')
-        <button type="submit" class="btn btn-warning btn-sm" id="submitBtn">提出</button>
-      </form>
+      <button type="button" class="btn btn-danger btn-sm" id="submitConfirmBtn">
+        Submit
+      </button>
       @else
       <div class="ms-auto"></div>
       <span class="text-muted">提出済み（{{ optional($report->submitted_at)->format('Y-m-d H:i') }}）
@@ -135,6 +133,33 @@
           <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
           <button type="button" id="confirmDeleteYes" class="btn btn-danger btn-sm">Delete</button>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{-- ✅ 提出確認モーダル --}}
+<div class="modal fade" id="confirmSubmitModal" tabindex="-1" aria-labelledby="confirmSubmitLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-danger">
+      <div class="modal-header bg-danger text-white py-2">
+        <h6 class="modal-title" id="confirmSubmitLabel">Submit Confirmation </h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="閉じる"></button>
+      </div>
+      <div class="modal-body small">
+        Are you sure you want to submit the expense report? <br><br>
+        Once submitted, you will not be able to edit the report without contacting the administration team.
+      </div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+
+        {{-- 実際の提出フォーム --}}
+        <form id="submitForm"
+          method="POST"
+          action="{{ route('expenses.submit', ['report' => $report->id]) }}">
+          @csrf @method('PUT')
+          <button type="submit" class="btn btn-danger btn-sm">Submit</button>
+        </form>
       </div>
     </div>
   </div>
