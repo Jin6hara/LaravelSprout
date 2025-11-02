@@ -7,7 +7,7 @@
         @isset($targetUser)
         <div class="d-flex justify-content-between align-items-center mb-2">
 
-            <span class="badge bg-secondary-subtle text-dark border px-3 py-2" style="font-size: 0.9rem;">
+            <span class="badge bg-info-subtle text-dark border px-3 py-2" style="font-size: 0.9rem;">
                 👤 Viewing:
                 <strong>{{ $targetUser->first_name ?? '' }} {{ $targetUser->family_name }}</strong>
                 [{{ $targetUser->employee_code }}]

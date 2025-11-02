@@ -4,11 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\ExpenseReport;
-use App\Models\RouteDeclaration;
+use App\Services\CommutingExpenses\RouteDeclarationService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
-use App\Services\Calendar\CalendarResolver;
-use App\Services\Calendar\EventType;
 use App\Enums\ExpenseReportStatus;
 
 class ExpenseEditController extends Controller
@@ -146,18 +144,9 @@ class ExpenseEditController extends Controller
         })->values()->all();
 
         // ユーザーの最新ルート宣言を1件取得（月単位）
-        $routeDecl = RouteDeclaration::query()
-            ->where('user_id', $user->id)
-            ->whereDate('effective_date', '<=', $end->toDateString())
-            ->with([
-                'user',
-                'details' => function ($q) {
-                    // Sun → Sat の順番
-                    $q->orderByRaw("FIELD(dow,'Sun','Mon','Tue','Wed','Thu','Fri','Sat')");
-                },
-            ])
-            ->orderByDesc('effective_date')
-            ->first();
+        $end = $end ?? now('Asia/Tokyo')->endOfDay(); //end が null の場合その日の 23:59:59 に丸める
+        $svc = app(RouteDeclarationService::class);
+        $routeDecl = $svc->latestUntil($user, $end);
 
         return view('expenses.edit', [
             'user'          => $user,
@@ -169,9 +158,7 @@ class ExpenseEditController extends Controller
             'eventOnMap'    => $eventOnMap,          // ★ イベントON日のマップ 
             'passActiveMap' => $passActiveMap,       // ★ 定期券の有効日マップ
             'activePasses'  => $activePasses,        // ★ ヘッダー表示用
-
-            // ▼ 右側カード用
-            'routeDecl'     => $routeDecl,           // ★ 右側で表示（null 可）
+            'routeDecl'     => $routeDecl,           // ★ RouteDeclaration
         ]);
     }
 

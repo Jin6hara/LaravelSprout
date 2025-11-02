@@ -3,38 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use App\Models\RouteDeclaration;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Services\CommutingExpenses\RouteDeclarationService;
 
 class RouteDeclarationController extends Controller
 {
-    /**
-     * 一般ユーザー：自分の申告すべて
-     * 管理者：?user_id= 指定時はそのユーザーの申告すべて / 未指定なら自分
-     */
-    public function index(Request $request)
+    public function index(Request $request, RouteDeclarationService $svc)
     {
         $viewer = Auth::user();
 
-        // 対象ユーザーの決定
         $targetUser = $viewer;
         if ($viewer->hasRole(['admin', 'super_admin']) && $request->filled('user_id')) {
             $targetUser = User::query()->findOrFail($request->query('user_id'));
         }
 
-        // 対象ユーザーの申告をすべて取得（effective_date 降順）
-        $declarations = RouteDeclaration::query()
-            ->where('user_id', $targetUser->id)
-            ->with([
-                'user.commuterPasses',
-                'details' => function ($q) {
-                    // DOW を Sun → Sat 順に
-                    $q->orderByRaw("FIELD(dow,'Sun','Mon','Tue','Wed','Thu','Fri','Sat')");
-                },
-            ])
-            ->orderByDesc('effective_date')
-            ->get();
+        $declarations = $svc->allForUser($targetUser);
 
         return view('routes.index', [
             'declarations' => $declarations,
@@ -43,26 +27,12 @@ class RouteDeclarationController extends Controller
         ]);
     }
 
-    /**
-     * 管理者：特定ユーザーの申告すべて
-     */
-    public function showUser(User $user)
+    public function showUser(User $user, RouteDeclarationService $svc)
     {
         $viewer = Auth::user();
-        if (!$viewer->hasRole(['admin', 'super_admin'])) {
-            abort(403);
-        }
+        if (!$viewer->hasRole(['admin', 'super_admin'])) abort(403);
 
-        $declarations = RouteDeclaration::query()
-            ->where('user_id', $user->id)
-            ->with([
-                'user.commuterPasses',
-                'details' => function ($q) {
-                    $q->orderByRaw("FIELD(dow,'Sun','Mon','Tue','Wed','Thu','Fri','Sat')");
-                },
-            ])
-            ->orderByDesc('effective_date')
-            ->get();
+        $declarations = $svc->allForUser($user);
 
         return view('routes.index', [
             'declarations' => $declarations,
