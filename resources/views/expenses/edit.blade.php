@@ -183,6 +183,9 @@
     initialRows: @json($rows),
     eventOnMap: @json($eventOnMap ?? []),
     passActiveMap: @json($passActiveMap ?? []),
+
+    // ★ 提出後ロック（DRAFT以外ならtrue）
+    isLocked: @json($hasReport && $report->status !== \App\Enums\ExpenseReportStatus::DRAFT),
   };
 </script>
 
