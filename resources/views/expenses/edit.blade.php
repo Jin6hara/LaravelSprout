@@ -96,22 +96,48 @@
   </div>
 
   {{-- ✅ ヘッダーの下など、見せたい場所に置く --}}
-  <a href="https://world.jorudan.co.jp/mln/en/?sub_lang=nosub"
-    class="btn btn-outline-secondary btn-sm"
-    target="_blank" rel="noopener noreferrer">
-    Open Jorudan (Japanese Transit Planer)
-  </a>
-  <a href="https://www.google.com/maps/"
-    class="btn btn-outline-secondary btn-sm"
-    target="_blank" rel="noopener noreferrer">
-    Open Google Maps
-  </a>
-  <a href="https://map.yahoo.co.jp/"
-    class="btn btn-outline-secondary btn-sm"
-    target="_blank" rel="noopener noreferrer">
-    Open Yahoo Maps
-  </a>
+  <div class="mt-2 d-flex gap-2">
+    <a href="https://world.jorudan.co.jp/mln/en/?sub_lang=nosub"
+      class="btn btn-outline-secondary btn-sm"
+      target="_blank" rel="noopener noreferrer">
+      Open Jorudan (Japanese Transit Planer)
+    </a>
+    <a href="https://www.google.com/maps/"
+      class="btn btn-outline-secondary btn-sm"
+      target="_blank" rel="noopener noreferrer">
+      Open Google Maps
+    </a>
+    <a href="https://map.yahoo.co.jp/"
+      class="btn btn-outline-secondary btn-sm"
+      target="_blank" rel="noopener noreferrer">
+      Open Yahoo Maps
+    </a>
+  </div>
 
+  {{-- ✅ Toast container（通知の表示先。Bootstrap 5 前提） --}}
+  <div id="toastContainer"
+    class="toast-container position-fixed bottom-0 end-0 p-3"
+    style="z-index:1056" {{-- 保存ボタン帯(998)＋ボタン(999)より上 --}}
+    aria-live="polite" aria-atomic="true"></div>
+
+  {{-- ✅ 削除確認モーダル --}}
+  <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-warning text-dark py-2 custom-orange-header">
+          <h6 class="modal-title" id="confirmDeleteLabel">Delete Confirmation</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+        </div>
+        <div class="modal-body small">
+          Are you sure you want to delete this row?
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" id="confirmDeleteYes" class="btn btn-danger btn-sm">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 @push('scripts')
 {{-- すでにあるCDNはそのまま --}}

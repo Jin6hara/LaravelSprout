@@ -8,7 +8,7 @@
 
     function doSearch() {
       const v = monthInput?.value || '';
-      if (!/^\d{4}-\d{2}$/.test(v)) { alert('対象月を選択してください。'); return; }
+      if (!/^\d{4}-\d{2}$/.test(v)) { showToast('対象月を選択してください。', 'warning'); return; }
       const [yy, mm] = v.split('-');
       const url = new URL(window.location.href);
       url.searchParams.set('year', yy);
@@ -55,7 +55,7 @@
       if (isNaN(d)) return '';
       return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()];
     }
-    
+
     // 合計表示の更新
     function updateTotal(rows) {
       const total = rows.reduce((sum, r) => sum + (Number(r.cost) || 0), 0);
@@ -217,7 +217,7 @@
 
     addByDateBtn?.addEventListener('click', () => {
       const dateStr = pickDateEl?.value || '';
-      if (!isValidDateStr(dateStr)) { alert('この月内の日付を選択してください。'); return; }
+      if (!isValidDateStr(dateStr)) { showToast('この月内の日付を選択してください。', 'warning'); return; }
 
       const rows = readCurrentRows();
       let hintAfterSeq = null;
@@ -240,11 +240,11 @@
         const rows = readCurrentRows();
 
         for (const r of rows) {
-          if (!/^\d{4}-\d{2}-\d{2}$/.test(r.date)) { alert(`日付形式エラー: ${r.date}`); return; }
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(r.date)) { showToast(`日付形式エラー: ${r.date}`, 'warning'); return; }
           const [yy, mm] = r.date.split('-').map(Number);
-          if (yy !== Number(year) || mm !== Number(month)) { alert(`この月以外の日付が含まれています: ${r.date}`); return; }
-          if (r.cost < 0 || !Number.isFinite(r.cost)) { alert(`金額が不正です: ${r.cost}`); return; }
-          if (!r.trip) { alert(`Trip Type が未選択の日があります: ${r.date}`); return; }
+          if (yy !== Number(year) || mm !== Number(month)) { showToast(`この月以外の日付が含まれています: ${r.date}`, 'warning'); return; }
+          if (r.cost < 0 || !Number.isFinite(r.cost)) { showToast(`金額が不正です: ${r.cost}`, 'warning'); return; }
+          if (!r.trip) { showToast(`Trip Type が未選択の日があります: ${r.date}`, 'warning'); return; }
         }
 
         saveBtn.disabled = true; saveBtn.textContent = '保存中…';
@@ -287,12 +287,12 @@
             if (!resp.ok) throw new Error(`作成失敗 (Date:${c.date}): ${resp.status} ${await resp.text()}`);
           }
 
-          alert('保存しました。');
+          showToast('保存しました。', 'success');
           location.reload();
 
         } catch (err) {
           console.error(err);
-          alert('保存でエラーが発生しました。\n' + (err?.message || err));
+          showToast('保存でエラーが発生しました。\n' + (err?.message || err), 'danger');
         } finally {
           saveBtn.disabled = false; saveBtn.textContent = '保存';
         }
@@ -313,41 +313,48 @@
       if (delBtn) {
         const rowData = sheet[0].getRowData(rowIndex);
         const id = rowData[COL.ID];
-        if (!id) {
-          // まだ未保存の行（IDなし）はフロントだけ消せばOK
-          sheet[0].deleteRow(rowIndex);
-          // ← 念のため再描画（行番号ズレ対策）
-          const rowsAfter = readCurrentRows();
-          renderRows(rowsAfter);
-          updateTotal(rowsAfter);
-          return;
-        }
-        if (!confirm('この行を削除します。よろしいですか？')) return;
+        const isUnsaved = !id;
 
-        try {
-          const resp = await fetch(`/api/expenses/${id}`, {
-            method: 'DELETE',
-            headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
-          });
-          if (!resp.ok) throw new Error(`削除失敗 (ID:${id}): ${resp.status} ${await resp.text()}`);
+        // --- モーダルを表示 ---
+        const modalEl = document.getElementById('confirmDeleteModal');
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
 
-          // --- ここがポイント -----------------------------------
-          // 1) 現在のテーブル内容を読み出し
-          // 2) 該当IDの行を除外
-          // 3) 明示的に再描画（JSpreadsheet の内部状態ズレ対策）
-          const current = readCurrentRows();
-          const filtered = current.filter(r => String(r.id) !== String(id));
-          renderRows(filtered);
-          // IDセットからも除外（以後の更新判定のズレ防止）
-          if (initialIdSet) initialIdSet.delete(String(id));
-          // 合計も更新
-          updateTotal(filtered);
-          // -------------------------------------------------------
+        // 古いイベントを解除（重複防止）
+        const yesBtn = document.getElementById('confirmDeleteYes');
+        yesBtn.replaceWith(yesBtn.cloneNode(true)); 
+        const newYesBtn = document.getElementById('confirmDeleteYes');
 
-        } catch (err) {
-          console.error(err);
-          alert('削除エラー: ' + (err?.message || err));
-        }
+        newYesBtn.addEventListener('click', async () => {
+          modal.hide();
+
+          if (isUnsaved) {
+            sheet[0].deleteRow(rowIndex);
+            const rowsAfter = readCurrentRows();
+            renderRows(rowsAfter);
+            updateTotal(rowsAfter);
+            showToast('未保存の行を削除しました。', 'success');
+            return;
+          }
+
+          try {
+            const resp = await fetch(`/api/expenses/${id}`, {
+              method: 'DELETE',
+              headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+            });
+            if (!resp.ok) throw new Error(`削除失敗 (ID:${id}): ${resp.status} ${await resp.text()}`);
+
+            const current = readCurrentRows();
+            const filtered = current.filter(r => String(r.id) !== String(id));
+            renderRows(filtered);
+            if (initialIdSet) initialIdSet.delete(String(id));
+            updateTotal(filtered);
+            showToast('削除しました。', 'success');
+          } catch (err) {
+            console.error(err);
+            showToast('削除エラー: ' + (err?.message || err), 'danger');
+          }
+        });
         return;
       }
 
@@ -446,4 +453,43 @@
     window.addEventListener('resize', checkSaveBtnVisibility);
     checkSaveBtnVisibility();
   });
+
+  // ====== 6) Bootstrap Toast 通知ユーティリティ ======
+  (function () {
+    // variant: 'primary'|'secondary'|'success'|'danger'|'warning'|'info'|'light'|'dark'
+    function showToast(message, variant = 'primary', delay = 3000) {
+      const container = document.getElementById('toastContainer') || (() => {
+        // 念のため：コンテナが無い場合は作る（安全策）
+        const div = document.createElement('div');
+        div.id = 'toastContainer';
+        div.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        div.style.zIndex = '1056';
+        document.body.appendChild(div);
+        return div;
+      })();
+
+      const toastEl = document.createElement('div');
+      toastEl.className = `toast align-items-center text-bg-${variant} border-0`;
+      toastEl.setAttribute('role', 'status');
+      toastEl.setAttribute('aria-live', 'polite');
+      toastEl.setAttribute('aria-atomic', 'true');
+      toastEl.innerHTML = `
+        <div class="d-flex">
+          <div class="toast-body">${String(message).replace(/\n/g, '<br>')}</div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+      `;
+      container.appendChild(toastEl);
+
+      // Bootstrap Toast を起動
+      const toast = new bootstrap.Toast(toastEl, { delay });
+      toast.show();
+
+      // 消えたらDOMから除去
+      toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+    }
+
+    // グローバルに公開（既存コードからも呼べるように）
+    window.showToast = showToast;
+  })();
 })();
