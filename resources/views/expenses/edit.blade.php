@@ -91,7 +91,9 @@
   {{-- ▼ ルート申請表示カード: 'showMore' => trueでボタンをactive--}}
   @include('routes.showCard', ['routeDecl' => $routeDecl, 'showMore' => true])
 
-  <div id="sheet"></div>
+  <div id="sheetScroll" style="overflow-x:auto;">
+    <div id="sheet"></div>
+  </div>
 
   {{-- ✅ ヘッダーの下など、見せたい場所に置く --}}
   <a href="https://world.jorudan.co.jp/mln/en/?sub_lang=nosub"

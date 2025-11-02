@@ -89,7 +89,7 @@
         columns: [
           { title: '-', type: 'html', width: 50, readOnly: true },
           { title: '+', type: 'html', width: 50, readOnly: true },
-          { title: 'Date', type: 'text', width: 110, readOnly: true },
+          { title: 'Date', type: 'text', width: 107, readOnly: true },
           { title: 'Day', type: 'text', width: 65, readOnly: true },
           { title: 'Work', type: 'color', width: 65, render: 'square', readOnly: true },
           { title: 'From', type: 'text', width: 200 },
@@ -350,5 +350,71 @@
         if (newIndex >= 0) sheet[0].selectCell(COL.FROM, newIndex);
       }
     });
+  });
+  // ====== 3) フォーム横スクロール対応（画面幅1300px以下時） ======
+  const formEl = document.querySelector('form');
+  if (formEl) {
+    function updateFormScrollStyle() {
+      if (window.innerWidth <= 1300) {
+        formEl.style.overflowX = 'auto';
+        formEl.style.display = 'block';
+        formEl.style.paddingBottom = '8px'; // スクロールバー分の余白
+      } else {
+        formEl.style.overflowX = '';
+        formEl.style.display = '';
+        formEl.style.paddingBottom = '';
+      }
+    }
+
+    // 初期とリサイズ時に適用
+    updateFormScrollStyle();
+    window.addEventListener('resize', updateFormScrollStyle);
+  }
+
+  // ====== 4) 保存ボタン追従（画面下固定） ======
+  document.addEventListener('DOMContentLoaded', function () {
+    const saveBtn = document.getElementById('saveBtn');
+    if (!saveBtn) return;
+
+    // ▼ 背景帯を作成（固定位置、半透明＋ぼかし）
+    const bgBar = document.createElement('div');
+    bgBar.id = 'saveBtnBackground';
+    bgBar.style.position = 'fixed';
+    bgBar.style.left = '0';
+    bgBar.style.right = '0';
+    bgBar.style.bottom = '0';
+    bgBar.style.height = '60px';
+    bgBar.style.background = 'rgba(123, 196, 255, 0.18)';
+    bgBar.style.backdropFilter = 'blur(0px)';
+    bgBar.style.zIndex = '998';
+    bgBar.style.display = 'none';
+    document.body.appendChild(bgBar);
+
+    // ▼ 浮動ボタンを複製して上に置く
+    const floatingBtn = saveBtn.cloneNode(true);
+    floatingBtn.id = 'saveBtnFloating';
+    floatingBtn.style.position = 'fixed';
+    floatingBtn.style.bottom = '14px';
+    floatingBtn.style.right = '20px';
+    floatingBtn.style.zIndex = '999';
+    floatingBtn.style.display = 'none';
+    floatingBtn.style.boxShadow = '0 2px 8px rgba(0,0,0,0.25)';
+    floatingBtn.style.opacity = '0.95';
+    floatingBtn.style.borderRadius = '6px';
+    document.body.appendChild(floatingBtn);
+
+    // 同じ動作を連動
+    floatingBtn.addEventListener('click', () => saveBtn.click());
+
+    function checkSaveBtnVisibility() {
+      const rect = saveBtn.getBoundingClientRect();
+      const inView = rect.top >= 0 && rect.bottom <= window.innerHeight;
+      floatingBtn.style.display = inView ? 'none' : 'block';
+      bgBar.style.display = inView ? 'none' : 'block';
+    }
+
+    window.addEventListener('scroll', checkSaveBtnVisibility);
+    window.addEventListener('resize', checkSaveBtnVisibility);
+    checkSaveBtnVisibility();
   });
 })();
