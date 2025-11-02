@@ -30,7 +30,7 @@
 
     function doSearch() {
       const v = monthInput?.value || '';
-      if (!/^\d{4}-\d{2}$/.test(v)) { showToast('対象月を選択してください。', 'warning'); return; }
+      if (!/^\d{4}-\d{2}$/.test(v)) { showToast('Please select a target month', 'warning'); return; }
       const [yy, mm] = v.split('-');
       const url = new URL(window.location.href);
       url.searchParams.set('year', yy);
@@ -255,7 +255,7 @@
     addByDateBtn?.addEventListener('click', () => {
       if (isLocked) return; // ★ ロック中は何もしない
       const dateStr = pickDateEl?.value || '';
-      if (!isValidDateStr(dateStr)) { showToast('この月内の日付を選択してください。', 'warning'); return; }
+      //if (!isValidDateStr(dateStr)) { showToast('Please select a date within this month.', 'warning'); return; }
 
       const rows = readCurrentRows();
       let hintAfterSeq = null;
@@ -283,14 +283,14 @@
         const rows = readCurrentRows();
 
         for (const r of rows) {
-          if (!/^\d{4}-\d{2}-\d{2}$/.test(r.date)) { showToast(`日付形式エラー: ${r.date}`, 'warning'); return; }
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(r.date)) { showToast(`Invalid date format ${r.date}`, 'warning'); return; }
           const [yy, mm] = r.date.split('-').map(Number);
-          if (yy !== Number(year) || mm !== Number(month)) { showToast(`この月以外の日付が含まれています: ${r.date}`, 'warning'); return; }
-          if (r.cost < 0 || !Number.isFinite(r.cost)) { showToast(`金額が不正です: ${r.cost}`, 'warning'); return; }
-          if (!r.trip) { showToast(`Trip Type が未選択の日があります: ${r.date}`, 'warning'); return; }
+          //if (yy !== Number(year) || mm !== Number(month)) { showToast(`Dates outside of this month are included: ${r.date}`, 'warning'); return; }
+          if (r.cost < 0 || !Number.isFinite(r.cost)) { showToast(`Invalid amount: ${r.cost}`, 'warning'); return; }
+          if (!r.trip) { showToast(`Please select "Trip Type" ${r.date}`, 'warning'); return; }
         }
 
-        saveBtn.disabled = true; saveBtn.textContent = '保存中…';
+        saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
         try {
           const updates = rows.filter(r => r.id && initialIdSet.has(String(r.id)));
           for (const u of updates) {
@@ -306,7 +306,7 @@
                 seq: u.seq,
               }),
             });
-            if (!resp.ok) throw new Error(`更新失敗 (ID:${u.id}): ${resp.status} ${await resp.text()}`);
+            if (!resp.ok) throw new Error(`Update failed (ID:${u.id}): ${resp.status} ${await resp.text()}`);
           }
 
           const creates = rows.filter(r => !r.id);
@@ -327,17 +327,17 @@
                 category: 'regular',
               }),
             });
-            if (!resp.ok) throw new Error(`作成失敗 (Date:${c.date}): ${resp.status} ${await resp.text()}`);
+            if (!resp.ok) throw new Error(`Creation failed (Date:${c.date}): ${resp.status} ${await resp.text()}`);
           }
 
-          showToast('保存しました。', 'success');
+          showToast('Saved successfully.', 'success');
           location.reload();
 
         } catch (err) {
           console.error(err);
-          showToast('保存でエラーが発生しました。\n' + (err?.message || err), 'danger');
+          showToast('An error occurred while saving.\n' + (err?.message || err), 'danger');
         } finally {
-          saveBtn.disabled = false; saveBtn.textContent = '保存';
+          saveBtn.disabled = false; saveBtn.textContent = 'Save';
         }
       });
     }
@@ -379,7 +379,7 @@
             const rowsAfter = readCurrentRows();
             renderRows(rowsAfter);
             updateTotal(rowsAfter);
-            showToast('未保存の行を削除しました。', 'success');
+            showToast('Unsaved rows have been deleted.', 'success');
             return;
           }
 
@@ -402,13 +402,13 @@
               }
 
               if (resp.status === 423) {
-                showToast('提出済みのため削除できません（ロック中）。', 'warning');
+                showToast('Cannot delete because it has already been submitted (locked).', 'warning');
                 console.warn('Delete locked (423):', apiMsg);
                 return;
               }
 
               console.error('Delete failed:', resp.status, apiMsg);
-              showToast(`削除に失敗しました（${resp.status}）。${apiMsg}`, 'danger');
+              showToast(`Deletion failed（${resp.status}）。${apiMsg}`, 'danger');
               return;
             }
 
@@ -418,11 +418,11 @@
             renderRows(filtered);
             if (initialIdSet) initialIdSet.delete(String(id));
             updateTotal(filtered);
-            showToast('削除しました。', 'success');
+            showToast('Deleted successfully.', 'success');
 
           } catch (err) {
             console.error(err);
-            showToast('削除エラー: ' + (err?.message || err), 'danger');
+            showToast('Deletion error: ' + (err?.message || err), 'danger');
           }
         });
         return;

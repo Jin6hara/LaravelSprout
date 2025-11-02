@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function doSearch() {
         const v = monthInput?.value || '';
         if (!/^\d{4}-\d{2}$/.test(v)) {
-            alert('対象月を選択してください。');
+            alert('Please select a target month.');
             return;
         }
         const [yy, mm] = v.split('-');

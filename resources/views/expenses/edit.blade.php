@@ -14,29 +14,29 @@
 
 @section('content')
 <div class="page-wrap">
-  <h1 class="mb-3">交通費（{{ $y }}年{{ $m }}月）</h1>
+  <h1 class="mb-3">Commuting Expense（{{ $y }}/{{ $m }}）</h1>
 
   {{-- ▼ 月選択フォーム --}}
   <form method="GET" class="mb-3 d-flex align-items-center gap-2" id="monthForm">
-    <label for="monthPick" class="form-label m-0">対象月</label>
+    <label for="monthPick" class="form-label m-0">Target Month</label>
     <input type="month" id="monthPick" name="monthpick"
       class="form-control form-control-sm" style="width:170px"
       value="{{ sprintf('%04d-%02d', $y, $m) }}">
-    <button id="monthSearchBtn" class="btn btn-sm btn-outline-primary" type="button">検索</button>
+    <button id="monthSearchBtn" class="btn btn-sm btn-outline-primary" type="button">Search</button>
 
     <noscript>
       <input type="hidden" name="year" value="{{ $y }}">
       <input type="hidden" name="month" value="{{ $m }}">
-      <button type="submit" class="btn btn-sm btn-outline-primary">検索</button>
+      <button type="submit" class="btn btn-sm btn-outline-primary">Search</button>
     </noscript>
   </form>
 
   <div class="header-box mb-1">
     @if($hasReport)
     <div class="meta">
-      <div>講師: <strong>{{ $report->employee_family_name }} {{ $report->employee_first_name }}</strong></div>
-      <div>社員コード: <strong>{{ $report->employee_code }}</strong></div>
-      <div>ステータス:
+      <div>Teacher: <strong>{{ $report->employee_family_name }} {{ $report->employee_first_name }}</strong></div>
+      <div>Employee Code: <strong>{{ $report->employee_code }}</strong></div>
+      <div>Status:
         <strong>{{ strtoupper($report->status->value ?? $report->status) }}</strong>
       </div>
 
@@ -45,7 +45,7 @@
       <div class="total ms-auto text-end">
         @foreach($activePasses as $p)
         <div class="muted small">
-          <strong>定期券:{{ $p['station_from'] }} → {{ $p['station_to'] }}</strong>
+          <strong>Commuting Pass:{{ $p['station_from'] }} → {{ $p['station_to'] }}</strong>
           <span class="muted">{{ $p['valid_range'] }}</span>
         </div>
         @endforeach
@@ -53,14 +53,14 @@
       @endif
 
       {{-- ▼ 空白行（1行分の余白） --}}
-      <div class="total w-100 mb-2">合計: <strong id="sumCost">{{ number_format($report->total_amount) }}</strong> 円</div>
+      <div class="total w-100 mb-2">Total: <strong id="sumCost">{{ number_format($report->total_amount) }}</strong> Yen</div>
 
     </div>
     <div class="mt-2 d-flex align-items-center gap-2">
       @if($report->status === \App\Enums\ExpenseReportStatus::DRAFT)
       <input type="date" id="pickDate" class="form-control form-control-sm" style="width: 160px;">
-      <button id="addByDateBtn" class="btn btn-success btn-sm" type="button" disabled>＋指定日を追加</button>
-      <button id="saveBtn" class="btn btn-primary btn-sm" type="button">保存</button>
+      <button id="addByDateBtn" class="btn btn-success btn-sm" type="button" disabled>＋Add Date</button>
+      <button id="saveBtn" class="btn btn-primary btn-sm" type="button">Save</button>
       <div class="ms-auto"></div>
       {{-- ✅ JS不要でモーダルを開く（data 属性方式） --}}
       <button type="button"
@@ -71,17 +71,17 @@
       </button>
       @else
       <div class="ms-auto"></div>
-      <span class="text-muted">提出済み（{{ optional($report->submitted_at)->format('Y-m-d H:i') }}）
+      <span class="text-muted">Submitted（{{ optional($report->submitted_at)->format('Y-m-d H:i') }}）
         <br>If you need to correct, please contact XXX Dpt at 06-XXXX-XXXX.
       </span>
       @endif
     </div>
     @else
     <div class="p-2">
-      <div class="muted">講師: <strong>{{ $user->name ?? '' }}</strong></div>
+      <div class="muted">Teacher: <strong>{{ $user->name ?? '' }}</strong></div>
       <div class="mt-2 alert alert-secondary" role="alert" style="padding:8px 12px">
-        対象レコードがございません（{{ $y }}年{{ $m }}月）。<br>
-        上の「対象月」から別の月をお選びください。
+        No matching records found.（{{ $y }}/{{ $m }}）.<br>
+        Please select a different month from “Target Month” above.
       </div>
     </div>
     @endif
@@ -139,7 +139,8 @@
   </div>
 </div>
 
-{{-- ✅ 提出確認モーダル --}}
+{{-- ✅ 提出確認モーダル（レポートあり & DRAFT のときだけ描画） --}}
+@if($hasReport && $report?->status === \App\Enums\ExpenseReportStatus::DRAFT)
 <div class="modal fade" id="confirmSubmitModal" tabindex="-1" aria-labelledby="confirmSubmitLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-danger">
@@ -154,7 +155,7 @@
       <div class="modal-footer py-2">
         <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
 
-        {{-- 実際の提出フォーム --}}
+        {{-- 実際の提出フォーム（ここは hasReport 確定なので $report->id を安全に参照できる） --}}
         <form id="submitForm"
           method="POST"
           action="{{ route('expenses.submit', ['report' => $report->id]) }}">
@@ -165,6 +166,7 @@
     </div>
   </div>
 </div>
+@endif
 @endsection
 
 @push('scripts')
@@ -185,7 +187,7 @@
     passActiveMap: @json($passActiveMap ?? []),
 
     // ★ 提出後ロック（DRAFT以外ならtrue）
-    isLocked: @json($hasReport && $report->status !== \App\Enums\ExpenseReportStatus::DRAFT),
+    isLocked: @json($hasReport && $report->status !==\App\Enums\ExpenseReportStatus::DRAFT),
   };
 </script>
 

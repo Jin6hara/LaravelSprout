@@ -18,15 +18,15 @@
 
 @section('content')
 <div class="page-wrap">
-  <h1>交通費レポート一覧（{{ $y }}年{{ $m }}月）</h1>
+  <h1>Commuting Expense Reports（{{ $y }}/{{ $m }}）</h1>
 
   {{-- ▼ 月選択フォーム --}}
   <form method="GET" class="mb-3 d-flex align-items-center gap-2" id="monthForm">
-    <label for="monthPick" class="form-label m-0">対象月</label>
+    <label for="monthPick" class="form-label m-0">Target Month</label>
     <input type="month" id="monthPick" name="monthpick"
       class="form-control form-control-sm" style="width:170px"
       value="{{ sprintf('%04d-%02d', $y, $m) }}">
-    <button id="monthSearchBtn" class="btn btn-sm btn-outline-primary" type="button">検索</button>
+    <button id="monthSearchBtn" class="btn btn-sm btn-outline-primary" type="button">Search</button>
     <a class="btn btn-sm btn-outline-success ms-2" href="{{ route('commuter.advisor.index') }}">
       Commuter Pass Advisor
     </a>
@@ -34,15 +34,15 @@
 
   <div class="header-box mb-4">
     <div class="meta w-100" style="gap:24px">
-      <div>総人数: <strong>{{ number_format($summary['count']) }}</strong> 人</div>
-      <div>提出人数: <strong>{{ number_format($summary['submitted']) }}</strong> 人</div>
-      <div>未提出人数: <strong>{{ number_format($summary['not_submitted']) }}</strong> 人</div>
+      <div>Total Reports: <strong>{{ number_format($summary['count']) }}</strong> </div>
+      <div>Submitted: <strong>{{ number_format($summary['submitted']) }}</strong> </div>
+      <div>Not Submitted: <strong>{{ number_format($summary['not_submitted']) }}</strong> </div>
 
       <div class="total">
-        提出済合計: <strong id="sumSubmitted">{{ number_format($summary['sum_submitted']) }}</strong> 円
-        <span class="muted ms-2">(全体: <span id="sumAll">{{ number_format($summary['sum_all']) }}</span> 円)</span>
+        Total Submitted Amount: <strong id="sumSubmitted">{{ number_format($summary['sum_submitted']) }}</strong> Yen
+        <span class="muted ms-2">(Total Amount: <span id="sumAll">{{ number_format($summary['sum_all']) }}</span> Yen)</span>
         @if(($summary['sum_approved'] ?? 0) > 0)
-        <span class="muted ms-2">/ 承認済: <span id="sumApproved">{{ number_format($summary['sum_approved']) }}</span> 円</span>
+        <span class="muted ms-2">/ 承認済: <span id="sumApproved">{{ number_format($summary['sum_approved']) }}</span> Yen</span>
         @endif
       </div>
 
