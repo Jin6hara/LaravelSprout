@@ -46,7 +46,7 @@ class ExpenseReportController extends Controller
             return [
                 'employee_code' => $r->employee_code,
                 'family_name'   => $r->employee_family_name,
-                'first_name'    => $r->employee_first_middle_name ?? '',
+                'first_name'    => $r->employee_first_name ?? '',
                 'total_amount'  => (int) $r->total_amount, // 円(整数)
                 'status'        => $r->status instanceof \BackedEnum ? $r->status->value : (string)$r->status,
                 'submitted_at'  => optional($r->submitted_at)->format('Y-m-d H:i'),
