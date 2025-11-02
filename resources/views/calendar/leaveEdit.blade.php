@@ -57,15 +57,15 @@
         {{-- Special / Handle / Reason --}}
         <div class="col-6 col-md-3">
           <label class="form-label small mb-1">Special Type</label>
-          <input type="text" name="special_type" value="{{ request('special_type') }}" class="form-control form-control-sm" placeholder="例: 結婚, 忌引">
+          <input type="text" name="special_type" value="{{ request('special_type') }}" class="form-control form-control-sm" placeholder="">
         </div>
         <div class="col-6 col-md-3">
           <label class="form-label small mb-1">Handle Type</label>
-          <input type="text" name="handle_type" value="{{ request('handle_type') }}" class="form-control form-control-sm" placeholder="例: 後日調整">
+          <input type="text" name="handle_type" value="{{ request('handle_type') }}" class="form-control form-control-sm" placeholder="">
         </div>
         <div class="col-12 col-md-3">
           <label class="form-label small mb-1">Reason</label>
-          <input type="text" name="reason" value="{{ request('reason') }}" class="form-control form-control-sm" placeholder="理由を部分一致で検索">
+          <input type="text" name="reason" value="{{ request('reason') }}" class="form-control form-control-sm" placeholder="">
         </div>
 
         {{-- Start/End --}}
@@ -146,7 +146,7 @@
                         <div class="mb-0 d-grid gap-0">
                             {{-- 0: User --}}
                             <div class="mb-0">
-                                <label class="form-label small mb-0">User</label>
+                                <label class="form-label small text-muted mb-0">User</label>
                             <select name="user_id" class="form-select form-select-sm">
                                 {{-- 空白オプション --}}
                                 <option value="">—</option>
@@ -161,7 +161,7 @@
                             {{-- 1: Kind / Special Type --}}
                             <div class="row g-1 mb-0">
                                 <div class="col-6">
-                                    <label class="form-label small mb-0">Kind</label>
+                                    <label class="form-label small text-muted mb-0">Kind</label>
                                     <select name="kind" class="form-select form-select-sm">
                                         @foreach($kindOptions as $v => $label)
                                         <option value="{{ $v }}" @selected($leave->kind===$v)>{{ $label }}</option>
@@ -169,10 +169,10 @@
                                     </select>
                                 </div>
                                 <div class="col-6">
-                                    <label class="form-label small mb-0">Special Type</label>
+                                    <label class="form-label small text-muted mb-0">Special Type</label>
                                     <input type="text" name="special_type" class="form-control form-control-sm"
                                         value="{{ old('special_type', $leave->special_type) }}"
-                                        placeholder="Wedding...">
+                                        placeholder="">
                                 </div>
 
                             </div>
@@ -180,7 +180,7 @@
                             {{-- 2: Excused / Status --}}
                             <div class="row g-1 mb-0">
                                 <div class="col-6">
-                                    <label class="form-label small mb-0">Excused</label>
+                                    <label class="form-label small text-muted mb-0">Excused</label>
                                     <select name="excused" class="form-select form-select-sm">
                                         @foreach($excusedOptions as $v => $label)
                                         <option value="{{ $v }}" @selected($leave->excused===$v)>{{ $label }}</option>
@@ -188,7 +188,7 @@
                                     </select>
                                 </div>
                                 <div class="col-6">
-                                    <label class="form-label small mb-0">Status</label>
+                                    <label class="form-label small text-muted mb-0">Status</label>
                                     <input type="hidden" name="status" value="approved">
                                     <select name="status" class="form-select form-select-sm">
                                         @foreach($statusOptions as $v => $label)
@@ -201,12 +201,12 @@
                             {{-- 3: Start --}}
                             <div class="row g-1 mb-0">
                                 <div class="col-7">
-                                    <label class="form-label small mb-0">Start Date</label>
+                                    <label class="form-label small text-muted mb-0">Start Date</label>
                                     <input type="date" name="start_date" class="form-control form-control-sm"
                                         value="{{ old('start_date', $fmtDate($leave->start_date)) }}">
                                 </div>
                                 <div class="col-5">
-                                    <label class="form-label small mb-0">Time Start</label>
+                                    <label class="form-label small text-muted mb-0">Time Start</label>
                                     <input type="time" name="time_start" class="form-control form-control-sm"
                                         value="{{ old('time_start', $fmtTime($leave->time_start)) }}"
                                         inputmode="numeric" step="60">
@@ -216,12 +216,12 @@
                             {{-- 4: End --}}
                             <div class="row g-1 mb-0">
                                 <div class="col-7">
-                                    <label class="form-label small mb-0">End Date</label>
+                                    <label class="form-label small text-muted mb-0">End Date</label>
                                     <input type="date" name="end_date" class="form-control form-control-sm"
                                         value="{{ old('end_date', $fmtDate($leave->end_date)) }}">
                                 </div>
                                 <div class="col-5">
-                                    <label class="form-label small mb-0">Time End</label>
+                                    <label class="form-label small text-muted mb-0">Time End</label>
                                     <input type="time" name="time_end" class="form-control form-control-sm"
                                         value="{{ old('time_end', $fmtTime($leave->time_end)) }}"
                                         inputmode="numeric" step="60">
@@ -230,14 +230,14 @@
 
                             {{-- 5: Reason --}}
                             <div class="mb-0">
-                                <label class="form-label small mb-0">Reason</label>
+                                <label class="form-label small text-muted mb-0">Reason</label>
                                 <textarea name="reason" class="form-control form-control-sm" rows="2"
-                                    placeholder="Leave this blank for absence">{{ old('reason', $leave->reason) }}</textarea>
+                                    placeholder="">{{ old('reason', $leave->reason) }}</textarea>
                             </div>
 
                             {{-- 6: Handle Type --}}
                             <div class="mb-0">
-                                <label class="form-label small mb-0">Handle Type</label>
+                                <label class="form-label small text-muted mb-0">Handle Type</label>
                                 <input type="text" name="handle_type" class="form-control form-control-sm"
                                     value="{{ old('handle_type', $leave->handle_type) }}"
                                     placeholder="Leave this blank">
