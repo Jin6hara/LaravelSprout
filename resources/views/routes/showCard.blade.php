@@ -52,3 +52,14 @@
     <div class="text-muted small">No route declaration to display.</div>
     @endif
 </div>
+
+<style>
+/* ルート明細カードをさらに見やすく */
+.card .border.rounded-2 {
+  background-color: #fafafa;
+  transition: 0.2s ease;
+}
+.card .border.rounded-2:hover {
+  background-color: #e5eafa;
+}
+</style>

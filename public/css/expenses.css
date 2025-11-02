@@ -51,12 +51,3 @@
     font-size: 0.95rem;
     color: #6b7280;
 }
-
-/* ルート明細カードをさらに見やすく */
-.card .border.rounded-2 {
-  background-color: #fafafa;
-  transition: 0.2s ease;
-}
-.card .border.rounded-2:hover {
-  background-color: #e5eafa;
-}
