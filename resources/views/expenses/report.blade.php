@@ -34,30 +34,36 @@
 
   <div class="header-box mb-4">
     <div class="meta w-100" style="gap:24px">
-      <div>Total Reports: <strong>{{ number_format($summary['count']) }}</strong> </div>
-      <div>Submitted: <strong>{{ number_format($summary['submitted']) }}</strong> </div>
-      <div>Not Submitted: <strong>{{ number_format($summary['not_submitted']) }}</strong> </div>
+      <div>Total Reports: <strong>{{ number_format($summary['count'] ?? 0) }}</strong></div>
+      <div>Submitted: <strong>{{ number_format($summary['submitted'] ?? 0) }}</strong></div>
+      <div>Not Submitted: <strong>{{ number_format($summary['not_submitted'] ?? 0) }}</strong></div>
 
       <div class="total">
-        Total Submitted Amount: <strong id="sumSubmitted">{{ number_format($summary['sum_submitted']) }}</strong> Yen
-        <span class="muted ms-2">(Total Amount: <span id="sumAll">{{ number_format($summary['sum_all']) }}</span> Yen)</span>
+        Total Submitted Amount: <strong id="sumSubmitted">{{ number_format($summary['sum_submitted'] ?? 0) }}</strong> Yen
+        <span class="muted ms-2">(Total Amount: <span id="sumAll">{{ number_format($summary['sum_all'] ?? 0) }}</span> Yen)</span>
         @if(($summary['sum_approved'] ?? 0) > 0)
         <span class="muted ms-2">/ 承認済: <span id="sumApproved">{{ number_format($summary['sum_approved']) }}</span> Yen</span>
         @endif
       </div>
 
       <div class="ms-auto d-flex align-items-center" style="gap:8px; flex-wrap:wrap">
-        @foreach($summary['by_status'] as $st => $cnt)
+        @foreach(($summary['by_status'] ?? []) as $st => $cnt)
         @php
-        $cls = match (strtolower($st)) {
-        'draft' => 'badge-draft',
-        'submitted' => 'badge-submitted',
-        default => 'badge-secondary',
-        };
+        $cls = match (strtolower($st)) { 'draft' => 'badge-draft', 'submitted' => 'badge-submitted', default => 'badge-secondary', };
         @endphp
         <span class="badge {{ $cls }}" title="{{ $st }}">{{ strtoupper($st) }}: {{ $cnt }}</span>
         @endforeach
       </div>
+
+      {{-- ▼ レコード無しメッセージ（count=0 の時のみ表示） --}}
+      @if(($summary['count'] ?? 0) === 0)
+      <div class="w-100 mt-2">
+        <div class="alert alert-secondary py-2 px-3 small" role="alert">
+          No matching records found.（{{ $y }}/{{ $m }}）.<br>
+          Please select a different month from “Target Month” above.
+        </div>
+      </div>
+      @endif
     </div>
   </div>
 

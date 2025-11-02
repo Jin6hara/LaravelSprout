@@ -55,6 +55,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const yy = Number(dataEl.dataset.year || '0');
     const mm = Number(dataEl.dataset.month || '0');
 
+    // ← Blade 側で埋めた件数（0 なら「レコードなし」）
+    const count = Number(dataEl.dataset.count || rows.length || 0);
+
+    // ✅ レコード無しのときはシートを描画しない（ヘッダの案内だけ表示）
+    if (count === 0) return;
+
     // DetailsボタンHTML
     function detailsBtn(code) {
         const safe = encodeURIComponent(String(code ?? ''));

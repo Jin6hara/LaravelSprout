@@ -150,7 +150,7 @@
       </div>
       <div class="modal-body small">
         Are you sure you want to submit the expense report? <br><br>
-        Once submitted, you will not be able to edit the report without contacting the administration team.
+        Once submitted, you will not be able to edit the report.
       </div>
       <div class="modal-footer py-2">
         <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
