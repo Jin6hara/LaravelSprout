@@ -55,6 +55,13 @@
       if (isNaN(d)) return '';
       return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()];
     }
+    
+    // 合計表示の更新
+    function updateTotal(rows) {
+      const total = rows.reduce((sum, r) => sum + (Number(r.cost) || 0), 0);
+      const el = document.getElementById('sumCost');
+      if (el) el.textContent = total.toLocaleString();
+    }
 
     const tripTypeOptions = [
       { id: 'round_trip', name: 'Round Trip' },
@@ -306,15 +313,37 @@
       if (delBtn) {
         const rowData = sheet[0].getRowData(rowIndex);
         const id = rowData[COL.ID];
-        if (!id) { sheet[0].deleteRow(rowIndex); return; }
+        if (!id) {
+          // まだ未保存の行（IDなし）はフロントだけ消せばOK
+          sheet[0].deleteRow(rowIndex);
+          // ← 念のため再描画（行番号ズレ対策）
+          const rowsAfter = readCurrentRows();
+          renderRows(rowsAfter);
+          updateTotal(rowsAfter);
+          return;
+        }
         if (!confirm('この行を削除します。よろしいですか？')) return;
+
         try {
           const resp = await fetch(`/api/expenses/${id}`, {
             method: 'DELETE',
             headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
           });
           if (!resp.ok) throw new Error(`削除失敗 (ID:${id}): ${resp.status} ${await resp.text()}`);
-          sheet[0].deleteRow(rowIndex);
+
+          // --- ここがポイント -----------------------------------
+          // 1) 現在のテーブル内容を読み出し
+          // 2) 該当IDの行を除外
+          // 3) 明示的に再描画（JSpreadsheet の内部状態ズレ対策）
+          const current = readCurrentRows();
+          const filtered = current.filter(r => String(r.id) !== String(id));
+          renderRows(filtered);
+          // IDセットからも除外（以後の更新判定のズレ防止）
+          if (initialIdSet) initialIdSet.delete(String(id));
+          // 合計も更新
+          updateTotal(filtered);
+          // -------------------------------------------------------
+
         } catch (err) {
           console.error(err);
           alert('削除エラー: ' + (err?.message || err));
