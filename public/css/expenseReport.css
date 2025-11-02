@@ -55,3 +55,9 @@ h1 {
     color: #1e40af;
     /* blue-800 */
 }
+
+/* ✅ シート全体の文字色を黒に統一 */
+#sheet td,
+#sheet .jss td {
+    color: #000000 !important;
+}

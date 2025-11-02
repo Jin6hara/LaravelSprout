@@ -1,3 +1,24 @@
+// === Ctrl+S / Cmd+S 完全ブロック（キャプチャで先取り） ===
+(function () {
+    function blockSave(e) {
+        const isSaveKey =
+            (e.key && (e.key === 's' || e.key === 'S')) ||
+            (e.code && e.code === 'KeyS');
+
+        if ((e.ctrlKey || e.metaKey) && isSaveKey) {
+            e.preventDefault();
+            e.stopImmediatePropagation(); // 他のハンドラにも渡さない
+            return false;
+        }
+    }
+
+    // window と document の両方、keydown/keypress の両方、キャプチャで登録
+    window.addEventListener('keydown', blockSave, { capture: true });
+    window.addEventListener('keypress', blockSave, { capture: true });
+    document.addEventListener('keydown', blockSave, { capture: true });
+    document.addEventListener('keypress', blockSave, { capture: true });
+})();
+
 document.addEventListener('DOMContentLoaded', function () {
     // === 月検索 ===
     const monthInput = document.getElementById('monthPick');

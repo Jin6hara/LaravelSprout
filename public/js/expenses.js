@@ -1,6 +1,27 @@
 (function () {
   'use strict';
 
+  // === Ctrl+S / Cmd+S 完全ブロック（キャプチャで先取り） ===
+  (function () {
+    function blockSave(e) {
+      const isSaveKey =
+        (e.key && (e.key === 's' || e.key === 'S')) ||
+        (e.code && e.code === 'KeyS');
+
+      if ((e.ctrlKey || e.metaKey) && isSaveKey) {
+        e.preventDefault();
+        e.stopImmediatePropagation(); // 他のハンドラにも渡さない
+        return false;
+      }
+    }
+
+    // window と document の両方、keydown/keypress の両方、キャプチャで登録
+    window.addEventListener('keydown', blockSave, { capture: true });
+    window.addEventListener('keypress', blockSave, { capture: true });
+    document.addEventListener('keydown', blockSave, { capture: true });
+    document.addEventListener('keypress', blockSave, { capture: true });
+  })();
+
   // ====== 1) 月検索（フォームだけ横スクロールを付与） ======
   document.addEventListener('DOMContentLoaded', function () {
     const monthInput = document.getElementById('monthPick');
