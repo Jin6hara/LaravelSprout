@@ -34,7 +34,7 @@
     </noscript>
   </form>
 
-  <div class="header-box mb-4">
+  <div class="header-box mb-1">
     @if($hasReport)
     <div class="meta">
       <div>講師: <strong>{{ $report->employee_family_name }} {{ $report->employee_first_name }}</strong></div>
@@ -87,6 +87,9 @@
     </div>
     @endif
   </div>
+
+  {{-- ▼ ルート申請表示カード --}}
+  @include('routes.showCard', ['routeDecl' => $routeDecl])
 
   <div id="sheet"></div>
 

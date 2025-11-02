@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\ExpenseReport;
+use App\Models\RouteDeclaration;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use App\Services\Calendar\CalendarResolver;
@@ -144,16 +145,33 @@ class ExpenseEditController extends Controller
             ];
         })->values()->all();
 
+        // ユーザーの最新ルート宣言を1件取得（月単位）
+        $routeDecl = RouteDeclaration::query()
+            ->where('user_id', $user->id)
+            ->whereDate('effective_date', '<=', $end->toDateString())
+            ->with([
+                'user',
+                'details' => function ($q) {
+                    // Sun → Sat の順番
+                    $q->orderByRaw("FIELD(dow,'Sun','Mon','Tue','Wed','Thu','Fri','Sat')");
+                },
+            ])
+            ->orderByDesc('effective_date')
+            ->first();
+
         return view('expenses.edit', [
-            'user'        => $user,
-            'report'      => $report,              // ★ null 可
-            'hasReport'   => (bool)$report,        // ★ 提出済み or 下書き有り
-            'y'           => $y,                   // 選択中の年
-            'm'           => $m,                   // 選択中の月
-            'rows'        => $rows,                // 明細行の配列
-            'eventOnMap'  => $eventOnMap,          // ★ イベントON日のマップ 
-            'passActiveMap' => $passActiveMap,     // ★ 定期券の有効日マップ
-            'activePasses'  => $activePasses,      // ★ ヘッダー表示用
+            'user'          => $user,
+            'report'        => $report,              // ★ null 可
+            'hasReport'     => (bool)$report,        // ★ 提出済み or 下書き有り
+            'y'             => $y,                   // 選択中の年
+            'm'             => $m,                   // 選択中の月
+            'rows'          => $rows,                // 明細行の配列
+            'eventOnMap'    => $eventOnMap,          // ★ イベントON日のマップ 
+            'passActiveMap' => $passActiveMap,       // ★ 定期券の有効日マップ
+            'activePasses'  => $activePasses,        // ★ ヘッダー表示用
+
+            // ▼ 右側カード用
+            'routeDecl'     => $routeDecl,           // ★ 右側で表示（null 可）
         ]);
     }
 
