@@ -45,7 +45,7 @@
       <div class="total ms-auto text-end">
         @foreach($activePasses as $p)
         <div class="muted small">
-          <strong>Commuting Pass:{{ $p['station_from'] }} → {{ $p['station_to'] }}</strong>
+          <strong>Commuting Pass: {{ $p['station_from'] }} → {{ $p['station_to'] }}</strong>
           <span class="muted">{{ $p['valid_range'] }}</span>
         </div>
         @endforeach

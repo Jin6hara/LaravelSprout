@@ -70,36 +70,80 @@ class LeaveController extends Controller
      */
     public function absence(Request $request, User $user)
     {
-        $viewer = Auth::user();
+        $viewer  = Auth::user();
         $isAdmin = $viewer->hasRole(['admin', 'super_admin']);
         if (!$isAdmin && $viewer->id !== $user->id) {
             abort(403);
         }
 
-        // そのユーザーの leave をすべて表示（必要なら期間フィルタを追加）
+        // 表示するレコード
         $leaves = Leave::query()
             ->where('user_id', $user->id)
             ->whereIn('kind', ['absence', 'absence_to_paid', 'other'])
             ->orderByDesc('start_date')
             ->get();
 
-        // 表示名マッピング（ご指定）
+        // ラベル
         $kindLabels = [
-            'absence'          => 'Unpaid Leave',
-            'absence_to_paid'  => 'ALP',     // ※ご指定のスペルに合わせています
-            'other'            => 'Others',
+            'absence'         => 'Unpaid Leave',
+            'absence_to_paid' => 'ALP',
+            'other'           => 'Others',
         ];
 
-        // Handle Type はセレクト式（必要に応じて差し替え）
+        // Handle Type 選択肢（キー＝保存値、値＝表示文言）
         $handleTypeOptions = [
-            'self_cover' => 'Self Cover',
-            'makeup'     => 'Make-up Lesson',
-            'refund'     => 'Refund',
-            'other'      => 'Other',
+            'apply_alp'       => 'I will apply for an ALP via HR Brain for this date of absence.',
+            'no_alp'          => 'I will not use an ALP for this absence (non-paid absence).',
+            'clinic'          => 'I will submit a clinic receipt for this non-paid absence.',
+            'sick_child'      => 'I will use Sick or Injured Child Care Leave for this absence.',
+            'special_leave'   => 'I will use Special Leave for this absence.',
+            'menstrual_leave' => 'I will use Menstrual Leave for this absence.',
         ];
 
-        return view('calendar.absenceReport', compact('user', 'leaves', 'kindLabels', 'handleTypeOptions'));
+        // ★ ビューに渡す「行用のビューモデル」を生成
+        $rows = $leaves->map(function (Leave $leave) use ($kindLabels, $handleTypeOptions) {
+            $kindLabel = $leave->kind === 'other'
+                ? ($leave->special_type ?: 'Others')
+                : ($kindLabels[$leave->kind] ?? ucfirst($leave->kind));
+
+            // reason の null 判定は外す：kind=absence かつ handle_type が null のとき入力可
+            $needsReport = ($leave->kind === 'absence') && is_null($leave->handle_type);
+
+            $statusText = ($leave->handle_type)
+                ? 'Submitted'
+                : ($needsReport ? 'Required' : 'Submitted');
+
+            $dateMain = optional($leave->start_date)->toDateString();
+            $dateSub  = (!empty($leave->end_date) && $leave->end_date && $leave->end_date->ne($leave->start_date))
+                ? $leave->end_date->toDateString()
+                : null;
+
+            $formId = 'report-form-' . $leave->id;
+
+            $handleLabel = $leave->handle_type
+                ? ($handleTypeOptions[$leave->handle_type] ?? $leave->handle_type)
+                : '';
+
+            return [
+                'leave'        => $leave,             // そのまま使う（route引数用）
+                'kindLabel'    => $kindLabel,
+                'needsReport'  => $needsReport,
+                'statusText'   => $statusText,
+                'dateMain'     => $dateMain,
+                'dateSub'      => $dateSub,
+                'formId'       => $formId,
+                'handleLabel'  => $handleLabel,
+            ];
+        });
+
+        return view('calendar.absenceReport', [
+            'user'               => $user,
+            'rows'               => $rows,
+            'kindLabels'         => $kindLabels,
+            'handleTypeOptions'  => $handleTypeOptions,
+        ]);
     }
+
 
     /**
      * 欠席の自己報告（Reason + Handle Type）
@@ -108,31 +152,29 @@ class LeaveController extends Controller
      */
     public function report(Request $request, Leave $leave)
     {
-        $viewer = Auth::user();
+        $viewer  = Auth::user();
         $isAdmin = $viewer->hasRole(['admin', 'super_admin']);
         if (!$isAdmin && $viewer->id !== $leave->user_id) {
             abort(403);
         }
 
-        // ルール：kind=absence、かつ 両方null のときのみ提出可
         if ($leave->kind !== 'absence') {
             return back()->with('error', 'This leave is not target for absence self-report.');
         }
-        if (!is_null($leave->reason) || !is_null($leave->handle_type)) {
+        if (!is_null($leave->handle_type)) {
             return back()->with('error', 'Already submitted.');
         }
 
-        // バリデーション
         $validated = $request->validate([
-            'reason'       => ['required', 'string', 'max:1000'],
-            'handle_type'  => ['required', 'in:self_cover,makeup,refund,other'],
+            'reason'      => ['required', 'string', 'max:1000'],
+            'handle_type' => ['required', 'in:apply_alp,no_alp,clinic,sick_child,special_leave,menstrual_leave'],
         ]);
 
-        // 保存（両方が埋まったら Submitted として扱う）
-        $leave->reason = $validated['reason'];
-        $leave->handle_type = $validated['handle_type'];
-        $leave->save();
+        $leave->update([
+            'reason'      => $validated['reason'],
+            'handle_type' => $validated['handle_type'],
+        ]);
 
-        return back()->with('success', 'Submitted.');
+        return back()->with('status', 'Submitted.');
     }
 }
