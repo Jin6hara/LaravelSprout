@@ -10,10 +10,7 @@
 <link rel="stylesheet" href="{{ asset('css/expenses.css') }}?v={{ filemtime(public_path('css/expenses.css')) }}">
 @endpush
 
-@push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/jsuites/dist/jsuites.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspreadsheet-ce@5/dist/index.min.js"></script>
-@endpush
+{{-- ✅ 重複していた上側の @push('scripts') は削除済み --}}
 
 @section('content')
 <div class="page-wrap">
@@ -65,7 +62,11 @@
       <button id="addByDateBtn" class="btn btn-success btn-sm" type="button" disabled>＋指定日を追加</button>
       <button id="saveBtn" class="btn btn-primary btn-sm" type="button">保存</button>
       <div class="ms-auto"></div>
-      <button type="button" class="btn btn-danger btn-sm" id="submitConfirmBtn">
+      {{-- ✅ JS不要でモーダルを開く（data 属性方式） --}}
+      <button type="button"
+        class="btn btn-danger btn-sm"
+        data-bs-toggle="modal"
+        data-bs-target="#confirmSubmitModal">
         Submit
       </button>
       @else
@@ -86,19 +87,19 @@
     @endif
   </div>
 
-  {{-- ▼ ルート申請表示カード: 'showMore' => trueでボタンをactive--}}
+  {{-- ▼ ルート申請表示カード: 'showMore' => trueでボタンをactive --}}
   @include('routes.showCard', ['routeDecl' => $routeDecl, 'showMore' => true])
 
   <div id="sheetScroll" style="overflow-x:auto;">
     <div id="sheet"></div>
   </div>
 
-  {{-- ✅ ヘッダーの下など、見せたい場所に置く --}}
+  {{-- 便利リンク --}}
   <div class="mt-2 d-flex gap-2">
     <a href="https://world.jorudan.co.jp/mln/en/?sub_lang=nosub"
       class="btn btn-outline-secondary btn-sm"
       target="_blank" rel="noopener noreferrer">
-      Open Jorudan (Japanese Transit Planer)
+      Open Jorudan (Japanese Transit Planner)
     </a>
     <a href="https://www.google.com/maps/"
       class="btn btn-outline-secondary btn-sm"
@@ -164,10 +165,13 @@
     </div>
   </div>
 </div>
+@endsection
+
 @push('scripts')
-{{-- すでにあるCDNはそのまま --}}
+{{-- ✅ 必要なCDNはここで1回だけ --}}
 <script src="https://cdn.jsdelivr.net/npm/jsuites/dist/jsuites.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspreadsheet-ce@5/dist/index.min.js"></script>
+
 {{-- ✅ Blade→JS への受け渡し（最小限） --}}
 <script>
   window.EXPENSES_BOOTSTRAP = {
@@ -181,7 +185,7 @@
     passActiveMap: @json($passActiveMap ?? []),
   };
 </script>
-{{-- ✅ 外部ファイル --}}
+
+{{-- ✅ 外部ファイル（ページ固有ロジック） --}}
 <script src="{{ asset('js/expenses.js') }}?v={{ filemtime(public_path('js/expenses.js')) }}" defer></script>
 @endpush
-@endsection

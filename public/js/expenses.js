@@ -1,11 +1,43 @@
 (function () {
   'use strict';
 
-  // ====== 1) 月検索（元の短いスクリプト） ======
-  document.addEventListener('DOMContentLoaded', function () {
-    const monthInput = document.getElementById('monthPick');
-    const btn = document.getElementById('monthSearchBtn');
+  // ====== 0) Bootstrap Toast ユーティリティ（このファイルで1回だけ定義） ======
+  (function () {
+    function showToast(message, variant = 'primary', delay = 3000) {
+      const container = document.getElementById('toastContainer') || (() => {
+        const div = document.createElement('div');
+        div.id = 'toastContainer';
+        div.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        div.style.zIndex = '1056';
+        document.body.appendChild(div);
+        return div;
+      })();
 
+      const toastEl = document.createElement('div');
+      toastEl.className = `toast align-items-center text-bg-${variant} border-0`;
+      toastEl.setAttribute('role', 'status');
+      toastEl.setAttribute('aria-live', 'polite');
+      toastEl.setAttribute('aria-atomic', 'true');
+      toastEl.innerHTML = `
+        <div class="d-flex">
+          <div class="toast-body">${String(message).replace(/\n/g, '<br>')}</div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+      `;
+      container.appendChild(toastEl);
+
+      const toast = new bootstrap.Toast(toastEl, { delay });
+      toast.show();
+      toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+    }
+    window.showToast = showToast;
+  })();
+
+  // ====== 1) 画面初期化 ======
+  document.addEventListener('DOMContentLoaded', function () {
+    // --- 月検索（Enter/ボタンで year,month をURLに反映） ---
+    const monthInput = document.getElementById('monthPick');
+    const searchBtn = document.getElementById('monthSearchBtn');
     function doSearch() {
       const v = monthInput?.value || '';
       if (!/^\d{4}-\d{2}$/.test(v)) { showToast('対象月を選択してください。', 'warning'); return; }
@@ -15,14 +47,32 @@
       url.searchParams.set('month', Number(mm));
       window.location = url.toString();
     }
-    btn?.addEventListener('click', (e) => { e.preventDefault(); doSearch(); });
+    searchBtn?.addEventListener('click', (e) => { e.preventDefault(); doSearch(); });
     monthInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); doSearch(); } });
-  });
 
-  // ====== 2) JSpreadsheet 初期化以降（大部分） ======
-  document.addEventListener('DOMContentLoaded', function () {
+    // --- フォーム横スクロール（幅1300px以下）: #monthForm のみに限定 ---
+    const formEl = document.getElementById('monthForm');
+    function updateFormScrollStyle() {
+      if (!formEl) return;
+      if (window.innerWidth <= 1300) {
+        formEl.style.overflowX = 'auto';
+        formEl.style.display = 'block';
+        formEl.style.paddingBottom = '8px';
+      } else {
+        formEl.style.overflowX = '';
+        formEl.style.display = '';
+        formEl.style.paddingBottom = '';
+      }
+    }
+    updateFormScrollStyle();
+    window.addEventListener('resize', updateFormScrollStyle);
+
+    // --- Blade からの初期データ ---
     const boot = window.EXPENSES_BOOTSTRAP || {};
-    if (!boot.hasReport) return; // レポート無い月は何もしない
+    if (!boot.hasReport) {
+      // レポートが無い月はここで終了（以降のJSpreadsheetは未初期化）
+      return;
+    }
 
     const csrfToken = boot.csrfToken;
     const reportId = boot.reportId;
@@ -32,17 +82,15 @@
     const eventOnMap = boot.eventOnMap || {};
     const passActiveMap = boot.passActiveMap || {};
 
-    // 色定数
+    // ====== 2) ユーティリティ ======
     const COLOR_WORK_ON = '#6b92ff';
     const COLOR_WORK_OFF = '#e68484';
     const COLOR_PASS_ON = '#9bf59b';
     const COLOR_PASS_OFF = '#ffffff';
 
-    // 操作ボタンHTML
     const ACTION_BTN_HTML = '<button type="button" class="btn btn-outline-danger btn-sm js-row-del" title="この行を削除">Del</button>';
     const ADD_BTN_HTML = '<button type="button" class="btn btn-outline-primary btn-sm js-row-add" title="この日の行を下に追加">Add</button>';
 
-    // 列定数
     const COL = Object.freeze({
       ACTIONS: 0, ADD: 1, DATE: 2, DAY: 3, WORK: 4,
       FROM: 5, TO: 6, AMOUNT: 7, TRIP: 8, NOTE: 9,
@@ -56,84 +104,12 @@
       return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()];
     }
 
-    // 合計表示の更新
     function updateTotal(rows) {
       const total = rows.reduce((sum, r) => sum + (Number(r.cost) || 0), 0);
       const el = document.getElementById('sumCost');
       if (el) el.textContent = total.toLocaleString();
     }
 
-    const tripTypeOptions = [
-      { id: 'round_trip', name: 'Round Trip' },
-      { id: 'one_way', name: 'One Way' },
-    ];
-
-    // 初期マトリクス
-    const matrix = initialRows.map(r => {
-      const date = r.expense_date || '';
-      const isEventOn = !!eventOnMap[date];
-      const isPassOn = !!passActiveMap[date];
-      const colorWork = isEventOn ? COLOR_WORK_ON : COLOR_WORK_OFF;
-      const colorPass = isPassOn ? COLOR_PASS_ON : COLOR_PASS_OFF;
-      return [
-        ACTION_BTN_HTML, ADD_BTN_HTML,
-        date, enWeekday(date),
-        colorWork,
-        r.station_from || '', r.station_to || '',
-        Number.isFinite(r.cost) ? r.cost : 0,
-        r.trip_type || '',
-        r.note || '',
-        r.id ?? '',
-        (r.seq ?? 100),
-        colorPass,
-      ];
-    });
-
-    // シート生成
-    const sheet = jspreadsheet(document.getElementById('sheet'), {
-      worksheets: [{
-        data: matrix,
-        columns: [
-          { title: '-', type: 'html', width: 50, readOnly: true },
-          { title: '+', type: 'html', width: 50, readOnly: true },
-          { title: 'Date', type: 'text', width: 107, readOnly: true },
-          { title: 'Day', type: 'text', width: 65, readOnly: true },
-          { title: 'Work', type: 'color', width: 65, render: 'square', readOnly: true },
-          { title: 'From', type: 'text', width: 200 },
-          { title: 'To', type: 'text', width: 200 },
-          { title: 'Amount', type: 'numeric', width: 100, mask: '#,##0' },
-          { title: 'Trip Type', type: 'dropdown', width: 100, source: tripTypeOptions },
-          { title: 'Note', type: 'text', width: 240 },
-          { title: '_id', type: 'text', width: 0, readOnly: true },
-          { title: '_seq', type: 'numeric', width: 0, readOnly: true },
-          { title: 'Pass', type: 'color', width: 65, render: 'square', readOnly: true },
-        ],
-        minDimensions: [13, Math.max(matrix.length, 1)],
-        allowInsertRow: false,
-        allowManualInsertRow: false,
-        allowDeleteRow: false,
-        allowInsertColumn: false,
-        allowDeleteColumn: false,
-        allowRenameColumn: false,
-        allowComments: false,
-        allowSaving: false,
-        freezeColumns: 1,
-        tableOverflow: false,
-        tableHeight: '470px',
-        onselection: function (el, column, row) {
-          lastSelectedRow = (typeof row === 'number') ? row : null;
-        }
-      }]
-    });
-
-    // 隠し列
-    function hideInternalCols() {
-      sheet[0].hideColumn(COL.ID);
-      sheet[0].hideColumn(COL.SEQ);
-    }
-    hideInternalCols();
-
-    // 現在行の読取
     function readCurrentRows() {
       const data = sheet[0].getData(false);
       return data.map(arr => ({
@@ -180,13 +156,6 @@
       hideInternalCols();
     }
 
-    const initialIdSet = new Set((initialRows || []).map(r => String(r.id)));
-
-    // 指定日追加
-    const pickDateEl = document.getElementById('pickDate');
-    const addByDateBtn = document.getElementById('addByDateBtn');
-    let lastSelectedRow = null;
-
     function isValidDateStr(yyyy_mm_dd) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(yyyy_mm_dd)) return false;
       const [yy, mm, dd] = yyyy_mm_dd.split('-').map(Number);
@@ -194,13 +163,6 @@
       if (isNaN(d)) return false;
       return (yy === Number(year) && mm === Number(month) && dd >= 1 && dd <= 31);
     }
-
-    function enableAddButtonIfValid() {
-      const v = pickDateEl?.value || '';
-      addByDateBtn && (addByDateBtn.disabled = !isValidDateStr(v));
-    }
-    pickDateEl?.addEventListener('input', enableAddButtonIfValid);
-    enableAddButtonIfValid();
 
     function decideSeqForDate(targetDate, rows, hintAfterSeq = null) {
       const same = rows.filter(r => r.date === targetDate).sort((a, b) => a.seq - b.seq);
@@ -214,6 +176,91 @@
       }
       return maxSeq + 1024;
     }
+
+    const tripTypeOptions = [
+      { id: 'round_trip', name: 'Round Trip' },
+      { id: 'one_way', name: 'One Way' },
+    ];
+
+    // ====== 3) JSpreadsheet 初期化 ======
+    const matrix = initialRows.map(r => {
+      const date = r.expense_date || '';
+      const isEventOn = !!eventOnMap[date];
+      const isPassOn = !!passActiveMap[date];
+      const colorWork = isEventOn ? COLOR_WORK_ON : COLOR_WORK_OFF;
+      const colorPass = isPassOn ? COLOR_PASS_ON : COLOR_PASS_OFF;
+      return [
+        ACTION_BTN_HTML, ADD_BTN_HTML,
+        date, enWeekday(date),
+        colorWork,
+        r.station_from || '', r.station_to || '',
+        Number.isFinite(r.cost) ? r.cost : 0,
+        r.trip_type || '',
+        r.note || '',
+        r.id ?? '',
+        (r.seq ?? 100),
+        colorPass,
+      ];
+    });
+
+    const sheet = jspreadsheet(document.getElementById('sheet'), {
+      worksheets: [{
+        data: matrix,
+        columns: [
+          { title: '-', type: 'html', width: 50, readOnly: true },
+          { title: '+', type: 'html', width: 50, readOnly: true },
+          { title: 'Date', type: 'text', width: 107, readOnly: true },
+          { title: 'Day', type: 'text', width: 65, readOnly: true },
+          { title: 'Work', type: 'color', width: 65, render: 'square', readOnly: true },
+          { title: 'From', type: 'text', width: 200 },
+          { title: 'To', type: 'text', width: 200 },
+          { title: 'Amount', type: 'numeric', width: 100, mask: '#,##0' },
+          { title: 'Trip Type', type: 'dropdown', width: 100, source: tripTypeOptions },
+          { title: 'Note', type: 'text', width: 240 },
+          { title: '_id', type: 'text', width: 0, readOnly: true },
+          { title: '_seq', type: 'numeric', width: 0, readOnly: true },
+          { title: 'Pass', type: 'color', width: 65, render: 'square', readOnly: true },
+        ],
+        minDimensions: [13, Math.max(matrix.length, 1)],
+        allowInsertRow: false,
+        allowManualInsertRow: false,
+        allowDeleteRow: false,
+        allowInsertColumn: false,
+        allowDeleteColumn: false,
+        allowRenameColumn: false,
+        allowComments: false,
+        allowSaving: false,
+        freezeColumns: 1,
+        tableOverflow: false,
+        tableHeight: '470px',
+        onselection: function (_el, _column, row) {
+          lastSelectedRow = (typeof row === 'number') ? row : null;
+        }
+      }]
+    });
+
+    function hideInternalCols() {
+      sheet[0].hideColumn(COL.ID);
+      sheet[0].hideColumn(COL.SEQ);
+    }
+    hideInternalCols();
+
+    // 初期合計を反映
+    updateTotal(readCurrentRows());
+
+    const initialIdSet = new Set((initialRows || []).map(r => String(r.id)));
+    let lastSelectedRow = null;
+
+    // ====== 4) 指定日追加 ======
+    const pickDateEl = document.getElementById('pickDate');
+    const addByDateBtn = document.getElementById('addByDateBtn');
+
+    function enableAddButtonIfValid() {
+      const v = pickDateEl?.value || '';
+      addByDateBtn && (addByDateBtn.disabled = !isValidDateStr(v));
+    }
+    pickDateEl?.addEventListener('input', enableAddButtonIfValid);
+    enableAddButtonIfValid();
 
     addByDateBtn?.addEventListener('click', () => {
       const dateStr = pickDateEl?.value || '';
@@ -233,7 +280,7 @@
       enableAddButtonIfValid();
     });
 
-    // 保存
+    // ====== 5) 保存 ======
     const saveBtn = document.getElementById('saveBtn');
     if (saveBtn) {
       saveBtn.addEventListener('click', async () => {
@@ -263,7 +310,13 @@
                 seq: u.seq,
               }),
             });
-            if (!resp.ok) throw new Error(`更新失敗 (ID:${u.id}): ${resp.status} ${await resp.text()}`);
+
+            if (!resp.ok) {
+              let apiMsg = '';
+              try { apiMsg = (await resp.json())?.message || ''; } catch { apiMsg = (await resp.text()).slice(0, 200); }
+              if (resp.status === 423) { showToast('提出済みのため保存できません（ロック中）。', 'warning'); return; }
+              showToast(`更新に失敗しました（${resp.status}）。${apiMsg}`, 'danger'); return;
+            }
           }
 
           const creates = rows.filter(r => !r.id);
@@ -284,7 +337,13 @@
                 category: 'regular',
               }),
             });
-            if (!resp.ok) throw new Error(`作成失敗 (Date:${c.date}): ${resp.status} ${await resp.text()}`);
+
+            if (!resp.ok) {
+              let apiMsg = '';
+              try { apiMsg = (await resp.json())?.message || ''; } catch { apiMsg = (await resp.text()).slice(0, 200); }
+              if (resp.status === 423) { showToast('提出済みのため保存できません（ロック中）。', 'warning'); return; }
+              showToast(`作成に失敗しました（${resp.status}）。${apiMsg}`, 'danger'); return;
+            }
           }
 
           showToast('保存しました。', 'success');
@@ -299,7 +358,7 @@
       });
     }
 
-    // クリック委譲（削除と追加）
+    // ====== 6) クリック委譲（削除 / 同日追加） ======
     const sheetEl = document.getElementById('sheet');
     sheetEl.addEventListener('click', async (e) => {
       const delBtn = e.target.closest('.js-row-del');
@@ -309,18 +368,16 @@
       const rowIndex = Number(td.getAttribute('data-y'));
       if (Number.isNaN(rowIndex) || rowIndex < 0) return;
 
-      // 削除
+      // --- 削除 ---
       if (delBtn) {
         const rowData = sheet[0].getRowData(rowIndex);
         const id = rowData[COL.ID];
         const isUnsaved = !id;
 
-        // --- モーダルを表示 ---
         const modalEl = document.getElementById('confirmDeleteModal');
         const modal = new bootstrap.Modal(modalEl);
         modal.show();
 
-        // 古いイベントを解除（重複防止）
         const yesBtn = document.getElementById('confirmDeleteYes');
         yesBtn.replaceWith(yesBtn.cloneNode(true));
         const newYesBtn = document.getElementById('confirmDeleteYes');
@@ -336,6 +393,7 @@
             showToast('未保存の行を削除しました。', 'success');
             return;
           }
+
           try {
             const resp = await fetch(`/api/expenses/${id}`, {
               method: 'DELETE',
@@ -343,32 +401,13 @@
             });
 
             if (!resp.ok) {
-              // --- 423などのエラーをきれいに扱う ---
               let apiMsg = '';
-              try {
-                // APP_DEBUG=true でもここで message だけ抽出
-                const data = await resp.json();
-                apiMsg = data?.message || '';
-              } catch (_) {
-                // JSONでない場合のフォールバック（テキスト最大200字に抑制）
-                const t = await resp.text();
-                apiMsg = (t || '').slice(0, 200);
-              }
-
-              if (resp.status === 423) {
-                // ✅ ロック中（提出後）: 長文を出さずに短いトーストで通知
-                showToast('提出済みのため削除できません（ロック中）。', 'warning');
-                console.warn('Delete locked (423):', apiMsg);
-                return;
-              }
-
-              // その他のHTTPエラー
-              console.error('Delete failed:', resp.status, apiMsg);
+              try { apiMsg = (await resp.json())?.message || ''; } catch { apiMsg = (await resp.text()).slice(0, 200); }
+              if (resp.status === 423) { showToast('提出済みのため削除できません（ロック中）。', 'warning'); return; }
               showToast(`削除に失敗しました（${resp.status}）。${apiMsg}`, 'danger');
               return;
             }
 
-            // --- 成功時（DOMと合計の再計算） ---
             const current = readCurrentRows();
             const filtered = current.filter(r => String(r.id) !== String(id));
             renderRows(filtered);
@@ -384,7 +423,7 @@
         return;
       }
 
-      // 追加（同日、直後）
+      // --- 追加（同日、直後） ---
       if (addBtn) {
         const rows = readCurrentRows();
         const rowArr = sheet[0].getRowData(rowIndex);
@@ -412,120 +451,50 @@
         if (newIndex >= 0) sheet[0].selectCell(COL.FROM, newIndex);
       }
     });
-  });
-  // ====== 3) フォーム横スクロール対応（画面幅1300px以下時） ======
-  const formEl = document.querySelector('form');
-  if (formEl) {
-    function updateFormScrollStyle() {
-      if (window.innerWidth <= 1300) {
-        formEl.style.overflowX = 'auto';
-        formEl.style.display = 'block';
-        formEl.style.paddingBottom = '8px'; // スクロールバー分の余白
-      } else {
-        formEl.style.overflowX = '';
-        formEl.style.display = '';
-        formEl.style.paddingBottom = '';
+
+    // ====== 7) 保存ボタン追従（最下部固定/白透明背景帯） ======
+    const saveBtnOrigin = document.getElementById('saveBtn');
+    if (saveBtnOrigin) {
+      const bgBar = document.createElement('div');
+      bgBar.id = 'saveBtnBackground';
+      bgBar.style.position = 'fixed';
+      bgBar.style.left = '0';
+      bgBar.style.right = '0';
+      bgBar.style.bottom = '0';
+      bgBar.style.height = '60px';
+      bgBar.style.background = 'rgba(255,255,255,0.9)';
+      bgBar.style.backdropFilter = 'blur(2px)';
+      bgBar.style.zIndex = '998';
+      bgBar.style.display = 'none';
+      document.body.appendChild(bgBar);
+
+      const floatingBtn = saveBtnOrigin.cloneNode(true);
+      floatingBtn.id = 'saveBtnFloating';
+      floatingBtn.style.position = 'fixed';
+      floatingBtn.style.bottom = '14px';
+      floatingBtn.style.right = '20px';
+      floatingBtn.style.zIndex = '999';
+      floatingBtn.style.display = 'none';
+      floatingBtn.style.boxShadow = '0 2px 8px rgba(0,0,0,0.25)';
+      floatingBtn.style.opacity = '0.95';
+      floatingBtn.style.borderRadius = '6px';
+      document.body.appendChild(floatingBtn);
+
+      floatingBtn.addEventListener('click', () => saveBtnOrigin.click());
+
+      function checkSaveBtnVisibility() {
+        const rect = saveBtnOrigin.getBoundingClientRect();
+        const inView = rect.top >= 0 && rect.bottom <= window.innerHeight;
+        floatingBtn.style.display = inView ? 'none' : 'block';
+        bgBar.style.display = inView ? 'none' : 'block';
       }
+      window.addEventListener('scroll', checkSaveBtnVisibility);
+      window.addEventListener('resize', checkSaveBtnVisibility);
+      checkSaveBtnVisibility();
     }
 
-    // 初期とリサイズ時に適用
-    updateFormScrollStyle();
-    window.addEventListener('resize', updateFormScrollStyle);
-  }
-
-  // ====== 4) 保存ボタン追従（画面下固定） ======
-  document.addEventListener('DOMContentLoaded', function () {
-    const saveBtn = document.getElementById('saveBtn');
-    if (!saveBtn) return;
-
-    // ▼ 背景帯を作成（固定位置、半透明＋ぼかし）
-    const bgBar = document.createElement('div');
-    bgBar.id = 'saveBtnBackground';
-    bgBar.style.position = 'fixed';
-    bgBar.style.left = '0';
-    bgBar.style.right = '0';
-    bgBar.style.bottom = '0';
-    bgBar.style.height = '60px';
-    bgBar.style.background = 'rgba(123, 196, 255, 0.18)';
-    bgBar.style.backdropFilter = 'blur(0px)';
-    bgBar.style.zIndex = '998';
-    bgBar.style.display = 'none';
-    document.body.appendChild(bgBar);
-
-    // ▼ 浮動ボタンを複製して上に置く
-    const floatingBtn = saveBtn.cloneNode(true);
-    floatingBtn.id = 'saveBtnFloating';
-    floatingBtn.style.position = 'fixed';
-    floatingBtn.style.bottom = '14px';
-    floatingBtn.style.right = '20px';
-    floatingBtn.style.zIndex = '999';
-    floatingBtn.style.display = 'none';
-    floatingBtn.style.boxShadow = '0 2px 8px rgba(0,0,0,0.25)';
-    floatingBtn.style.opacity = '0.95';
-    floatingBtn.style.borderRadius = '6px';
-    document.body.appendChild(floatingBtn);
-
-    // 同じ動作を連動
-    floatingBtn.addEventListener('click', () => saveBtn.click());
-
-    function checkSaveBtnVisibility() {
-      const rect = saveBtn.getBoundingClientRect();
-      const inView = rect.top >= 0 && rect.bottom <= window.innerHeight;
-      floatingBtn.style.display = inView ? 'none' : 'block';
-      bgBar.style.display = inView ? 'none' : 'block';
-    }
-
-    window.addEventListener('scroll', checkSaveBtnVisibility);
-    window.addEventListener('resize', checkSaveBtnVisibility);
-    checkSaveBtnVisibility();
-  });
-
-  // ====== 6) Bootstrap Toast 通知ユーティリティ ======
-  (function () {
-    // variant: 'primary'|'secondary'|'success'|'danger'|'warning'|'info'|'light'|'dark'
-    function showToast(message, variant = 'primary', delay = 3000) {
-      const container = document.getElementById('toastContainer') || (() => {
-        // 念のため：コンテナが無い場合は作る（安全策）
-        const div = document.createElement('div');
-        div.id = 'toastContainer';
-        div.className = 'toast-container position-fixed bottom-0 end-0 p-3';
-        div.style.zIndex = '1056';
-        document.body.appendChild(div);
-        return div;
-      })();
-
-      const toastEl = document.createElement('div');
-      toastEl.className = `toast align-items-center text-bg-${variant} border-0`;
-      toastEl.setAttribute('role', 'status');
-      toastEl.setAttribute('aria-live', 'polite');
-      toastEl.setAttribute('aria-atomic', 'true');
-      toastEl.innerHTML = `
-        <div class="d-flex">
-          <div class="toast-body">${String(message).replace(/\n/g, '<br>')}</div>
-          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-      `;
-      container.appendChild(toastEl);
-
-      // Bootstrap Toast を起動
-      const toast = new bootstrap.Toast(toastEl, { delay });
-      toast.show();
-
-      // 消えたらDOMから除去
-      toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
-    }
-
-    // グローバルに公開（既存コードからも呼べるように）
-    window.showToast = showToast;
-  })();
-
-  // ====== 7) 提出モーダル制御 ======
-  document.addEventListener('DOMContentLoaded', () => {
-    const btn = document.getElementById('submitConfirmBtn');
-    const modalEl = document.getElementById('confirmSubmitModal');
-    if (btn && modalEl) {
-      const modal = new bootstrap.Modal(modalEl);
-      btn.addEventListener('click', () => modal.show());
-    }
-  });
+    // ====== 8) 提出モーダル起動JSは不要 ======
+    // ボタンに data-bs-toggle="modal" data-bs-target="#confirmSubmitModal" を付与済みのため、
+    // ここでのJS制御は削除しました（Bladeのdata属性で開閉を処理）。
+  }); // DOMContentLoaded
 })();
