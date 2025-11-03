@@ -3,7 +3,7 @@
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="mb-0">Leave Manager</h2>
-    <span class="badge text-bg-primary">Admin View</span>
+    <small class="text-muted">{{ $leaves->total() }} leave(s)</small>
 </div>
 
 {{-- ▼ 検索フォーム --}}
@@ -134,8 +134,9 @@
             <div class="card h-100 shadow-sm">
                 {{-- Leave Manager --}}
                 <form method="POST"
-                    action="{{ route('leaves.update', $leave) }}"
-                    class="h-100 d-flex flex-column js-leave-form">
+                      action="{{ route('leaves.update', $leave) }}"
+                      class="h-100 d-flex flex-column js-leave-form"
+                      data-user-id="{{ $leave->user_id }}">
                 @csrf
                 @method('PUT')
 
@@ -147,7 +148,7 @@
                             {{-- 0: User --}}
                             <div class="mb-0">
                                 <label class="form-label small text-muted mb-0">User</label>
-                            <select name="user_id" class="form-select form-select-sm">
+                            <select name="user_id" class="form-select form-select-sm" required>
                                 {{-- 空白オプション --}}
                                 <option value="">—</option>
                                 @foreach($userOptions as $u)
@@ -251,11 +252,11 @@
                                     class="btn btn-sm btn-outline-danger js-delete"
                                     data-url="{{ route('leaves.destroy', $leave) }}"
                                     data-date="{{ $leave->start_date?->format('Y-m-d') ?? 'この休暇' }}">
-                            削除
+                            Delete
                             </button>
 
                             {{-- 保存は通常送信 --}}
-                            <button type="submit" class="btn btn-sm btn-primary">保存</button>
+                            <button type="submit" class="btn btn-sm btn-primary"> Save </button>
                         </div>
                         <small class="{{ $cls }} text-left d-block mt-1">
                             {{ $action }}: {{ $time }}
@@ -274,14 +275,33 @@
 </div>
 @else
 <div class="alert alert-light border">
-    データがありません。
+    No Leave matches.
 </div>
 @endif
 
+  <!-- ✅ Delete Confirmation Modal -->
+  <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-sm">
+        <div class="modal-header bg-danger text-white py-2">
+          <h6 class="modal-title" id="deleteConfirmLabel">Delete Confirmation</h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0" id="deleteConfirmText">Are you sure you want to delete this leave?</p>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-danger btn-sm" id="confirmDeleteBtn">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 @push('styles')
 <style>
-/* Leaveカード全体の背景を薄灰色に */
-.row .card {
+/* ✅ Leaveカード・検索フォームカード共通デザイン */
+.card {
   background-color: #ecececc4 !important; /* Bootstrapのlightより少し淡いグレー */
   border: 1px solid #c1c5caff;           /* 薄い枠線 */
   border-radius: 6px;
@@ -291,19 +311,33 @@
 
 @push('scripts')
 <script>
-  // 削除確認ダイアログ（日付表示）
+  // 削除確認ダイアログ（日付表示） → Bootstrap Modal に置き換え（英語UI）
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('.js-delete');
     if (!btn) return;
 
-    const date = btn.dataset.date || 'この休暇';
-    if (!confirm(`${date} を削除します。よろしいですか？`)) return;
+    // 対象休暇情報をモーダルに反映
+    const date = btn.dataset.date || 'this leave';
+    const modalText = document.getElementById('deleteConfirmText');
+    modalText.textContent = `Are you sure you want to delete ${date}?`;
 
     const form = document.getElementById('js-delete-form');
     form.action = btn.dataset.url;
-    form.submit();
+
+    // モーダル表示
+    const modalEl = document.getElementById('deleteConfirmModal');
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+
+    // 削除ボタンで実行
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+    confirmBtn.onclick = () => {
+      modal.hide();
+      form.submit();
+    };
   });
 </script>
+
 <script>
 document.getElementById('js-bulk-save')?.addEventListener('click', async (e) => {
   const url = e.currentTarget.dataset.url;
@@ -318,7 +352,26 @@ document.getElementById('js-bulk-save')?.addEventListener('click', async (e) => 
     ['end_date','time_start','time_end','special_type','handle_type','reason'].forEach(k => {
       if (obj[k] === '') obj[k] = null;
     });
+
+    // ✅ user_id が欠落していたらフォーム属性やDOMから補完
+    if (!obj.user_id) {
+      // data-user-id を最優先で使う
+      const fromDataset = f.dataset?.userId || null;
+      // disabled ではない select から拾う（通常はこれで入る）
+      const fromSelect = f.querySelector('select[name="user_id"]:not([disabled])')?.value || null;
+      obj.user_id = fromDataset || fromSelect || '';
+    }
+
     return obj;
+  }).filter((obj, idx) => {
+    // ✅ まだ user_id が空なら、このカードをハイライトして送信対象から外す
+    if (!obj.user_id) {
+      const card = forms[idx].closest('.card');
+      card?.classList.add('border','border-warning');
+      // 可能ならトーストや小さな注釈で知らせる（任意）
+      return false;
+    }
+    return true;
   });
 
   try {

@@ -26,7 +26,7 @@
 
   <div class="d-flex justify-content-between align-items-center mb-2">
     <h5 class="mb-0">Shift Assigner</h5>
-    <small class="text-muted">{{ $events->total() }} 件</small>
+    <small class="text-muted">{{ $events->total() }} Shift(s)</small>
   </div>
 
   {{-- ▼ 欠席作成 -------------------------------------------------------------------------------------------}}
@@ -44,7 +44,7 @@
           <div class="col-12 col-md-3 col-lg-3">
             <label class="form-label small mb-1">Original User</label>
             <select name="user_id" class="form-select form-select-sm" required>
-              <option value="">（選択してください）</option>
+              <option value="">Please select</option>
               @foreach($userOptions as $u)
                 <option value="{{ $u->id }}" @selected(request('user_id') == $u->id)>
                   {{ $u->first_name }} {{ $u->family_name }} [{{ $u->employee_code }}]
@@ -66,7 +66,7 @@
           {{-- 送信ボタン --}}
           <div class="col-12 col-md-2 col-lg-2 d-grid">
             <button type="submit" class="btn btn-sm btn-warning">
-              欠席登録
+              Create Absence
             </button>
           </div>
 
@@ -100,7 +100,7 @@
           <div class="col-12 col-md-3">
             <label class="form-label small mb-1">Original User</label>
             <select name="original_user_id" class="form-select form-select-sm">
-              <option value="">（指定なし）</option>
+              <option value="">( All )</option>
               @foreach($userOptions as $u)
                 <option value="{{ $u->id }}" @selected(request('original_user_id') == $u->id)>
                   {{ $u->first_name }} {{ $u->family_name }} [{{ $u->employee_code }}]
@@ -127,7 +127,7 @@
           <div class="col-12 col-md-3">
             <label class="form-label small mb-1">Assigned User</label>
             <select name="assigned_user_id" class="form-select form-select-sm">
-              <option value="">（指定なし）</option>
+              <option value="">( All )</option>
               @foreach($userOptions as $u)
                 <option value="{{ $u->id }}" @selected(request('assigned_user_id') == $u->id)>
                   {{ $u->first_name }} {{ $u->family_name }} [{{ $u->employee_code }}]
@@ -147,7 +147,7 @@
           <div class="col-6 col-md-3">
             <label class="form-label small mb-1">Status</label>
             <select name="status" class="form-select form-select-sm">
-              <option value="">（指定なし）</option>
+              <option value="">( All )</option>
               @foreach($statusOptions as $v => $label)
                 <option value="{{ $v }}" @selected(request('status') === $v)>{{ $label }}</option>
               @endforeach
@@ -158,7 +158,7 @@
           <div class="col-6 col-md-3">
             <label class="form-label small mb-1">Type</label>
             <select name="type" class="form-select form-select-sm">
-              <option value="">（指定なし）</option>
+              <option value="">( All )</option>
               @foreach($typeOptions as $v => $label)
                 <option value="{{ $v }}" @selected(request('type') === $v)>{{ $label }}</option>
               @endforeach
@@ -185,8 +185,8 @@
 
           {{-- 操作ボタン --}}  
           <div class="col-12 col-md-3 d-flex gap-2 mt-2">
-            <button type="submit" class="btn btn-sm btn-primary flex-fill">検索</button>
-            <a href="{{ route('calendar.edit') }}" class="btn btn-sm btn-outline-secondary flex-fill">リセット</a>
+            <button type="submit" class="btn btn-sm btn-primary flex-fill">Search</button>
+            <a href="{{ route('calendar.edit') }}" class="btn btn-sm btn-outline-secondary flex-fill">Clear</a>
           </div>
 
         </div>
@@ -202,14 +202,14 @@
       @csrf
       <input type="hidden" name="event_date" value="{{ request('event_date', now()->toDateString()) }}">
       <button type="submit" class="btn btn-sm btn-success">
-        ＋ 空白イベントを追加
+        ＋ Add Blank
       </button>
     </form>
     <button type="button"
       class="btn btn-sm btn-primary"
       id="js-bulk-save"
       data-url="{{ route('events.bulk_update') }}">
-      一括保存
+      Bulk Save
     </button>
   </div>
 
@@ -244,7 +244,10 @@
 
     <div class="col-12 col-sm-6 col-md-4 col-lg-3">
       <div class="card h-100 shadow-sm">
-        <form method="POST" action="{{ route('events.update', $event) }}" class="h-100 d-flex flex-column">
+         <form method="POST" 
+            action="{{ route('events.update', $event) }}" 
+            class="h-100 d-flex flex-column js-event-form" 
+            data-event-id="{{ $event->id }}">
           @csrf
           @method('PUT')
 
@@ -375,15 +378,15 @@
               <button type="button"
                 class="btn btn-sm btn-outline-secondary js-duplicate"
                 data-store="{{ route('events.store') }}">
-                複写
+                Copy
               </button>
               <button type="button"
                 class="btn btn-sm btn-outline-danger js-delete"
                 data-url="{{ route('events.destroy', $event) }}"
                 data-date="{{ $event->event_date?->format('Y-m-d') ?? '未設定' }}">
-                削除
+                Delete
               </button>
-              <button type="submit" class="btn btn-sm btn-primary">保存</button>
+              <button type="submit" class="btn btn-sm btn-primary">Save</button>
             </div>
             <small class="{{ $cls }} text-left d-block mt-1">
               {{ $action }}: {{ $time }}
@@ -405,9 +408,28 @@
     {{ $events->withQueryString()->links() }}
   </div>
   @else
-  <div class="alert alert-light border">データがありません。</div>
+  <div class="alert alert-light border">No event matches.</div>
   @endif
 </div>
+
+  <!-- ✅ 削除確認モーダル -->
+  <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-sm">
+        <div class="modal-header bg-danger text-white py-2">
+          <h6 class="modal-title" id="deleteConfirmLabel">Delete Confirmation</h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0" id="deleteConfirmText">Are you sure you want to delete this shift?</p>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-danger btn-sm" id="confirmDeleteBtn">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
 @endsection
 
 @push('styles')
@@ -422,7 +444,7 @@
   .card-body.p-2 {
     background-color: #eef6ff;
     /* ごく淡い青 */
-  }
+  }  
 </style>
 @endpush
 
@@ -500,12 +522,25 @@ document.addEventListener('input', (e) => {
     const btn = e.target.closest('.js-delete');
     if (!btn) return;
 
-    const date = btn.dataset.date || 'このイベント';
-    if (!confirm(`${date} のイベントを削除します。よろしいですか？`)) return;
+    // 対象イベント情報をモーダルに反映
+    const date = btn.dataset.date || 'this event';
+    const modalText = document.getElementById('deleteConfirmText');
+    modalText.textContent = `Are you sure you want to delete ${date}?`;
 
     const form = document.getElementById('js-delete-form');
     form.action = btn.dataset.url;
-    form.submit();
+
+    // モーダル表示
+    const modalEl = document.getElementById('deleteConfirmModal');
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+
+    // 削除ボタンのクリックで送信
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+    confirmBtn.onclick = () => {
+      modal.hide();
+      form.submit();
+    };
   });
 </script>
 
@@ -569,11 +604,18 @@ document.addEventListener('input', (e) => {
   }
 
   bulkBtn.addEventListener('click', async () => {
-    const cards = document.querySelectorAll('.row .card form'); // 今表示されているカードのみ
+    // まずはイベント編集フォーム（識別クラス）を優先的に取得。無ければ従来セレクタを使用。
+    let cards = document.querySelectorAll('.js-event-form');
+    if (!cards.length) {
+      cards = document.querySelectorAll('.row .card form'); // 従来の対象（後方互換）
+    }
     const items = [];
 
     cards.forEach(form => {
-      const id = parseEventIdFromAction(form.action);
+      // data-event-id を優先、無ければ従来の URL 解析で補完
+      const dataId = form.dataset?.eventId ? parseInt(form.dataset.eventId, 10) : null;
+      const urlId  = parseEventIdFromAction(form.action);
+      const id = dataId || urlId;
       if (!id) return; // 新規POSTフォーム（複写直後未反映など）は対象外
       const data = formToObject(form);
       data.id = id;

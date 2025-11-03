@@ -43,7 +43,7 @@ class LeaveController extends Controller
 
         // Observer が自動でスナップショット生成
         return redirect()->to(route('calendar.edit') . '?event_date=' . urlencode($date))
-            ->with('status', '欠席登録成功。通常シフトある場合はEventが作成されます。');
+            ->with('toast', 'Absence successfully registered. If a regular shift exists for that day, an Event will be created automatically.');
     }
 
 

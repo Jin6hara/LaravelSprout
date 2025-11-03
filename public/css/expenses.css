@@ -52,16 +52,6 @@
     color: #6b7280;
 }
 
-/* === Toast（右下）: 保存ボタン帯(高さ60px)と重ならないよう少し持ち上げる === */
-#toastContainer {
-    bottom: 70px !important;
-}
-
-/* 60px帯 + 余白10px */
-#toastContainer .toast {
-    min-width: 280px;
-}
-
 /* === 削除モーダル用 オレンジ調整 === */
 .custom-orange-header {
     background-color: #ffb347 !important;

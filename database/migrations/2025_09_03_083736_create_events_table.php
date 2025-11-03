@@ -29,8 +29,11 @@ return new class extends Migration
             // 欠席時コピー元（正規コマ追跡用）
             $t->foreignId('source_schedule_line_id')->nullable()->constrained('schedule_lines')->nullOnDelete();
             //$t->foreignId('source_leave_id')->nullable()->constrained('leaves')->nullOnDelete();　// Leaveを削除したらNULLになる仕様
-            // 外部キー、Leaveを削除したら関連イベントも削除
-            $t->foreignId('source_leave_id')->references('id')->on('leaves')->cascadeOnDelete();
+            // 外部キー、Leaveを削除したら関連イベントも削除、nullable。
+            $t->foreignId('source_leave_id')
+                ->nullable()                         // ← NULL 許可
+                ->constrained('leaves')              // ← references + on をまとめて書ける
+                ->cascadeOnDelete();                 // ← Leave 削除時に関連イベントも削除
             $t->timestamps();
             // 重複防止の最低限（完全な“時間かぶり”はアプリ層で検証）
             $t->index(['assigned_user_id', 'event_date', 'start_time', 'end_time'], 'events_user_date_time_idx');

@@ -56,24 +56,27 @@
       <div class="total w-100 mb-2">Total: <strong id="sumCost">{{ number_format($report->total_amount) }}</strong> Yen</div>
 
     </div>
-    <div class="mt-2 d-flex align-items-center gap-2">
+    <div class="mt-2 d-flex flex-wrap align-items-center gap-2">
       @if($report->status === \App\Enums\ExpenseReportStatus::DRAFT)
-      <input type="date" id="pickDate" class="form-control form-control-sm" style="width: 160px;">
-      <button id="addByDateBtn" class="btn btn-success btn-sm" type="button" disabled>＋Add Date</button>
-      <button id="saveBtn" class="btn btn-primary btn-sm" type="button">Save</button>
-      <div class="ms-auto"></div>
-      {{-- ✅ JS不要でモーダルを開く（data 属性方式） --}}
-      <button type="button"
-        class="btn btn-danger btn-sm"
-        data-bs-toggle="modal"
-        data-bs-target="#confirmSubmitModal">
-        Submit
-      </button>
+        {{-- ▼ 日付・ボタン類（横幅が狭い場合は縦並び） --}}
+        <div class="d-flex flex-column flex-sm-row gap-2">
+          <input type="date" id="pickDate" class="form-control form-control-sm" style="width: 160px;">
+          <button id="addByDateBtn" class="btn btn-success btn-sm" type="button" disabled>＋Add Date</button>
+          <button id="saveBtn" class="btn btn-primary btn-sm" type="button">Save</button>
+        </div>
+
+        <div class="ms-auto mt-2 mt-sm-0"></div>
+
+        {{-- ✅ JS不要でモーダルを開く（data 属性方式） --}}
+        <button type="button"
+          class="btn btn-warning btn-sm mt-2 mt-sm-0"
+          data-bs-toggle="modal"
+          data-bs-target="#confirmSubmitModal">
+          Submit
+        </button>
       @else
-      <div class="ms-auto"></div>
-      <span class="text-muted">Submitted（{{ optional($report->submitted_at)->format('Y-m-d H:i') }}）
-        <br>If you need to correct, please contact XXX Dpt at 06-XXXX-XXXX.
-      </span>
+        <div class="ms-auto mt-10"></div>
+        <span class="text-muted">Submitted（{{ optional($report->submitted_at)->format('Y-m-d H:i') }}）</span>
       @endif
     </div>
     @else

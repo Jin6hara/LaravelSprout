@@ -182,10 +182,10 @@ class ExpenseEditController extends Controller
 
         if ($user->id === $report->user_id) {
             return redirect()->route('expenses.edit', ['year' => $y, 'month' => $m])
-                ->with('status', 'submitted. You can no longer edit the report.');
+                ->with('toast', 'submitted. You can no longer edit the report.');
         } else {
             return redirect()->route('expenses.admin.edit', ['user' => $report->employee_code, 'year' => $y, 'month' => $m])
-                ->with('status', 'submitted. The user can no longer edit the report.');
+                ->with('toast', 'submitted. The user can no longer edit the report.');
         }
     }
 }
