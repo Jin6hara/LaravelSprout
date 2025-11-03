@@ -26,7 +26,7 @@
 
   <div class="d-flex justify-content-between align-items-center mb-2">
     <h5 class="mb-0">Shift Assigner</h5>
-    <small class="text-muted">{{ $events->total() }} 件</small>
+    <small class="text-muted">{{ $events->total() }} Shift(s)</small>
   </div>
 
   {{-- ▼ 欠席作成 -------------------------------------------------------------------------------------------}}
@@ -378,15 +378,15 @@
               <button type="button"
                 class="btn btn-sm btn-outline-secondary js-duplicate"
                 data-store="{{ route('events.store') }}">
-                複写
+                Copy
               </button>
               <button type="button"
                 class="btn btn-sm btn-outline-danger js-delete"
                 data-url="{{ route('events.destroy', $event) }}"
                 data-date="{{ $event->event_date?->format('Y-m-d') ?? '未設定' }}">
-                削除
+                Delete
               </button>
-              <button type="submit" class="btn btn-sm btn-primary">保存</button>
+              <button type="submit" class="btn btn-sm btn-primary">Save</button>
             </div>
             <small class="{{ $cls }} text-left d-block mt-1">
               {{ $action }}: {{ $time }}
@@ -408,9 +408,28 @@
     {{ $events->withQueryString()->links() }}
   </div>
   @else
-  <div class="alert alert-light border">データがありません。</div>
+  <div class="alert alert-light border">No event maches.</div>
   @endif
 </div>
+
+  <!-- ✅ 削除確認モーダル -->
+  <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-sm">
+        <div class="modal-header bg-danger text-white py-2">
+          <h6 class="modal-title" id="deleteConfirmLabel">Delete Confirmation</h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0" id="deleteConfirmText">Are you sure you want to delete this shift?</p>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-danger btn-sm" id="confirmDeleteBtn">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
 @endsection
 
 @push('styles')
@@ -503,12 +522,25 @@ document.addEventListener('input', (e) => {
     const btn = e.target.closest('.js-delete');
     if (!btn) return;
 
-    const date = btn.dataset.date || 'このイベント';
-    if (!confirm(`${date} のイベントを削除します。よろしいですか？`)) return;
+    // 対象イベント情報をモーダルに反映
+    const date = btn.dataset.date || 'this event';
+    const modalText = document.getElementById('deleteConfirmText');
+    modalText.textContent = `Are you sure you want to delete ${date}?`;
 
     const form = document.getElementById('js-delete-form');
     form.action = btn.dataset.url;
-    form.submit();
+
+    // モーダル表示
+    const modalEl = document.getElementById('deleteConfirmModal');
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+
+    // 削除ボタンのクリックで送信
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+    confirmBtn.onclick = () => {
+      modal.hide();
+      form.submit();
+    };
   });
 </script>
 
