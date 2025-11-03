@@ -4,8 +4,27 @@
 <!-- サイトの代表的なシンボル -->
 <div class="text-center my-5">
     <img src="{{ asset('image/RouteHub1.png') }}" alt="ルートハブ" class="img-fluid img-thumbnail" style="max-width: auto; height: auto;">
-    <h2 class="mt-3">ようこそルートハブへ</h2>
+    <h2 class="mt-3">Welcome To RouteHub</h2>
     <p class="text-muted">講師と本部をつなぐ、交通費と社内連携のポータルです。</p>
+</div>
+
+<!-- 外部サービスアイコン（横並び、アスペクト比 2:1、大きめ） -->
+<div class="text-center my-4">
+    <div class="d-flex justify-content-center align-items-center gap-4">
+        <a href="https://www.hrbrain.jp/" target="_blank" rel="noopener noreferrer" title="HRBrain">
+            <img src="{{ asset('image/HR_Brain.png') }}"
+                alt="HRBrain"
+                class="paradox-img img-fluid img-thumbnail"
+                style="width:320px; aspect-ratio: 2/1; object-fit: contain;">
+        </a>
+
+        <a href="https://app.everidays.com/users/sign_in" target="_blank" rel="noopener noreferrer" title="Everidays">
+            <img src="{{ asset('image/Everidays.png') }}"
+                alt="Everidays"
+                class="paradox-img img-fluid img-thumbnail"
+                style="width:320px; aspect-ratio: 2/1; object-fit: contain;">
+        </a>
+    </div>
 </div>
 
 <!-- トピック一覧 -->
@@ -39,7 +58,6 @@
 </div>
 @endforeach --}}
 </div>
-
 <!-- FontAwesome を使用した追加セクション -->
 <div class="text-center mt-5">
     <h4><i class="fas fa-location-dot text-danger"></i>ルートハブ</h4>
