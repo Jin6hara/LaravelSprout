@@ -4,10 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\ExpenseReport;
+use App\Services\CommutingExpenses\RouteDeclarationService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
-use App\Services\Calendar\CalendarResolver;
-use App\Services\Calendar\EventType;
 use App\Enums\ExpenseReportStatus;
 
 class ExpenseEditController extends Controller
@@ -144,16 +143,22 @@ class ExpenseEditController extends Controller
             ];
         })->values()->all();
 
+        // ユーザーの最新ルート宣言を1件取得（月単位）
+        $end = $end ?? now('Asia/Tokyo')->endOfDay(); //end が null の場合その日の 23:59:59 に丸める
+        $svc = app(RouteDeclarationService::class);
+        $routeDecl = $svc->latestUntil($user, $end);
+
         return view('expenses.edit', [
-            'user'        => $user,
-            'report'      => $report,              // ★ null 可
-            'hasReport'   => (bool)$report,        // ★ 提出済み or 下書き有り
-            'y'           => $y,                   // 選択中の年
-            'm'           => $m,                   // 選択中の月
-            'rows'        => $rows,                // 明細行の配列
-            'eventOnMap'  => $eventOnMap,          // ★ イベントON日のマップ 
-            'passActiveMap' => $passActiveMap,     // ★ 定期券の有効日マップ
-            'activePasses'  => $activePasses,      // ★ ヘッダー表示用
+            'user'          => $user,
+            'report'        => $report,              // ★ null 可
+            'hasReport'     => (bool)$report,        // ★ 提出済み or 下書き有り
+            'y'             => $y,                   // 選択中の年
+            'm'             => $m,                   // 選択中の月
+            'rows'          => $rows,                // 明細行の配列
+            'eventOnMap'    => $eventOnMap,          // ★ イベントON日のマップ 
+            'passActiveMap' => $passActiveMap,       // ★ 定期券の有効日マップ
+            'activePasses'  => $activePasses,        // ★ ヘッダー表示用
+            'routeDecl'     => $routeDecl,           // ★ RouteDeclaration
         ]);
     }
 
@@ -177,10 +182,10 @@ class ExpenseEditController extends Controller
 
         if ($user->id === $report->user_id) {
             return redirect()->route('expenses.edit', ['year' => $y, 'month' => $m])
-                ->with('status', '提出しました。編集はできません。');
+                ->with('status', 'submitted. You can no longer edit the report.');
         } else {
             return redirect()->route('expenses.admin.edit', ['user' => $report->employee_code, 'year' => $y, 'month' => $m])
-                ->with('status', '提出しました。編集はできません。');
+                ->with('status', 'submitted. The user can no longer edit the report.');
         }
     }
 }

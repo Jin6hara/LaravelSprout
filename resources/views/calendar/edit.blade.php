@@ -93,7 +93,7 @@
           <div class="col-12 col-md-3">
             <label class="form-label small mb-1">Title</label>
             <input type="text" name="title" class="form-control form-control-sm"
-                  value="{{ request('title') }}" placeholder="例: 撮影, OPPT など">
+                  value="{{ request('title') }}" placeholder="">
           </div>
 
           {{-- Original User --}}
@@ -113,14 +113,14 @@
           <div class="col-12 col-md-3">
             <label class="form-label small mb-1">Leave type</label>
             <input type="text" name="Leave_type" class="form-control form-control-sm"
-                  value="{{ request('Leave_type') }}" placeholder="例: 有給, 欠勤 など">
+                  value="{{ request('Leave_type') }}" placeholder="">
           </div>
 
           {{-- School（部分一致） --}}
           <div class="col-12 col-md-3">
             <label class="form-label small mb-1">School</label>
             <input type="text" name="school_name" class="form-control form-control-sm"
-                  value="{{ request('school_name') }}" placeholder="学校名で検索">
+                  value="{{ request('school_name') }}" placeholder="">
           </div>
 
           {{-- Assigned User --}}
@@ -140,7 +140,7 @@
           <div class="col-12 col-md-3">
             <label class="form-label small mb-1">Lesson</label>
             <input type="text" name="Lesson" class="form-control form-control-sm"
-                  value="{{ request('Lesson') }}" placeholder="レッスン名で検索">
+                  value="{{ request('Lesson') }}" placeholder="">
           </div>
 
           {{-- status --}}
@@ -260,13 +260,13 @@
                         'Cover Shift',
                     ];
                 @endphp
-                <label class="form-label small mb-0">Title</label>
+                <label class="form-label small text-muted mb-0">Title</label>
                 <input
                   list="titleOptions"
                   name="title"
                   class="form-control form-control-sm"
                   value="{{ old('title', $event->title) }}"
-                  placeholder="選択または直接入力"
+                  placeholder=""
                 />
                 <datalist id="titleOptions">
                   @foreach ($titleOptions as $opt)
@@ -276,7 +276,7 @@
               </div>
               {{-- 1 --}}
               <div class="col-12">
-                <label class="form-label small mb-0">Original User</label>
+                <label class="form-label small text-muted mb-0">Original User</label>
                 <select name="original_user_id" class="form-select form-select-sm">
                   <option value="">—</option>
                   @foreach($userOptions as $u)
@@ -286,18 +286,18 @@
               </div>
               {{-- 2 --}}
               <div class="mb-0">
-                <label class="form-label small mb-0">Leave Type</label>
+                <label class="form-label small text-muted mb-0">Leave Type</label>
                 <input type="text" name="Leave_type" class="form-control form-control-sm" value="{{ old('Leave_type',$event->Leave_type) }}">
               </div>
               {{-- 3 --}}
               <div class="mb-0">
-                <label class="form-label small mb-0">School</label>
+                <label class="form-label small text-muted mb-0">School</label>
                 <input
                   list="schoolOptions"
                   name="school_name"
                   class="form-control form-control-sm"
                   value="{{ old('school_name', $event->school_name) }}"
-                  placeholder="選択または直接入力"
+                  placeholder=""
                 />
                 <datalist id="schoolOptions">
                   @foreach ($schoolNames as $s)
@@ -309,12 +309,12 @@
             {{-- 4 --}}
             <div class="row g-1 mb-0">
               <div class="col-8">
-                <label class="form-label small mb-0">Date</label>
+                <label class="form-label small text-muted mb-0">Date</label>
                 <input type="date" name="event_date" class="form-control form-control-sm"
                   value="{{ old('event_date', $fmtDate($event->event_date)) }}">
               </div>
               <div class="col-4">
-                <label class="form-label small mb-0">Total</label>
+                <label class="form-label small text-muted mb-0">Total</label>
                 <input type="text" name="total_duration" class="form-control form-control-sm js-total"
                   placeholder="H:MM" value="{{ old('total_duration',$event->total_duration) }}" readonly>
               </div>
@@ -322,29 +322,29 @@
             {{-- 5 --}}
             <div class="row g-1 mb-0">
               <div class="col-6">
-                <label class="form-label small mb-0">Start</label>
+                <label class="form-label small text-muted mb-0">Start</label>
                 <input type="time" name="start_time" class="form-control form-control-sm js-time"
                   value="{{ old('start_time', $fmtTime($event->start_time)) }}" inputmode="numeric" step="60">
               </div>
               <div class="col-6">
-                <label class="form-label small mb-0">End</label>
+                <label class="form-label small text-muted mb-0">End</label>
                 <input type="time" name="end_time" class="form-control form-control-sm js-time"
                   value="{{ old('end_time', $fmtTime($event->end_time)) }}" inputmode="numeric" step="60">
               </div>
             </div>
             {{-- 6 --}}
             <div class="mb-0">
-              <label class="form-label small mb-0">Lesson</label>
+              <label class="form-label small text-muted mb-0">Lesson</label>
               <textarea name="Lesson" class="form-control form-control-sm" rows="1">{{ old('Lesson',$event->Lesson) }}</textarea>
             </div>
             <div class="mb-0">
-              <label class="form-label small mb-0">Notes</label>
+              <label class="form-label small text-muted mb-0">Notes</label>
               <textarea name="notes" class="form-control form-control-sm" rows="3">{{ old('notes',$event->notes) }}</textarea>
             </div>
             {{-- 7 --}}
             <div class="row g-1 mb-1">
               <div class="col-12">
-                <label class="form-label small mb-0">Assigned User</label>
+                <label class="form-label small text-muted mb-0">Assigned User</label>
                 <select name="assigned_user_id" class="form-select form-select-sm">
                   <option value="">—</option>
                   @foreach($userOptions as $u)

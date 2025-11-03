@@ -1,0 +1,76 @@
+/* ===================== 共通部分 ===================== */
+
+/* 上下0 / 左右1px に変更 */
+#navbarNav {
+    padding: 0 1px !important;
+}
+
+/* ベースライン起因の微妙な浮きを防ぐ */
+.navbar-nav {
+    margin-bottom: 0 !important;
+    align-items: center;
+}
+
+.navbar .nav-item {
+    display: flex;
+    align-items: center;
+}
+
+/* headerボタン共通設定 */
+.header-btn {
+    display: inline-flex;
+    color: #cfcfcfff;
+    align-items: center;
+    justify-content: center;
+    height: 36px;
+    padding: 1px 5px !important;
+    line-height: 1.1;
+    white-space: normal;
+    text-align: center;
+    margin: 1px 1px;
+    vertical-align: middle;
+}
+
+.navbar .nav-item {
+    margin-right: .25rem;
+}
+
+.navbar .nav-item:last-child {
+    margin-right: 0;
+}
+
+/* ===================== スマホ用 ===================== */
+@media (max-width: 768px) {
+
+    .header-btn {
+        padding: 5px 5px !important;
+        margin: 2px 2px;
+    }
+
+    .navbar-nav {
+        /* align-items: flex-start !important; */
+        width: 100%;
+    }
+
+    .navbar .btn-group {
+        display: flex;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        width: 100%;
+    }
+
+    .navbar .btn-group .header-btn {
+        /* 横幅を均等に */
+        flex: 1 1 0;
+        /* 改行禁止 */
+        white-space: nowrap;
+
+        height: 38px;
+        padding: 6px 6px !important;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 0;
+    }
+
+}

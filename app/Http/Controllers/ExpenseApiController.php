@@ -21,7 +21,13 @@ class ExpenseApiController extends Controller
             ExpenseReportStatus::APPROVED->value,
             ExpenseReportStatus::PAID->value,
         ];
-        if (in_array($report->status, $lockedStatuses, true)) {
+
+        // ✅ Enumにも対応（キャストされていない場合の対策）
+        $statusValue = $report->status instanceof ExpenseReportStatus
+            ? $report->status->value
+            : (string) $report->status;
+
+        if (in_array($statusValue, $lockedStatuses, true)) {
             abort(423, 'This expense report is locked (submitted).');
         }
     }
@@ -49,7 +55,7 @@ class ExpenseApiController extends Controller
             abort_unless($req->user()->id === $report->user_id, 403);
         }
 
-        $this->abortIfLocked($report); 
+        $this->abortIfLocked($report);
 
         // 月内チェック
         $d = Carbon::parse($data['expense_date']);
@@ -85,7 +91,7 @@ class ExpenseApiController extends Controller
         if (method_exists($req->user(), 'isAdmin') && !$req->user()->isAdmin()) {
             abort_unless($req->user()->id === $report->user_id, 403);
         }
-        $this->abortIfLocked($report); 
+        $this->abortIfLocked($report);
 
         $data = $req->validate([
             'station_from'      => ['nullable', 'string', 'max:255'],
@@ -116,10 +122,9 @@ class ExpenseApiController extends Controller
         if (method_exists($req->user(), 'isAdmin') && !$req->user()->isAdmin()) {
             abort_unless($req->user()->id === $report->user_id, 403);
         }
-        $this->abortIfLocked($report); 
+        $this->abortIfLocked($report);
 
         $expense->delete();
         return response()->json(['ok' => true]);
     }
-
 }
