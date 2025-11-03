@@ -275,7 +275,7 @@
 </div>
 @else
 <div class="alert alert-light border">
-    No Leave maches.
+    No Leave matches.
 </div>
 @endif
 

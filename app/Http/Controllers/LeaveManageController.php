@@ -293,7 +293,7 @@ public function edit(Request $request)
         $updated = count($validated['items']);
 
         // ✅ JSON返却でもフラッシュを仕込む
-        session()->flash('toast', "Updated（{$updated} leave）");
+        session()->flash('toast', "Updated {$updated} leave(s)");
 
         return response()->json([
             'ok'      => true,

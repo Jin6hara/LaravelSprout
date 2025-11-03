@@ -303,7 +303,7 @@ class EventAssignController extends Controller
         $ngCount = count($results) - $okCount;
 
         // ✅ JSON返却でもフラッシュを仕込む
-        $flash = $ngCount ? "一部保存に失敗しました（保存: {$okCount} / 失敗: {$ngCount}）" : "すべて保存しました（{$okCount} 件）";
+        $flash = $ngCount ? "一部保存に失敗しました（保存: {$okCount} / 失敗: {$ngCount}）" : "Updated {$okCount} shift(s).";
         session()->flash('toast', $flash);
 
         return response()->json([

@@ -36,7 +36,7 @@
     }
 </style>
 
-<!-- ✅ トーストの土台（右上） -->
+<!-- ✅ トーストの土台 -->
 <div class="toast-container position-fixed bottom-0 start-50 translate-middle-x p-3">
     <div id="appToast" class="toast align-items-center text-white bg-dark border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="9000">
         <div class="d-flex">

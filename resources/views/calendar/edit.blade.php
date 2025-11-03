@@ -408,7 +408,7 @@
     {{ $events->withQueryString()->links() }}
   </div>
   @else
-  <div class="alert alert-light border">No event maches.</div>
+  <div class="alert alert-light border">No event matches.</div>
   @endif
 </div>
 
