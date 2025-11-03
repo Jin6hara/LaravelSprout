@@ -33,8 +33,8 @@ return new class extends Migration
             $table->string('special_type', 100)->nullable();
 
             // 時間帯（partial対応：遅刻・早退など。終日ならnull）
-            $table->time('time_start')->nullable();
-            $table->time('time_end')->nullable();
+            $table->time('time_start')->nullable(); // 現状使わないが、experimentの為残しておく。
+            $table->time('time_end')->nullable();   // 現状使わないが、experimentの為残しておく。
 
             // 処理方法メモ（管理者用。給与計算などでの特記事項など）
             $table->text('handle_type')->nullable();

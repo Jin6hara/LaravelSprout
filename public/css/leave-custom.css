@@ -14,12 +14,12 @@
   animation: rainbow-bg 3s linear infinite;
 }
 @keyframes rainbow-bg {
-  0%   { background-color: #ffaaaa; }
-  20%  { background-color: #ffd700; }
-  40%  { background-color: #aaffaa; }
-  60%  { background-color: #aaaaff; }
-  80%  { background-color: #ffaaff; }
-  100% { background-color: #ffaaaa; }
+  0%   { background-color: #ffaaaa59; }
+  20%  { background-color: #ffd70059; }
+  40%  { background-color: #aaffaa59; }
+  60%  { background-color: #aaaaff59; }
+  80%  { background-color: #ffaaff59; }
+  100% { background-color: #ffaaaa59; }
 }
 
 /* 会社休業日（背景用・基本） */
@@ -135,7 +135,7 @@
 .fc .fc-event.fc-leave-adjustment {
   background-color: #9ca3af !important; /* gray */
   border-color: #9ca3af;
-  color: #000 !important;
+  color: #ffffff !important;
 }
 
 /* other: purple */
@@ -148,7 +148,14 @@
 .fc .fc-event.fc-leave-absence {
   background-color: #6c7486d0 !important; /* dark grey */
   border-color: #6c7486d0;
-  color: #000 !important;
+  color: #ffffff !important;
+}
+
+.fc .fc-event.fc-leave-late,
+.fc .fc-event.fc-leave-left_early {
+  background-color: #ff6565a9 !important; /* yellow green */
+  border-color: #ff6565a9;
+  color: #ffffff !important;
 }
 
 /* ================= Absence 専用：handle_type + status + excused ================= */

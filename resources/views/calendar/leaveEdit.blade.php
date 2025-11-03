@@ -206,12 +206,12 @@
                                     <input type="date" name="start_date" class="form-control form-control-sm"
                                         value="{{ old('start_date', $fmtDate($leave->start_date)) }}">
                                 </div>
-                                <div class="col-5">
+                                {{-- <div class="col-5">
                                     <label class="form-label small text-muted mb-0">Time Start</label>
                                     <input type="time" name="time_start" class="form-control form-control-sm"
                                         value="{{ old('time_start', $fmtTime($leave->time_start)) }}"
                                         inputmode="numeric" step="60">
-                                </div>
+                                </div> --}}
                             </div>
 
                             {{-- 4: End --}}
@@ -221,12 +221,12 @@
                                     <input type="date" name="end_date" class="form-control form-control-sm"
                                         value="{{ old('end_date', $fmtDate($leave->end_date)) }}">
                                 </div>
-                                <div class="col-5">
+                                {{-- <div class="col-5">
                                     <label class="form-label small text-muted mb-0">Time End</label>
                                     <input type="time" name="time_end" class="form-control form-control-sm"
                                         value="{{ old('time_end', $fmtTime($leave->time_end)) }}"
                                         inputmode="numeric" step="60">
-                                </div>
+                                </div>  --}}
                             </div>
 
                             {{-- 5: Reason --}}

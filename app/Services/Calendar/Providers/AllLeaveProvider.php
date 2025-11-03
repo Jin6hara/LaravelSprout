@@ -8,6 +8,7 @@ use App\Models\Event;
 use App\Services\Calendar\EventType;
 use App\Services\Calendar\PlanGroup;
 use Carbon\Carbon;
+use Carbon\CarbonInterface; // ★added(11/3)
 use Illuminate\Support\Collection;
 
 class AllLeaveProvider
@@ -53,12 +54,14 @@ class AllLeaveProvider
 
                 $startAt = $isAllDay
                     ? $date->toDateString()
-                    : Carbon::parse($date->toDateString() . ' ' . $leave->time_start)->toIso8601String();
+                    // ★changed(11/3): 文字列連結 → 安全な合成に変更（datetime:H:i対応）
+                    : $this->mergeDateAndTime($date, $leave->time_start)->toIso8601String();
 
                 // FullCalendar の仕様：allDay の end は翌日
                 $endAt = $isAllDay
                     ? $date->copy()->addDay()->toDateString()
-                    : Carbon::parse($date->toDateString() . ' ' . $leave->time_end)->toIso8601String();
+                    // ★changed(11/3): 文字列連結 → 安全な合成に変更（datetime:H:i対応）
+                    : $this->mergeDateAndTime($date, $leave->time_end)->toIso8601String();
 
                 // 表示名（ユーザー名を先頭に付ける）
                 $u = $leave->user;
@@ -97,7 +100,6 @@ class AllLeaveProvider
                     }
                 }
 
-
                 $events->push([
                     'id'         => (string) ($leave->id . '-' . $date->toDateString()), // 日別ユニーク
                     'title'      => $title,
@@ -125,9 +127,9 @@ class AllLeaveProvider
                             'reason'       => $leave->reason,
                             'start_date'   => $leave->start_date?->toDateString(),
                             'end_date'     => $leave->end_date?->toDateString(),
-                            'time_start'   => $leave->time_start,
-                            'time_end'     => $leave->time_end,
-                            'status'       => $leave->status, // ← 後段の検索用に保持
+                            'time_start'   => $leave->time_start, // （最小修正のためそのまま）
+                            'time_end'     => $leave->time_end,   // （最小修正のためそのまま）
+                            'status'       => $leave->status,     // ← 後段の検索用に保持
                             'handle_type'  => $leave->handle_type, // 共有された新カラムも保持
                             'related_event_id' => $eventId,        // 作成したEventのid
                         ],
@@ -137,5 +139,42 @@ class AllLeaveProvider
         }
 
         return $events;
+    }
+
+    // ★added(11/3): '日付' と '時刻' を安全に合成（datetimeキャスト/文字列の両対応）
+    private function mergeDateAndTime(Carbon $date, mixed $time): Carbon
+    {
+        if ($time instanceof CarbonInterface) {
+            return Carbon::create(
+                $date->year,
+                $date->month,
+                $date->day,
+                $time->hour,
+                $time->minute,
+                $time->second ?? 0,
+                config('app.timezone')
+            );
+        }
+
+        $v = (string) $time;
+
+        // 万一 'YYYY-MM-DD H:i[:s]' が紛れても時刻部分を抽出
+        if (preg_match('/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}(:\d{2})?$/', $v)) {
+            $v = substr($v, 11); // '2025-11-03 19:35:00' → '19:35:00'
+        }
+
+        // 'H:i' or 'H:i:s' として解釈
+        $fmt = (strlen($v) === 5) ? 'H:i' : 'H:i:s';
+        $t = Carbon::createFromFormat($fmt, $v, config('app.timezone'));
+
+        return Carbon::create(
+            $date->year,
+            $date->month,
+            $date->day,
+            (int) $t->format('H'),
+            (int) $t->format('i'),
+            (int) $t->format('s'),
+            config('app.timezone')
+        );
     }
 }
