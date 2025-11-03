@@ -14,12 +14,12 @@
   animation: rainbow-bg 3s linear infinite;
 }
 @keyframes rainbow-bg {
-  0%   { background-color: #ffaaaa; }
-  20%  { background-color: #ffd700; }
-  40%  { background-color: #aaffaa; }
-  60%  { background-color: #aaaaff; }
-  80%  { background-color: #ffaaff; }
-  100% { background-color: #ffaaaa; }
+  0%   { background-color: #ffaaaa59; }
+  20%  { background-color: #ffd70059; }
+  40%  { background-color: #aaffaa59; }
+  60%  { background-color: #aaaaff59; }
+  80%  { background-color: #ffaaff59; }
+  100% { background-color: #ffaaaa59; }
 }
 
 /* 会社休業日 */
