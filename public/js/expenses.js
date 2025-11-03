@@ -512,10 +512,15 @@
       if (!submitFormEl) return;
 
       submitFormEl.addEventListener('submit', () => {
-        // 全ボタン/入力を無効化
+        // ★ hidden の _token / _method は無効化しない
         document.querySelectorAll('button, input, select, textarea').forEach(el => {
+          // hidden（type=hidden）は送信に必要な場合があるのでスキップ
+          if (el.tagName === 'INPUT' && el.type === 'hidden') return;
+          // 念のため _token / _method 名もスキップ
+          if (el.name === '_token' || el.name === '_method') return;
           el.disabled = true;
         });
+
         // 送信用ボタン表示切替
         const btn = submitFormEl.querySelector('button[type="submit"]');
         if (btn) { btn.innerText = 'Submitting...'; btn.disabled = true; }
@@ -523,9 +528,9 @@
         // 薄いオーバーレイ
         const overlay = document.createElement('div');
         overlay.style.cssText = `
-          position:fixed; inset:0; background:rgba(255,255,255,.4);
-          backdrop-filter:saturate(120%) blur(1px); z-index:1060;
-        `;
+      position:fixed; inset:0; background:rgba(255,255,255,.4);
+      backdrop-filter:saturate(120%) blur(1px); z-index:1060;
+    `;
         document.body.appendChild(overlay);
       });
     })();
