@@ -3,7 +3,7 @@
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="mb-0">Leave Manager</h2>
-    <span class="badge text-bg-primary">Admin View</span>
+    <small class="text-muted">{{ $leaves->total() }} leave(s)</small>
 </div>
 
 {{-- ▼ 検索フォーム --}}
@@ -275,7 +275,7 @@
 </div>
 @else
 <div class="alert alert-light border">
-    データがありません。
+    No Leave maches.
 </div>
 @endif
 

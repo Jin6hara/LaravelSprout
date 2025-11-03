@@ -93,10 +93,10 @@ public function edit(Request $request)
         'cancelled'    => 'Cancelled',
     ];
     $kindOptions = [
-        'paid'            => 'Paid',
-        'absence_to_paid' => 'Absence→Paid',
+        'paid'            => 'ALP',
+        'absence_to_paid' => 'MT to ALP',
         'special'         => 'Special',
-        'absence'         => 'Absence',
+        'absence'         => 'MT',
         'adjustment'      => 'Adjustment',
         'left_early'      => 'Left Early',
         'late'            => 'Late',
@@ -143,7 +143,7 @@ public function edit(Request $request)
         $leave->fill($data);
         $leave->save();
 
-        return back()->with('status', 'Leave updated.');
+        return back()->with('toast', 'Leave updated.');
     }
 
     /** 削除 */
