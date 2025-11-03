@@ -226,7 +226,7 @@
                                     <input type="time" name="time_end" class="form-control form-control-sm"
                                         value="{{ old('time_end', $fmtTime($leave->time_end)) }}"
                                         inputmode="numeric" step="60">
-                                </div>  --}}
+                                </div> --}}
                             </div>
 
                             {{-- 5: Reason --}}

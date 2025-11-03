@@ -153,7 +153,7 @@
 
 .fc .fc-event.fc-leave-late,
 .fc .fc-event.fc-leave-left_early {
-  background-color: #ff6565a9 !important; /* yellow green */
+  background-color: #ff6565a9 !important; /* semi-transparent red */
   border-color: #ff6565a9;
   color: #ffffff !important;
 }
