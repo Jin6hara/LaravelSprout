@@ -25,7 +25,7 @@
       <div class="row g-2 align-items-end">
 
         {{-- Date --}}
-        <div class="col-6 col-md-1">
+        <div class="col-6 col-sm-6 col-md-6 col-lg-1 mb-1">
           <label class="form-label small text-muted mb-1">Date</label>
           <div class="fw-semibold">{{ $row['dateMain'] }}</div>
           @if($row['dateSub'])
@@ -34,7 +34,7 @@
         </div>
 
         {{-- Kind --}}
-        <div class="col-6 col-md-2">
+        <div class="col-6 col-sm-6 col-md-6 col-lg-2">
           <label class="form-label small text-muted mb-1">Kind</label>
           <div>
             <span class="badge rounded-pill
@@ -48,7 +48,7 @@
         </div>
 
         {{-- Reason --}}
-        <div class="col-12 col-md-3">
+        <div class="col-12 col-sm-12 col-md-6 col-lg-3">
           <label class="form-label small text-muted mb-1">Reason</label>
           @if($row['needsReport'])
           <textarea
@@ -67,7 +67,7 @@
         </div>
 
         {{-- Handle Type --}}
-        <div class="col-12 col-md-4">
+        <div class="col-12 col-sm-12 col-md-6 col-lg-4">
           <label class="form-label small text-muted mb-1">Handle Type</label>
           @if($row['needsReport'])
           <select
@@ -90,7 +90,7 @@
         </div>
 
         {{-- Status --}}
-        <div class="col-6 col-md-1">
+        <div class="col-6 col-sm-6 col-md-6 col-lg-1">
           <label class="form-label small text-muted mb-1">Status</label>
           <div>
             @if($row['statusText'] === 'Submitted')
@@ -104,7 +104,7 @@
         </div>
 
         {{-- Action --}}
-        <div class="col-6 col-md-1 text-end">
+        <div class="col-6 col-sm-6 col-md-6 col-lg-1 text-end">
           <label class="form-label small text-muted mb-1 d-none d-md-block">&nbsp;</label>
           @if($row['needsReport'])
           <form id="{{ $row['formId'] }}" method="POST" action="{{ route('report.update', $leave) }}" class="d-inline-block">
@@ -144,7 +144,7 @@
   .badge.rounded-pill {
     font-size: 0.8rem;
     font-weight: 400 !important;
-    padding: 0.35rem 0.75rem;
+    padding: .48rem .65rem;
     border-radius: 1rem !important;
     line-height: 1.2;
   }

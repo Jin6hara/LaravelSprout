@@ -79,7 +79,7 @@
 <div class="leave-row border rounded-2 p-2 mb-1 {{ $row['needsReport'] ? 'bg-required' : '' }}">
     <div class="row g-1 align-items-end">
         {{-- User --}}
-        <div class="col-12 col-md-2">
+        <div class="col-6 col-sm-6 col-md-6 col-lg-2 mb-1">
             <div class="small text-muted mb-1">User</div>
             <div class="fw-semibold">{{ $row['userName'] }}
                 @if(!empty($row['employeeCode']))
@@ -89,7 +89,7 @@
         </div>
 
         {{-- Date --}}
-        <div class="col-6 col-md-1">
+        <div class="col-6 col-sm-6 col-md-6 col-lg-2 mb-1">
             <div class="small text-muted mb-1">Date</div>
             <div class="fw-semibold">{{ $row['dateMain'] }}</div>
             @if($row['dateSub'])
@@ -98,7 +98,7 @@
         </div>
 
         {{-- Kind --}}
-        <div class="col-6 col-md-2">
+        <div class="col-6 col-sm-6 col-md-6 col-lg-2">
             <div class="small text-muted mb-1">Kind</div>
             <span class="badge rounded-pill
             @switch($row['kindLabel'])
@@ -109,21 +109,8 @@
           ">{{ $row['kindLabel'] }}</span>
         </div>
 
-        {{-- Reason (read-only in ALL view) --}}
-        <div class="col-12 col-md-2">
-            <div class="small text-muted mb-1">Reason</div>
-            <textarea class="form-control form-control-sm bg-body-tertiary" rows="1" readonly>{{ $leave->reason }}</textarea>
-        </div>
-
-        {{-- Handle Type --}}
-        <div class="col-12 col-md-3">
-            <div class="small text-muted mb-1">Handle Type</div>
-            <input type="text" class="form-control form-control-sm bg-body-tertiary"
-                value="{{ $row['handleLabel'] }}" readonly>
-        </div>
-
         {{-- Status --}}
-        <div class="col-6 col-md-1">
+        <div class="col-6 col-sm-6 col-md-6 col-lg-1">
             <div class="small text-muted mb-1">Status</div>
             @if($row['statusText'] === 'Submitted')
             <span class="badge rounded-pill text-bg-success">Submitted</span>
@@ -134,8 +121,21 @@
             @endif
         </div>
 
+        {{-- Reason (read-only in ALL view) --}}
+        <div class="col-12 col-sm-12 col-md-6 col-lg-2">
+            <div class="small text-muted mb-1">Reason</div>
+            <textarea class="form-control form-control-sm bg-body-tertiary" rows="1" readonly>{{ $leave->reason }}</textarea>
+        </div>
+
+        {{-- Handle Type --}}
+        <div class="col-12 col-sm-12 col-md-6 col-lg-2">
+            <div class="small text-muted mb-1">Handle Type</div>
+            <input type="text" class="form-control form-control-sm bg-body-tertiary"
+                value="{{ $row['handleLabel'] }}" readonly>
+        </div>
+
         {{-- Open user page --}}
-        <div class="col-12 col-md-1 ms-auto d-grid">
+        <div class="col-6 col-sm-6 col-md-3 col-lg-1 ms-auto d-grid">
             <a href="{{ route('absence.edit', $leave->user->employee_code) }}" class="btn btn-sm btn-outline-secondary">
                 Details
             </a>
@@ -167,7 +167,7 @@
     .badge.rounded-pill {
         font-size: .8rem;
         font-weight: 400 !important;
-        padding: .35rem .75rem;
+        padding: .48rem .65rem;
         border-radius: 1rem !important;
         line-height: 1.2;
     }
