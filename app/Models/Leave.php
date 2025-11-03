@@ -76,6 +76,10 @@ class Leave extends Model
             'special' => $this->special_type ? "Special Leave（{$this->special_type}）" : 'Special Leave',
             'absence' => 'Absence',
             'late'    => 'Late',
+            'left_early' => 'Left Early',
+            'adjustment' => 'Adjustment',
+            'absence_to_paid' => 'ALP',
+            'other'   => $this->special_type ? "{$this->special_type}" : 'Other',
             default   => 'Absence',
         };
     }
