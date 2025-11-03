@@ -9,6 +9,7 @@ use App\Services\LeaveBalanceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class LeaveController extends Controller
 {
@@ -176,5 +177,120 @@ class LeaveController extends Controller
         ]);
 
         return back()->with('status', 'Submitted.');
+    }
+
+    public function allReport(Request $request)
+    {
+        $viewer  = Auth::user();
+        $isAdmin = $viewer->hasRole(['admin', 'super_admin']);
+        if (!$isAdmin) {
+            abort(403);
+        }
+
+        // フィルタ値を取得（バリデーション）
+        $validated = $request->validate([
+            'status'  => ['nullable', Rule::in(['required', 'submitted', 'all'])],
+            'kind'    => ['nullable', Rule::in(['absence', 'absence_to_paid', 'other', 'all'])],
+            'from'    => ['nullable', 'date'],
+            'to'      => ['nullable', 'date', 'after_or_equal:from'],
+            'user_id' => ['nullable', 'integer', 'exists:users,id'],
+        ]);
+
+        $status  = $validated['status'] ?? 'all';
+        $kind    = $validated['kind']   ?? 'absence'; // 既定は absence のみ
+        $from    = $validated['from']   ?? null;
+        $to      = $validated['to']     ?? null;
+        $userId  = $validated['user_id'] ?? null;
+
+        // 基本クエリ
+        $kinds = $kind === 'all' ? ['absence', 'absence_to_paid', 'other'] : [$kind];
+
+        $q = Leave::query()
+            ->with(['user:id,first_name,family_name,name,employee_code'])
+            ->whereIn('kind', $kinds);
+
+        if ($from) $q->whereDate('start_date', '>=', $from);
+        if ($to)   $q->whereDate('start_date', '<=', $to);
+        if ($userId) $q->where('user_id', $userId);
+
+        // status フィルタ
+        // needsReport = kind=absence && handle_type IS NULL
+        if ($status === 'required') {
+            $q->where('kind', 'absence')->whereNull('handle_type');
+        } elseif ($status === 'submitted') {
+            $q->whereNotNull('handle_type');
+        }
+
+        $leaves = $q->orderByDesc('start_date')->paginate(20)->appends($request->query());
+
+        // ラベル
+        $kindLabels = [
+            'absence'         => 'Unpaid Leave',
+            'absence_to_paid' => 'ALP',
+            'other'           => 'Others',
+        ];
+
+        // Handle Type の候補（ラベル=保存値運用にも対応）
+        $handleTypeOptions = [
+            'I will apply for an ALP via HR Brain for this date of absence.',
+            'I will not use an ALP for this absence (non-paid absence).',
+            'I will use Sick or Injured Child Care Leave for this absence.',
+            'I will use Special Leave for this absence.',
+            'I will use Menstrual Leave for this absence.',
+        ];
+        // 表示用の「値→表示」辞書（保存値=ラベル運用にも対応）
+        $handleTypeDict = array_combine($handleTypeOptions, $handleTypeOptions);
+
+        // 行ビュー用の派生値を付与
+        $rows = $leaves->getCollection()->map(function (Leave $leave) use ($kindLabels, $handleTypeDict) {
+            $kindLabel = $leave->kind === 'other'
+                ? ($leave->special_type ?: 'Others')
+                : ($kindLabels[$leave->kind] ?? ucfirst($leave->kind));
+
+            $needsReport = ($leave->kind === 'absence') && is_null($leave->handle_type);
+
+            $statusText = $leave->handle_type
+                ? 'Submitted'
+                : ($needsReport ? 'Required' : '—');
+
+            $dateMain = optional($leave->start_date)->toDateString();
+            $dateSub  = (!empty($leave->end_date) && $leave->end_date && $leave->end_date->ne($leave->start_date))
+                ? $leave->end_date->toDateString()
+                : null;
+
+            $handleLabel = $leave->handle_type
+                ? ($handleTypeDict[$leave->handle_type] ?? $leave->handle_type) // 保存値=ラベル運用でもOK
+                : '';
+
+            $userName = trim(($leave->user->family_name ?? '') . ' ' . ($leave->user->first_name ?? ''))
+                ?: ($leave->user->name ?? 'User #' . $leave->user_id);
+
+            return [
+                'leave'        => $leave,
+                'userName'     => $userName,
+                'employeeCode' => $leave->user->employee_code ?? null,
+                'kindLabel'    => $kindLabel,
+                'needsReport'  => $needsReport,
+                'statusText'   => $statusText,
+                'dateMain'     => $dateMain,
+                'dateSub'      => $dateSub,
+                'handleLabel'  => $handleLabel,
+            ];
+        });
+
+        // ページネータのコレクションを差し替え
+        $leaves->setCollection($rows);
+
+        // ユーザー選択用（任意）
+        $userOptions = User::query()->orderBy('family_name')->orderBy('first_name')->get(['id', 'family_name', 'first_name', 'employee_code']);
+
+        return view('calendar.absenceReportAll', [
+            'viewer'             => $viewer,
+            'leaves'             => $leaves,        // ページネータ（中身は rows）
+            'kindLabels'         => $kindLabels,
+            'handleTypeOptions'  => $handleTypeOptions,
+            'userOptions'        => $userOptions,
+            'filters'            => compact('status', 'kind', 'from', 'to', 'userId'),
+        ]);
     }
 }

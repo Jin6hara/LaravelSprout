@@ -194,7 +194,9 @@ Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
 // Absence Report
 Route::middleware(['auth'])->group(function () {
     Route::get('/absence_report/{user}', [LeaveController::class, 'absence'])->name('absence.edit');
+    Route::get('/all_absence_report/', [LeaveController::class, 'allReport'])->name('absense.all');
     Route::put('/handle_type/{leave}', [LeaveController::class, 'report'])->name('report.update');
+    
 });
 
 use App\Http\Controllers\SchoolProfileController;

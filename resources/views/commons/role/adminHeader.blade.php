@@ -69,7 +69,7 @@
     </a>
 </li>
 <li class="nav-item">
-    <a class="btn btn-sm btn-outline-secondary header-btn" href="{{ route('expenses.admin.report') }}">
+    <a class="btn btn-sm btn-outline-secondary header-btn" href="{{ route('absense.all') }}">
         Absence<br>Report
     </a>
 </li>
