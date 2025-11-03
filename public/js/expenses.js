@@ -470,7 +470,7 @@
       bgBar.style.right = '0';
       bgBar.style.bottom = '0';
       bgBar.style.height = '60px';
-      bgBar.style.background = 'rgba(255,255,255,0.85)'; // ★ 白透明
+      bgBar.style.background = 'rgba(136, 174, 255, 0.18)'; // ★ 白透明
       bgBar.style.backdropFilter = 'blur(1px)';
       bgBar.style.zIndex = '998';
       bgBar.style.display = 'none';
@@ -539,39 +539,7 @@
     if (isLocked) document.body.classList.add('locked');
   });
 
-  // ====== 5) Bootstrap Toast 通知ユーティリティ ======
-  (function () {
-    // variant: 'primary'|'secondary'|'success'|'danger'|'warning'|'info'|'light'|'dark'
-    function showToast(message, variant = 'primary', delay = 3000) {
-      const container = document.getElementById('toastContainer') || (() => {
-        const div = document.createElement('div');
-        div.id = 'toastContainer';
-        div.className = 'toast-container position-fixed bottom-0 end-0 p-3';
-        div.style.zIndex = '1056';
-        document.body.appendChild(div);
-        return div;
-      })();
-
-      const toastEl = document.createElement('div');
-      toastEl.className = `toast align-items-center text-bg-${variant} border-0`;
-      toastEl.setAttribute('role', 'status');
-      toastEl.setAttribute('aria-live', 'polite');
-      toastEl.setAttribute('aria-atomic', 'true');
-      toastEl.innerHTML = `
-        <div class="d-flex">
-          <div class="toast-body">${String(message).replace(/\n/g, '<br>')}</div>
-          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-      `;
-      container.appendChild(toastEl);
-
-      const toast = new bootstrap.Toast(toastEl, { delay });
-      toast.show();
-      toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
-    }
-
-    window.showToast = showToast; // グローバル公開
-  })();
+  // ====== 5) Bootstrap Toast 通知ユーティリティ (layouts/appにあるため削除) ======
 
   // ====== 6) 提出モーダル起動（data-bs-*で十分だが保険として） ======
   document.addEventListener('DOMContentLoaded', () => {

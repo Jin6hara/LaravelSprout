@@ -51,7 +51,7 @@
 <script>
     // ✅ showToast 実装（Bootstrap 5 Toast 使用）
     window.showToast = function(message, {
-        variant = 'dark',
+        variant = 'success',
         delay = 5000
     } = {}) {
         const toastEl = document.getElementById('appToast');
