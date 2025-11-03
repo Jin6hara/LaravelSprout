@@ -244,7 +244,10 @@
 
     <div class="col-12 col-sm-6 col-md-4 col-lg-3">
       <div class="card h-100 shadow-sm">
-        <form method="POST" action="{{ route('events.update', $event) }}" class="h-100 d-flex flex-column">
+         <form method="POST" 
+            action="{{ route('events.update', $event) }}" 
+            class="h-100 d-flex flex-column js-event-form" 
+            data-event-id="{{ $event->id }}">
           @csrf
           @method('PUT')
 
@@ -569,11 +572,18 @@ document.addEventListener('input', (e) => {
   }
 
   bulkBtn.addEventListener('click', async () => {
-    const cards = document.querySelectorAll('.row .card form'); // 今表示されているカードのみ
+    // まずはイベント編集フォーム（識別クラス）を優先的に取得。無ければ従来セレクタを使用。
+    let cards = document.querySelectorAll('.js-event-form');
+    if (!cards.length) {
+      cards = document.querySelectorAll('.row .card form'); // 従来の対象（後方互換）
+    }
     const items = [];
 
     cards.forEach(form => {
-      const id = parseEventIdFromAction(form.action);
+      // data-event-id を優先、無ければ従来の URL 解析で補完
+      const dataId = form.dataset?.eventId ? parseInt(form.dataset.eventId, 10) : null;
+      const urlId  = parseEventIdFromAction(form.action);
+      const id = dataId || urlId;
       if (!id) return; // 新規POSTフォーム（複写直後未反映など）は対象外
       const data = formToObject(form);
       data.id = id;
