@@ -173,14 +173,15 @@ class EventAssignController extends Controller
 
         $event->fill($validated)->save();
 
-        return back()->with('status', 'イベントを更新しました。');
+        // ✅ フラッシュバナーではなくトースト用のキーへ
+        return back()->with('toast', 'イベントを更新しました。');
     }
 
     public function destroy(Request $request, Event $event)
     {
         // 必要ならポリシー/権限チェックをここで
         $event->delete();
-        return back()->with('status', 'イベントを削除しました。');
+        return back()->with('toast', 'イベントを削除しました。');
     }
 
     public function store(Request $request)
@@ -223,7 +224,7 @@ class EventAssignController extends Controller
 
         Event::create($validated);
 
-        return back()->with('status', 'イベントを複写しました。');
+        return back()->with('toast', 'イベントを複写しました。');
     }
 
     public function storeBlank(Request $request)
@@ -238,7 +239,7 @@ class EventAssignController extends Controller
             'type'       => 'regular_time',
         ]);
 
-        return back()->with('status', "空白イベントを {$date} に追加しました。");
+        return back()->with('toast', "空白イベントを {$date} に追加しました。");
     }
 
     public function bulkUpdate(Request $request)
@@ -303,7 +304,7 @@ class EventAssignController extends Controller
 
         // ✅ JSON返却でもフラッシュを仕込む
         $flash = $ngCount ? "一部保存に失敗しました（保存: {$okCount} / 失敗: {$ngCount}）" : "すべて保存しました（{$okCount} 件）";
-        session()->flash('status', $flash);
+        session()->flash('toast', $flash);
 
         return response()->json([
             'ok'      => $ngCount === 0,

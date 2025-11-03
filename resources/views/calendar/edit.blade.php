@@ -426,6 +426,11 @@
     background-color: #eef6ff;
     /* ごく淡い青 */
   }
+
+  /* ✅ トーストの重なり順を少し上げる（モーダル等より下にしたい場合は調整） */
+  .toast-container {
+    z-index: 1080;
+  }
 </style>
 @endpush
 
