@@ -37,8 +37,8 @@
 </style>
 
 <!-- ✅ トーストの土台（右上） -->
-<div class="toast-container position-fixed top-0 end-0 p-3">
-    <div id="appToast" class="toast align-items-center text-white bg-dark border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="3000">
+<div class="toast-container position-fixed bottom-0 start-50 translate-middle-x p-3">
+    <div id="appToast" class="toast align-items-center text-white bg-dark border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="9000">
         <div class="d-flex">
             <div class="toast-body" id="appToastBody">Saved.</div>
             <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
@@ -52,7 +52,7 @@
     // ✅ showToast 実装（Bootstrap 5 Toast 使用）
     window.showToast = function(message, {
         variant = 'dark',
-        delay = 3000
+        delay = 5000
     } = {}) {
         const toastEl = document.getElementById('appToast');
         const bodyEl = document.getElementById('appToastBody');
@@ -79,7 +79,7 @@
         @if(session('toast'))
         showToast(@json(session('toast')), {
             variant: 'success',
-            delay: 2500
+            delay: 5000
         });
         @endif
     });

@@ -155,7 +155,7 @@ public function edit(Request $request)
 
         $leave->delete();
 
-        return back()->with('status', 'Leave deleted.');
+        return back()->with('toast', 'Leave deleted.');
     }
 
     /** 共通バリデーション */
@@ -220,7 +220,7 @@ public function edit(Request $request)
             'status'       => 'approved',
         ]);
 
-        return back()->with('status', "空白Leaveを {$leave->start_date->format('Y-m-d')} に追加しました。");
+        return back()->with('toast', "Leave created at {$leave->start_date->format('Y-m-d')}.");
     }
 
     /** 一括更新 */
@@ -293,7 +293,7 @@ public function edit(Request $request)
         $updated = count($validated['items']);
 
         // ✅ JSON返却でもフラッシュを仕込む
-        session()->flash('status', "一括保存しました（{$updated} 件）");
+        session()->flash('toast', "Updated（{$updated} leave）");
 
         return response()->json([
             'ok'      => true,

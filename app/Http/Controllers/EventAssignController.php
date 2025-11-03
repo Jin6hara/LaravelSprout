@@ -174,14 +174,14 @@ class EventAssignController extends Controller
         $event->fill($validated)->save();
 
         // ✅ フラッシュバナーではなくトースト用のキーへ
-        return back()->with('toast', 'イベントを更新しました。');
+        return back()->with('toast', 'Updated.');
     }
 
     public function destroy(Request $request, Event $event)
     {
         // 必要ならポリシー/権限チェックをここで
         $event->delete();
-        return back()->with('toast', 'イベントを削除しました。');
+        return back()->with('toast', 'Deleted');
     }
 
     public function store(Request $request)
@@ -224,7 +224,7 @@ class EventAssignController extends Controller
 
         Event::create($validated);
 
-        return back()->with('toast', 'イベントを複写しました。');
+        return back()->with('toast', 'Shift copied.');
     }
 
     public function storeBlank(Request $request)
@@ -239,7 +239,7 @@ class EventAssignController extends Controller
             'type'       => 'regular_time',
         ]);
 
-        return back()->with('toast', "空白イベントを {$date} に追加しました。");
+        return back()->with('toast', "Created shift at {$date}.");
     }
 
     public function bulkUpdate(Request $request)

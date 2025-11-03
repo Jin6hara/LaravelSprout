@@ -123,7 +123,7 @@ class LeaveSnapshotService
                 'source_schedule_line_id' => $line->id,
                 'source_leave_id'         => $leave->id,
                 'status'                  => 'pending', // 後ほどSubシフトに担当してもらう  
-                'notes'                   => sprintf('Snapshot for leave#%d (%s)', $leave->id, $leave->type),
+                'notes'                   => null,
             ]);
 
             // details コピー（lesson_start_time_id / lesson_id をスナップショットに保持）

@@ -44,7 +44,7 @@
           <div class="col-12 col-md-3 col-lg-3">
             <label class="form-label small mb-1">Original User</label>
             <select name="user_id" class="form-select form-select-sm" required>
-              <option value="">（選択してください）</option>
+              <option value="">Please select</option>
               @foreach($userOptions as $u)
                 <option value="{{ $u->id }}" @selected(request('user_id') == $u->id)>
                   {{ $u->first_name }} {{ $u->family_name }} [{{ $u->employee_code }}]
@@ -66,7 +66,7 @@
           {{-- 送信ボタン --}}
           <div class="col-12 col-md-2 col-lg-2 d-grid">
             <button type="submit" class="btn btn-sm btn-warning">
-              欠席登録
+              Create Absence
             </button>
           </div>
 
@@ -100,7 +100,7 @@
           <div class="col-12 col-md-3">
             <label class="form-label small mb-1">Original User</label>
             <select name="original_user_id" class="form-select form-select-sm">
-              <option value="">（指定なし）</option>
+              <option value="">( All )</option>
               @foreach($userOptions as $u)
                 <option value="{{ $u->id }}" @selected(request('original_user_id') == $u->id)>
                   {{ $u->first_name }} {{ $u->family_name }} [{{ $u->employee_code }}]
@@ -127,7 +127,7 @@
           <div class="col-12 col-md-3">
             <label class="form-label small mb-1">Assigned User</label>
             <select name="assigned_user_id" class="form-select form-select-sm">
-              <option value="">（指定なし）</option>
+              <option value="">( All )</option>
               @foreach($userOptions as $u)
                 <option value="{{ $u->id }}" @selected(request('assigned_user_id') == $u->id)>
                   {{ $u->first_name }} {{ $u->family_name }} [{{ $u->employee_code }}]
@@ -147,7 +147,7 @@
           <div class="col-6 col-md-3">
             <label class="form-label small mb-1">Status</label>
             <select name="status" class="form-select form-select-sm">
-              <option value="">（指定なし）</option>
+              <option value="">( All )</option>
               @foreach($statusOptions as $v => $label)
                 <option value="{{ $v }}" @selected(request('status') === $v)>{{ $label }}</option>
               @endforeach
@@ -158,7 +158,7 @@
           <div class="col-6 col-md-3">
             <label class="form-label small mb-1">Type</label>
             <select name="type" class="form-select form-select-sm">
-              <option value="">（指定なし）</option>
+              <option value="">( All )</option>
               @foreach($typeOptions as $v => $label)
                 <option value="{{ $v }}" @selected(request('type') === $v)>{{ $label }}</option>
               @endforeach
@@ -185,8 +185,8 @@
 
           {{-- 操作ボタン --}}  
           <div class="col-12 col-md-3 d-flex gap-2 mt-2">
-            <button type="submit" class="btn btn-sm btn-primary flex-fill">検索</button>
-            <a href="{{ route('calendar.edit') }}" class="btn btn-sm btn-outline-secondary flex-fill">リセット</a>
+            <button type="submit" class="btn btn-sm btn-primary flex-fill">Search</button>
+            <a href="{{ route('calendar.edit') }}" class="btn btn-sm btn-outline-secondary flex-fill">Clear</a>
           </div>
 
         </div>
@@ -202,14 +202,14 @@
       @csrf
       <input type="hidden" name="event_date" value="{{ request('event_date', now()->toDateString()) }}">
       <button type="submit" class="btn btn-sm btn-success">
-        ＋ 空白イベントを追加
+        ＋ Add Blank
       </button>
     </form>
     <button type="button"
       class="btn btn-sm btn-primary"
       id="js-bulk-save"
       data-url="{{ route('events.bulk_update') }}">
-      一括保存
+      Bulk Save
     </button>
   </div>
 
@@ -425,12 +425,7 @@
   .card-body.p-2 {
     background-color: #eef6ff;
     /* ごく淡い青 */
-  }
-
-  /* ✅ トーストの重なり順を少し上げる（モーダル等より下にしたい場合は調整） */
-  .toast-container {
-    z-index: 1080;
-  }
+  }  
 </style>
 @endpush
 
