@@ -134,8 +134,9 @@
             <div class="card h-100 shadow-sm">
                 {{-- Leave Manager --}}
                 <form method="POST"
-                    action="{{ route('leaves.update', $leave) }}"
-                    class="h-100 d-flex flex-column js-leave-form">
+                      action="{{ route('leaves.update', $leave) }}"
+                      class="h-100 d-flex flex-column js-leave-form"
+                      data-user-id="{{ $leave->user_id }}">
                 @csrf
                 @method('PUT')
 
@@ -147,7 +148,7 @@
                             {{-- 0: User --}}
                             <div class="mb-0">
                                 <label class="form-label small text-muted mb-0">User</label>
-                            <select name="user_id" class="form-select form-select-sm">
+                            <select name="user_id" class="form-select form-select-sm" required>
                                 {{-- 空白オプション --}}
                                 <option value="">—</option>
                                 @foreach($userOptions as $u)
@@ -351,7 +352,26 @@ document.getElementById('js-bulk-save')?.addEventListener('click', async (e) => 
     ['end_date','time_start','time_end','special_type','handle_type','reason'].forEach(k => {
       if (obj[k] === '') obj[k] = null;
     });
+
+    // ✅ user_id が欠落していたらフォーム属性やDOMから補完
+    if (!obj.user_id) {
+      // data-user-id を最優先で使う
+      const fromDataset = f.dataset?.userId || null;
+      // disabled ではない select から拾う（通常はこれで入る）
+      const fromSelect = f.querySelector('select[name="user_id"]:not([disabled])')?.value || null;
+      obj.user_id = fromDataset || fromSelect || '';
+    }
+
     return obj;
+  }).filter((obj, idx) => {
+    // ✅ まだ user_id が空なら、このカードをハイライトして送信対象から外す
+    if (!obj.user_id) {
+      const card = forms[idx].closest('.card');
+      card?.classList.add('border','border-warning');
+      // 可能ならトーストや小さな注釈で知らせる（任意）
+      return false;
+    }
+    return true;
   });
 
   try {
