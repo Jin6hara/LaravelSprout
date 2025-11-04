@@ -36,6 +36,7 @@ class DatabaseSeeder extends Seeder
             CommuterPassSeeder::class,
             SubsTableSeeder::class,
             RouteDeclarationUser2Seeder::class,
+            ScheduleDetailsCopySeeder::class,
         ]);
 
         // \App\Models\User::factory(10)->create();
