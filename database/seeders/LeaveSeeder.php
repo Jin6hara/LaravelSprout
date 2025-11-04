@@ -9,35 +9,90 @@ class LeaveSeeder extends Seeder
 {
     public function run(): void
     {
-        // user_id=7
+        // user_id=7 （Absence）
         Leave::create([
             'user_id'     => 7,
             'start_date'  => '2025-10-14',
             'kind'        => 'absence',
             'excused'     => 'unexcused',   // 欠席は基本unexcused
-            'reason'      => '欠勤（連絡なし）',
-            'status'      => 'approved',
+            'reason'      => 'Sick',
+            'status'      => 'pending',
         ]);
+
+        // user_id=7 （Absence）
+        Leave::create([
+            'user_id'     => 7,
+            'start_date'  => '2025-10-31',
+            'kind'        => 'absence',
+            'excused'     => 'unexcused',   // 欠席は基本unexcused
+            'reason'      => 'Sick',
+            'status'      => 'pending',
+        ]);
+        // user_id=7 （ALP）
         Leave::create([
             'user_id'     => 7,
             'start_date'  => '2025-10-15',
             'end_date'    => '2025-10-16',
-            'kind'        => 'paid',        // 有給
+            'kind'        => 'paid',        // ALPはpaid
             'excused'     => 'excused',
             'reason'      => null,
-            'status'      => 'approved',
+            'status'      => 'pending',
         ]);
 
         // user_id=4 （結婚式：5日連続）
         Leave::create([
             'user_id'     => 4,
-            'start_date'  => '2025-10-15',
-            'end_date'    => '2025-10-19',
+            'start_date'  => '2025-11-12',
+            'end_date'    => '2025-11-16',
             'kind'        => 'special',
-            'special_type' => '結婚式',
+            'special_type' => 'Wedding',
             'excused'     => 'excused',
             'reason'      => null,
             'status'      => 'approved',
+        ]);
+
+        //  user_id=4 （Absence）
+        Leave::create([
+            'user_id'     => 4,
+            'start_date'  => '2025-10-31',
+            'kind'        => 'absence',
+            'special_type' => null,
+            'excused'     => 'unexcused',
+            'reason'      => null,
+            'status'      => 'pending',
+        ]);
+
+        //  user_id=4 （Absence）
+        Leave::create([
+            'user_id'     => 4,
+            'start_date'  => '2025-11-01',
+            'kind'        => 'absence',
+            'special_type' => null,
+            'excused'     => 'unexcused',
+            'reason'      => null,
+            'status'      => 'pending',
+        ]);
+
+        // user_id=8 （Absence）
+        Leave::create([
+            'user_id'     => 8,
+            'start_date'  => '2025-11-04',
+            'kind'        => 'absence',
+            'special_type' => null,
+            'excused'     => 'unexcused',
+            'reason'      => null,
+            'status'      => 'pending',
+        ]);
+
+        // user_id=9 （Absence）
+        Leave::create([
+            'user_id'     => 9,
+            'start_date'  => '2025-11-04',
+            'kind'        => 'absence',
+            'special_type' => null,
+            'excused'     => 'unexcused',
+            'reason'      => null,
+            'status'      => 'pending',
         ]);
     }
 }
