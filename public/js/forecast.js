@@ -114,6 +114,7 @@ document.addEventListener('DOMContentLoaded', function () {
         //buttonText: { today: 'Today', month: 'Month', week: 'Week', day: 'day', list: 'List' },    // locale: 'en'の為英語設定不要。
         dayMaxEventRows: true,
         navLinks: true,
+        displayEventTime: false, //Listの時間を表示しない
         nowIndicator: true,
         validRange: { start: '2025-04-01', end: '' },
         editable: true, //eventDrop: (info) => updateEvent(info.event), // ← updateもできるらしい

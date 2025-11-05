@@ -54,6 +54,137 @@
   border-color: #10b981 !important;
 }
 
+/* === List系（listWeek / listMonth）色合わせ ============================ */
+/* listは <tr class="fc-list-event ..."> なので .fc-event では効かない点に注意 */
+
+/* イベント色分け Over Time */
+.fc .fc-list-event.fc-event-overtime {
+  background-color: #8b5cf6 !important; /* 紫 */
+  border-left: 4px solid #8b5cf6;
+}
+.fc .fc-list-event.fc-event-overtime .fc-list-event-title,
+.fc .fc-list-event.fc-event-overtime .fc-list-event-title a {
+  color: #ffffff !important;
+}
+.fc .fc-list-event.fc-event-overtime .fc-event-dot {
+  border-color: #8b5cf6 !important;
+}
+
+/* イベント色分け 代講者不要 */
+.fc .fc-list-event.fc-event-none_required {
+  background-color: #9ca3af !important; /* 灰色 */
+  border-left: 4px solid #9ca3af;
+}
+.fc .fc-list-event.fc-event-none_required .fc-list-event-title,
+.fc .fc-list-event.fc-event-none_required .fc-list-event-title a {
+  color: #ffffff !important;
+}
+.fc .fc-list-event.fc-event-none_required .fc-event-dot {
+  border-color: #9ca3af !important;
+}
+
+/* その他（Regular Time、Schedule Change、Rostered Working Day、Special）→ 緑 */
+.fc .fc-list-event.fc-event-regular_time,
+.fc .fc-list-event.fc-event-schedule_change,
+.fc .fc-list-event.fc-event-rostered_working_day,
+.fc .fc-list-event.fc-event-special {
+  background-color: #10b981 !important; /* 緑 */
+  border-left: 4px solid #10b981;
+}
+.fc .fc-list-event.fc-event-regular_time .fc-list-event-title,
+.fc .fc-list-event.fc-event-regular_time .fc-list-event-title a,
+.fc .fc-list-event.fc-event-schedule_change .fc-list-event-title,
+.fc .fc-list-event.fc-event-schedule_change .fc-list-event-title a,
+.fc .fc-list-event.fc-event-rostered_working_day .fc-list-event-title,
+.fc .fc-list-event.fc-event-rostered_working_day .fc-list-event-title a,
+.fc .fc-list-event.fc-event-special .fc-list-event-title,
+.fc .fc-list-event.fc-event-special .fc-list-event-title a {
+  color: #ffffff !important;
+}
+.fc .fc-list-event.fc-event-regular_time .fc-event-dot,
+.fc .fc-list-event.fc-event-schedule_change .fc-event-dot,
+.fc .fc-list-event.fc-event-rostered_working_day .fc-event-dot,
+.fc .fc-list-event.fc-event-special .fc-event-dot {
+  border-color: #10b981 !important;
+}
+/* === /List系 色合わせ ================================================ */
+
+/* === List系 hover時の背景色を統一 ====================================== */
+.fc .fc-list-event:hover {
+  filter: brightness(0.9); /* 少し暗くして hover を表現 */
+}
+
+/* ※「真っ白に変わる」現象を完全に防ぐには、以下も追加（上書き対策） */
+.fc .fc-list-event:hover td,
+.fc .fc-list-event:hover a {
+  background-color: transparent !important; /* 白塗り上書きを抑止 */
+  color: inherit !important;
+}
+/* === /List系 hover色調整 ============================================== */
+
+/* === List系 ドット非表示 ===================================== */
+/* listWeek / listMonth の左端に出る青い丸（fc-event-dot）を隠す */
+.fc .fc-list-event-dot {
+  display: none !important;
+}
+/* 時間と同様に隠したい場合 */
+.fc .fc-list-event-time {
+  display: none !important;
+}
+/* ============================================================= */
+
+/* === FullCalendar List: 枠線を横線のみ＆二重線防止 ===================== */
+/* 1) まず縦線を全除去（ヘッダ/ボディとも） */
+.fc .fc-list-table th,
+.fc .fc-list-table td {
+  border-left: none !important;
+  border-right: none !important;
+}
+
+/* 2) 行と行の間だけに横線（下線）を付与 */
+.fc .fc-list-table tbody tr td {
+  border-bottom: 1px solid #e5e7eb !important; /* お好みで色変更可 */
+}
+
+/* 3) 最下行の下線は消して外枠と重複しないようにする */
+.fc .fc-list-table tbody tr:last-child td {
+  border-bottom: none !important;
+}
+
+/* 4) テーブル自体の下枠があるテーマ用：下枠を消してダブル防止 */
+.fc .fc-list-table {
+  border-bottom: 0 !important;
+}
+
+/* 5) （任意）ヘッダは上品に下線のみ残す */
+.fc .fc-list-table thead tr th {
+  border-top: none !important;
+  border-bottom: 1px solid #e5e7eb !important;
+}
+/* ===================================================================== */
+
+/* === List系 枠線を横線のみに ==================================== */
+/* まずすべてのボーダーをリセット */
+.fc .fc-list-event td {
+  border: none !important;
+}
+
+/* 各行の下にのみ横線を付ける */
+.fc .fc-list-event {
+  border-bottom: 1px solid #d1d5db !important; /* 明るいグレー線 */
+}
+
+/* 最後の行の線を消してスッキリさせる */
+.fc .fc-list-event:last-child {
+  border-bottom: none !important;
+}
+
+/* 日付見出し部分にも薄い下線を */
+.fc .fc-list-day {
+  border-bottom: 1px solid #9ca3af !important;
+}
+/* =============================================================== */
+
 /* status 枠線 */
 .fc .fc-event.status-pending,
 .fc .fc-event.status-in_process {

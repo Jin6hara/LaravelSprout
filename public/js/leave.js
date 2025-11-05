@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', function () {
         headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,listWeek' },
         dayMaxEventRows: true,
         navLinks: true,
+        displayEventTime: false, //Listの時間を表示しない
         nowIndicator: true,
         validRange: { start: '2025-04-01', end: '' },
         editable: false,
