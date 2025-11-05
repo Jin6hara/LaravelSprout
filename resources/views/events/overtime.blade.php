@@ -13,10 +13,9 @@
                 <th>Date</th>
                 <th>Start</th>
                 <th>End</th>
-                <th>Title</th>
                 <th>School</th>
-                <th>Duration</th>
-                <th>Assigned User</th>
+                <th>　　Classes　　</th>
+                <th>　　Candidates　　</th>
             </tr>
         </thead>
         <tbody>
@@ -41,7 +40,6 @@
                     @endif
                 </td>
 
-                <td>{{ $e->title }}</td>
                 <td>{{ $e->school_name }}</td>
                 <td>{{ $e->total_duration }}</td>
                 <td>{{ optional($e->assignedUser)->first_name ?? '-' }}</td>

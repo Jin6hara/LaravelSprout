@@ -120,7 +120,7 @@ class LeaveApplyController extends Controller
                     'start_date' => $ymd,
                     'end_date'   => null,
                     'kind'       => 'paid',
-                    'excused'    => 'unknown',
+                    'excused'    => 'excused',
                     'reason'     => $reason,
                     'status'     => 'pending',
                 ]);
