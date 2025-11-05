@@ -199,6 +199,22 @@
   border-width: 3px; border-style: solid; border-color: #fabd15;
 }
 
+/* === status fixed/filled の境界色を条件で上書き ===================== */
+/* デフォルト（資格なし）は赤に強制 */
+.fc .fc-event.status-fixed:not(.is-qualified),
+.fc .fc-event.status-filled:not(.is-qualified) {
+  border-width: 3px; border-style: solid;
+  border-color: #ef4444 !important; /* 赤 */
+}
+
+/* 資格あり（type=none_required または assignedあり && type≠none_required）だけ緑 */
+.fc .fc-event.status-fixed.is-qualified,
+.fc .fc-event.status-filled.is-qualified {
+  border-width: 3px; border-style: solid;
+  border-color: #10b981 !important; /* 緑 */
+}
+/* ================================================================ */
+
 /* SubCount背景色 */
 .fc .ev-subcount.fc-bg-event {
   background-color: rgba(131, 250, 120, 0.35) !important;

@@ -73,11 +73,20 @@ class AllEventProvider implements CalendarEventProvider
             // CSS用クラス（色分け/枠線用）
             $classNames = [
                 'fc-event-on',
-                "fc-event-{$e->type}",   // 例: fc-event-overtime / fc-event-none_required / fc-event-regular_time など
-                "status-{$e->status}",   // 例: status-pending / status-in_process / status-fixed / status-filled
+                "fc-event-{$e->type}",
+                "status-{$e->status}",
             ];
 
-            // ✅ 追加条件: pending/in_process + assigned_user_idあり
+            // 追加：緑にしてよい “資格あり” 条件
+            $qualifiedGreen = (
+                ($e->type === 'none_required') ||
+                (!empty($e->assigned_user_id) && $e->type !== 'none_required')
+            );
+            if (in_array($e->status, ['fixed', 'filled'], true) && $qualifiedGreen) {
+                $classNames[] = 'is-qualified'; // 緑にして良いときだけ付与
+            }
+
+            // 既存の「pending/in_process + assignedあり → 黄色枠」
             if (
                 in_array($e->status, ['pending', 'in_process'], true) &&
                 !empty($e->assigned_user_id)
