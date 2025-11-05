@@ -127,10 +127,6 @@
 .fc .fc-list-event-dot {
   display: none !important;
 }
-/* 時間と同様に隠したい場合 */
-.fc .fc-list-event-time {
-  display: none !important;
-}
 /* ============================================================= */
 
 /* === FullCalendar List: 枠線を横線のみ＆二重線防止 ===================== */
