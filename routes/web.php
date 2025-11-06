@@ -196,7 +196,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/absence_report/{user}', [LeaveController::class, 'absence'])->name('absence.edit');
     Route::get('/all_absence_report/', [LeaveController::class, 'allReport'])->name('absense.all');
     Route::put('/handle_type/{leave}', [LeaveController::class, 'report'])->name('report.update');
-    
 });
 
 use App\Http\Controllers\SchoolProfileController;
@@ -264,3 +263,11 @@ Route::get('/cvs/schedule_line', [ScheduleLineCsvController::class, 'form'])
 
 Route::post('/cvs/schedule_line/import', [ScheduleLineCsvController::class, 'import'])
     ->name('cvs.schedule_line.import');
+
+use App\Http\Controllers\UserScheduleCsvController;
+
+Route::get('/csv/user_schedule', [UserScheduleCsvController::class, 'form'])
+    ->name('csv.user_schedule.form');
+
+Route::post('/csv/user_schedule/import', [UserScheduleCsvController::class, 'import'])
+    ->name('csv.user_schedule.import');
