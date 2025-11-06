@@ -271,3 +271,11 @@ Route::get('/csv/user_schedule', [UserScheduleCsvController::class, 'form'])
 
 Route::post('/csv/user_schedule/import', [UserScheduleCsvController::class, 'import'])
     ->name('csv.user_schedule.import');
+
+use App\Http\Controllers\UserScheduleLineController;
+
+Route::get('/csv/user_schedule_line', [UserScheduleLineController::class, 'form'])
+    ->name('csv.user_schedule_line.form');
+
+Route::post('/csv/user_schedule_line/import', [UserScheduleLineController::class, 'import'])
+    ->name('csv.user_schedule_line.import');
