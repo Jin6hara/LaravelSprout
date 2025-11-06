@@ -256,3 +256,11 @@ Route::middleware(['auth'])->group(function () {
         ->middleware('role:admin|super_admin')
         ->name('routes.user');
 });
+
+use App\Http\Controllers\ScheduleLineCsvController;
+
+Route::get('/cvs/schedule_line', [ScheduleLineCsvController::class, 'form'])
+    ->name('cvs.schedule_line.form');
+
+Route::post('/cvs/schedule_line/import', [ScheduleLineCsvController::class, 'import'])
+    ->name('cvs.schedule_line.import');
