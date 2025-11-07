@@ -256,6 +256,7 @@ Route::middleware(['auth'])->group(function () {
         ->name('routes.user');
 });
 
+// ---------------------------------------------------------------------------------------------------------▼ CSV関連ルート
 use App\Http\Controllers\ScheduleLineCsvController;
 
 Route::get('/cvs/schedule_line', [ScheduleLineCsvController::class, 'form'])
@@ -279,12 +280,14 @@ Route::get('/csv/user_schedule_line', [UserScheduleLineController::class, 'form'
 
 Route::post('/csv/user_schedule_line/import', [UserScheduleLineController::class, 'import'])
     ->name('csv.user_schedule_line.import');
-    
+
 
 use App\Http\Controllers\UserScheduleLineExportController;
 
-Route::get('/csv/user_schedule_line/export', [UserScheduleLineExportController::class, 'exportForm'])
-    ->name('csv.user_schedule_line.export.form');
+//Route::get('/csv/user_schedule_line/export', [UserScheduleLineExportController::class, 'exportForm'])
+    //->name('csv.user_schedule_line.export.form');
 
 Route::get('/csv/user_schedule_line/export/download', [UserScheduleLineExportController::class, 'download'])
     ->name('csv.user_schedule_line.export.download');
+
+// ---------------------------------------------------------------------------------------------------------▲ CSV関連ルート

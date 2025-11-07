@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Services\UserScheduleLineCsvImportService;
+use App\Services\ScheduleCsv\UserScheduleLineCsvImportService;
 
 class UserScheduleLineController extends Controller
 {

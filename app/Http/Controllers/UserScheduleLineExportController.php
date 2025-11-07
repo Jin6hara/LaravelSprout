@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Services\UserScheduleLineExportService;
+use App\Services\ScheduleCsv\UserScheduleLineExportService;
 
 class UserScheduleLineExportController extends Controller
 {

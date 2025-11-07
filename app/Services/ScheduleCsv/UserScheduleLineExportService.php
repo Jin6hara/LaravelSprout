@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\ScheduleCsv;
 
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\StreamedResponse;

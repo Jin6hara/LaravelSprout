@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\ScheduleCsv;
 
 use App\Models\{ScheduleLine, ScheduleDetail, Lesson, LessonStartTime};
 use Carbon\Carbon;
