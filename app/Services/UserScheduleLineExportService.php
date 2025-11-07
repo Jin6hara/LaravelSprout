@@ -29,6 +29,7 @@ class UserScheduleLineExportService
 
             // === ヘッダ（テンプレと完全一致の表示名） ===
             $header = [
+                "User Name ('name')",
                 "Employ Code ('user_id')",
                 "Type ('label')",
                 "Total Minutes ('total_minutes')",
@@ -55,6 +56,7 @@ class UserScheduleLineExportService
                 ->join('lesson_start_times as lst', 'sd.lesson_start_time_id', '=', 'lst.id')
                 ->join('lessons as l', 'sd.lesson_id', '=', 'l.id')
                 ->selectRaw("
+                    u.name as user_name,
                     u.employee_code as emp,
                     s.label,
                     s.total_minutes,
@@ -112,6 +114,7 @@ class UserScheduleLineExportService
             // === ストリーム書き出し（カーソルで省メモリ） ===
             foreach ($q->cursor() as $r) {
                 fputcsv($out, [
+                    $r->user_name,
                     $r->emp,
                     $r->label,
                     (int) $r->total_minutes,
