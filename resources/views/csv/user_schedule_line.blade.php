@@ -2,22 +2,7 @@
 
 @section('content')
 <div class="container">
-    <h2 class="mb-3">User + Schedule + Line + Detail — CSV Import</h2>
-
-    @if(session('status'))
-    <div class="alert alert-success">{{ session('status') }}</div>
-    @endif
-
-    @if(session('errors') && is_array(session('errors')) && count(session('errors')))
-    <div class="alert alert-warning">
-        <div class="fw-bold">ログ</div>
-        <ul class="mb-0">
-            @foreach(session('errors') as $e)
-            <li>{{ $e }}</li>
-            @endforeach
-        </ul>
-    </div>
-    @endif
+    <h2 class="mb-3">User → Schedule → Line → Detail 一括CSVインポート</h2>
 
     <div class="card">
         <div class="card-body">
@@ -25,14 +10,17 @@
                 @csrf
 
                 <div class="col-12">
-                    <label class="form-label">CSV ファイル</label>
+                    <label class="form-label">CSVファイル</label>
                     <input type="file" name="csv_file" class="form-control" required>
-                    <small class="text-muted">UTF-8 / 1行目ヘッダ必須（BOM付きでも可）</small>
+                    <small class="text-muted">
+                        UTF-8 / 1行目ヘッダ必須。BOM付きでも読めます。<br>
+                        時刻は <code>H:i</code>（例 15:00）、日付は <code>YYYY-MM-DD</code>。
+                    </small>
                 </div>
 
                 <div class="col-12 form-check">
                     <input class="form-check-input" type="checkbox" name="update" id="update" value="1">
-                    <label class="form-check-label" for="update">同一（user+期間+label）の Schedule は <b>更新</b> にする</label>
+                    <label class="form-check-label" for="update">同一キー（user+契約期間+label / lineキー / detailキー）は <b>更新</b>扱い</label>
                 </div>
 
                 <div class="col-12">
@@ -43,16 +31,17 @@
     </div>
 
     <div class="mt-4">
-        <h5>CSV ヘッダ例</h5>
-        <pre class="bg-light p-2 small">
-user_id,label,total_minutes,effective_start,effective_end,school_name,dow,start_time,end_time,detail_effective_start,detail_effective_end,lesson_start_time,lesson_code
-000013,TS,465,2025-04-01,2026-03-31,Umeda GB,火,1500,2100,2025-04-01,2026-03-31,1500,BW
+        <h5>ヘッダ例（表示名でも実カラム名でもOK / 一部別名も可）</h5>
+        <pre class="bg-light p-2 mb-2">
+Employ Code ('user_id'),Type ('label'),Total Minutes ('total_minutes'),Contract Start ('effective_start'),Contract End ('effective_end'),
+School ('school_name'),DOW ('dow'),Shift From ('start_time'),Shift To ('end_time'),Line Start ('effective_start'),Line End ('effective_end'),
+Start At ('lesson_start_times'),Lesson Name ('lesson_code'),Lesson Start ('effective_start'),Lesson End ('effective_end')
+000013,TS,465,2025-04-01,2026-03-31,Umeda GB,7:日,15:00,21:00,2025-04-01,2026-03-31,15:00,BW,2025-04-01,2026-03-31
 </pre>
         <small class="text-muted">
-            ・user_id は6桁の社員コード（users.employee_code）<br>
-            ・detail_effective_* が空なら line の期間をそのまま使用<br>
-            ・lesson_start_time は 1500 など4桁でOK（内部で HH:MM:SS 化してマスタからID解決）<br>
-            ・lesson_code は BW / EV / EE など
+            ※ DOW は <b>1:月〜6:土, 7:日</b> を想定（システム内では <b>7→0（日）</b> に変換）<br>
+            ※ DB格納は TIME が秒を持つため、内部的に <b>「H:i:00」</b> で保存。UI表示は H:i でOK。<br>
+            ※ Lesson Start At は既存の <code>lesson_start_times.start_time</code>（5分刻み）に存在する値を指定してください。
         </small>
     </div>
 </div>

@@ -14,241 +14,211 @@ use Illuminate\Support\Facades\DB;
 class UserScheduleLineCsvImportService
 {
     /**
-     * 期待CSVヘッダ（推奨／英字）
-     * user_id,label,total_minutes,effective_start,effective_end,
-     * school_name,dow,start_time,end_time,detail_effective_start,detail_effective_end,lesson_start_time,lesson_code
+     * 受け入れるCSVヘッダ（別名対応）:
+     *  - Employ Code ('user_id') / employee_code / user_id
+     *  - Type ('label') / label
+     *  - Total Minutes ('total_minutes') / total_minutes
+     *  - Contract Start ('effective_start') / schedule_start / effective_start
+     *  - Contract End   ('effective_end')   / schedule_end   / effective_end
      *
-     * 備考：
-     * - user_id は 6桁社員コード（users.employee_code と突合）
-     * - schedule の期間（effective_start/effective_end）
-     * - line の期間は schedule と同じでもOK。detail 側は detail_effective_* を使う（無ければ line と同一に補完）
+     *  - School ('school_name') / school_name
+     *  - DOW ('dow') / dow      ← 1:月 ... 7:日 を受け取り 7→0 に変換
+     *  - Shift From ('start_time') / start_time   ← "H:i"
+     *  - Shift To   ('end_time')   / end_time     ← "H:i"
+     *  - Line Start ('effective_start') / line_start / line_effective_start
+     *  - Line End   ('effective_end')   / line_end   / line_effective_end
+     *
+     *  - Start At ('lesson_start_times') / lesson_start_time / start_at ← "H:i"
+     *  - Lesson Name ('lesson_code') / lesson_code
+     *  - Lesson Start ('effective_start') / lesson_start / lesson_effective_start
+     *  - Lesson End   ('effective_end')   / lesson_end   / lesson_effective_end
+     *
+     * 注意:
+     *  - DB格納は date=YYYY-MM-DD, time=HH:MM:SS（秒は :00 で固定）。UI表示は H:i にしてください。
      */
-    public function import(string $csvPath, bool $doUpdate = false): array
+    public function import(string $csvPath, bool $doUpdate): array
     {
-        $fh = fopen($csvPath, 'r');
-        if (!$fh) return [$this->zeroSummary(), ['ファイルを開けませんでした']];
+        $fp = fopen($csvPath, 'r');
+        if (!$fp) {
+            return [['created' => 0, 'updated' => 0, 'skipped' => 0, 'missing_user' => 0, 'invalid' => 0], ['ファイルを開けません']];
+        }
 
-        // 1行目を生で読み、区切り文字を自動判定
-        $firstLine = fgets($fh);
-        if ($firstLine === false) return [$this->zeroSummary(), ['ヘッダ行が読めません']];
-        $delimiter = $this->detectDelimiter($firstLine); // ← 新規
-        $header = str_getcsv($firstLine, $delimiter);
+        $header = fgetcsv($fp);
+        if (!$header) {
+            return [['created' => 0, 'updated' => 0, 'skipped' => 0, 'missing_user' => 0, 'invalid' => 0], ['ヘッダがありません']];
+        }
 
         // ヘッダのBOM/空白除去
-        $header = array_map(fn($h) => $this->cleanHeader($h), $header);
+        $header = array_map([$this, 'cleanStr'], $header);
 
-        $summary = [
-            'sch_created' => 0,
-            'sch_updated' => 0,
-            'sch_skipped' => 0,
-            'line_count' => 0,
-            'detail_upserted' => 0,
-            'detail_skipped' => 0,
-            'missing_user' => 0,
-            'invalid' => 0,
-        ];
-        $errors = [];
+        $summary = ['created' => 0, 'updated' => 0, 'skipped' => 0, 'missing_user' => 0, 'invalid' => 0];
+        $logs    = [];
 
-        // ◆ キャリーフォワード用（その行で null/空なら、直前行の値を使う）
-        $carry = [
-            'empCode' => null,
-            'schLabel' => null,
-            'schTotal' => 0,
-            'schFrom' => null,
-            'schTo'    => null,
-        ];
-
-        DB::transaction(function () use ($fh, $delimiter, $header, $doUpdate, &$summary, &$errors, &$carry) {
-            while (($line = fgets($fh)) !== false) {
-                // 区切り文字で分解
-                $cols = str_getcsv($line, $delimiter);
-                if (!is_array($cols)) continue;
-                $raw = @array_combine($header, $cols);
+        DB::transaction(function () use ($fp, $header, $doUpdate, &$summary, &$logs) {
+            while ($row = fgetcsv($fp)) {
+                $raw = @array_combine($header, $row);
                 if ($raw === false) {
                     $summary['invalid']++;
-                    $errors[] = '列数不一致の行をスキップ';
+                    $logs[] = '列数不一致の行をスキップ';
                     continue;
                 }
+                // 値のBOM/空白除去
+                foreach ($raw as $k => $v) if (is_string($v)) $raw[$k] = $this->cleanStr($v);
 
-                // 値のトリム（BOM/空白）
-                foreach ($raw as $k => $v) if (is_string($v)) $raw[$k] = $this->cleanValue($v);
-
-                // 列マッピング（※ aliases に複数形も追加）
+                // === 別名マッピング ===
                 $get = function (array $keys) use ($raw) {
                     foreach ($keys as $k) if (array_key_exists($k, $raw)) return $raw[$k];
                     return null;
                 };
 
-                $empCode   = $get(['user_id', 'employee_code', '﻿user_id', 'emp', 'emp_code']);
-                $schLabel  = $get(['label', 'schedule_label']);
-                $schTotal  = $get(['total_minutes', 'minutes', 'total']);
-                $schFrom   = $get(['effective_start', 'schedule_start', 'from', 'start']);
-                $schTo     = $get(['effective_end', 'schedule_end', 'to', 'end']);
+                // スケジュール（契約）ヘッダ
+                $empCode  = $get(['user_id', 'employee_code', 'Employ Code (\'user_id\')', 'Employ Code', '﻿user_id']);
+                $label    = $get(['label', "Type ('label')", 'Type', 'schedule_label']);
+                $minutes  = $get(['total_minutes', "Total Minutes ('total_minutes')", 'Total Minutes']);
+                $schFrom  = $get(['effective_start', "Contract Start ('effective_start')", 'Contract Start', 'schedule_start']);
+                $schTo    = $get(['effective_end', "Contract End ('effective_end')", 'Contract End', 'schedule_end']);
 
-                $school    = $get(['school_name', 'school']);
-                $dowRaw    = $get(['dow', 'weekday', '曜日']);
-                $lineStart = $get(['start_time', 'line_start', 'start']);
-                $lineEnd   = $get(['end_time', 'line_end', 'end']);
-                $lineFrom  = $get(['line_effective_start', 'effective_start']); // fallback
-                $lineTo    = $get(['line_effective_end', 'effective_end']);     // fallback
+                // ライン（器）
+                $school   = $get(['school_name', "School ('school_name')", 'School']);
+                $dowIn    = $get(['dow', "DOW ('dow')", 'DOW']);
+                $shiftFr  = $get(['start_time', "Shift From ('start_time')", 'Shift From']);
+                $shiftTo  = $get(['end_time', "Shift To ('end_time')", 'Shift To']);
+                $lineFrom = $get(['line_effective_start', 'line_start', "Line Start ('effective_start')", 'Line Start', 'effective_start']);
+                $lineTo   = $get(['line_effective_end', 'line_end', "Line End ('effective_end')", 'Line End', 'effective_end']);
 
-                $detailFrom = $get(['detail_effective_start', 'detail_start', 'effective_start_detail']);
-                $detailTo   = $get(['detail_effective_end', 'detail_end', 'effective_end_detail']);
+                // ディテール（中身）
+                $lessonStartAt = $get(['lesson_start_time', 'lesson_start_times', 'start_at', "Start At ('lesson_start_times')", 'Start At']);
+                $lessonCode    = $get(['lesson_code', "Lesson Name ('lesson_code')", 'Lesson Name']);
+                $detFrom       = $get(['lesson_effective_start', 'lesson_start', "Lesson Start ('effective_start')", 'Lesson Start', 'effective_start']);
+                $detTo         = $get(['lesson_effective_end', 'lesson_end', "Lesson End ('effective_end')", 'Lesson End', 'effective_end']);
 
-                // ★ lesson_start_time の別名を“複数形”も許可
-                $lessonT    = $get(['lesson_start_time', 'lesson_start_times', 'lesson_time', 'l_start']);
-                $lessonCode = $get(['lesson_code', 'code']);
+                // === 正規化 ===
+                $empCode = $this->normalizeEmp($empCode);
+                $label   = ($label !== null) ? trim($label) : null;
+                $totalMinutes = $this->toIntOrNull($minutes);
 
-                // 正規化 + キャリーフォワード適用
-                $empCode = $this->normalizeEmployeeCode($empCode) ?? $carry['empCode'];
-                $schFrom = $this->toDate($schFrom) ?? $carry['schFrom'];
-                $schTo   = $this->toDate($schTo)   ?? $carry['schTo'];
-                $schLabel = $schLabel ?? $carry['schLabel'];
-                $schTotal = $this->toIntOrNull($schTotal) ?? $carry['schTotal'] ?? 0;
+                $schFrom = $this->toDate($schFrom);
+                $schTo   = $this->toDate($schTo);
 
-                // carry更新
-                if ($empCode) $carry['empCode'] = $empCode;
-                if ($schFrom) $carry['schFrom'] = $schFrom;
-                if ($schTo)   $carry['schTo']   = $schTo;
-                if ($schLabel !== null) $carry['schLabel'] = $schLabel;
-                if ($schTotal !== null) $carry['schTotal'] = $schTotal;
+                $dow = $this->toDowIndex17($dowIn); // 1..7 → 0..6 (7を0に)
+                $school = $school !== null ? trim($school) : null;
+                $lineStart = $this->toTimeHms($shiftFr); // "H:i"→"H:i:00"
+                $lineEnd   = $this->toTimeHms($shiftTo);
 
-                // 必須チェック（ユーザー & schedule 期間）
+                $lineFrom = $this->toDate($lineFrom);
+                $lineTo   = $this->toDate($lineTo);
+
+                $lessonStartAt = $this->toTimeHms($lessonStartAt);
+                $lessonCode    = $lessonCode !== null ? trim($lessonCode) : null;
+
+                $detFrom = $this->toDate($detFrom);
+                $detTo   = $this->toDate($detTo);
+
+                // === 必須チェック ===
                 if (!$empCode || !$schFrom || !$schTo) {
                     $summary['invalid']++;
-                    $errors[] = "必須不足(emp/from/to) → " . json_encode($raw, JSON_UNESCAPED_UNICODE);
+                    $logs[] = "必須不足(emp/from/to) → " . json_encode($raw, JSON_UNESCAPED_UNICODE);
                     continue;
                 }
-                if ($schFrom > $schTo) {
+                if (!$school || $dow === null || !$lineStart || !$lineEnd || !$lineFrom) {
                     $summary['invalid']++;
-                    $errors[] = "schedule期間逆転(from>to) → " . json_encode($raw, JSON_UNESCAPED_UNICODE);
+                    $logs[] = "ライン必須不足(school/dow/shift/line_from) → " . json_encode($raw, JSON_UNESCAPED_UNICODE);
+                    continue;
+                }
+                if (!$lessonStartAt || !$lessonCode || !$detFrom) {
+                    $summary['invalid']++;
+                    $logs[] = "ディテール必須不足(start_at/lesson_code/det_from) → " . json_encode($raw, JSON_UNESCAPED_UNICODE);
+                    continue;
+                }
+                if ($schFrom > $schTo || ($lineTo && $lineFrom > $lineTo) || ($detTo && $detFrom > $detTo)) {
+                    $summary['invalid']++;
+                    $logs[] = "期間の前後が逆です → " . json_encode($raw, JSON_UNESCAPED_UNICODE);
                     continue;
                 }
 
+                // === 1) ユーザー特定 ===
                 $user = User::where('employee_code', $empCode)->first();
                 if (!$user) {
                     $summary['missing_user']++;
-                    $errors[] = "ユーザー未発見 employee_code={$empCode}";
+                    $logs[] = "ユーザー未発見 employee_code={$empCode}";
                     continue;
                 }
 
-                // Schedule
-                $whereSch = [
+                // === 2) スケジュール作成/更新 ===
+                $schKey = [
                     'user_id'         => $user->id,
                     'effective_start' => $schFrom,
                     'effective_end'   => $schTo,
-                    'label'           => $schLabel,
+                    'label'           => $label,
                 ];
+
                 if ($doUpdate) {
-                    $schedule = Schedule::updateOrCreate($whereSch, [
-                        'total_minutes' => $schTotal,
-                        'is_active'     => true,
-                    ]);
-                    $schedule->wasRecentlyCreated ? $summary['sch_created']++ : $summary['sch_updated']++;
+                    $schedule = Schedule::updateOrCreate(
+                        $schKey,
+                        ['total_minutes' => $totalMinutes ?? 0, 'is_active' => true]
+                    );
+                    $schedule->wasRecentlyCreated ? $summary['created']++ : $summary['updated']++;
                 } else {
-                    $schedule = Schedule::firstOrCreate($whereSch, [
-                        'total_minutes' => $schTotal,
-                        'is_active'     => true,
-                    ]);
-                    $schedule->wasRecentlyCreated ? $summary['sch_created']++ : $summary['sch_skipped']++;
+                    $schedule = Schedule::firstOrCreate(
+                        $schKey,
+                        ['total_minutes' => $totalMinutes ?? 0, 'is_active' => true]
+                    );
+                    $schedule->wasRecentlyCreated ? $summary['created']++ : $summary['skipped']++;
                 }
 
-                // Line 必須
-                $dow = $this->toDowIndex($dowRaw);
-                $lineStart = $this->toTimeString($lineStart);
-                $lineEnd   = $this->toTimeString($lineEnd);
-                $lineFrom  = $this->toDate($lineFrom) ?? $schFrom;
-                $lineTo    = $this->toDate($lineTo)   ?? $schTo;
-
-                if (!$school || $dow === null || !$lineStart || !$lineEnd) {
-                    $errors[] = "line不足(school/dow/start/end) → " . json_encode($raw, JSON_UNESCAPED_UNICODE);
-                    continue;
-                }
-
+                // === 3) ライン（器） firstOrCreate ===
                 $line = ScheduleLine::firstOrCreate([
-                    'schedule_id'     => $schedule->id,
-                    'parent_line_id'  => null,
+                    'schedule_id'     => $schedule->id,     // ← 裏で schedule_id を紐付け
                     'dow'             => $dow,
-                    'school_name'     => trim($school),
-                    'start_time'      => $lineStart,
+                    'school_name'     => $school,
+                    'start_time'      => $lineStart,        // DBは "H:i:00"
                     'end_time'        => $lineEnd,
                     'effective_start' => $lineFrom,
                     'effective_end'   => $lineTo,
                 ]);
-                $summary['line_count']++;
 
-                // Detail
-                $detailFrom = $this->toDate($detailFrom) ?? $lineFrom;
-                $detailTo   = $this->toDate($detailTo)   ?? $lineTo;
+                // === 4) ディテール（中身） upsert ===
+                $lsTimeId = LessonStartTime::where('start_time', $lessonStartAt)->value('id');
+                $lessonId = Lesson::where('lesson_code', $lessonCode)->value('id');
 
-                $lessonId = null;
-                if ($lessonCode) $lessonId = Lesson::where('lesson_code', $lessonCode)->value('id');
+                if (!$lsTimeId || !$lessonId) {
+                    $summary['invalid']++;
+                    $logs[] = "マスタ未解決(lesson_start_time_id/lesson_id) start_at={$lessonStartAt}, code={$lessonCode}";
+                    continue;
+                }
 
-                $lsTimeId = null;
-                $lessonT = $this->toTimeString($lessonT);
-                if ($lessonT) $lsTimeId = LessonStartTime::where('start_time', $lessonT)->value('id');
-
-                if ($lessonId && $lsTimeId) {
-                    ScheduleDetail::updateOrCreate([
-                        'schedule_line_id'     => $line->id,
+                ScheduleDetail::updateOrCreate(
+                    [
+                        'schedule_line_id'     => $line->id, // ← 裏で schedule_line_id を紐付け
                         'lesson_start_time_id' => $lsTimeId,
                         'lesson_id'            => $lessonId,
-                        'effective_start'      => $detailFrom,
-                        'effective_end'        => $detailTo,
-                    ], []);
-                    $summary['detail_upserted']++;
-                } else {
-                    $summary['detail_skipped']++;
-                    $errors[] = "detail不足(lesson_code/lesson_start_time 解決不可) → " . json_encode($raw, JSON_UNESCAPED_UNICODE);
-                }
+                        'effective_start'      => $detFrom,
+                        'effective_end'        => $detTo,
+                    ],
+                    [] // 更新するカラムがあればここへ
+                );
             }
         });
 
-        return [$summary, $errors];
+        return [$summary, $logs];
     }
 
-    // ～～ 追加：区切り自動判定 ～～
-    private function detectDelimiter(string $line): string
+    // ====== ヘルパ ======
+
+    private function cleanStr(?string $s): ?string
     {
-        // タブ優先 → セミコロン → カンマ
-        if (str_contains($line, "\t")) return "\t";
-        if (str_contains($line, ";"))  return ";";
-        return ","; // デフォルト
+        if ($s === null) return null;
+        // 先頭BOM除去 + 前後の空白/不可視空白除去
+        $s = preg_replace('/^\xEF\xBB\xBF/', '', $s);
+        return trim($s, " \t\n\r\0\x0B\xC2\xA0\xE3\x80\x80");
     }
 
-    private function zeroSummary(): array
+    private function normalizeEmp(?string $v): ?string
     {
-        return [
-            'sch_created' => 0,
-            'sch_updated' => 0,
-            'sch_skipped' => 0,
-            'line_count' => 0,
-            'detail_upserted' => 0,
-            'detail_skipped' => 0,
-            'missing_user' => 0,
-            'invalid' => 0,
-        ];
-    }
-
-    private function cleanHeader(?string $h): ?string
-    {
-        if ($h === null) return null;
-        $h = preg_replace('/^\xEF\xBB\xBF/', '', $h); // BOM
-        return trim($h, " \t\n\r\0\x0B\xC2\xA0\xE3\x80\x80");
-    }
-
-    private function cleanValue(string $v): string
-    {
-        $v = preg_replace('/^\xEF\xBB\xBF/', '', $v); // BOM
-        return trim($v, " \t\n\r\0\x0B\xC2\xA0\xE3\x80\x80");
-    }
-
-    private function normalizeEmployeeCode($v): ?string
-    {
-        if ($v === null || $v === '') return null;
-        $s = preg_replace('/\D/', '', (string)$v);
-        if ($s === '') return null;
-        return str_pad($s, 6, '0', STR_PAD_LEFT);
+        if (!$v) return null;
+        $digits = preg_replace('/\D/', '', $v);
+        if ($digits === '') return null;
+        return str_pad($digits, 6, '0', STR_PAD_LEFT);
     }
 
     private function toIntOrNull($v): ?int
@@ -257,38 +227,6 @@ class UserScheduleLineCsvImportService
         return is_numeric($v) ? (int)$v : null;
     }
 
-    /** "日月火水木金土"/"sun..sat"/0..6 → 0..6 */
-    private function toDowIndex($val): ?int
-    {
-        if (is_numeric($val) && $val >= 0 && $val <= 6) return (int)$val;
-        $s = mb_strtolower(trim((string)$val));
-        $mapJa  = ['日' => 0, '月' => 1, '火' => 2, '水' => 3, '木' => 4, '金' => 5, '土' => 6];
-        $mapEn3 = ['sun' => 0, 'mon' => 1, 'tue' => 2, 'wed' => 3, 'thu' => 4, 'fri' => 5, 'sat' => 6];
-        if ($s !== '') {
-            $ja1 = mb_substr($s, 0, 1);
-            if (isset($mapJa[$ja1])) return $mapJa[$ja1];
-            $en3 = substr($s, 0, 3);
-            if (isset($mapEn3[$en3])) return $mapEn3[$en3];
-        }
-        return null;
-    }
-
-    /** 1500 / "15:00" / "15:00:00" → "HH:MM:SS" */
-    private function toTimeString($v): ?string
-    {
-        if ($v === null || $v === '') return null;
-        $digits = preg_replace('/\D/', '', (string)$v);
-        if (strlen($digits) === 3) $digits = '0' . $digits;
-        if (strlen($digits) === 4) {
-            $h = substr($digits, 0, 2);
-            $m = substr($digits, 2, 2);
-            return sprintf('%02d:%02d:00', (int)$h, (int)$m);
-        }
-        $dt = date_create((string)$v);
-        return $dt ? $dt->format('H:i:s') : null;
-    }
-
-    /** "YYYY-MM-DD" */
     private function toDate($v): ?string
     {
         if (!$v) return null;
@@ -297,5 +235,44 @@ class UserScheduleLineCsvImportService
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    /** 入力 "H:i"（例 15:00）を "H:i:00" に正規化（DBは TIME 型で秒を持つため） */
+    private function toTimeHms($v): ?string
+    {
+        if (!$v) return null;
+        $s = preg_replace('/[^\d:]/', '', (string)$v);
+        // "15:00" or "15:00:00" を許可
+        if (preg_match('/^\d{1,2}:\d{2}(:\d{2})?$/', $s)) {
+            $dt = date_create($s);
+            return $dt ? $dt->format('H:i:00') : null; // 秒は常に :00
+        }
+        // "1500" 形式も一応救済
+        $digits = preg_replace('/\D/', '', $s);
+        if (strlen($digits) === 3) $digits = '0' . $digits;
+        if (strlen($digits) === 4) {
+            $h = substr($digits, 0, 2);
+            $m = substr($digits, 2, 2);
+            return sprintf('%02d:%02d:00', (int)$h, (int)$m);
+        }
+        return null;
+    }
+
+    /** 1:月..7:日 → 0..6（7→0） / "7:日" なども許容 */
+    private function toDowIndex17($v): ?int
+    {
+        if ($v === null || $v === '') return null;
+        $s = (string)$v;
+        // 先頭の数字を拾う
+        if (preg_match('/^\s*(\d{1})/', $s, $m)) {
+            $n = (int)$m[1];
+            if ($n >= 1 && $n <= 7) {
+                return $n === 7 ? 0 : $n; // 1..6は1..6, 7は0(日)
+            }
+        }
+        // フォールバック（万一「日/月」文字だけ来たら）
+        $ja = ['日' => 0, '月' => 1, '火' => 2, '水' => 3, '木' => 4, '金' => 5, '土' => 6];
+        $ch = mb_substr($s, -1, 1);
+        return $ja[$ch] ?? null;
     }
 }

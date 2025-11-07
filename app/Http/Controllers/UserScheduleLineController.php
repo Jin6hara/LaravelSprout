@@ -16,27 +16,24 @@ class UserScheduleLineController extends Controller
     {
         $request->validate([
             'csv_file' => ['required', 'file', 'mimes:csv,txt'],
-            'update'   => ['nullable', 'boolean'], // 既存一致を更新にするか
+            'update'   => ['nullable', 'boolean'], // 同一キー行の更新を許可
         ]);
 
-        $path = $request->file('csv_file')->getRealPath();
         $doUpdate = $request->boolean('update');
+        $filePath = $request->file('csv_file')->getRealPath();
 
-        [$summary, $errors] = $service->import($path, $doUpdate);
+        [$summary, $logs] = $service->import($filePath, $doUpdate);
 
         return back()->with([
             'toast' => sprintf(
-                'Done: schedules(created=%d,updated=%d,skipped=%d) | lines=%d | details(upserted=%d,skipped=%d) | missing_user=%d | invalid=%d',
-                $summary['sch_created'],
-                $summary['sch_updated'],
-                $summary['sch_skipped'],
-                $summary['line_count'],
-                $summary['detail_upserted'],
-                $summary['detail_skipped'],
+                'Done. created=%d, updated=%d, skipped=%d, missing_user=%d, invalid=%d',
+                $summary['created'],
+                $summary['updated'],
+                $summary['skipped'],
                 $summary['missing_user'],
                 $summary['invalid']
             ),
-            'toast_error' => $errors,
+            'toast_errors' => $logs,
         ]);
     }
 }
