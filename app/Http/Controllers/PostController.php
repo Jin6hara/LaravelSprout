@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
+use App\Enums\PostType;
 
 class PostController extends Controller
 {
@@ -21,14 +22,20 @@ class PostController extends Controller
     {
         $user = $req->user();
 
-        $post = DB::transaction(function () use ($req, $user) {
-            // 1) Post 作成
+        $type = PostType::from($req->input('type'));
+
+        $post = DB::transaction(function () use ($req, $user, $type) {
+            $allowReplies = $req->has('allow_replies')
+                ? (bool) $req->boolean('allow_replies')
+                : $type->defaultAllowReplies(); // ←タイプ既定
+
             $post = Post::create([
-                'user_id' => $user->id,
-                'title'   => $req->input('title'),
-                'body'    => $req->input('body'),
-                'expires_at'    => $req->input('expires_at'), // 2
-                'allow_replies' => (bool) $req->boolean('allow_replies'), // 2
+                'user_id'       => $user->id,
+                'type'          => $type,
+                'title'         => $req->input('title'),
+                'body'          => $req->input('body'),
+                'expires_at'    => $req->input('expires_at'),
+                'allow_replies' => $allowReplies,
             ]);
 
             // 2) 宛先付与（既読は未設定＝NULL）

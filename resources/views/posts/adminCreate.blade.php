@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="mb-0">メッセージ作成</h2>
+    <h2 class="mb-0">Create Message (Admin)</h2>
 </div>
 
 <form id="postForm" method="POST" action="{{ route('posts.send') }}" enctype="multipart/form-data">
@@ -11,34 +11,49 @@
     <div class="card mb-3">
         <div class="card-body">
 
+            {{-- タイプ --}}
+            <div class="mb-3">
+                @php use App\Enums\PostType; @endphp
+                <label class="form-label">Type <span class="text-danger">*</span></label>
+                <select name="type" class="form-select" required id="postTypeSelect">
+                    <option value="announcement" data-default-reply="{{ PostType::Announcement->defaultAllowReplies()}}">Notification</option>
+                    <option value="inquiry" data-default-reply="{{ PostType::Inquiry->defaultAllowReplies() ? 1 : 0 }}">Inquiry</option>
+                    <option value="dm" data-default-reply="{{ PostType::DirectMessage->defaultAllowReplies() ? 1 : 0 }}">Direct Message</option>
+                    <option value="notice_urgent" data-default-reply="{{ PostType::NoticeUrgent->defaultAllowReplies() ? 1 : 0 }}">Urgent</option>
+                    <option value="maintenance" data-default-reply="{{ PostType::Maintenance->defaultAllowReplies() ? 1 : 0 }}">Maintenance</option>
+                    <option value="other" data-default-reply="{{ PostType::Other->defaultAllowReplies() ? 1 : 0 }}">Other</option>
+                </select>
+                <div class="form-text">type decides default values such as allow replies.</div>
+            </div>
+
             {{-- タイトル --}}
             <div class="mb-3">
-                <label class="form-label">タイトル（任意）</label>
+                <label class="form-label">Title</label>
                 <input type="text" name="title" value="{{ old('title') }}" class="form-control" maxlength="255">
             </div>
 
             {{-- 添付 --}}
             <div class="mb-3">
-                <label class="form-label">添付（複数可）</label>
+                <label class="form-label">Attachment(s)</label>
                 <input type="file" name="attachments[]" class="form-control" multiple
                     accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip">
-                <div class="form-text">最大10ファイル、各10MBまで。</div>
+                <div class="form-text">Up to 10 files, max 10MB each.</div>
             </div>
 
             {{-- 本文 --}}
             <div class="mb-3">
-                <label class="form-label">本文 <span class="text-danger">*</span></label>
+                <label class="form-label">Body <span class="text-danger">*</span></label>
                 <textarea name="body" class="form-control" rows="8" required>{{ old('body') }}</textarea>
             </div>
 
             {{-- 送信先（選択モーダル＋チップ表示） --}}
             <div class="mb-2">
-                <label class="form-label">送信先 <span class="text-danger">*</span></label>
+                <label class="form-label">Recepients<span class="text-danger">*</span></label>
                 <div class="d-flex gap-2">
                     <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#recipientModal">
-                        送信先を選ぶ
+                        Select
                     </button>
-                    <span class="text-muted small align-self-center">検索→チェック→「追加」</span>
+                    <span class="text-muted small align-self-center">Search → Check → Add</span>
                 </div>
 
                 <div id="recipientChips" class="mt-2 d-flex flex-wrap gap-2">
@@ -49,16 +64,16 @@
                     @endforeach
                     @endif
                 </div>
-                <div class="form-text">最低1名は選択してください。</div>
+                <div class="form-text">Choose at lease one recipient.</div>
             </div>
 
             {{-- 期限 --}}
             <div class="mb-3">
-                <label class="form-label">有効期限（任意）</label>
+                <label class="form-label">Expires At</label>
                 <input type="datetime-local" name="expires_at"
                     value="{{ old('expires_at') }}"
                     class="form-control">
-                <div class="form-text">空欄＝無期限。期限を過ぎると宛先ユーザーからは非表示になります（投稿者は閲覧可）。</div>
+                <div class="form-text">Leave blank for no expiration. After the expiration date the message will be hidden from recipients (the sender can still view it).</div>
             </div>
 
             {{-- 返信可否 --}}
@@ -66,12 +81,12 @@
                 <input class="form-check-input" type="checkbox" role="switch"
                     id="switchAllowReplies" name="allow_replies"
                     value="1" {{ old('allow_replies', 1) ? 'checked' : '' }}>
-                <label class="form-check-label" for="switchAllowReplies">返信を許可する</label>
+                <label class="form-check-label" for="switchAllowReplies">Allow Replies</label>
                 <input type="hidden" name="allow_replies" value="{{ old('allow_replies', 1) ? 1 : 0 }}">
             </div>
 
             <div class="d-flex justify-content-end mt-3">
-                <button type="submit" class="btn btn-primary">送信</button>
+                <button type="submit" class="btn btn-primary">Send</button>
             </div>
 
         </div>
@@ -83,14 +98,14 @@
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">送信先を選択</h5>
+                <h5 class="modal-title">Choose Recepient(s)</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
             <div class="modal-body">
                 <div class="input-group mb-2">
-                    <input type="text" id="userSearchInput" class="form-control" placeholder="氏名・社員コード・メールで検索">
-                    <button class="btn btn-outline-secondary" type="button" id="userSearchBtn">検索</button>
+                    <input type="text" id="userSearchInput" class="form-control" placeholder="Name, Employee Code, Email">
+                    <button class="btn btn-outline-secondary" type="button" id="userSearchBtn">Search</button>
                 </div>
 
                 <div class="table-responsive border rounded">
@@ -98,14 +113,14 @@
                         <thead class="table-light">
                             <tr>
                                 <th style="width: 40px;"></th>
-                                <th>氏名</th>
-                                <th>社員コード</th>
-                                <th>メール</th>
+                                <th>Name</th>
+                                <th>Employee Code</th>
+                                <th>Email</th>
                             </tr>
                         </thead>
                         <tbody id="userResultBody">
                             <tr>
-                                <td colspan="4" class="text-muted text-center py-3">検索してください。</td>
+                                <td colspan="4" class="text-muted text-center py-3">Search</td>
                             </tr>
                         </tbody>
                     </table>
@@ -113,9 +128,9 @@
             </div>
 
             <div class="modal-footer">
-                <span class="me-auto small text-muted" id="modalHint">0件選択中</span>
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">閉じる</button>
-                <button type="button" class="btn btn-primary" id="addRecipientsBtn">追加</button>
+                <span class="me-auto small text-muted" id="modalHint">Selecting 0</span>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="addRecipientsBtn">Add</button>
             </div>
         </div>
     </div>
@@ -243,6 +258,25 @@
         const sync = () => hidden.value = sw.checked ? 1 : 0;
         sw.addEventListener('change', sync);
         sync();
+    })();
+
+    // UI側でも既定を切替（任意）
+    (function() {
+        const typeSel = document.getElementById('postTypeSelect');
+        const replySw = document.getElementById('switchAllowReplies');
+        const hidden = document.querySelector('input[type="hidden"][name="allow_replies"]');
+
+        function applyDefault() {
+            const opt = typeSel.options[typeSel.selectedIndex];
+            const allow = opt.dataset.defaultReply === '1';
+
+            if (replySw) replySw.checked = allow;
+            if (hidden) hidden.value = allow ? 1 : 0;
+        }
+        typeSel?.addEventListener('change', applyDefault);
+        // 初期
+        if (!'{{ old('
+            allow_replies ') }}') applyDefault();
     })();
 </script>
 @endsection

@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('posts', function (Blueprint $t) {
             $t->id();
+            $t->string('type', 32)->default('announcement');            // ※app/Enums/PostType.phpと整合
             $t->foreignId('user_id')->constrained()->cascadeOnDelete(); // 投稿者
             $t->string('title')->nullable();
             $t->text('body');

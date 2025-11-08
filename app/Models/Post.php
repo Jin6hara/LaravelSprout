@@ -6,14 +6,16 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use App\Models\Pivots\PostViewer;
 use App\Models\Attachment;
+use App\Enums\PostType;
 
 class Post extends Model
 {
-    protected $fillable = ['user_id', 'title', 'body', 'expires_at', 'allow_replies'];
+    protected $fillable = ['user_id', 'type', 'title', 'body', 'expires_at', 'allow_replies'];
 
     protected $casts = [
         'expires_at'    => 'datetime',
         'allow_replies' => 'boolean',
+        'type'          => PostType::class, // ← enum キャスト
     ];
 
     public function author()
