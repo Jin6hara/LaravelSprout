@@ -260,7 +260,7 @@ use App\Http\Controllers\PostController;
 use App\Http\Controllers\UserSearchController;
 
 Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
-    Route::get('/posts/admin_create', [PostController::class, 'create'])->name('posts.create');
+    Route::get('/posts/admin_create', [PostController::class, 'create'])->name('posts.adminCreate'); // redirect()はこのnameを使う
     Route::post('/posts/send',   [PostController::class, 'send'])->name('posts.send');
 
     // 宛先検索（管理者のみ）

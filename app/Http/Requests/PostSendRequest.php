@@ -24,6 +24,8 @@ class PostSendRequest extends FormRequest
                 'max:10240', // 10MB/ファイル
                 'mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx,csv,txt,zip'
             ],
+            'expires_at'   => ['nullable', 'date', 'after:now'],          // 期限（任意）
+            'allow_replies' => ['required', 'boolean'],                   // 返信可否
         ];
     }
 

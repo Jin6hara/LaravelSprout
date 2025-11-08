@@ -1,5 +1,5 @@
 <?php
-
+// admin用コントローラー
 namespace App\Http\Controllers;
 
 use App\Http\Requests\PostSendRequest;
@@ -27,6 +27,8 @@ class PostController extends Controller
                 'user_id' => $user->id,
                 'title'   => $req->input('title'),
                 'body'    => $req->input('body'),
+                'expires_at'    => $req->input('expires_at'), // 2
+                'allow_replies' => (bool) $req->boolean('allow_replies'), // 2
             ]);
 
             // 2) 宛先付与（既読は未設定＝NULL）

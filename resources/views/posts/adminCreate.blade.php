@@ -5,17 +5,6 @@
     <h2 class="mb-0">メッセージ作成</h2>
 </div>
 
-@if(session('status'))
-<div class="alert alert-success py-2">{{ session('status') }}</div>
-@endif
-@if($errors->any())
-<div class="alert alert-danger py-2">
-    <ul class="mb-0">
-        @foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach
-    </ul>
-</div>
-@endif
-
 <form id="postForm" method="POST" action="{{ route('posts.send') }}" enctype="multipart/form-data">
     @csrf
 
@@ -61,6 +50,24 @@
                     @endif
                 </div>
                 <div class="form-text">最低1名は選択してください。</div>
+            </div>
+
+            {{-- 期限 --}}
+            <div class="mb-3">
+                <label class="form-label">有効期限（任意）</label>
+                <input type="datetime-local" name="expires_at"
+                    value="{{ old('expires_at') }}"
+                    class="form-control">
+                <div class="form-text">空欄＝無期限。期限を過ぎると宛先ユーザーからは非表示になります（投稿者は閲覧可）。</div>
+            </div>
+
+            {{-- 返信可否 --}}
+            <div class="mb-3 form-check form-switch">
+                <input class="form-check-input" type="checkbox" role="switch"
+                    id="switchAllowReplies" name="allow_replies"
+                    value="1" {{ old('allow_replies', 1) ? 'checked' : '' }}>
+                <label class="form-check-label" for="switchAllowReplies">返信を許可する</label>
+                <input type="hidden" name="allow_replies" value="{{ old('allow_replies', 1) ? 1 : 0 }}">
             </div>
 
             <div class="d-flex justify-content-end mt-3">
@@ -227,6 +234,15 @@
         });
 
         // 初期 old() 分のチップは必要に応じてサーバ側で描画してもOK（簡略のため省略）
+    })();
+
+    // switch が外れた時にも 0 が送られるように hidden を連動
+    (function() {
+        const sw = document.getElementById('switchAllowReplies');
+        const hidden = document.querySelector('input[type="hidden"][name="allow_replies"]');
+        const sync = () => hidden.value = sw.checked ? 1 : 0;
+        sw.addEventListener('change', sync);
+        sync();
     })();
 </script>
 @endsection

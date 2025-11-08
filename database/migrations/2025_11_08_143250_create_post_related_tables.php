@@ -16,6 +16,8 @@ return new class extends Migration
             $t->foreignId('user_id')->constrained()->cascadeOnDelete(); // 投稿者
             $t->string('title')->nullable();
             $t->text('body');
+            $t->timestamp('expires_at')->nullable(); // 有効期限
+            $t->boolean('allow_replies')->default(true);
             $t->timestamps();
 
             $t->index(['user_id', 'created_at']);
@@ -43,7 +45,6 @@ return new class extends Migration
 
             $t->index(['post_id', 'parent_id', 'created_at']);
         });
-
     }
 
     /**

@@ -9,7 +9,12 @@ use App\Models\Attachment;
 
 class Post extends Model
 {
-    protected $fillable = ['user_id', 'title', 'body'];
+    protected $fillable = ['user_id', 'title', 'body', 'expires_at', 'allow_replies'];
+
+    protected $casts = [
+        'expires_at'    => 'datetime',
+        'allow_replies' => 'boolean',
+    ];
 
     public function author()
     {
@@ -32,11 +37,18 @@ class Post extends Model
     }
 
     /** 自分が閲覧可能な Post に絞る */
+    /** 有効期限も考慮した可視スコープ（投稿者は期限後も閲覧可） */
     public function scopeVisibleTo(Builder $q, User $user): Builder
     {
         return $q->where(function ($q) use ($user) {
-            $q->where('user_id', $user->id)
-                ->orWhereHas('viewers', fn($v) => $v->where('users.id', $user->id));
+            $q->where('user_id', $user->id) // 投稿者
+                ->orWhere(function ($q) use ($user) {
+                    $q->whereHas('viewers', fn($v) => $v->where('users.id', $user->id))
+                        ->where(function ($q) {
+                            $q->whereNull('expires_at')
+                                ->orWhere('expires_at', '>', now('Asia/Tokyo'));
+                        });
+                });
         });
     }
 
@@ -47,5 +59,16 @@ class Post extends Model
             ->whereHas('viewers', function ($v) use ($user) {
                 $v->where('user_id', $user->id)->whereNull('confirmed_at');
             });
+    }
+
+
+    public function isExpired(): bool
+    {
+        return $this->expires_at !== null && now('Asia/Tokyo')->greaterThanOrEqualTo($this->expires_at);
+    }
+
+    public function allowsReplies(): bool
+    {
+        return $this->allow_replies && !$this->isExpired();
     }
 }
