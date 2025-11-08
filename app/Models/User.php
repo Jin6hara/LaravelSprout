@@ -11,6 +11,7 @@ use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Carbon\Carbon;
 use Spatie\Permission\Traits\HasRoles;
+use App\Models\Pivots\PostViewer;
 
 class User extends Authenticatable
 {
@@ -273,5 +274,21 @@ class User extends Authenticatable
             'id',                   // User ローカルキー
             'id'                    // ExpenseReport ローカルキー
         );
+    }
+
+    public function postsAuthored()
+    {
+        return $this->hasMany(Post::class, 'user_id');
+    }
+    public function postsVisible()
+    {
+        return $this->belongsToMany(Post::class, 'post_user')
+            ->using(PostViewer::class)
+            ->withPivot(['confirmed_at'])
+            ->withTimestamps();
+    }
+    public function commentsAuthored()
+    {
+        return $this->hasMany(Comment::class, 'user_id');
     }
 }
