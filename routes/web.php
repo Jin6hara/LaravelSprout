@@ -256,6 +256,18 @@ Route::middleware(['auth'])->group(function () {
         ->name('routes.user');
 });
 
+use App\Http\Controllers\PostController;
+use App\Http\Controllers\UserSearchController;
+
+Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
+    Route::get('/posts/admin_create', [PostController::class, 'create'])->name('posts.create');
+    Route::post('/posts/send',   [PostController::class, 'send'])->name('posts.send');
+
+    // 宛先検索（管理者のみ）
+    Route::get('/api/users/search', [UserSearchController::class, 'index'])
+        ->name('api.users.search');
+});
+
 // ---------------------------------------------------------------------------------------------------------▼ CSV関連ルート
 use App\Http\Controllers\ScheduleLineCsvController;
 
@@ -285,7 +297,7 @@ Route::post('/csv/user_schedule_line/import', [UserScheduleLineController::class
 use App\Http\Controllers\UserScheduleLineExportController;
 
 //Route::get('/csv/user_schedule_line/export', [UserScheduleLineExportController::class, 'exportForm'])
-    //->name('csv.user_schedule_line.export.form');
+//->name('csv.user_schedule_line.export.form');
 
 Route::get('/csv/user_schedule_line/export/download', [UserScheduleLineExportController::class, 'download'])
     ->name('csv.user_schedule_line.export.download');
