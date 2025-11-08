@@ -28,7 +28,7 @@ class UserScheduleCsvController extends Controller
             'toast' => sprintf('完了: created=%d, updated=%d, skipped=%d, missing_user=%d, invalid=%d',
                         $summary['created'], $summary['updated'], $summary['skipped'],
                         $summary['missing_user'], $summary['invalid']),
-            'errors' => $errors, // 簡易エラーログ（配列）
+            'toast_errors' => $errors, // 簡易エラーログ（配列）
         ]);
     }
 }

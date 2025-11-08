@@ -56,7 +56,7 @@ class UserScheduleLineCsvImportService
 
         DB::transaction(function () use ($fp, $header, $doUpdate, &$summary, &$logs) {
             while ($row = fgetcsv($fp)) {
-                $raw = @array_combine($header, $row);
+                $raw = array_combine($header, $row); // ヘッダと行を結びつけて連想配列に
                 if ($raw === false) {
                     $summary['invalid']++;
                     $logs[] = '列数不一致の行をスキップ';
