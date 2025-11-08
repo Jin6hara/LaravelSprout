@@ -196,7 +196,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/absence_report/{user}', [LeaveController::class, 'absence'])->name('absence.edit');
     Route::get('/all_absence_report/', [LeaveController::class, 'allReport'])->name('absense.all');
     Route::put('/handle_type/{leave}', [LeaveController::class, 'report'])->name('report.update');
-    
 });
 
 use App\Http\Controllers\SchoolProfileController;
@@ -256,3 +255,39 @@ Route::middleware(['auth'])->group(function () {
         ->middleware('role:admin|super_admin')
         ->name('routes.user');
 });
+
+// ---------------------------------------------------------------------------------------------------------▼ CSV関連ルート
+use App\Http\Controllers\ScheduleLineCsvController;
+
+Route::get('/cvs/schedule_line', [ScheduleLineCsvController::class, 'form'])
+    ->name('cvs.schedule_line.form');
+
+Route::post('/cvs/schedule_line/import', [ScheduleLineCsvController::class, 'import'])
+    ->name('cvs.schedule_line.import');
+
+use App\Http\Controllers\UserScheduleCsvController;
+
+Route::get('/csv/user_schedule', [UserScheduleCsvController::class, 'form'])
+    ->name('csv.user_schedule.form');
+
+Route::post('/csv/user_schedule/import', [UserScheduleCsvController::class, 'import'])
+    ->name('csv.user_schedule.import');
+
+use App\Http\Controllers\UserScheduleLineController;
+
+Route::get('/csv/user_schedule_line', [UserScheduleLineController::class, 'form'])
+    ->name('csv.user_schedule_line.form');
+
+Route::post('/csv/user_schedule_line/import', [UserScheduleLineController::class, 'import'])
+    ->name('csv.user_schedule_line.import');
+
+
+use App\Http\Controllers\UserScheduleLineExportController;
+
+//Route::get('/csv/user_schedule_line/export', [UserScheduleLineExportController::class, 'exportForm'])
+    //->name('csv.user_schedule_line.export.form');
+
+Route::get('/csv/user_schedule_line/export/download', [UserScheduleLineExportController::class, 'download'])
+    ->name('csv.user_schedule_line.export.download');
+
+// ---------------------------------------------------------------------------------------------------------▲ CSV関連ルート

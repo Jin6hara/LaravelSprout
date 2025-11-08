@@ -52,7 +52,7 @@
     // ✅ showToast 実装（Bootstrap 5 Toast 使用）
     window.showToast = function(message, {
         variant = 'success',
-        delay = 5000
+        delay = 9000
     } = {}) {
         const toastEl = document.getElementById('appToast');
         const bodyEl = document.getElementById('appToastBody');
@@ -76,12 +76,23 @@
 
     // ✅ サーバからのトースト（セッションフラッシュ）を起動
     document.addEventListener('DOMContentLoaded', function() {
+
         @if(session('toast'))
         showToast(@json(session('toast')), {
             variant: 'success',
-            delay: 5000
+            delay: 9000
         });
         @endif
+
+        @if(session('toast_errors'))
+        @foreach(session('toast_errors') as $err)
+        showToast(@json($err), {
+            variant: 'danger',
+            delay: 9000
+        });
+        @endforeach
+        @endif
+
     });
 </script>
 
