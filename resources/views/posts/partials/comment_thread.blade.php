@@ -1,7 +1,9 @@
 @php $wrapperClass = $depth > 0 ? 'mt-2 ms-2' : 'mb-3'; @endphp
 
 <div class="{{ $wrapperClass }}">
-    <div class="border rounded p-1" style="background-color: {{ $depth > 0 ? '#f9f9f9' : '#ffffff' }};">
+    <div class="border rounded"
+        style="padding-top: 3px; padding-right: 1px; padding-bottom: 3px; padding-left: 2px;
+            background-color: {{ $depth > 0 ? '#fcfdffff' : '#fafffaff' }};">
         <div class="d-flex justify-content-between">
             <div>
                 <strong>
@@ -25,7 +27,7 @@
             @endphp
             @if($canReplyThis)
             <button
-                class="btn btn-outline-primary btn-sm btn-reply"
+                class="mt-1 me-1 btn btn-outline-primary btn-sm btn-reply"
                 data-comment-id="{{ $comment->id }}"
                 data-author-name="{{ $comment->author->family_name }} {{ $comment->author->first_name }}">
                 Reply
@@ -35,9 +37,29 @@
 
         <div class="mt-1" style="white-space: pre-wrap;">{{ $comment->body }}</div>
 
+        {{-- ★ このコメントに対する返信フォームの差し込み先（空） --}}
+        <div class="reply-slot" data-reply-slot="{{ $comment->id }}"></div>
+
         {{-- 子孫（自分宛の返信もここで表示される） --}}
         @foreach($comment->children as $child)
         @include('posts.partials.comment_thread', ['comment' => $child, 'depth' => $depth + 1, 'post' => $post, 'me' => $me])
         @endforeach
     </div>
+
+    {{-- ▼ 移動式 返信フォーム（初期は退避場所に置いておく） --}}
+    <div id="replyFormParking" class="d-none"></div>
+
+    <form id="floatingReplyForm" method="POST" action="{{ route('messages.comments.store', $post) }}" class="card d-none mt-2">
+        @csrf
+        <input type="hidden" name="parent_id" id="replyParentId" value="">
+        <div class="card-body p-2">
+            <label class="form-label small mb-1">Add a reply</label>
+            <textarea name="body" class="form-control form-control-sm" rows="3" required></textarea>
+            <div class="d-flex align-items-center gap-2 mt-2">
+                <button class="btn btn-primary btn-sm" type="submit">Reply</button>
+                <button class="btn btn-outline-secondary btn-sm" type="button" id="cancelReplyBtn">Cancel</button>
+                <span class="small text-muted" id="replyingToHint"></span>
+            </div>
+        </div>
+    </form>
 </div>

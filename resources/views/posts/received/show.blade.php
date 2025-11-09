@@ -77,7 +77,6 @@
             </div>
             <div class="d-flex align-items-center gap-2">
                 <button class="btn btn-primary btn-sm" type="submit">Reply</button>
-                <button class="btn btn-outline-secondary btn-sm d-none" type="button" id="cancelReplyBtn">Cancel replying</button>
                 <span class="small text-muted" id="replyingToHint"></span>
             </div>
         </form>
@@ -97,36 +96,48 @@
     @endforelse
 </div>
 
-{{-- 返信先セット用 JS --}}
+{{-- 返信先セット用 JS（移動式フォーム版） --}}
 <script>
     (function() {
-        const parentIdInput = document.getElementById('replyParentId');
-        const cancelBtn = document.getElementById('cancelReplyBtn');
-        const hint = document.getElementById('replyingToHint');
+        const form = document.getElementById('floatingReplyForm');
+        const parking = document.getElementById('replyFormParking');
 
-        function setReplyTarget(id, name) {
-            parentIdInput.value = id || '';
-            if (id) {
-                cancelBtn.classList.remove('d-none');
-                hint.textContent = `Replying to: ${name}`;
-            } else {
-                cancelBtn.classList.add('d-none');
-                hint.textContent = '';
-            }
+        function parkForm() {
+            parking.appendChild(form);
+            form.classList.add('d-none');
+            form.querySelector('#replyParentId').value = '';
+            form.querySelector('#replyingToHint').textContent = '';
+            // 入力も消したければ次行を有効化
+            // form.querySelector('textarea[name="body"]').value = '';
         }
 
-        document.addEventListener('click', function(e) {
-            const btn = e.target.closest('.btn-reply');
-            if (!btn) return;
-            setReplyTarget(btn.dataset.commentId, btn.dataset.authorName);
-            // スクロールしてフォームにフォーカス
-            const ta = document.querySelector('textarea[name="body"]');
-            ta?.focus({
+        function mountFormUnder(commentId, authorName) {
+            const slot = document.querySelector(`.reply-slot[data-reply-slot="${commentId}"]`);
+            if (!slot) return;
+            slot.appendChild(form);
+            form.classList.remove('d-none');
+            form.querySelector('#replyParentId').value = commentId;
+            form.querySelector('#replyingToHint').textContent = `Replying to: ${authorName}`;
+            form.querySelector('textarea[name="body"]').focus({
                 preventScroll: false
             });
+        }
+
+        // Reply ボタン（どの枠でもOK）
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('.btn-reply');
+            if (btn) {
+                mountFormUnder(btn.dataset.commentId, btn.dataset.authorName);
+                return;
+            }
+            // Cancel ボタン（フォーム内のボタンだけ反応）
+            if (e.target.closest('#floatingReplyForm #cancelReplyBtn')) {
+                parkForm();
+            }
         });
 
-        cancelBtn?.addEventListener('click', () => setReplyTarget('', ''));
+        // ページ離脱時（任意）
+        window.addEventListener('beforeunload', parkForm);
     })();
 </script>
 @endsection
