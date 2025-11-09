@@ -268,6 +268,15 @@ Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
         ->name('api.users.search');
 });
 
+use App\Http\Controllers\ReceivedPostController;
+
+Route::middleware(['auth'])->group(function () {
+    // 一般ユーザーは自分宛のみ、admin以上は ?employee_code= で代理閲覧可
+    Route::get('/messages', [ReceivedPostController::class, 'index'])->name('messages.index');
+    Route::get('/messages/{post}', [ReceivedPostController::class, 'show'])->name('messages.show');
+    Route::post('/messages/{post}/confirm', [ReceivedPostController::class, 'confirm'])->name('messages.confirm');
+});
+
 // ---------------------------------------------------------------------------------------------------------▼ CSV関連ルート
 use App\Http\Controllers\ScheduleLineCsvController;
 
