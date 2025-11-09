@@ -84,14 +84,15 @@
             Replies are closed for this message.
         </div>
         @endif
-
+    </div>
+    <div class="card-body border-top">
         {{-- コメント一覧（親のみ） --}}
         @forelse($comments as $c)
         @include('posts.partials.comment_thread', ['comment' => $c, 'depth' => 0, 'post' => $post])
         @empty
-        <div class="text-muted">No replies yet.</div>
-        @endforelse
     </div>
+    <div class="text-muted">No replies yet.</div>
+    @endforelse
 </div>
 
 @include('posts.received.statusList')
