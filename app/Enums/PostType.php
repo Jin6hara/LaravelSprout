@@ -16,7 +16,7 @@ enum PostType: string
     {
         return match ($this) {
             self::Announcement, self::Maintenance => false,
-            self::Inquiry, self::DirectMessage, self::NoticeUrgent, self::Other => true, 
+            self::Inquiry, self::DirectMessage, self::NoticeUrgent, self::Other => true,
         };
     }
 }

@@ -64,7 +64,7 @@
                     @endforeach
                     @endif
                 </div>
-                <div class="form-text">Choose at lease one recipient.</div>
+                <div class="form-text">Choose at least one recipient.</div>
             </div>
 
             {{-- 期限 --}}
@@ -98,7 +98,7 @@
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Choose Recepient(s)</h5>
+                <h5 class="modal-title">Choose Recipient(s)</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 

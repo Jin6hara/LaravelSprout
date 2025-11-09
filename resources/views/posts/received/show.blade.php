@@ -96,6 +96,8 @@
     @endforelse
 </div>
 
+</div>
+
 {{-- 返信先セット用 JS（移動式フォーム版） --}}
 <script>
     (function() {

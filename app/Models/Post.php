@@ -32,7 +32,7 @@ class Post extends Model
             ->withTimestamps();
     }
 
-    // 添付ファイルにの多態的リレーション
+    // 添付ファイルの多態的リレーション
     public function attachments()
     {
         return $this->morphMany(Attachment::class, 'attachable');

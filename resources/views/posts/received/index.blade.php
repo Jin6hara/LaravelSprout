@@ -18,7 +18,7 @@
 {{-- 代理閲覧バッジ（検索仕様） --}}
 @if($isProxy)
 <span class="badge text-bg-info">
-    Admin View: {{ $target->first_name }} {{ $target->family_name }}  [{{ $target->employee_code }}]
+    Admin View: {{ $target->first_name }} {{ $target->family_name }} [{{ $target->employee_code }}]
 </span>
 @endif
 
@@ -40,7 +40,7 @@
                 $pv = $p->viewers->first()?->pivot;
                 $confirmed = !is_null($pv?->confirmed_at);
                 @endphp
-                <tr onclick="window.location='{{ route('messages.show', $p) }}'" style="cursor:pointer;">
+                <tr onclick="window.location='{{ route('messages.show', array_merge([$p], request()->only('employee_code'))) }}'" style="cursor:pointer;">
                     <td>{{ $p->created_at->format('Y-m-d H:i') }}</td>
                     <td>{{ $p->title ?? '((No Title))' }}</td>
                     <td>
