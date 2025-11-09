@@ -1,7 +1,9 @@
 {{-- 管理者向け：宛先と確認状況 --}}
 @isset($recipients)
-<div class="card">
-    <div class="card-header">Recipients and Confirmation Status (Admin)</div>
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <h2 class="mb-0">Recipients and Confirmation Status (Admin)</h2>
+</div>
+<div class="card mb-2">
     <div class="table-responsive">
         <table class="table table-sm align-middle mb-0">
             <thead class="table-light">

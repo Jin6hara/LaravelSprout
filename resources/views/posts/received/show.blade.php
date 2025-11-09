@@ -2,6 +2,9 @@
 @extends('layouts.app')
 
 @section('content')
+
+@include('posts.received.statusList')
+
 <div class="d-flex justify-content-between align-items-center mb-2">
     <h2 class="mb-0">Message</h2>
 
@@ -26,9 +29,8 @@
                     <span class="opacity-75">[{{ $post->author->employee_code }}]</span>
                 </div>
             </div>
-            {{-- 自分宛かつ未確認なら Confirm ボタン表示 --}}
-            @php($pv = $post->viewers->first()?->pivot)
-            @if(auth()->id() === $target->id && is_null($pv?->confirmed_at))
+            {{-- Confirm ボタン（本人かつ recipients かつ未確認のみ） --}}
+            @if($me->id === $target->id && $pivot && is_null($pivot->confirmed_at))
             <form method="POST" action="{{ route('messages.confirm', $post) }}">
                 @csrf
                 <button class="btn btn-success btn-sm">Confirm</button>
@@ -94,8 +96,6 @@
     <div class="text-muted">No replies yet.</div>
     @endforelse
 </div>
-
-@include('posts.received.statusList')
 
 {{-- 返信先セット用 JS --}}
 <script>

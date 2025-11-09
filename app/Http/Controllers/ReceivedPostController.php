@@ -63,6 +63,7 @@ class ReceivedPostController extends Controller
         $isAuthor   = $post->user_id === $me->id;
         $isViewerMe = $post->viewers()->where('users.id', $me->id)->exists();
         abort_unless($isAuthor || $isViewerMe || $me->isAdmin(), 403);
+        $isAdmin = $me->isAdmin();
 
         // === 可視ロジック ===
         if ($me->isAdmin()) {
@@ -90,6 +91,15 @@ class ReceivedPostController extends Controller
 
         $pivot = $post->viewers()->where('users.id', $target->id)->first()?->pivot;
 
+        // admin用 全宛先 + 確認状況
+        $recipients = $isAdmin
+            ? $post->viewers()
+            ->withPivot(['confirmed_at'])
+            ->select('users.id', 'first_name', 'family_name', 'employee_code', 'email')
+            ->orderBy('employee_code')
+            ->get()
+            : null;
+
         return view('posts.received.show', [
             'post'     => $post->load(['author', 'attachments']),
             'target'   => $target,
@@ -97,6 +107,7 @@ class ReceivedPostController extends Controller
             'comments' => $comments,
             'pivot'    => $pivot,
             'me'       => $me, // Bladeでの判定用
+            'recipients' => $recipients,
         ]);
     }
 
@@ -143,10 +154,12 @@ class ReceivedPostController extends Controller
         // 自分宛かチェック
         $isRecipient = $post->viewers()->where('users.id', $me->id)->exists();
 
-        // 代理確認しようとした → toast_errors 表示 [app.blade.phpに合わし、配列で返す]
-        return back()->with('toast_errors', [
-            'You cannot confirm on behalf of others.'
-        ]);
+        // 代理確認は不可。自分宛でない、または代理切替が行われている場合は弾く
+        if (!$isRecipient || $r->filled('employee_code')) {
+            return back()->with('toast_errors', [
+                'You cannot confirm on behalf of others.'
+            ]);
+        }
 
         // 自分宛 → confirmed_at 更新
         $post->viewers()->updateExistingPivot($me->id, [
