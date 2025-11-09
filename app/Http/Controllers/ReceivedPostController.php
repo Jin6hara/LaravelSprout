@@ -6,6 +6,8 @@ use App\Models\Post;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use App\Models\Comment;
+use Illuminate\Support\Facades\DB;
 
 class ReceivedPostController extends Controller
 {
@@ -48,37 +50,95 @@ class ReceivedPostController extends Controller
 
     public function show(Request $r, Post $post)
     {
-        $viewer = $r->user();
-        $target = $this->resolveTarget($r);
+        $me = $r->user();
 
-        $isRecipient = $post->viewers()->where('users.id', $target->id)->exists();
-        $isAdmin = $viewer->hasAnyRole(['admin', 'super_admin']);
+        // 代理閲覧対象（管理者のみ employee_code で切替）
+        $target = $me;
+        $isProxy = false;
+        if ($me->hasAnyRole(['admin', 'super_admin']) && $r->filled('employee_code')) {
+            $target = User::where('employee_code', $r->query('employee_code'))->firstOrFail();
+            if ($target->id !== $me->id) $isProxy = true;
+        }
 
-        // ✅ 管理者は観覧可 / 受信者本人も観覧可 / それ以外は403
-        abort_unless($isRecipient || $isAdmin, 403);
+        // 閲覧権限：投稿者 or 宛先 or 管理者（代理）
+        $isAuthor   = $post->user_id === $me->id;
+        $isViewerMe = $post->viewers()->where('users.id', $me->id)->exists();
+        abort_unless($isAuthor || $isViewerMe || $me->hasAnyRole(['admin', 'super_admin']), 403);
 
-        // pivot: 「targetに対して」読み込む（管理者が見ても pivot は target のもの）
-        $post->load([
-            'author:id,first_name,family_name,employee_code',
-            'viewers' => fn($q) => $q->where('users.id', $target->id)
-                ->select('users.id')->withPivot(['confirmed_at']),
-        ]);
+        // コメントの取得
+        // 仕様：一般ユーザー→「自分のコメント＋自分コメントへの返信のみ」
+        //       管理者代理→全件
+        if ($isProxy) {
+            $comments = Comment::query()
+                ->where('post_id', $post->id)
+                ->whereNull('parent_id')                 // ← 親のみ
+                ->with([
+                    'author',
+                    'children' => fn($q) => $q->orderBy('created_at'),
+                    'children.author',
+                ])
+                ->orderBy('created_at')
+                ->get();
+        } else {
+            // 一般ユーザーは「自分の親コメント＋その返信のみ」
+            $comments = Comment::query()
+                ->where('post_id', $post->id)
+                ->whereNull('parent_id')                 // ← 親のみ
+                ->where('user_id', $target->id)          // ← 自分が書いた親だけ
+                ->with([
+                    'author',
+                    'children' => fn($q) => $q->orderBy('created_at'),
+                    'children.author',
+                ])
+                ->orderBy('created_at')
+                ->get();
+        }
 
-        // admin用 全宛先 + 確認状況
-        $recipients = $isAdmin
-            ? $post->viewers()
-            ->withPivot(['confirmed_at'])
-            ->select('users.id', 'first_name', 'family_name', 'employee_code', 'email')
-            ->orderBy('employee_code')
-            ->get()
-            : null;
+        // pivot（ターゲット視点）の取得
+        $pivot = $post->viewers()->where('users.id', $target->id)->first()?->pivot;
 
         return view('posts.received.show', [
-            'post'       => $post,
-            'target'     => $target,
-            'isProxy'    => $target->id !== $viewer->id,
-            'recipients' => $recipients,
+            'post'     => $post->load(['author', 'attachments']),
+            'target'   => $target,
+            'isProxy'  => $isProxy,
+            'comments' => $comments,
+            'pivot'    => $pivot, // 確認バッジで利用
         ]);
+    }
+
+    public function storeComment(Request $r, Post $post)
+    {
+        $me = $r->user();
+
+        // 閲覧可能者のみコメント可（投稿者 / 宛先 / 管理者）
+        $isAuthor   = $post->user_id === $me->id;
+        $isViewerMe = $post->viewers()->where('users.id', $me->id)->exists();
+        abort_unless($isAuthor || $isViewerMe || $me->hasAnyRole(['admin', 'super_admin']), 403);
+
+        // 返信許可（期限含む）
+        if (method_exists($post, 'allowsReplies') && !$post->allowsReplies()) {
+            return back()->with('toast_errors', ['Reply is not allowed for this post.']);
+        }
+
+        $data = $r->validate([
+            'body'      => ['required', 'string'],
+            'parent_id' => ['nullable', 'integer', 'exists:comments,id'],
+        ]);
+
+        // parent_id があるときは同一 post に属することを保証
+        if (!empty($data['parent_id'])) {
+            $ok = Comment::whereKey($data['parent_id'])->where('post_id', $post->id)->exists();
+            if (!$ok) return back()->with('toast_errors', ['Invalid parent comment.']);
+        }
+
+        Comment::create([
+            'post_id'   => $post->id,
+            'user_id'   => $me->id,
+            'parent_id' => $data['parent_id'] ?? null,
+            'body'      => $data['body'],
+        ]);
+
+        return back()->with('toast', 'Reply posted.');
     }
 
     /** 自分宛のポストを「確認済み」にする（代理は確認不可） */

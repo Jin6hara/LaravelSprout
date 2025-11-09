@@ -275,6 +275,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/messages', [ReceivedPostController::class, 'index'])->name('messages.index');
     Route::get('/messages/{post}', [ReceivedPostController::class, 'show'])->name('messages.show');
     Route::post('/messages/{post}/confirm', [ReceivedPostController::class, 'confirm'])->name('messages.confirm');
+    Route::post('/messages/{post}/comments', [ReceivedPostController::class, 'storeComment'])
+        ->name('messages.comments.store');
 });
 
 // ---------------------------------------------------------------------------------------------------------▼ CSV関連ルート
