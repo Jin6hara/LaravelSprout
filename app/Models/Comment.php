@@ -21,9 +21,16 @@ class Comment extends Model
     {
         return $this->belongsTo(Comment::class, 'parent_id');
     }
+    // 子（直下）
     public function children()
     {
-        return $this->hasMany(Comment::class, 'parent_id');
+        return $this->hasMany(Comment::class, 'parent_id')->orderBy('created_at');
+    }
+
+    // 再帰で子孫まで
+    public function childrenRecursive()
+    {
+        return $this->children()->with(['author', 'childrenRecursive']);
     }
 
     /** 「ポストが見える」かつ「自分のコメント or その返信（1段）」だけを返す */

@@ -71,24 +71,22 @@ class ReceivedPostController extends Controller
         if ($isProxy) {
             $comments = Comment::query()
                 ->where('post_id', $post->id)
-                ->whereNull('parent_id')                 // ← 親のみ
+                ->whereNull('parent_id') // 親だけ
                 ->with([
                     'author',
-                    'children' => fn($q) => $q->orderBy('created_at'),
-                    'children.author',
+                    'childrenRecursive.author', // 再帰で全階層
                 ])
                 ->orderBy('created_at')
                 ->get();
         } else {
-            // 一般ユーザーは「自分の親コメント＋その返信のみ」
+            // 一般ユーザーは「自分の親コメント＋その全返信ツリー」
             $comments = Comment::query()
                 ->where('post_id', $post->id)
-                ->whereNull('parent_id')                 // ← 親のみ
-                ->where('user_id', $target->id)          // ← 自分が書いた親だけ
+                ->whereNull('parent_id')
+                ->where('user_id', $target->id)
                 ->with([
                     'author',
-                    'children' => fn($q) => $q->orderBy('created_at'),
-                    'children.author',
+                    'childrenRecursive.author',
                 ])
                 ->orderBy('created_at')
                 ->get();

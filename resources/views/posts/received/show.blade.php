@@ -85,52 +85,9 @@
         </div>
         @endif
 
-        {{-- コメント一覧 --}}
+        {{-- コメント一覧（親のみ） --}}
         @forelse($comments as $c)
-        <div class="mb-3">
-            <div class="d-flex justify-content-between">
-                <div>
-                    <strong>
-                        {{ $c->author->family_name }} {{ $c->author->first_name }}
-                        <span class="opacity-75">[{{ $c->author->employee_code }}]</span>
-                    </strong>
-                    <span class="text-muted small ms-2">{{ $c->created_at->format('Y-m-d H:i') }}</span>
-                </div>
-                @if(method_exists($post, 'allowsReplies') ? $post->allowsReplies() : true)
-                <button
-                    class="btn btn-outline-primary btn-sm btn-reply"
-                    data-comment-id="{{ $c->id }}"
-                    data-author-name="{{ $c->author->family_name }} {{ $c->author->first_name }}">
-                    Reply
-                </button>
-                @endif
-            </div>
-            <div class="mt-1" style="white-space: pre-wrap;">{{ $c->body }}</div>
-
-            {{-- 子コメント（1段） --}}
-            @foreach($c->children as $child) {{-- ← 再クエリせず eager load を使用 --}}
-            <div class="mt-2 ms-3 border-start ps-3">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <strong>
-                            {{ $child->author->family_name }} {{ $child->author->first_name }}
-                            <span class="opacity-75">[{{ $child->author->employee_code }}]</span>
-                        </strong>
-                        <span class="text-muted small ms-2">{{ $child->created_at->format('Y-m-d H:i') }}</span>
-                    </div>
-                    @if(method_exists($post, 'allowsReplies') ? $post->allowsReplies() : true)
-                    <button
-                        class="btn btn-outline-primary btn-sm btn-reply"
-                        data-comment-id="{{ $c->id }}" {{-- 返信は親ぶら下げ（1段固定） --}}
-                        data-author-name="{{ $child->author->family_name }} {{ $child->author->first_name }}">
-                        Reply
-                    </button>
-                    @endif
-                </div>
-                <div class="mt-1" style="white-space: pre-wrap;">{{ $child->body }}</div>
-            </div>
-            @endforeach
-        </div>
+        @include('posts.partials.comment_thread', ['comment' => $c, 'depth' => 0, 'post' => $post])
         @empty
         <div class="text-muted">No replies yet.</div>
         @endforelse
