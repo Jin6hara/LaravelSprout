@@ -14,10 +14,14 @@
                 @endif
             </div>
 
-            {{-- 一般ユーザーは自分のコメントにだけ返信可。管理者は全てに返信可 --}}
+            {{-- 返信 --}}
             @php
-            $canReplyThis = $post->allowsReplies()
-            && ($me->isAdmin() || $comment->user_id === $me->id);
+            $isAdmin = method_exists($me, 'isAdmin') ? $me->isAdmin() : false;
+
+            // 一般ユーザー画面は「自分スレッドのみ」描画なのでツリー内は全て返信可
+            // 管理者は常に返信可。最終的な制限はサーバ側で再チェック。
+            $canReplyThis = (method_exists($post, 'allowsReplies') ? $post->allowsReplies() : true)
+            && ($isAdmin || true);
             @endphp
             @if($canReplyThis)
             <button

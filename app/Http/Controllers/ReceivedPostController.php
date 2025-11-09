@@ -81,11 +81,8 @@ class ReceivedPostController extends Controller
             //    「親が自分のコメントである」コメントは root から除外する
             $comments = Comment::query()
                 ->where('post_id', $post->id)
-                ->where('user_id', $me->id)
-                ->where(function ($q) use ($me) {
-                    $q->whereNull('parent_id')
-                        ->orWhereHas('parent', fn($p) => $p->where('user_id', '!=', $me->id));
-                })
+                ->whereNull('parent_id')          // ← 親だけ
+                ->where('user_id', $me->id)       // ← 自分が書いた親のみ
                 ->with(['author', 'childrenRecursive.author'])
                 ->orderBy('created_at')
                 ->get();
