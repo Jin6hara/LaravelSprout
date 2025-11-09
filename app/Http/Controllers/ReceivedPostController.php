@@ -52,47 +52,45 @@ class ReceivedPostController extends Controller
     {
         $me = $r->user();
 
-        // 代理閲覧対象（管理者のみ employee_code で切替）
+        // 代理切替はそのまま（閲覧権限の判定も現状通り）
         $target = $me;
         $isProxy = false;
-        if ($me->hasAnyRole(['admin', 'super_admin']) && $r->filled('employee_code')) {
+        if ($me->isAdmin() && $r->filled('employee_code')) {
             $target = User::where('employee_code', $r->query('employee_code'))->firstOrFail();
             if ($target->id !== $me->id) $isProxy = true;
         }
 
-        // 閲覧権限：投稿者 or 宛先 or 管理者（代理）
         $isAuthor   = $post->user_id === $me->id;
         $isViewerMe = $post->viewers()->where('users.id', $me->id)->exists();
-        abort_unless($isAuthor || $isViewerMe || $me->hasAnyRole(['admin', 'super_admin']), 403);
+        abort_unless($isAuthor || $isViewerMe || $me->isAdmin(), 403);
 
-        // コメントの取得
-        // 仕様：一般ユーザー→「自分のコメント＋自分コメントへの返信のみ」
-        //       管理者代理→全件
-        if ($isProxy) {
-            $comments = Comment::query()
-                ->where('post_id', $post->id)
-                ->whereNull('parent_id') // 親だけ
-                ->with([
-                    'author',
-                    'childrenRecursive.author', // 再帰で全階層
-                ])
-                ->orderBy('created_at')
-                ->get();
-        } else {
-            // 一般ユーザーは「自分の親コメント＋その全返信ツリー」
+        // === 可視ロジック ===
+        if ($me->isAdmin()) {
+            // 管理者：全件（親だけrootにして全部ツリー表示）
             $comments = Comment::query()
                 ->where('post_id', $post->id)
                 ->whereNull('parent_id')
-                ->where('user_id', $target->id)
-                ->with([
-                    'author',
-                    'childrenRecursive.author',
-                ])
+                ->with(['author', 'childrenRecursive.author'])
+                ->orderBy('created_at')
+                ->get();
+        } else {
+            // 一般ユーザー：
+            // 1) 自分のコメント（親・子問わず）を取得
+            // 2) その配下の返信ツリーを表示（＝自分宛の返信が見える）
+            // 3) ただし、自分のコメントの“子”を個別に root 表示すると重複するため、
+            //    「親が自分のコメントである」コメントは root から除外する
+            $comments = Comment::query()
+                ->where('post_id', $post->id)
+                ->where('user_id', $me->id)
+                ->where(function ($q) use ($me) {
+                    $q->whereNull('parent_id')
+                        ->orWhereHas('parent', fn($p) => $p->where('user_id', '!=', $me->id));
+                })
+                ->with(['author', 'childrenRecursive.author'])
                 ->orderBy('created_at')
                 ->get();
         }
 
-        // pivot（ターゲット視点）の取得
         $pivot = $post->viewers()->where('users.id', $target->id)->first()?->pivot;
 
         return view('posts.received.show', [
@@ -100,7 +98,8 @@ class ReceivedPostController extends Controller
             'target'   => $target,
             'isProxy'  => $isProxy,
             'comments' => $comments,
-            'pivot'    => $pivot, // 確認バッジで利用
+            'pivot'    => $pivot,
+            'me'       => $me, // Bladeでの判定用
         ]);
     }
 

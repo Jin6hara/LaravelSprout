@@ -1,21 +1,25 @@
-@php
-// 親は下マージン、子は左に詰めて少しだけ奥行きを出す
-$wrapperClass = $depth > 0 ? 'mt-2 ms-2' : 'mb-3';
-@endphp
+@php $wrapperClass = $depth > 0 ? 'mt-2 ms-2' : 'mb-3'; @endphp
 
 <div class="{{ $wrapperClass }}">
-    {{-- 四角枠（各レベル共通） --}}
-    <div class="border rounded p-1 p-md-2" style="background-color: #f7fbff2a;">
+    <div class="border rounded p-1" style="background-color: {{ $depth > 0 ? '#f9f9f9' : '#ffffff' }};">
         <div class="d-flex justify-content-between">
             <div>
                 <strong>
                     {{ $comment->author->family_name }} {{ $comment->author->first_name }}
                     <span class="opacity-75">[{{ $comment->author->employee_code }}]</span>
                 </strong>
-                <span class="text-muted small ms-1">{{ $comment->created_at->format('Y-m-d H:i') }}</span>
+                <span class="text-muted small ms-2">{{ $comment->created_at->format('Y-m-d H:i') }}</span>
+                @if($depth > 0 && optional($comment->parent)->user_id !== optional($me)->id)
+                <span class="badge text-bg-light ms-2">in reply to {{ optional($comment->parent?->author)->family_name }} {{ optional($comment->parent?->author)->first_name }}</span>
+                @endif
             </div>
 
-            @if(method_exists($post, 'allowsReplies') ? $post->allowsReplies() : true)
+            {{-- 一般ユーザーは自分のコメントにだけ返信可。管理者は全てに返信可 --}}
+            @php
+            $canReplyThis = $post->allowsReplies()
+            && ($me->isAdmin() || $comment->user_id === $me->id);
+            @endphp
+            @if($canReplyThis)
             <button
                 class="btn btn-outline-primary btn-sm btn-reply"
                 data-comment-id="{{ $comment->id }}"
@@ -27,13 +31,9 @@ $wrapperClass = $depth > 0 ? 'mt-2 ms-2' : 'mb-3';
 
         <div class="mt-1" style="white-space: pre-wrap;">{{ $comment->body }}</div>
 
-        {{-- 子（箱の中にさらに箱） --}}
-        @if($comment->children->isNotEmpty())
-        <div class="mt-2">
-            @foreach($comment->children as $child)
-            @include('posts.partials.comment_thread', ['comment' => $child, 'depth' => $depth + 1, 'post' => $post])
-            @endforeach
-        </div>
-        @endif
+        {{-- 子孫（自分宛の返信もここで表示される） --}}
+        @foreach($comment->children as $child)
+        @include('posts.partials.comment_thread', ['comment' => $child, 'depth' => $depth + 1, 'post' => $post, 'me' => $me])
+        @endforeach
     </div>
 </div>
