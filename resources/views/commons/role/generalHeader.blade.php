@@ -46,5 +46,11 @@
     </a>
 </li>
 
+<li class="nav-item">
+    <a class="btn btn-sm btn-outline-secondary header-btn" href="{{ route('messages.index') }}">
+        Inbox
+    </a>
+</li>
+
 <span class="nav-divider">|</span>
 @endrole

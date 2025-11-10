@@ -24,6 +24,14 @@
     </div>
 </li>
 
+{{-- ④ Inbox & Create --}}
+<li class="nav-item">
+    <div class="btn-group btn-group-sm w-100">
+        <a href="{{ route('posts.adminCreate') }}" class="btn btn-outline-secondary header-btn">Create<br>Message</a>
+        <a href="{{ route('messages.index') }}" class="btn btn-outline-secondary header-btn">Inbox</a>
+    </div>
+</li>
+
 <li class="nav-item">
     <a class="btn btn-sm btn-outline-secondary header-btn" href="{{ route('admin.dashboard') }}">
         Teacher
@@ -42,12 +50,6 @@
 <li class="nav-item">
     <a class="btn btn-sm btn-outline-secondary header-btn" href="{{ route('absense.all') }}">
         Absence<br>Report
-    </a>
-</li>
-
-<li class="nav-item">
-    <a class="btn btn-sm btn-outline-secondary header-btn" href="{{ route('posts.adminCreate') }}">
-        New<br>Message
     </a>
 </li>
 
