@@ -430,6 +430,45 @@
       </div>
     </div>
   </div>
+
+    {{-- calendar/edit.blade.php のどこかに設置 --}}
+  <form method="GET" action="{{ route('calendar.edit.pdf') }}" class="mt-2" target="_blank">
+    {{-- 既存の検索条件を引き継ぐ（hiddenでOK） --}}
+    <input type="hidden" name="event_date" value="{{ request('event_date') }}">
+    <input type="hidden" name="end_date" value="{{ request('end_date') }}">
+    <input type="hidden" name="original_user_id" value="{{ request('original_user_id') }}">
+    <input type="hidden" name="assigned_user_id" value="{{ request('assigned_user_id') }}">
+    <input type="hidden" name="status" value="{{ request('status') }}">
+    <input type="hidden" name="type" value="{{ request('type') }}">
+    <input type="hidden" name="Leave_type" value="{{ request('Leave_type') }}">
+    <input type="hidden" name="school_name" value="{{ request('school_name') }}">
+    <input type="hidden" name="title" value="{{ request('title') }}">
+    <input type="hidden" name="Lesson" value="{{ request('Lesson') }}">
+
+    {{-- 除外するレコード条件（任意／複数選択） --}}
+    <div class="mb-2">
+      <label class="form-label small mb-1">Exclude Status</label><br>
+      <label class="me-2"><input type="checkbox" name="exclude_status[]" value="pending"> Pending</label>
+      <label class="me-2"><input type="checkbox" name="exclude_status[]" value="in_process"> In Process</label>
+    </div>
+    <div class="mb-2">
+      <label class="form-label small mb-1">Exclude Type</label><br>
+      <label class="me-2"><input type="checkbox" name="exclude_type[]" value="none_required"> None Required</label>
+    </div>
+
+    {{-- 除外する列（任意／複数選択） --}}
+    <div class="mb-2">
+      <label class="form-label small mb-1">Exclude Columns</label><br>
+      @foreach(['event_date','school_name','start_time','end_time','title','lesson','status','type','assigned_user'] as $col)
+        <label class="me-2">
+          <input type="checkbox" name="exclude_cols[]" value="{{ $col }}"> {{ ucfirst(str_replace('_',' ',$col)) }}
+        </label>
+      @endforeach
+    </div>
+
+    <button class="btn btn-sm btn-outline-secondary">PDFダウンロード</button>
+  </form>
+
 @endsection
 
 @push('styles')
