@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Enums\ShiftType;
 
 class Event extends Model
 {
@@ -34,7 +35,13 @@ class Event extends Model
         'event_date' => 'date',
         'start_time' => 'datetime:H:i',
         'end_time'   => 'datetime:H:i',
+        'type' => ShiftType::class,
     ];
+
+    public function getTypeLabelAttribute(): string
+    {
+        return $this->type?->short() ?? '';
+    }
 
     protected $appends = ['total_duration']; //API/Bladeで見える
 

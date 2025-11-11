@@ -113,7 +113,7 @@
                 <td>{{ $fmtTime($e->end_time) }}</td>
                 <td>{{ $e->Lesson }}</td>
                 <td>{{ $e->Leave_type }}</td>
-                <td>{{ $e->type }}</td>
+                <td>{{ $e->type_label }}</td>
                 @if($mode === 'master')
                 <td>{{ $e->status }}</td>
                 @endif
