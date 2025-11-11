@@ -171,6 +171,7 @@ use App\Http\Controllers\LeaveController;
 
 Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
     Route::get('/shift_assigner', [EventAssignController::class, 'edit'])->name('calendar.edit');
+    // PDF（モード: tentative|final|master）
     Route::get('/calendar/edit/pdf', [EventAssignController::class, 'exportPdf'])->name('calendar.edit.pdf');
     Route::post('/shift',        [EventAssignController::class, 'store'])->name('events.store');
     Route::post('/shift/blank', [EventAssignController::class, 'storeBlank'])->name('events.store.blank');

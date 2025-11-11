@@ -317,53 +317,49 @@ class EventAssignController extends Controller
     }
 
     /**
-     * PDF出力（同じ条件 + 除外オプション）
+     * PDFエクスポート
      */
     public function exportPdf(Request $request)
     {
-        // 除外レコード条件
-        $excludeStatus = (array) $request->input('exclude_status', []); // 例: ['pending','in_process']
-        $excludeType   = (array) $request->input('exclude_type', []);   // 例: ['none_required']
+        // mode 決定（未指定は tentative 扱い）
+        $mode = $request->string('mode')->lower()->value();
+        if (!in_array($mode, ['tentative', 'final', 'master'], true)) {
+            $mode = 'tentative';
+        }
 
-        // 除外列（Bladeで使う）
-        $excludeCols = collect((array) $request->input('exclude_cols', []))
-            ->map(fn($v) => strtolower(trim($v)))
+        // 除外する event_id 群（チェックボックスから）
+        $excludeEventIds = collect($request->input('exclude_event_ids', []))
+            ->filter(fn($v) => is_numeric($v))
+            ->map(fn($v) => (int)$v)
+            ->unique()
             ->values()
             ->all();
 
-        // 同じ検索条件 ＋ 除外レコード条件
+        // 同条件 + 除外
         $query = $this->baseEventQuery($request)
-            ->when(!empty($excludeStatus), fn($q) => $q->whereNotIn('status', $excludeStatus))
-            ->when(!empty($excludeType),   fn($q) => $q->whereNotIn('type', $excludeType));
+            ->when(!empty($excludeEventIds), fn($q) => $q->whereNotIn('id', $excludeEventIds));
 
-        // PDFは全件。必要に応じて limit や chunk に変更
+        // PDFは全件取得
         $events = $query->get();
 
-        // 付帯情報（見出しや期間など）
         $meta = [
-            'range_from' => $request->input('event_date'),
-            'range_to'   => $request->input('end_date'),
+            'range_from'  => $request->input('event_date'),
+            'range_to'    => $request->input('end_date'),
             'generated_at' => now('Asia/Tokyo')->format('Y-m-d H:i'),
+            'mode'        => $mode,
         ];
 
-        $pdf = Pdf::loadView('pdf.calendar_edit_list', [
-            'events'      => $events,
-            'excludeCols' => $excludeCols,
-            'meta'        => $meta,
-        ])
+        $pdf = Pdf::loadView('pdf.events_sublist', compact('events', 'meta'))
             ->setPaper('a4', 'portrait');
 
-        $filename = 'events'
+        $filename = "sublist-{$mode}"
             . ($meta['range_from'] ? "_{$meta['range_from']}" : '')
             . ($meta['range_to']   ? "-{$meta['range_to']}"   : '')
             . '.pdf';
 
         return $pdf->download($filename);
     }
-
-    /**
-     * edit/export 共通のベースクエリ
-     */
+    // 共通のイベントクエリビルダ
     private function baseEventQuery(Request $request)
     {
         $eventId        = $request->input('event_id');
@@ -380,32 +376,29 @@ class EventAssignController extends Controller
         $eventDateFrom  = $request->input('event_date');
         $eventDateTo    = $request->input('end_date');
 
-        // 日付バリデーション（export側でも同じ扱いにしたい場合はここで行う）
-        if ($request->routeIs('calendar.edit') || $request->routeIs('calendar.edit.pdf')) {
-            if ($eventDateTo && !$eventDateFrom) {
-                abort(redirect()->back()
-                    ->withErrors(['event_date' => '対象日を入力してください。'])
-                    ->withInput());
-            }
-            if ($eventDateFrom && $eventDateTo && $eventDateFrom > $eventDateTo) {
-                abort(redirect()->back()
-                    ->withErrors(['event_date' => '開始日は終了日より前の日付を指定してください。'])
-                    ->withInput());
-            }
+        // edit/pdf 共通の簡易チェック（back redirect は edit 側のみのほうが自然なら削除OK）
+        if ($eventDateTo && !$eventDateFrom) {
+            abort(redirect()->back()
+                ->withErrors(['event_date' => '対象日を入力してください。'])
+                ->withInput());
+        }
+        if ($eventDateFrom && $eventDateTo && $eventDateFrom > $eventDateTo) {
+            abort(redirect()->back()
+                ->withErrors(['event_date' => '開始日は終了日より前の日付を指定してください。'])
+                ->withInput());
         }
 
         return Event::query()
             ->when($eventId, fn($q) => $q->whereKey($eventId))
             ->with([
                 'assignedUser:id,name,employee_code',
-                'originalUser:id,name,employee_code'
+                'originalUser:id,name,employee_code',
             ])
             ->when($originalUserId, fn($q) => $q->where('original_user_id', $originalUserId))
             ->when($assignedUserId, fn($q) => $q->where('assigned_user_id', $assignedUserId))
             ->when($status,         fn($q) => $q->where('status', $status))
             ->when($type,           fn($q) => $q->where('type', $type))
 
-            // 期間フィルタ
             ->when(
                 $eventDateFrom && $eventDateTo,
                 fn($q) => $q->whereBetween('event_date', [$eventDateFrom, $eventDateTo])
@@ -415,7 +408,6 @@ class EventAssignController extends Controller
                 fn($q) => $q->whereDate('event_date', $eventDateFrom)
             )
 
-            // 部分一致系
             ->when(
                 $leaveType !== null && $leaveType !== '',
                 fn($q) => $q->where('Leave_type', 'like', "%{$leaveType}%")
@@ -433,7 +425,6 @@ class EventAssignController extends Controller
                 fn($q) => $q->where('Lesson', 'like', "%{$lesson}%")
             )
 
-            // 並び順（PDFは固定推奨）
             ->orderByDesc('event_date')
             ->orderBy('school_name')
             ->orderBy('start_time')

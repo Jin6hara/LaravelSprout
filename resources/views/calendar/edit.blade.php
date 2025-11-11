@@ -373,6 +373,13 @@
                 </select>
               </div>
             </div>
+            {{-- 例: イベントカード内（各 $event 毎）にチェック追加 --}}
+              <div class="form-check mb-1">
+                <input class="form-check-input js-exclude-event" type="checkbox" value="{{ $event->id }}" id="ex{{ $event->id }}">
+                <label class="form-check-label small" for="ex{{ $event->id }}">
+                  Exclude this event from PDF
+                </label>
+              </div>
             {{-- 9 --}}
             <div class="card-footer bg-white d-flex justify-content-between align-items-center py-2 px-2 gap-1">             
               <button type="button"
@@ -431,9 +438,9 @@
     </div>
   </div>
 
-    {{-- calendar/edit.blade.php のどこかに設置 --}}
-  <form method="GET" action="{{ route('calendar.edit.pdf') }}" class="mt-2" target="_blank">
-    {{-- 既存の検索条件を引き継ぐ（hiddenでOK） --}}
+  {{-- 画面下部：PDF出力フォーム（検索条件を引き継ぎつつ、除外IDをJSで詰める） --}}
+  <form id="pdfForm" method="GET" action="{{ route('calendar.edit.pdf') }}" target="_blank" class="d-flex gap-2 mt-2">
+    {{-- 検索条件の引き継ぎ（必要なものを hidden で） --}}
     <input type="hidden" name="event_date" value="{{ request('event_date') }}">
     <input type="hidden" name="end_date" value="{{ request('end_date') }}">
     <input type="hidden" name="original_user_id" value="{{ request('original_user_id') }}">
@@ -445,29 +452,46 @@
     <input type="hidden" name="title" value="{{ request('title') }}">
     <input type="hidden" name="Lesson" value="{{ request('Lesson') }}">
 
-    {{-- 除外するレコード条件（任意／複数選択） --}}
-    <div class="mb-2">
-      <label class="form-label small mb-1">Exclude Status</label><br>
-      <label class="me-2"><input type="checkbox" name="exclude_status[]" value="pending"> Pending</label>
-      <label class="me-2"><input type="checkbox" name="exclude_status[]" value="in_process"> In Process</label>
-    </div>
-    <div class="mb-2">
-      <label class="form-label small mb-1">Exclude Type</label><br>
-      <label class="me-2"><input type="checkbox" name="exclude_type[]" value="none_required"> None Required</label>
-    </div>
+    {{-- mode 用 hidden（押したボタンで書き換える） --}}
+    <input type="hidden" name="mode" id="pdfMode" value="tentative">
 
-    {{-- 除外する列（任意／複数選択） --}}
-    <div class="mb-2">
-      <label class="form-label small mb-1">Exclude Columns</label><br>
-      @foreach(['event_date','school_name','start_time','end_time','title','lesson','status','type','assigned_user'] as $col)
-        <label class="me-2">
-          <input type="checkbox" name="exclude_cols[]" value="{{ $col }}"> {{ ucfirst(str_replace('_',' ',$col)) }}
-        </label>
-      @endforeach
-    </div>
+    {{-- ここに JS で exclude_event_ids[] を追加する --}}
+    <div id="pdfExcludeContainer"></div>
 
-    <button class="btn btn-sm btn-outline-secondary">PDFダウンロード</button>
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-mode="tentative">Tentative PDF</button>
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-mode="final">Final Sublist PDF</button>
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-mode="master">Master Sublist PDF</button>
   </form>
+
+  <script>
+    (function () {
+      const form  = document.getElementById('pdfForm');
+      const modeI = document.getElementById('pdfMode');
+      const boxCt = document.getElementById('pdfExcludeContainer');
+
+      // クリックで mode 切替 → exclude_event_ids[] を詰めて submit
+      form.querySelectorAll('button[data-mode]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          modeI.value = btn.getAttribute('data-mode');
+
+          // 既存の exclude hidden をクリア
+          boxCt.innerHTML = '';
+
+          // チェック済みの event_id を hidden で詰める
+          document.querySelectorAll('.js-exclude-event:checked').forEach(chk => {
+            const hid = document.createElement('input');
+            hid.type  = 'hidden';
+            hid.name  = 'exclude_event_ids[]';
+            hid.value = chk.value;
+            boxCt.appendChild(hid);
+          });
+
+          form.submit();
+        });
+      });
+    })();
+  </script>
+
 
 @endsection
 
