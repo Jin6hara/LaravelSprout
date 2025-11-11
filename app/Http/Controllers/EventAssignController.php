@@ -319,7 +319,7 @@ class EventAssignController extends Controller
     /**
      * PDFエクスポート
      */
-    public function exportPdf(Request $request)
+    public function exportSubPdf(Request $request)
     {
         // mode 決定（未指定は tentative 扱い）
         $mode = $request->string('mode')->lower()->value();
@@ -350,7 +350,7 @@ class EventAssignController extends Controller
         ];
 
         $pdf = Pdf::loadView('pdf.events_sublist', compact('events', 'meta'))
-            ->setPaper('a4', 'portrait');
+            ->setPaper('a4', 'landscape');
 
         $filename = "sublist-{$mode}"
             . ($meta['range_from'] ? "_{$meta['range_from']}" : '')
@@ -425,7 +425,7 @@ class EventAssignController extends Controller
                 fn($q) => $q->where('Lesson', 'like', "%{$lesson}%")
             )
 
-            ->orderByDesc('event_date')
+            ->orderBy('event_date')
             ->orderBy('school_name')
             ->orderBy('start_time')
             ->orderBy('assigned_user_id');

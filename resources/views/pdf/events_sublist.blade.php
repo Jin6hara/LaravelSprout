@@ -59,70 +59,82 @@
 
     <h1>{{ $title }}</h1>
     <div class="meta">
-        期間:
+        Period:
         @if(!empty($meta['range_from'])) {{ $meta['range_from'] }} @endif
-        @if(!empty($meta['range_to'])) 〜 {{ $meta['range_to'] }} @endif
-        ／ 生成: {{ $meta['generated_at'] }}
+        @if(!empty($meta['range_to'])) ~ {{ $meta['range_to'] }} @endif
+        {{-- Generated: {{ $meta['generated_at'] }} --}}
     </div>
 
     <table>
+        {{-- … <thead> は Note 列を外し、Master のみ Status を残す --}}
         <thead>
             <tr>
                 <th>Date</th>
                 <th>School</th>
-                <th>Original User</th>
-                <th>Assigned User</th>
+                <th>Original Teacher</th>
+                <th>Substitute Teacher</th>
                 <th>Start</th>
                 <th>End</th>
-                <th>Lessons</th>
+                <th>Classes</th>
                 <th>Leave Type</th>
-                <th>Type</th>
+                <th>Shift Type</th>
                 @if($mode === 'master')
-                <th>Note</th>
                 <th>Status</th>
                 @endif
             </tr>
         </thead>
         <tbody>
+            @php
+            // Master の1行目の列数（Noteを除いた列数）
+            $masterCols = 10; // 9 基本列 + Status=1
+            @endphp
+
             @forelse($events as $e)
+            {{-- 1行目（共通情報） --}}
             <tr>
-                <td>{{ $e->event_date }}</td>
+                @php
+                $fmtDate = function ($d) {
+                if (!$d) return '';
+                if ($d instanceof \DateTimeInterface) return $d->format('Y-m-d');
+                // '2025-11-13 00:00:00' のような文字列にも対応
+                return substr((string)$d, 0, 10);
+                };
+                @endphp
+                <td>{{ $fmtDate($e->event_date) }}</td>
                 <td>{{ $e->school_name }}</td>
-
-                {{-- Original User --}}
-                <td>
-                    @if($e->originalUser)
-                    {{ $e->originalUser->name }}
-                    @endif
-                </td>
-
-                {{-- Assigned User（final は employee_code を併記） --}}
+                <td>{{ optional($e->originalUser)->name }}</td>
                 <td>
                     @if($e->assignedUser)
                     {{ $e->assignedUser->name }}
-                    @if($mode === 'final')
-                    [{{ $e->assignedUser->employee_code }}]
-                    @endif
+                    @if($mode === 'final') [{{ $e->assignedUser->employee_code }}] @endif
                     @endif
                 </td>
-
                 <td>{{ $fmtTime($e->start_time) }}</td>
                 <td>{{ $fmtTime($e->end_time) }}</td>
                 <td>{{ $e->Lesson }}</td>
                 <td>{{ $e->Leave_type }}</td>
                 <td>{{ $e->type }}</td>
-
                 @if($mode === 'master')
-                <td>{{ $e->notes }}</td>
                 <td>{{ $e->status }}</td>
                 @endif
             </tr>
+
+            {{-- 2行目（Note：Master のみ、全カラム結合） --}}
+            @if($mode === 'master')
+            <tr>
+                <td colspan="{{ $masterCols }}" style="border-top:0; padding-top:2px;">
+                    <strong>Note:</strong>
+                    {{ trim((string) $e->notes) !== '' ? $e->notes : '—' }}
+                </td>
+            </tr>
+            @endif
             @empty
             <tr>
-                <td colspan="{{ $mode==='master' ? 11 : 9 }}">No records.</td>
+                <td colspan="{{ $mode==='master' ? $masterCols : 9 }}">No records.</td>
             </tr>
             @endforelse
         </tbody>
+
     </table>
 </body>
 
