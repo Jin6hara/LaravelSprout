@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <style>
         @page {
-            margin: 14mm;
+            margin: 12mm;
         }
 
         body {
@@ -15,7 +15,7 @@
 
         h1 {
             font-size: 14pt;
-            margin: 0 0 6mm;
+            margin: 0 0 3mm;
         }
 
         .meta {
@@ -31,12 +31,20 @@
         th,
         td {
             border: 1px solid #ddd;
-            padding: 4px 6px;
+            padding: 2px 3px;
             vertical-align: top;
         }
 
         th {
             background: #f3f4f6;
+        }
+
+        /* ★Classes 列の最小幅 */
+        th.col-classes,
+        td.col-classes {
+            min-width: 50mm;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
     </style>
 </head>
@@ -45,7 +53,7 @@
     @php
     $mode = $meta['mode'] ?? 'tentative';
     $titleMap = [
-    'tentative' => 'Tentative',
+    'tentative' => 'Tentative Sublist',
     'final' => 'Final Sublist',
     'master' => 'Master Sublist',
     ];
@@ -55,27 +63,43 @@
     if (!$t) return '';
     return is_string($t) ? substr($t, 0, 5) : optional($t)->format('H:i');
     };
+    // ★追加：日付キー用フォーマッタ
+    $fmtDate = function ($d) {
+    if (!$d) return '';
+    if ($d instanceof \DateTimeInterface) return $d->format('Y-m-d');
+    return substr((string)$d, 0, 10); // '2025-11-13 00:00:00' → '2025-11-13'
+    };
     @endphp
 
     <h1>{{ $title }}</h1>
     <div class="meta">
-        Period:
+        Date:
         @if(!empty($meta['range_from'])) {{ $meta['range_from'] }} @endif
         @if(!empty($meta['range_to'])) ~ {{ $meta['range_to'] }} @endif
         {{-- Generated: {{ $meta['generated_at'] }} --}}
     </div>
 
+    @php
+    // ★追加：日付ごとにグルーピング
+    $groupsByDate = collect($events)->groupBy(fn($e) => $fmtDate($e->event_date) ?: 'No Date');
+    @endphp
+
+    @forelse($groupsByDate as $ymd => $rows)
+    {{-- 日付見出し（新規テーブルのタイトル） --}}
+    <h2 style="font-size:12pt;margin:10mm 0 3mm 0;">{{ $ymd }}</h2>
+
     <table>
         {{-- … <thead> は Note 列を外し、Master のみ Status を残す --}}
         <thead>
             <tr>
-                <th>Date</th>
+                {{-- <th>Date</th> --}}
+                <th>Title</th>
                 <th>School</th>
-                <th>Original Teacher</th>
+                <th>Regular Teacher</th>
                 <th>Substitute Teacher</th>
                 <th>Start</th>
                 <th>End</th>
-                <th>Classes</th>
+                <th class="col-classes">Classes</th> {{-- ★クラス付与 --}}
                 <th>Leave Type</th>
                 <th>Shift Type</th>
                 @if($mode === 'master')
@@ -89,18 +113,10 @@
             $masterCols = 10; // 9 基本列 + Status=1
             @endphp
 
-            @forelse($events as $e)
+            @forelse($rows as $e)
             {{-- 1行目（共通情報） --}}
             <tr>
-                @php
-                $fmtDate = function ($d) {
-                if (!$d) return '';
-                if ($d instanceof \DateTimeInterface) return $d->format('Y-m-d');
-                // '2025-11-13 00:00:00' のような文字列にも対応
-                return substr((string)$d, 0, 10);
-                };
-                @endphp
-                <td>{{ $fmtDate($e->event_date) }}</td>
+                <td>{{ $e->title }}</td>
                 <td>{{ $e->school_name }}</td>
                 <td>{{ optional($e->originalUser)->name }}</td>
                 <td>
@@ -111,7 +127,7 @@
                 </td>
                 <td>{{ $fmtTime($e->start_time) }}</td>
                 <td>{{ $fmtTime($e->end_time) }}</td>
-                <td>{{ $e->Lesson }}</td>
+                <td class="col-classes">{{ $e->Lesson }}</td> {{-- ★クラス付与 --}}
                 <td>{{ $e->Leave_type }}</td>
                 <td>{{ $e->type_label }}</td>
                 @if($mode === 'master')
@@ -122,7 +138,7 @@
             {{-- 2行目（Note：Master のみ、全カラム結合） --}}
             @if($mode === 'master')
             <tr>
-                <td colspan="{{ $masterCols }}" style="border-top:0; padding-top:2px;">
+                <td colspan="{{ $masterCols }}" style="border-top:0; padding-top:10px;">
                     <strong>Note:</strong>
                     {{ trim((string) $e->notes) !== '' ? $e->notes : '—' }}
                 </td>
@@ -134,8 +150,10 @@
             </tr>
             @endforelse
         </tbody>
-
     </table>
+    @empty
+    <p>No records.</p>
+    @endforelse
 </body>
 
 </html>

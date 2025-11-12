@@ -458,7 +458,7 @@
     {{-- ここに JS で exclude_event_ids[] を追加する --}}
     <div id="pdfExcludeContainer"></div>
 
-    <button type="button" class="btn btn-sm btn-outline-secondary" data-mode="tentative">Tentative PDF</button>
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-mode="tentative">Tentative Sublist PDF</button>
     <button type="button" class="btn btn-sm btn-outline-secondary" data-mode="final">Final Sublist PDF</button>
     <button type="button" class="btn btn-sm btn-outline-secondary" data-mode="master">Master Sublist PDF</button>
   </form>
