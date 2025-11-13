@@ -171,6 +171,9 @@ use App\Http\Controllers\LeaveController;
 
 Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
     Route::get('/shift_assigner', [EventAssignController::class, 'edit'])->name('calendar.edit');
+    // PDF（モード: tentative|final|master）
+    Route::get('/calendar/edit/pdf', [EventAssignController::class, 'exportSubPdf'])->name('calendar.edit.pdf');
+    Route::get('/calendar/confirmations/pdf', [EventAssignController::class, 'exportConfirmationsPdf'])->name('calendar.confirmations.pdf');
     Route::post('/shift',        [EventAssignController::class, 'store'])->name('events.store');
     Route::post('/shift/blank', [EventAssignController::class, 'storeBlank'])->name('events.store.blank');
     Route::put('/shift/{event}', [EventAssignController::class, 'update'])->name('events.update');
@@ -261,3 +264,61 @@ use App\Http\Controllers\OverTimeController;
 // 残業一覧（in_process のみ）
 Route::get('/overtime', [OverTimeController::class, 'index'])
     ->name('overtime.index');
+use App\Http\Controllers\PostController;
+use App\Http\Controllers\UserSearchController;
+
+Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
+    Route::get('/posts/admin_create', [PostController::class, 'create'])->name('posts.adminCreate'); // redirect()はこのnameを使う
+    Route::post('/posts/send',   [PostController::class, 'send'])->name('posts.send');
+
+    // 宛先検索（管理者のみ）
+    Route::get('/api/users/search', [UserSearchController::class, 'index'])
+        ->name('api.users.search');
+});
+
+use App\Http\Controllers\ReceivedPostController;
+
+Route::middleware(['auth'])->group(function () {
+    // 一般ユーザーは自分宛のみ、admin以上は ?employee_code= で代理閲覧可
+    Route::get('/messages', [ReceivedPostController::class, 'index'])->name('messages.index');
+    Route::get('/messages/{post}', [ReceivedPostController::class, 'show'])->name('messages.show');
+    Route::post('/messages/{post}/confirm', [ReceivedPostController::class, 'confirm'])->name('messages.confirm');
+    Route::post('/messages/{post}/comments', [ReceivedPostController::class, 'storeComment'])
+        ->name('messages.comments.store');
+});
+
+// ---------------------------------------------------------------------------------------------------------▼ CSV関連ルート
+use App\Http\Controllers\ScheduleLineCsvController;
+
+Route::get('/cvs/schedule_line', [ScheduleLineCsvController::class, 'form'])
+    ->name('cvs.schedule_line.form');
+
+Route::post('/cvs/schedule_line/import', [ScheduleLineCsvController::class, 'import'])
+    ->name('cvs.schedule_line.import');
+
+use App\Http\Controllers\UserScheduleCsvController;
+
+Route::get('/csv/user_schedule', [UserScheduleCsvController::class, 'form'])
+    ->name('csv.user_schedule.form');
+
+Route::post('/csv/user_schedule/import', [UserScheduleCsvController::class, 'import'])
+    ->name('csv.user_schedule.import');
+
+use App\Http\Controllers\UserScheduleLineController;
+
+Route::get('/csv/user_schedule_line', [UserScheduleLineController::class, 'form'])
+    ->name('csv.user_schedule_line.form');
+
+Route::post('/csv/user_schedule_line/import', [UserScheduleLineController::class, 'import'])
+    ->name('csv.user_schedule_line.import');
+
+
+use App\Http\Controllers\UserScheduleLineExportController;
+
+//Route::get('/csv/user_schedule_line/export', [UserScheduleLineExportController::class, 'exportForm'])
+//->name('csv.user_schedule_line.export.form');
+
+Route::get('/csv/user_schedule_line/export/download', [UserScheduleLineExportController::class, 'download'])
+    ->name('csv.user_schedule_line.export.download');
+
+// ---------------------------------------------------------------------------------------------------------▲ CSV関連ルート
