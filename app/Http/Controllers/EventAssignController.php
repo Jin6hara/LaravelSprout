@@ -359,6 +359,53 @@ class EventAssignController extends Controller
 
         return $pdf->download($filename);
     }
+
+    public function exportConfirmationsPdf(Request $request)
+    {
+        // mode: alp | ot（不正なら alp）
+        $mode = $request->string('mode')->lower()->value();
+        if (!in_array($mode, ['alp', 'ot'], true)) {
+            $mode = 'alp';
+        }
+
+        // 除外する event_id（画面のチェックボックスから）
+        $excludeEventIds = collect($request->input('exclude_event_ids', []))
+            ->filter(fn($v) => is_numeric($v))
+            ->map(fn($v) => (int)$v)
+            ->unique()
+            ->values()
+            ->all();
+
+        // 既存の検索条件を流用 + 除外
+        $query = $this->baseEventQuery($request)
+            ->when(!empty($excludeEventIds), fn($q) => $q->whereNotIn('id', $excludeEventIds));
+
+        // 必要なら mode ごとの追加フィルタを入れられます（任意）
+        // 例: ALP は leave_type が有るものに限定…など
+        // if ($mode === 'alp') { $query->whereNotNull('Leave_type'); }
+
+        // PDFは全件取得
+        $events = $query->get();
+
+        $meta = [
+            'range_from'   => $request->input('event_date'),
+            'range_to'     => $request->input('end_date'),
+            'generated_at' => now('Asia/Tokyo')->format('Y-m-d H:i'),
+            'mode'         => $mode,
+            'title'        => $mode === 'alp' ? 'ALP Confirmation List' : 'OT Confirmation List',
+        ];
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.confirmations', compact('events', 'meta'))
+            ->setPaper('a4', 'portrait');
+
+        $filename = ($mode === 'alp' ? 'alp' : 'ot') . '-confirmation'
+            . ($meta['range_from'] ? "_{$meta['range_from']}" : '')
+            . ($meta['range_to']   ? "-{$meta['range_to']}"   : '')
+            . '.pdf';
+
+        return $pdf->download($filename);
+    }
+
     // 共通のイベントクエリビルダ
     private function baseEventQuery(Request $request)
     {

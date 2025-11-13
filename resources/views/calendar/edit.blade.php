@@ -463,35 +463,66 @@
     <button type="button" class="btn btn-sm btn-outline-secondary" data-mode="master">Master Sublist PDF</button>
   </form>
 
-  <script>
-    (function () {
-      const form  = document.getElementById('pdfForm');
-      const modeI = document.getElementById('pdfMode');
-      const boxCt = document.getElementById('pdfExcludeContainer');
+  <form id="confirmPdfForm" method="GET" action="{{ route('calendar.confirmations.pdf') }}" target="_blank" class="d-flex gap-2 mt-2">
+    {{-- 検索条件を引き継ぐ --}}
+    <input type="hidden" name="event_date" value="{{ request('event_date') }}">
+    <input type="hidden" name="end_date" value="{{ request('end_date') }}">
+    <input type="hidden" name="original_user_id" value="{{ request('original_user_id') }}">
+    <input type="hidden" name="assigned_user_id" value="{{ request('assigned_user_id') }}">
+    <input type="hidden" name="status" value="{{ request('status') }}">
+    <input type="hidden" name="type" value="{{ request('type') }}">
+    <input type="hidden" name="Leave_type" value="{{ request('Leave_type') }}">
+    <input type="hidden" name="school_name" value="{{ request('school_name') }}">
+    <input type="hidden" name="title" value="{{ request('title') }}">
+    <input type="hidden" name="Lesson" value="{{ request('Lesson') }}">
 
-      // クリックで mode 切替 → exclude_event_ids[] を詰めて submit
-      form.querySelectorAll('button[data-mode]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          modeI.value = btn.getAttribute('data-mode');
+    {{-- mode 用 hidden（押下ボタンで切替） --}}
+    <input type="hidden" name="mode" id="confirmPdfMode" value="alp">
 
-          // 既存の exclude hidden をクリア
-          boxCt.innerHTML = '';
+    {{-- ここに JS で exclude_event_ids[] を入れる --}}
+    <div id="confirmPdfExcludeContainer"></div>
 
-          // チェック済みの event_id を hidden で詰める
-          document.querySelectorAll('.js-exclude-event:checked').forEach(chk => {
-            const hid = document.createElement('input');
-            hid.type  = 'hidden';
-            hid.name  = 'exclude_event_ids[]';
-            hid.value = chk.value;
-            boxCt.appendChild(hid);
-          });
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-mode="alp">ALP Confirmation PDF</button>
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-mode="ot">OT Confirmation PDF</button>
+  </form>
 
-          form.submit();
+<script>
+(function () {
+  function wirePdfForm(formId, modeInputId, excludeContainerId) {
+    const form  = document.getElementById(formId);
+    if (!form) return; // そのフォームが無ければ何もしない
+
+    const modeI = document.getElementById(modeInputId);
+    const boxCt = document.getElementById(excludeContainerId);
+
+    form.querySelectorAll('button[data-mode]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (modeI) modeI.value = btn.getAttribute('data-mode') || '';
+
+        // 既存の exclude hidden をクリア
+        if (boxCt) boxCt.innerHTML = '';
+
+        // チェック済みの event_id を hidden で詰める（共通クラス）
+        document.querySelectorAll('.js-exclude-event:checked').forEach(chk => {
+          const hid = document.createElement('input');
+          hid.type  = 'hidden';
+          hid.name  = 'exclude_event_ids[]';
+          hid.value = chk.value;
+          boxCt.appendChild(hid);
         });
-      });
-    })();
-  </script>
 
+        form.submit();
+      });
+    });
+  }
+
+  // ▼ Sublist 3種（tentative / final / master）
+  wirePdfForm('pdfForm', 'pdfMode', 'pdfExcludeContainer');
+
+  // ▼ Confirmations（ALP / OT）
+  wirePdfForm('confirmPdfForm', 'confirmPdfMode', 'confirmPdfExcludeContainer');
+})();
+</script>
 
 @endsection
 
