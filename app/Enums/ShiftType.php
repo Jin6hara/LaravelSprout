@@ -1,5 +1,8 @@
 <?php
 
+// 廃棄(protected $casts = ['type' => ShiftType::class,]はちょっと危ない)。
+// getTypeLabelAttribute()で対応する。
+
 namespace App\Enums;
 
 enum ShiftType: string

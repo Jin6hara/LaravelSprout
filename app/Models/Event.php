@@ -35,12 +35,20 @@ class Event extends Model
         'event_date' => 'date',
         'start_time' => 'datetime:H:i',
         'end_time'   => 'datetime:H:i',
-        'type' => ShiftType::class,
     ];
 
     public function getTypeLabelAttribute(): string
     {
-        return $this->type?->short() ?? '';
+        $map = [
+            'regular_time'         => 'RT',
+            'overtime'             => 'OT',
+            'schedule_change'      => 'SC',
+            'special'              => 'SP',
+            'rostered_working_day' => 'RWD',
+            'none_required'        => 'NS',
+        ];
+        $key = (string) ($this->attributes['type'] ?? '');
+        return $map[$key] ?? strtoupper($key ?: '');
     }
 
     protected $appends = ['total_duration']; //API/Bladeで見える
