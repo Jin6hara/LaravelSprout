@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Enums\ShiftType;
 
 class Event extends Model
 {
@@ -35,6 +36,20 @@ class Event extends Model
         'start_time' => 'datetime:H:i',
         'end_time'   => 'datetime:H:i',
     ];
+
+    public function getTypeLabelAttribute(): string
+    {
+        $map = [
+            'regular_time'         => 'RT',
+            'overtime'             => 'OT',
+            'schedule_change'      => 'SC',
+            'special'              => 'SP',
+            'rostered_working_day' => 'RWD',
+            'none_required'        => 'NS',
+        ];
+        $key = (string) ($this->attributes['type'] ?? '');
+        return $map[$key] ?? strtoupper($key ?: '');
+    }
 
     protected $appends = ['total_duration']; //API/Bladeで見える
 

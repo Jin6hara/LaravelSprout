@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
+use Barryvdh\DomPDF\Facade\Pdf;
+use App\Services\Calendar\Providers\SubCountProvider;
 
 class EventAssignController extends Controller
 {
@@ -313,5 +315,193 @@ class EventAssignController extends Controller
             'results' => $results,
             'message' => $ngCount ? '一部保存に失敗しました' : 'すべて保存しました',
         ]);
+    }
+
+    /**
+     * PDFエクスポート
+     */
+    public function exportSubPdf(Request $request)
+    {
+        // mode 決定（未指定は tentative 扱い）
+        $mode = $request->string('mode')->lower()->value();
+        if (!in_array($mode, ['tentative', 'final', 'master'], true)) {
+            $mode = 'tentative';
+        }
+
+        // 除外する event_id 群（チェックボックスから）
+        $excludeEventIds = collect($request->input('exclude_event_ids', []))
+            ->filter(fn($v) => is_numeric($v))
+            ->map(fn($v) => (int)$v)
+            ->unique()
+            ->values()
+            ->all();
+
+        // 同条件 + 除外
+        $query = $this->baseEventQuery($request)
+            ->when(!empty($excludeEventIds), fn($q) => $q->whereNotIn('id', $excludeEventIds));
+
+        // PDFは全件取得
+        $events = $query->get();
+
+        // ★SubCountProvider から日別の Sub サマリを取得
+        $subSummaryByDate = [];
+        if ($events->isNotEmpty()) {
+            $minDate = Carbon::parse($events->min('event_date'))->startOfDay();
+            $maxDate = Carbon::parse($events->max('event_date'))->addDay()->startOfDay(); // 排他
+
+            /** @var SubCountProvider $provider */
+            $provider = app(SubCountProvider::class);
+            $subEvents = $provider->provide($request->user(), $minDate, $maxDate);
+
+            foreach ($subEvents as $ev) {
+                // CandidateEvent の仕様に合わせて start / extendedProps を取得
+                $day = Carbon::parse($ev->start)->toDateString();
+                $ext = $ev->extendedProps ?? [];
+
+                $subSummaryByDate[$day] = [
+                    'users'        => $ext['users']        ?? [],
+                    'absent_users' => $ext['absent_users'] ?? [],
+                ];
+            }
+        }
+
+        $meta = [
+            'range_from'  => $request->input('event_date'),
+            'range_to'    => $request->input('end_date'),
+            //'generated_at' => now('Asia/Tokyo')->format('Y-m-d H:i'),
+            'mode'        => $mode,
+        ];
+
+        $pdf = Pdf::loadView('pdf.events_sublist', [
+            'events'           => $events,
+            'meta'             => $meta,
+            'subSummaryByDate' => $subSummaryByDate, // ★追加
+        ])
+            ->setPaper('a4', 'landscape');
+
+        $filename = "sublist-{$mode}"
+            . ($meta['range_from'] ? "_{$meta['range_from']}" : '')
+            . ($meta['range_to']   ? "-{$meta['range_to']}"   : '')
+            . '.pdf';
+
+        return $pdf->download($filename);
+    }
+
+    public function exportConfirmationsPdf(Request $request)
+    {
+        // mode: alp | ot（不正なら alp）
+        $mode = $request->string('mode')->lower()->value();
+        if (!in_array($mode, ['alp', 'ot'], true)) {
+            $mode = 'alp';
+        }
+
+        // 除外する event_id（画面のチェックボックスから）
+        $excludeEventIds = collect($request->input('exclude_event_ids', []))
+            ->filter(fn($v) => is_numeric($v))
+            ->map(fn($v) => (int)$v)
+            ->unique()
+            ->values()
+            ->all();
+
+        // 既存の検索条件を流用 + 除外
+        $query = $this->baseEventQuery($request)
+            ->when(!empty($excludeEventIds), fn($q) => $q->whereNotIn('id', $excludeEventIds));
+
+        // 必要なら mode ごとの追加フィルタを入れられます（任意）
+        // 例: ALP は leave_type が有るものに限定…など
+        // if ($mode === 'alp') { $query->whereNotNull('Leave_type'); }
+
+        // PDFは全件取得
+        $events = $query->get();
+
+        $meta = [
+            'range_from'   => $request->input('event_date'),
+            'range_to'     => $request->input('end_date'),
+            'generated_at' => now('Asia/Tokyo')->format('Y-m-d H:i'),
+            'mode'         => $mode,
+            'title'        => $mode === 'alp' ? 'ALP Confirmation List' : 'OT Confirmation List',
+        ];
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.confirmations', compact('events', 'meta'))
+            ->setPaper('a4', 'portrait');
+
+        $filename = ($mode === 'alp' ? 'alp' : 'ot') . '-confirmation'
+            . ($meta['range_from'] ? "_{$meta['range_from']}" : '')
+            . ($meta['range_to']   ? "-{$meta['range_to']}"   : '')
+            . '.pdf';
+
+        return $pdf->download($filename);
+    }
+
+    // 共通のイベントクエリビルダ
+    protected function baseEventQuery(Request $request)
+    {
+        $eventId        = $request->input('event_id');
+        $originalUserId = $request->input('original_user_id');
+        $assignedUserId = $request->input('assigned_user_id');
+        $status         = $request->input('status');
+        $type           = $request->input('type');
+
+        $leaveType      = $request->input('Leave_type');
+        $schoolName     = $request->input('school_name');
+        $title          = $request->input('title');
+        $lesson         = $request->input('Lesson');
+
+        $eventDateFrom  = $request->input('event_date');
+        $eventDateTo    = $request->input('end_date');
+
+        // edit/pdf 共通の簡易チェック（back redirect は edit 側のみのほうが自然なら削除OK）
+        if ($eventDateTo && !$eventDateFrom) {
+            return redirect()->back()
+                ->withErrors(['event_date' => '対象日を入力してください。'])
+                ->withInput();
+        }
+        if ($eventDateFrom && $eventDateTo && $eventDateFrom > $eventDateTo) {
+            return redirect()->back()
+                ->withErrors(['event_date' => '開始日は終了日より前の日付を指定してください。'])
+                ->withInput();
+        }
+
+        return Event::query()
+            ->when($eventId, fn($q) => $q->whereKey($eventId))
+            ->with([
+                'assignedUser:id,name,employee_code',
+                'originalUser:id,name,employee_code',
+            ])
+            ->when($originalUserId, fn($q) => $q->where('original_user_id', $originalUserId))
+            ->when($assignedUserId, fn($q) => $q->where('assigned_user_id', $assignedUserId))
+            ->when($status,         fn($q) => $q->where('status', $status))
+            ->when($type,           fn($q) => $q->where('type', $type))
+
+            ->when(
+                $eventDateFrom && $eventDateTo,
+                fn($q) => $q->whereBetween('event_date', [$eventDateFrom, $eventDateTo])
+            )
+            ->when(
+                $eventDateFrom && !$eventDateTo,
+                fn($q) => $q->whereDate('event_date', $eventDateFrom)
+            )
+
+            ->when(
+                $leaveType !== null && $leaveType !== '',
+                fn($q) => $q->where('Leave_type', 'like', "%{$leaveType}%")
+            )
+            ->when(
+                $schoolName !== null && $schoolName !== '',
+                fn($q) => $q->where('school_name', 'like', "%{$schoolName}%")
+            )
+            ->when(
+                $title !== null && $title !== '',
+                fn($q) => $q->where('title', 'like', "%{$title}%")
+            )
+            ->when(
+                $lesson !== null && $lesson !== '',
+                fn($q) => $q->where('Lesson', 'like', "%{$lesson}%")
+            )
+
+            ->orderBy('event_date')
+            ->orderBy('school_name')
+            ->orderBy('start_time')
+            ->orderBy('assigned_user_id');
     }
 }
