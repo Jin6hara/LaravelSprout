@@ -262,8 +262,10 @@ Route::middleware(['auth'])->group(function () {
 use App\Http\Controllers\OverTimeController;
 
 // 残業一覧（in_process のみ）
-Route::get('/overtime', [OverTimeController::class, 'index'])
-    ->name('overtime.index');
+Route::middleware(['auth'])->group(function () {
+    Route::get('/overtime', [OverTimeController::class, 'index'])->name('overtime.index');
+});
+
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\UserSearchController;
 
