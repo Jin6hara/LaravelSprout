@@ -10,6 +10,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Services\Calendar\Providers\SubCountProvider;
 
 class EventAssignController extends Controller
 {
@@ -342,14 +343,40 @@ class EventAssignController extends Controller
         // PDFは全件取得
         $events = $query->get();
 
+        // ★SubCountProvider から日別の Sub サマリを取得
+        $subSummaryByDate = [];
+        if ($events->isNotEmpty()) {
+            $minDate = Carbon::parse($events->min('event_date'))->startOfDay();
+            $maxDate = Carbon::parse($events->max('event_date'))->addDay()->startOfDay(); // 排他
+
+            /** @var SubCountProvider $provider */
+            $provider = app(SubCountProvider::class);
+            $subEvents = $provider->provide($request->user(), $minDate, $maxDate);
+
+            foreach ($subEvents as $ev) {
+                // CandidateEvent の仕様に合わせて start / extendedProps を取得
+                $day = Carbon::parse($ev->start)->toDateString();
+                $ext = $ev->extendedProps ?? [];
+
+                $subSummaryByDate[$day] = [
+                    'users'        => $ext['users']        ?? [],
+                    'absent_users' => $ext['absent_users'] ?? [],
+                ];
+            }
+        }
+
         $meta = [
             'range_from'  => $request->input('event_date'),
             'range_to'    => $request->input('end_date'),
-            'generated_at' => now('Asia/Tokyo')->format('Y-m-d H:i'),
+            //'generated_at' => now('Asia/Tokyo')->format('Y-m-d H:i'),
             'mode'        => $mode,
         ];
 
-        $pdf = Pdf::loadView('pdf.events_sublist', compact('events', 'meta'))
+        $pdf = Pdf::loadView('pdf.events_sublist', [
+            'events'           => $events,
+            'meta'             => $meta,
+            'subSummaryByDate' => $subSummaryByDate, // ★追加
+        ])
             ->setPaper('a4', 'landscape');
 
         $filename = "sublist-{$mode}"

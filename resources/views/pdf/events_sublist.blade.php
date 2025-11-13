@@ -14,7 +14,7 @@
         }
 
         h1 {
-            font-size: 14pt;
+            font-size: 20pt;
             margin: 0 0 3mm;
         }
 
@@ -63,11 +63,31 @@
     if (!$t) return '';
     return is_string($t) ? substr($t, 0, 5) : optional($t)->format('H:i');
     };
-    // ★追加：日付キー用フォーマッタ
+    
+    // ★日付キー用フォーマッタ
     $fmtDate = function ($d) {
     if (!$d) return '';
     if ($d instanceof \DateTimeInterface) return $d->format('Y-m-d');
     return substr((string)$d, 0, 10); // '2025-11-13 00:00:00' → '2025-11-13'
+    };
+
+    // ★Sub サマリ関連（未定義対策＆整形）
+    $subSummaryByDate = $subSummaryByDate ?? [];
+    $fmtSubNames = function (array $buckets): array {
+    $list = [];
+    foreach ($buckets as $src => $items) {
+    foreach ($items as $u) {
+    $label = $u['name'] ?? '';
+    $start = $u['start_hm'] ?? null;
+    $end = $u['end_hm'] ?? null;
+    if ($start || $end) {
+    $time = trim(($start ?? '') . ' - ' . ($end ?? ''));
+    $label .= " ({$time})";
+    }
+    $list[] = $label;
+    }
+    }
+    return $list;
     };
     @endphp
 
@@ -151,6 +171,49 @@
             @endforelse
         </tbody>
     </table>
+    {{-- ★追加：この日の Sub 状況をテーブルの「下」に表示 --}}
+    @php
+    $sub = $subSummaryByDate[$ymd] ?? null;
+    @endphp
+
+    @if($sub)
+    @php
+    $presentList = $fmtSubNames($sub['users'] ?? []);
+    $absentList = $fmtSubNames($sub['absent_users'] ?? []);
+
+    $presentText = $presentList ? implode(', ', $presentList) : 'None';
+    $absentText = $absentList ? implode(', ', $absentList) : 'None';
+
+    $absentCount = 0;
+    foreach (($sub['absent_users'] ?? []) as $src => $items) {
+    $absentCount += count($items);
+    }
+    $presentCount = 0;
+    foreach (($sub['users'] ?? []) as $src => $items) {
+    $presentCount += count($items);
+    }
+    @endphp
+
+    <div style="font-size:9pt; margin:2mm 0 6mm 0;">
+        @if($absentCount > 0)
+        @if(in_array($mode, ['tentative', 'final'], true))
+        {{-- Tentative / Final → 欠席のみ表示 --}}
+        <strong>Sub (Absent {{ $absentCount }}):</strong>
+        {{ $absentText }}
+        @endif
+        @elseif($mode === 'master')
+        {{-- Master → 出席＋欠席 両方表示 --}}
+        <div>
+            <strong>Sub (Present {{ $presentCount }}):</strong>
+            {{ $presentText }}
+        </div>
+        <div>
+            <strong>Sub (Absent {{ $absentCount }}):</strong>
+            {{ $absentText }}
+        </div>
+        @endif
+    </div>
+    @endif
     @empty
     <p>No records.</p>
     @endforelse
