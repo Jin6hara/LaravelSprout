@@ -52,8 +52,11 @@ class PostController extends Controller
             // 3) 添付ファイル保存（polymorphic）
             if ($req->hasFile('attachments')) {
                 $folder = 'attachments/' . now()->format('Y/m');
+
                 foreach ($req->file('attachments') as $file) {
-                    $path = $file->store($folder); // disk=default
+                    // ★ disk を 'public' に固定
+                    $path = $file->store($folder, 'public');
+
                     $post->attachments()->create([
                         'path'          => $path,
                         'original_name' => $file->getClientOriginalName(),

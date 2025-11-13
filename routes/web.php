@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\AdminController;
@@ -288,6 +289,11 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/messages/{post}/comments', [ReceivedPostController::class, 'storeComment'])
         ->name('messages.comments.store');
 });
+
+use App\Http\Controllers\PostAttachmentController;
+
+Route::get('/posts/{post}/attachments/{attachment}', [PostAttachmentController::class, 'show'])
+    ->name('posts.attachments.show');
 
 // ---------------------------------------------------------------------------------------------------------▼ CSV関連ルート
 use App\Http\Controllers\ScheduleLineCsvController;

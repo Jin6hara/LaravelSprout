@@ -41,16 +41,16 @@
         <hr>
         <div class="mt-2" style="white-space:pre-wrap;">{{ $post->body }}</div>
 
-        {{-- 添付があるなら表示（任意：アイコン等はお好みで） --}}
+        {{-- 添付があるなら表示 --}}
         @if($post->attachments()->exists())
         <hr>
         <div>
             <div class="fw-bold mb-2">添付</div>
             @foreach($post->attachments as $att)
             <div class="mb-1">
-                <a href="{{ Storage::url($att->path) }}" target="_blank">
-                    {{ $att->original_name ?? basename($att->path) }}
-                </a>
+            <a href="{{ route('posts.attachments.show', [$post, $att]) }}" target="_blank">
+                {{ $att->original_name ?? basename($att->path) }}
+            </a>
                 <span class="text-muted small">({{ number_format(($att->size ?? 0)/1024,1) }} KB)</span>
             </div>
             @endforeach
