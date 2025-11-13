@@ -439,7 +439,7 @@
   </div>
 
   {{-- 画面下部：PDF出力フォーム（検索条件を引き継ぎつつ、除外IDをJSで詰める） --}}
-  <form id="pdfForm" method="GET" action="{{ route('calendar.edit.pdf') }}" target="_blank" class="d-flex gap-2 mt-2">
+  <form id="pdfForm" method="GET" action="{{ route('calendar.edit.pdf') }}" target="_blank" class="d-flex flex-wrap gap-2 mt-2">
     {{-- 検索条件の引き継ぎ（必要なものを hidden で） --}}
     <input type="hidden" name="event_date" value="{{ request('event_date') }}">
     <input type="hidden" name="end_date" value="{{ request('end_date') }}">
@@ -458,46 +458,39 @@
     {{-- ここに JS で exclude_event_ids[] を追加する --}}
     <div id="pdfExcludeContainer"></div>
 
-    <button type="button" class="btn btn-sm btn-outline-secondary" data-mode="tentative">Tentative Sublist PDF</button>
-    <button type="button" class="btn btn-sm btn-outline-secondary" data-mode="final">Final Sublist PDF</button>
-    <button type="button" class="btn btn-sm btn-outline-secondary" data-mode="master">Master Sublist PDF</button>
+    {{-- ▼ Sublist 3種 --}}
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-mode="tentative" data-target="sublist">Tentative Sublist PDF</button>
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-mode="final"     data-target="sublist">Final Sublist PDF</button>
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-mode="master"    data-target="sublist">Master Sublist PDF</button>
+
+    {{-- ▼ Confirmations 2種（ALP / OT） --}}
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-mode="alp" data-target="confirm">ALP Confirmation PDF</button>
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-mode="ot"  data-target="confirm">OT Confirmation PDF</button>
   </form>
 
-  <form id="confirmPdfForm" method="GET" action="{{ route('calendar.confirmations.pdf') }}" target="_blank" class="d-flex gap-2 mt-2">
-    {{-- 検索条件を引き継ぐ --}}
-    <input type="hidden" name="event_date" value="{{ request('event_date') }}">
-    <input type="hidden" name="end_date" value="{{ request('end_date') }}">
-    <input type="hidden" name="original_user_id" value="{{ request('original_user_id') }}">
-    <input type="hidden" name="assigned_user_id" value="{{ request('assigned_user_id') }}">
-    <input type="hidden" name="status" value="{{ request('status') }}">
-    <input type="hidden" name="type" value="{{ request('type') }}">
-    <input type="hidden" name="Leave_type" value="{{ request('Leave_type') }}">
-    <input type="hidden" name="school_name" value="{{ request('school_name') }}">
-    <input type="hidden" name="title" value="{{ request('title') }}">
-    <input type="hidden" name="Lesson" value="{{ request('Lesson') }}">
+  <script>
+  (function () {
+    const form  = document.getElementById('pdfForm');
+    if (!form) return;
 
-    {{-- mode 用 hidden（押下ボタンで切替） --}}
-    <input type="hidden" name="mode" id="confirmPdfMode" value="alp">
+    const modeI = document.getElementById('pdfMode');
+    const boxCt = document.getElementById('pdfExcludeContainer');
 
-    {{-- ここに JS で exclude_event_ids[] を入れる --}}
-    <div id="confirmPdfExcludeContainer"></div>
+    // 送信先ルート（Bladeで解決）
+    const SUBLIST_URL  = "{{ route('calendar.edit.pdf') }}";
+    const CONFIRM_URL  = "{{ route('calendar.confirmations.pdf') }}";
 
-    <button type="button" class="btn btn-sm btn-outline-secondary" data-mode="alp">ALP Confirmation PDF</button>
-    <button type="button" class="btn btn-sm btn-outline-secondary" data-mode="ot">OT Confirmation PDF</button>
-  </form>
-
-<script>
-(function () {
-  function wirePdfForm(formId, modeInputId, excludeContainerId) {
-    const form  = document.getElementById(formId);
-    if (!form) return; // そのフォームが無ければ何もしない
-
-    const modeI = document.getElementById(modeInputId);
-    const boxCt = document.getElementById(excludeContainerId);
-
+    // クリックで mode 切替 → 送信先切替 → exclude_event_ids[] 詰めて submit
     form.querySelectorAll('button[data-mode]').forEach(btn => {
       btn.addEventListener('click', () => {
-        if (modeI) modeI.value = btn.getAttribute('data-mode') || '';
+        const mode   = btn.getAttribute('data-mode') || '';
+        const target = btn.getAttribute('data-target') || 'sublist';
+
+        // mode セット（sublist/confirm どちら側でも name="mode" で受け取り）
+        if (modeI) modeI.value = mode;
+
+        // 送信先切替
+        form.action = (target === 'confirm') ? CONFIRM_URL : SUBLIST_URL;
 
         // 既存の exclude hidden をクリア
         if (boxCt) boxCt.innerHTML = '';
@@ -514,15 +507,8 @@
         form.submit();
       });
     });
-  }
-
-  // ▼ Sublist 3種（tentative / final / master）
-  wirePdfForm('pdfForm', 'pdfMode', 'pdfExcludeContainer');
-
-  // ▼ Confirmations（ALP / OT）
-  wirePdfForm('confirmPdfForm', 'confirmPdfMode', 'confirmPdfExcludeContainer');
-})();
-</script>
+  })();
+  </script>
 
 @endsection
 
