@@ -434,7 +434,7 @@ class EventAssignController extends Controller
     }
 
     // 共通のイベントクエリビルダ
-    private function baseEventQuery(Request $request)
+    protected function baseEventQuery(Request $request)
     {
         $eventId        = $request->input('event_id');
         $originalUserId = $request->input('original_user_id');
@@ -452,14 +452,14 @@ class EventAssignController extends Controller
 
         // edit/pdf 共通の簡易チェック（back redirect は edit 側のみのほうが自然なら削除OK）
         if ($eventDateTo && !$eventDateFrom) {
-            abort(redirect()->back()
+            return redirect()->back()
                 ->withErrors(['event_date' => '対象日を入力してください。'])
-                ->withInput());
+                ->withInput();
         }
         if ($eventDateFrom && $eventDateTo && $eventDateFrom > $eventDateTo) {
-            abort(redirect()->back()
+            return redirect()->back()
                 ->withErrors(['event_date' => '開始日は終了日より前の日付を指定してください。'])
-                ->withInput());
+                ->withInput();
         }
 
         return Event::query()

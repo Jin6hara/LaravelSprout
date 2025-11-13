@@ -84,7 +84,7 @@ return [
          * Protocol whitelist
          *
          * Protocols and PHP wrappers allowed in URIs, and the validation rules
-         * that determine if a resouce may be loaded. Full support is not guaranteed
+         * that determine if a resource may be loaded. Full support is not guaranteed
          * for the protocols/wrappers specified
          * by this array.
          *
@@ -185,7 +185,7 @@ return [
          * Image DPI setting
          *
          * This setting determines the default DPI setting for images and fonts.  The
-         * DPI may be overridden for inline images by explictly setting the
+         * DPI may be overridden for inline images by explicitly setting the
          * image's width & height style attributes (i.e. if the image's native
          * width is 600 pixels and you specify the image's width as 72 points,
          * the image will have a DPI of 600 in the rendered PDF.  The DPI of
@@ -236,7 +236,7 @@ return [
         'enable_php' => false,
 
         /**
-         * Rnable inline JavaScript
+         * Enable inline JavaScript
          *
          * If this setting is set to true then DOMPDF will automatically insert JavaScript code contained
          * within <script type="text/javascript"> ... </script> tags as written into the PDF.
