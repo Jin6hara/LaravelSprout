@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use App\Models\Comment;
 use Illuminate\Support\Facades\DB;
+use App\Models\Attachment;
+use Illuminate\Support\Facades\Storage;
 
 class ReceivedPostController extends Controller
 {
@@ -167,5 +169,34 @@ class ReceivedPostController extends Controller
         ]);
 
         return back()->with('toast', 'Thank you for the confirmation.');
+    }
+
+    public function download(Post $post, Attachment $attachment)
+    {
+        // ① ちゃんとこの Post の添付かチェック（polymorphic 保護）
+        if (
+            $attachment->attachable_type !== Post::class ||
+            $attachment->attachable_id !== $post->id
+        ) {
+            abort(404);
+        }
+
+        // ② 認可（必要なら）
+        // $this->authorize('view', $post);
+
+        // ③ ファイルパス取得（public ディスク前提）
+        $disk = Storage::disk('public');
+
+        if (! $disk->exists($attachment->path)) {
+            abort(404);
+        }
+
+        // ④ ローカルパスに解決してブラウザに表示
+        $fullPath = $disk->path($attachment->path);
+
+        // inline 表示（PDF/画像ならブラウザでそのまま開く）
+        return response()->file($fullPath);
+        // ダウンロードさせたいなら ↓
+        // return response()->download($fullPath, $attachment->original_name ?? basename($fullPath));
     }
 }
