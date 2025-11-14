@@ -15,7 +15,56 @@ class ApprovalController extends Controller
     public function show(ApprovalRequest $approvalRequest)
     {
         $this->authorize('view', $approvalRequest);
-        return view('approvals.show', compact('approvalRequest'));
+
+        $meta       = $approvalRequest->metadata ?? [];
+        $approvable = $approvalRequest->approvable;
+        $dateSummary = null;
+
+        if ($approvable instanceof Leave) {
+            $kind = $meta['kind'] ?? $approvable->kind ?? null;
+
+            if ($kind === 'special') {
+                // ★ 特別休暇 → 期間表示（from〜to）
+                $from = $meta['date_from'] ?? optional($approvable->start_date)->format('Y-m-d');
+                $to   = $meta['date_to']   ?? optional($approvable->end_date)->format('Y-m-d');
+
+                if ($from && $to) {
+                    $dateSummary = "{$from}〜{$to}";
+                } else {
+                    $dateSummary = $from ?: $to ?: '-';
+                }
+            } elseif ($kind === 'paid') {
+                // ★ 有給 → 同じバッチの全日を「日, 日, 日」で表示
+                $batchId = $meta['batch_id'] ?? null;
+
+                if ($batchId) {
+                    $dates = ApprovalRequest::query()
+                        ->where('approvable_type', Leave::class)
+                        ->where('metadata->batch_id', $batchId)
+                        ->orderBy('metadata->date')
+                        ->pluck('metadata')
+                        ->map(fn($m) => $m['date'] ?? null)
+                        ->filter()
+                        ->unique()
+                        ->values()
+                        ->all();
+
+                    if (!empty($dates)) {
+                        $dateSummary = implode(', ', $dates);
+                    }
+                }
+
+                // バッチIDが無い/うまく取れない場合のフォールバック
+                if (!$dateSummary) {
+                    $dateSummary = $meta['date'] ?? optional($approvable->start_date)->format('Y-m-d') ?? '-';
+                }
+            }
+        }
+
+        return view('approvals.show', [
+            'approvalRequest' => $approvalRequest,
+            'dateSummary'     => $dateSummary,
+        ]);
     }
 
     public function approve(Request $request, ApprovalRequest $approvalRequest)

@@ -223,7 +223,16 @@ class LeaveApplyController extends Controller
             'requests' => [],
         ];
 
-        DB::transaction(function () use ($userId, $dates, $reason, $requestedByUserId, $batchId, &$result) {
+        // ★ ユーザー名と、全日付のまとめ文字列を作っておく
+        $user = User::find($userId);
+        $userName = $user?->name ?? ("user#{$userId}");
+        $dateListStr = $dates->implode(', '); // 例: 2025-11-01, 2025-11-02
+        $typeLabel = '[ALP]';
+
+        // ★ approval_requests.title に入れる共通タイトル
+        $titleBase = "{$typeLabel} {$userName} {$dateListStr}";
+
+        DB::transaction(function () use ($userId, $dates, $reason, $requestedByUserId, $batchId, $titleBase, &$result) {
             foreach ($dates as $ymd) {
                 // --- 重複チェック：同日に paid leave の pending/approved があるか ---
                 $already = Leave::query()
@@ -253,7 +262,8 @@ class LeaveApplyController extends Controller
 
                 // --- 承認リクエスト（ポリモーフィック） ---
                 $ar = $leave->approvalRequest()->create([
-                    'title'           => sprintf('有給申請: user#%d %s', $userId, $ymd),
+                    // ★ 全 ApprovalRequest に同じ「まとめタイトル」を設定
+                    'title'           => $titleBase,
                     'requested_by_id' => $requestedByUserId,
                     'current_state'   => 'pending',
                     'metadata'        => [
@@ -274,6 +284,7 @@ class LeaveApplyController extends Controller
 
         return $result;
     }
+
     /**
      * 特別休暇（special）用：期間1レコード
      *
@@ -295,13 +306,23 @@ class LeaveApplyController extends Controller
             'requests' => [],
         ];
 
-        DB::transaction(function () use ($userId, $dates, $reason, $requestedByUserId, $specialType, $attachmentMeta, $batchId, &$result) {
+        // ★ ユーザー名（期間文字列は後で start/end 決定後に作成）
+        $user = User::find($userId);
+        $userName = $user?->name ?? ("user#{$userId}");
+        $typeLabel = '[Special Leave]';
+
+        DB::transaction(function () use ($userId, $dates, $reason, $requestedByUserId, $specialType, $attachmentMeta, $batchId, $userName, $typeLabel, &$result) {
             $start = $dates->min();
             $end   = $dates->max();
 
             if (!$start || !$end) {
                 return;
             }
+
+            // ★ 期間文字列を作成（例: 2025-11-10〜2025-11-12）
+            $periodStr = "{$start}〜{$end}";
+            // ★ approval_requests.title に入れるタイトル
+            $titleBase = "{$typeLabel} {$userName} {$periodStr}";
 
             // --- 重複チェック：同ユーザーで special の pending/approved が期間重複していないか ---
             $already = Leave::query()
@@ -344,7 +365,8 @@ class LeaveApplyController extends Controller
 
             // --- 承認リクエスト（ポリモーフィック） ---
             $ar = $leave->approvalRequest()->create([
-                'title'           => sprintf('特別休暇申請: user#%d %s〜%s', $userId, $start, $end),
+                // ★ ここも「特別休暇 ユーザー名 期間」の形式に
+                'title'           => $titleBase,
                 'requested_by_id' => $requestedByUserId,
                 'current_state'   => 'pending',
                 'metadata'        => [
@@ -359,7 +381,7 @@ class LeaveApplyController extends Controller
                 ],
             ]);
 
-            $result['created']  = 1;
+            $result['created']    = 1;
             $result['requests'][] = $ar;
         });
 

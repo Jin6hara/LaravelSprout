@@ -34,17 +34,6 @@
                         @endif
                     </td>
                 </tr>
-                <tr>
-                    <th>対象ユーザー</th>
-                    <td>
-                        {{-- metadata からユーザー名を表示 --}}
-                        @if($isLeave)
-                        {{ optional($approvable->user)->name ?? ('ID:' . ($meta['user_id'] ?? '不明')) }}
-                        @else
-                        {{ $meta['target_user_name'] ?? '不明' }}
-                        @endif
-                    </td>
-                </tr>
 
                 @if($isLeave)
                 {{-- ★ 有給/特別休暇申請の場合の表示 --}}
@@ -62,32 +51,12 @@
                         {{ $kindLabel ?? '-' }}
                     </td>
                 </tr>
-                <tr>
-                    <th>対象日</th>
-                    <td>{{ $meta['date'] ?? optional($approvable->start_date)->format('Y-m-d') ?? '-' }}</td>
-                </tr>
+                @if($meta['kind'] === 'special' || ($approvable->kind ?? null) === 'special')
+                {{-- ★ 特別休暇の場合の追加情報 --}}
                 <tr>
                     <th>特別休暇の種類</th>
                     <td>{{ $meta['special_type'] ?? $approvable->special_type ?? '-' }}</td>
                 </tr>
-                @else
-                {{-- 変更後ロール（ロール変更リクエストの場合など） --}}
-                <tr>
-                    <th>変更後ロール</th>
-                    <td>
-                        {{ $meta['requested_role'] ?? '-' }}
-                    </td>
-                </tr>
-                @endif
-
-                <tr>
-                    <th>理由</th>
-                    <td>
-                        {{ $meta['reason'] ?? ($isLeave ? ($approvable->reason ?? '-') : '-') }}
-                    </td>
-                </tr>
-
-                @if($isLeave)
                 {{-- ★ 特別休暇の証明添付（ある場合） --}}
                 <tr>
                     <th>添付</th>
@@ -97,12 +66,45 @@
                             {{ $approvable->attachment->original_name ?? '添付ファイルを開く' }}
                         </a>
                         @if($approvable->attachment->size)
-                        <br>
-                        <small>{{ number_format($approvable->attachment->size / 1024, 1) }} KB</small>
+                        <small>　{{ number_format($approvable->attachment->size / 1024, 1) }} KB</small>
                         @endif
                         @else
                         -
                         @endif
+                    </td>
+                </tr>
+                @endif
+
+                <th>対象日</th>
+                <td>
+                    {{-- ★ 期間（特別休暇） or 日, 日, 日（有給） --}}
+                    {{ $dateSummary ?? ($meta['date'] ?? optional($approvable->start_date)->format('Y-m-d') ?? '-') }}
+                </td>
+
+                <tr>
+                    <th>理由</th>
+                    <td>
+                        {{ $meta['reason'] ?? ($isLeave ? ($approvable->reason ?? '-') : '-') }}
+                    </td>
+                </tr>
+
+                @else
+                {{-- 変更後ロール（ロール変更リクエストの場合など） --}}
+                <tr>
+                    <th>対象ユーザー</th>
+                    <td>
+                        {{-- metadata からユーザー名を表示 --}}
+                        @if($isLeave)
+                        {{ optional($approvable->user)->name ?? ('ID:' . ($meta['user_id'] ?? '不明')) }}
+                        @else
+                        {{ $meta['target_user_name'] ?? '不明' }}
+                        @endif
+                    </td>
+                </tr>
+                <tr>
+                    <th>変更後ロール</th>
+                    <td>
+                        {{ $meta['requested_role'] ?? '-' }}
                     </td>
                 </tr>
                 @endif
