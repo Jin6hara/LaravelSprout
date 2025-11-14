@@ -54,7 +54,7 @@ class ApprovalController extends Controller
             }
         });
 
-        return back()->with('status', '承認しました。');
+        return back()->with('toast', '承認しました。');
     }
 
     public function deny(Request $request, ApprovalRequest $approvalRequest)
@@ -64,16 +64,16 @@ class ApprovalController extends Controller
         DB::transaction(function () use ($approvalRequest) {
             $approvalRequest->actions()->create([
                 'actor_id' => Auth::id(),
-                'action'   => 'denied',
+                'action'   => 'rejected',
                 'comment'  => request('comment'),
             ]);
 
-            $approvalRequest->update(['current_state' => 'denied']);
+            $approvalRequest->update(['current_state' => 'rejected']);
 
             $approvable = $approvalRequest->approvable;
-            $approvable->update(['status' => 'denied']);
+            $approvable->update(['status' => 'rejected']);
         });
 
-        return back()->with('status', '却下しました。');
+        return back()->with('toast', '却下しました。');
     }
 }

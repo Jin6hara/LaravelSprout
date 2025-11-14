@@ -10,7 +10,8 @@
 <div class="container max-w-xl mx-auto">
     <h1 class="text-lg font-bold mb-4">有給申請</h1>
 
-    <form method="post" action="{{ $action }}">
+    {{-- ★ 添付を送るので enctype 追加 --}}
+    <form method="post" action="{{ $action }}" enctype="multipart/form-data">
         @csrf
 
         @isset($targetUser)
@@ -22,6 +23,16 @@
         @else
         <input type="hidden" name="user_id" value="{{ auth()->id() }}">
         @endisset
+
+        {{-- ★ 申請タイプ --}}
+        <div class="mb-3">
+            <label class="form-label">申請タイプ</label>
+            <select name="type" id="leave-type" class="form-select">
+                <option value="paid" {{ old('type', 'paid') === 'paid' ? 'selected' : '' }}>有給（ALP）</option>
+                <option value="special" {{ old('type') === 'special' ? 'selected' : '' }}>特別休暇</option>
+            </select>
+            @error('type')<div class="text-danger mt-1">{{ $message }}</div>@enderror
+        </div>
 
         @php
         $oldDates = old('dates', []);
@@ -42,6 +53,17 @@
             @error('dates')<div class="text-danger mt-2">{{ $message }}</div>@enderror
         </div>
 
+        {{-- ★ special 用の項目（type=special のときだけ有効） --}}
+        <div class="mb-3" id="special-fields">
+            <label class="form-label">特別休暇の種類</label>
+            <input type="text" name="special_type" class="form-control" value="{{ old('special_type') }}">
+            @error('special_type')<div class="text-danger mt-1">{{ $message }}</div>@enderror
+
+            <label class="form-label mt-2">証明書（添付必須）</label>
+            <input type="file" name="attachment" class="form-control">
+            @error('attachment')<div class="text-danger mt-1">{{ $message }}</div>@enderror
+        </div>
+
         <div class="mb-3">
             <label>理由（任意）</label>
             <textarea name="reason" class="form-control" rows="3">{{ old('reason') }}</textarea>
@@ -56,6 +78,11 @@
     document.addEventListener('DOMContentLoaded', function() {
         const datesWrapper = document.getElementById('dates-wrapper');
         const addBtn = document.getElementById('add-date');
+
+        const typeSel = document.getElementById('leave-type');
+        const specialFields = document.getElementById('special-fields');
+        const specialTypeInput = document.querySelector('input[name="special_type"]');
+        const attachmentInput = document.querySelector('input[name="attachment"]');
 
         addBtn.addEventListener('click', function() {
             const row = document.createElement('div');
@@ -85,6 +112,23 @@
                 btn.disabled = rows.length === 1;
             });
         }
+
+        // ★ special 選択時だけフィールドを有効＆必須にする
+        function updateSpecialFields() {
+            if (!typeSel || !specialFields) return;
+            const isSpecial = typeSel.value === 'special';
+
+            specialFields.style.display = isSpecial ? '' : 'none';
+
+            if (specialTypeInput) specialTypeInput.required = isSpecial;
+            if (attachmentInput) attachmentInput.required = isSpecial;
+        }
+
+        if (typeSel) {
+            typeSel.addEventListener('change', updateSpecialFields);
+            updateSpecialFields(); // 初期表示（old()対応）
+        }
+
         updateRemoveButtons();
     });
 </script>

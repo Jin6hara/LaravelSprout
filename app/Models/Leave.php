@@ -88,4 +88,9 @@ class Leave extends Model
     {
         return $this->morphOne(ApprovalRequest::class, 'approvable');
     }
+
+    public function attachment(): MorphOne
+    {
+        return $this->morphOne(Attachment::class, 'attachable');
+    }
 }
