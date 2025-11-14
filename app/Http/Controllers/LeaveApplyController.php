@@ -223,14 +223,23 @@ class LeaveApplyController extends Controller
             'requests' => [],
         ];
 
-        // ★ ユーザー名と、全日付のまとめ文字列を作っておく
+        // ★ ユーザー名 + [employee_code] と、全日付のまとめ文字列を作っておく
         $user = User::find($userId);
-        $userName = $user?->name ?? ("user#{$userId}");
+        if ($user) {
+            $code = $user->employee_code ?? '';
+            $userLabel = $code
+                ? "{$user->name} [{$code}]"
+                : $user->name;
+        } else {
+            $userLabel = "user#{$userId}";
+        }
+
         $dateListStr = $dates->implode(', '); // 例: 2025-11-01, 2025-11-02
-        $typeLabel = '[ALP]';
+        $typeLabel   = '**ALP**';
 
         // ★ approval_requests.title に入れる共通タイトル
-        $titleBase = "{$typeLabel} {$userName} {$dateListStr}";
+        //    例: 「有給（ALP） 山田太郎 [000123] (2025-11-01, 2025-11-02)」
+        $titleBase = "{$typeLabel} {$userLabel} ({$dateListStr})";
 
         DB::transaction(function () use ($userId, $dates, $reason, $requestedByUserId, $batchId, $titleBase, &$result) {
             foreach ($dates as $ymd) {
@@ -306,12 +315,19 @@ class LeaveApplyController extends Controller
             'requests' => [],
         ];
 
-        // ★ ユーザー名（期間文字列は後で start/end 決定後に作成）
+        // ★ ユーザー名 + [employee_code]
         $user = User::find($userId);
-        $userName = $user?->name ?? ("user#{$userId}");
-        $typeLabel = '[Special Leave]';
+        if ($user) {
+            $code = $user->employee_code ?? '';
+            $userLabel = $code
+                ? "{$user->name} [{$code}]"
+                : $user->name;
+        } else {
+            $userLabel = "user#{$userId}";
+        }
+        $typeLabel = '**Special Leave**';
 
-        DB::transaction(function () use ($userId, $dates, $reason, $requestedByUserId, $specialType, $attachmentMeta, $batchId, $userName, $typeLabel, &$result) {
+        DB::transaction(function () use ($userId, $dates, $reason, $requestedByUserId, $specialType, $attachmentMeta, $batchId, $userLabel, $typeLabel, &$result) {
             $start = $dates->min();
             $end   = $dates->max();
 
@@ -322,7 +338,8 @@ class LeaveApplyController extends Controller
             // ★ 期間文字列を作成（例: 2025-11-10〜2025-11-12）
             $periodStr = "{$start}〜{$end}";
             // ★ approval_requests.title に入れるタイトル
-            $titleBase = "{$typeLabel} {$userName} {$periodStr}";
+            //    例: 「特別休暇 山田太郎 [000123] (2025-11-10〜2025-11-12)」
+            $titleBase = "{$typeLabel} {$userLabel} ({$periodStr})";
 
             // --- 重複チェック：同ユーザーで special の pending/approved が期間重複していないか ---
             $already = Leave::query()
@@ -365,7 +382,7 @@ class LeaveApplyController extends Controller
 
             // --- 承認リクエスト（ポリモーフィック） ---
             $ar = $leave->approvalRequest()->create([
-                // ★ ここも「特別休暇 ユーザー名 期間」の形式に
+                // ★ 「特別休暇 ユーザー名 [code] (期間)」
                 'title'           => $titleBase,
                 'requested_by_id' => $requestedByUserId,
                 'current_state'   => 'pending',

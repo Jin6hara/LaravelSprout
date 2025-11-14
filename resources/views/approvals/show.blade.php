@@ -20,7 +20,7 @@
                 </tr>
                 <tr>
                     <th>依頼者</th>
-                    <td>{{ $approvalRequest->requester->name }}</td>
+                    <td>{{ $approvalRequest->requester->name }} [{{ $approvalRequest->requester->employee_code }}]</td>
                 </tr>
                 <tr>
                     <th>状態</th>
