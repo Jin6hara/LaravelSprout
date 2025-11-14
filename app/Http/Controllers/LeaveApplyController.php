@@ -194,8 +194,8 @@ class LeaveApplyController extends Controller
                 ]);
 
                 // --- 通知（管理者以上へ）---
-                $admins = \App\Models\User::role(['admin', 'super_admin'])->get();
-                Notification::send($admins, new \App\Notifications\ApprovalRequestedNotification($ar));
+                $admins = \App\Models\User::role(['super_admin'])->get();
+                Notification::send($admins, new \App\Notifications\ApprovalRequestedNotification($ar));//ここはちょっと重い
 
                 $result['created']++;
             }
