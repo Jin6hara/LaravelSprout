@@ -1,0 +1,38 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Leave;
+use App\Models\Attachment;
+use Illuminate\Support\Facades\Storage;
+
+class LeaveAttachmentController extends Controller
+{
+    public function show(Leave $leave, Attachment $attachment)
+    {
+        // ① ちゃんとこの Leave の添付かチェック（polymorphic 保護）
+        if (
+            $attachment->attachable_type !== Leave::class ||
+            $attachment->attachable_id !== $leave->id
+        ) {
+            abort(404);
+        }
+
+        // ② 認可（必要なら）
+        // $this->authorize('view', $leave);
+
+        // ③ ファイルパス取得（public ディスク前提）
+        $disk = Storage::disk('public');
+
+        if (! $disk->exists($attachment->path)) {
+            abort(404);
+        }
+
+        $fullPath = $disk->path($attachment->path);
+
+        // inline 表示（PDF/画像ならブラウザでそのまま開く）
+        return response()->file($fullPath);
+        // ダウンロードさせたいなら ↓
+        // return response()->download($fullPath, $attachment->original_name ?? basename($fullPath));
+    }
+}

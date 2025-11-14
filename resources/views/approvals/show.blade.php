@@ -93,7 +93,7 @@
                     <th>添付</th>
                     <td>
                         @if($approvable->attachment)
-                        <a href="{{ asset('storage/' . $approvable->attachment->path) }}" target="_blank">
+                        <a href="{{ route('leaves.attachments.show', ['leave' => $approvable->id, 'attachment' => $approvable->attachment->id]) }}" target="_blank">
                             {{ $approvable->attachment->original_name ?? '添付ファイルを開く' }}
                         </a>
                         @if($approvable->attachment->size)
