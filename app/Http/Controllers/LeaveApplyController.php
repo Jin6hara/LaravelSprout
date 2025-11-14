@@ -13,6 +13,7 @@ use App\Models\LeaveCredit;
 use App\Support\Fiscal;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Str;
 
 class LeaveApplyController extends Controller
 {
@@ -113,9 +114,10 @@ class LeaveApplyController extends Controller
     /**
      * コア処理：
      * - dates[] をユニーク＆昇順
-     * - 各日付ごとに Leave(pending, paid/special) + ApprovalRequest を作成
-     * - 既存の pending/approved がある日はスキップ
-     * - 管理者へ通知
+     * - 有給(paid)：各日付ごとに Leave(pending, paid) + ApprovalRequest
+     * - 特別休暇(special)：期間で 1 Leave + 1 ApprovalRequest
+     * - 既存の pending/approved がある日は/期間はスキップ
+     * - Notification は「1申請につき 1件」だけ送信
      * - 結果サマリをフラッシュ
      */
     private function applyCore(
@@ -139,13 +141,89 @@ class LeaveApplyController extends Controller
             return back()->withErrors(['dates' => '申請日を1つ以上入力してください。'])->withInput();
         }
 
+        // ★ 1申請を識別するバッチID
+        $batchId = (string) Str::uuid();
+
+        // ★ モード別に処理
+        if ($type === 'special') {
+            $result = $this->applySpecial(
+                $userId,
+                $dates,
+                $reason,
+                $requestedByUserId,
+                $specialType,
+                $attachmentMeta,
+                $batchId
+            );
+        } else {
+            $result = $this->applyPaid(
+                $userId,
+                $dates,
+                $reason,
+                $requestedByUserId,
+                $batchId
+            );
+        }
+
+        // フィードバック文面
+        $created = $result['created'] ?? 0;
+        $skipped = $result['skipped'] ?? 0;
+
+        // ※「有給申請」→「休暇申請」に文言を少し広げる
+        $msg = "休暇申請を送信しました（作成: {$created}件";
+        if ($skipped > 0) {
+            $msg .= " / スキップ: {$skipped}件";
+        }
+        $msg .= '）。';
+
+        // スキップ詳細を併せて表示したい場合
+        if (!empty($result['skips'] ?? [])) {
+            $detail = collect($result['skips'])
+                ->map(fn($why, $d) => "{$d}: {$why}")
+                ->join(' / ');
+            $msg .= ' ' . $detail;
+        }
+
+        // ★ Notification を 1申請につき 1回だけ送信
+        $requests = $result['requests'] ?? [];
+        if (!empty($requests)) {
+            $firstRequest = $requests[0];
+            $totalCount   = count($requests);
+
+            $admins = User::role(['super_admin'])->get();
+            Notification::send(
+                $admins,
+                new \App\Notifications\ApprovalRequestedNotification(
+                    $firstRequest,
+                    $totalCount,
+                    $batchId
+                )
+            );
+        }
+
+        return redirect()->route('leave.apply.create')->with('toast', $msg);
+    }
+
+    /**
+     * 有給（paid）用：1日1レコード
+     *
+     * @return array{created:int,skipped:int,skips:array,requests:array}
+     */
+    private function applyPaid(
+        int $userId,
+        \Illuminate\Support\Collection $dates,
+        string $reason,
+        int $requestedByUserId,
+        string $batchId
+    ): array {
         $result = [
-            'created' => 0,
-            'skipped' => 0,
-            'skips'   => [], // ['2025-09-10' => 'already requested', ...]
+            'created'  => 0,
+            'skipped'  => 0,
+            'skips'    => [],
+            'requests' => [],
         ];
 
-        DB::transaction(function () use ($userId, $dates, $reason, $requestedByUserId, $type, $specialType, $attachmentMeta, &$result) {
+        DB::transaction(function () use ($userId, $dates, $reason, $requestedByUserId, $batchId, &$result) {
             foreach ($dates as $ymd) {
                 // --- 重複チェック：同日に paid leave の pending/approved があるか ---
                 $already = Leave::query()
@@ -166,56 +244,125 @@ class LeaveApplyController extends Controller
                     'user_id'      => $userId,
                     'start_date'   => $ymd,
                     'end_date'     => null,
-                    'kind'         => $type === 'special' ? 'special' : 'paid',
+                    'kind'         => 'paid',
                     'excused'      => 'excused',
                     'reason'       => $reason,
                     'status'       => 'pending',
-                    'special_type' => $type === 'special' ? ($specialType ?: null) : null,
+                    'special_type' => null,
                 ]);
-
-                // ★ special の場合は添付レコードを作成（同じファイルを各日分に紐付け）
-                if ($type === 'special' && $attachmentMeta) {
-                    $leave->attachment()->create($attachmentMeta);
-                }
 
                 // --- 承認リクエスト（ポリモーフィック） ---
                 $ar = $leave->approvalRequest()->create([
-                    'title'           => sprintf('特別休暇申請: user#%d %s', $userId, $ymd),
+                    'title'           => sprintf('有給申請: user#%d %s', $userId, $ymd),
                     'requested_by_id' => $requestedByUserId,
                     'current_state'   => 'pending',
                     'metadata'        => [
-                        'leave_id'      => $leave->id,
-                        'user_id'       => $userId,
-                        'date'          => $ymd,
-                        'kind'          => $type,      // ★ paid or special
-                        'reason'        => $reason,
-                        'special_type'  => $type === 'special' ? ($specialType ?: null) : null,
+                        'batch_id'     => $batchId,
+                        'leave_id'     => $leave->id,
+                        'user_id'      => $userId,
+                        'date'         => $ymd,
+                        'kind'         => 'paid',
+                        'reason'       => $reason,
+                        'special_type' => null,
                     ],
                 ]);
 
-                // --- 通知（管理者以上へ）---
-                $admins = \App\Models\User::role(['super_admin'])->get();
-                Notification::send($admins, new \App\Notifications\ApprovalRequestedNotification($ar));//ここはちょっと重い
-
                 $result['created']++;
+                $result['requests'][] = $ar;
             }
         });
 
-        // フィードバック文面
-        $msg = "有給申請を送信しました（作成: {$result['created']}件";
-        if ($result['skipped'] > 0) {
-            $msg .= " / スキップ: {$result['skipped']}件";
-        }
-        $msg .= '）。';
+        return $result;
+    }
+    /**
+     * 特別休暇（special）用：期間1レコード
+     *
+     * @return array{created:int,skipped:int,skips:array,requests:array}
+     */
+    private function applySpecial(
+        int $userId,
+        \Illuminate\Support\Collection $dates,
+        string $reason,
+        int $requestedByUserId,
+        ?string $specialType,
+        ?array $attachmentMeta,
+        string $batchId
+    ): array {
+        $result = [
+            'created'  => 0,
+            'skipped'  => 0,
+            'skips'    => [],
+            'requests' => [],
+        ];
 
-        // スキップ詳細を併せて表示したい場合
-        if (!empty($result['skips'])) {
-            $detail = collect($result['skips'])
-                ->map(fn($why, $d) => "{$d}: {$why}")
-                ->join(' / ');
-            $msg .= ' ' . $detail;
-        }
+        DB::transaction(function () use ($userId, $dates, $reason, $requestedByUserId, $specialType, $attachmentMeta, $batchId, &$result) {
+            $start = $dates->min();
+            $end   = $dates->max();
 
-        return redirect()->route('leave.apply.create')->with('toast', $msg);
+            if (!$start || !$end) {
+                return;
+            }
+
+            // --- 重複チェック：同ユーザーで special の pending/approved が期間重複していないか ---
+            $already = Leave::query()
+                ->where('user_id', $userId)
+                ->where('kind', 'special')
+                ->whereIn('status', ['pending', 'approved'])
+                ->where(function ($q) use ($start, $end) {
+                    // start_date～end_date が少しでも重なればNG
+                    $q->whereBetween('start_date', [$start, $end])
+                        ->orWhereBetween('end_date', [$start, $end])
+                        ->orWhere(function ($q2) use ($start, $end) {
+                            $q2->where('start_date', '<=', $start)
+                                ->where('end_date', '>=', $end);
+                        });
+                })
+                ->exists();
+
+            if ($already) {
+                $result['skipped'] = 1;
+                $result['skips']["{$start}〜{$end}"] = '既に申請/承認済みです';
+                return;
+            }
+
+            // --- Leave（期間）を1レコード作成 ---
+            $leave = Leave::create([
+                'user_id'      => $userId,
+                'start_date'   => $start,
+                'end_date'     => $end,
+                'kind'         => 'special',
+                'excused'      => 'excused',
+                'reason'       => $reason,
+                'status'       => 'pending',
+                'special_type' => $specialType ?: null,
+            ]);
+
+            // ★ 添付（証明書）があれば 1:1 で紐付け
+            if ($attachmentMeta) {
+                $leave->attachment()->create($attachmentMeta);
+            }
+
+            // --- 承認リクエスト（ポリモーフィック） ---
+            $ar = $leave->approvalRequest()->create([
+                'title'           => sprintf('特別休暇申請: user#%d %s〜%s', $userId, $start, $end),
+                'requested_by_id' => $requestedByUserId,
+                'current_state'   => 'pending',
+                'metadata'        => [
+                    'batch_id'     => $batchId,
+                    'leave_id'     => $leave->id,
+                    'user_id'      => $userId,
+                    'date_from'    => $start,
+                    'date_to'      => $end,
+                    'kind'         => 'special',
+                    'reason'       => $reason,
+                    'special_type' => $specialType ?: null,
+                ],
+            ]);
+
+            $result['created']  = 1;
+            $result['requests'][] = $ar;
+        });
+
+        return $result;
     }
 }
