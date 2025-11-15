@@ -54,6 +54,12 @@
 </li>
 
 <li class="nav-item">
+    <a class="btn btn-sm btn-outline-secondary header-btn" href="{{ route('csv.user_schedule_line.form') }}">
+        CSV
+    </a>
+</li>
+
+<li class="nav-item">
     @php $unread = auth()->user()->unreadNotifications()->count(); @endphp
     <a href="{{ route('notifications.index') }}" class="btn btn-sm btn-outline-secondary header-btn position-relative">
         Notification
