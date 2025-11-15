@@ -72,6 +72,51 @@ class ApprovalController extends Controller
         $this->authorize('act', $approvalRequest);
 
         DB::transaction(function () use ($approvalRequest) {
+            $meta       = $approvalRequest->metadata ?? [];
+            $approvable = $approvalRequest->approvable; // e.g. RoleChange
+
+            /** @var Leave|null $leave */
+            if ($approvable instanceof Leave && !empty($meta['batch_id'])) {
+                // ★ 有休・特別休暇など Leave のバッチ承認
+                $batchId = $meta['batch_id'];
+
+                $allRequests = ApprovalRequest::query()
+                    ->where('approvable_type', Leave::class)
+                    ->where('metadata->batch_id', $batchId)
+                    ->get();
+
+                foreach ($allRequests as $req) {
+                    /** @var Leave|null $leave */
+                    $leave = $req->approvable;
+
+                    if (! $leave instanceof Leave) {
+                        continue;
+                    }
+
+                    // 1) アクション履歴
+                    $req->actions()->create([
+                        'actor_id' => Auth::id(),
+                        'action'   => 'approved',
+                        'comment'  => request('comment'),
+                    ]);
+
+                    // 2) 承認リクエスト状態更新
+                    $req->update(['current_state' => 'approved']);
+
+                    // 3) ドメイン反映（Leave）
+                    $leave->update([
+                        'status'      => 'approved',
+                        'approved_by' => auth()->id(),
+                    ]);
+
+                    // 4) 有給残数の消化
+                    app(LeaveBalanceService::class)->consume($leave);
+                }
+
+                return;
+            }
+
+            // ★ ここから下は従来どおり「単体」の承認（RoleChange 等）
             // 1) アクション履歴
             $approvalRequest->actions()->create([
                 'actor_id' => Auth::id(),
@@ -83,7 +128,6 @@ class ApprovalController extends Controller
             $approvalRequest->update(['current_state' => 'approved']);
 
             // 3) ドメイン反映（morph先に委譲）
-            $approvable = $approvalRequest->approvable; // e.g. RoleChange
             $approvable->update(['status' => 'approved']);
 
             // 4) 実ロール変更（RoleChangeの場合）
@@ -111,6 +155,42 @@ class ApprovalController extends Controller
         $this->authorize('act', $approvalRequest);
 
         DB::transaction(function () use ($approvalRequest) {
+            $meta       = $approvalRequest->metadata ?? [];
+            $approvable = $approvalRequest->approvable;
+
+            /** @var Leave|null $leave */
+            if ($approvable instanceof Leave && !empty($meta['batch_id'])) {
+                // ★ 有休・特別休暇など Leave のバッチ却下
+                $batchId = $meta['batch_id'];
+
+                $allRequests = ApprovalRequest::query()
+                    ->where('approvable_type', Leave::class)
+                    ->where('metadata->batch_id', $batchId)
+                    ->get();
+
+                foreach ($allRequests as $req) {
+                    /** @var Leave|null $leave */
+                    $leave = $req->approvable;
+
+                    if (! $leave instanceof Leave) {
+                        continue;
+                    }
+
+                    $req->actions()->create([
+                        'actor_id' => Auth::id(),
+                        'action'   => 'rejected',
+                        'comment'  => request('comment'),
+                    ]);
+
+                    $req->update(['current_state' => 'rejected']);
+
+                    $leave->update(['status' => 'rejected']);
+                }
+
+                return;
+            }
+
+            // ★ ここから下は従来どおり「単体」の却下（RoleChange 等）
             $approvalRequest->actions()->create([
                 'actor_id' => Auth::id(),
                 'action'   => 'rejected',
