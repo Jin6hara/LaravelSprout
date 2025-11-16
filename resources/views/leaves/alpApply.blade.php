@@ -104,7 +104,7 @@
         const datesBlock = document.getElementById('dates-block');
         const specialRangeBlock = document.getElementById('special-range-block');
         const specialFields = document.getElementById('special-fields');
-        const specialTypeInput = document.querySelector('input[name="special_type"]');
+        const specialTypeInput = document.querySelector('select[name="special_type"]');
         const attachmentInput = document.querySelector('input[name="attachment"]');
         const specialStart = document.getElementById('special-start');
         const specialEnd = document.getElementById('special-end');
