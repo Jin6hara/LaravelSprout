@@ -190,7 +190,12 @@
                 if (!res.ok || !data.ok) throw new Error(data?.message || 'レッスン取得に失敗');
 
                 const lesson = data.lesson;
-                card.querySelector('.js-lesson-name').value = lesson.lesson_name ?? '';
+
+                // ★ ここを安全にする
+                const nameEl = card.querySelector('.js-lesson-name');
+                if (nameEl) {
+                    nameEl.value = lesson.lesson_name ?? '';
+                }
 
                 // ★ total_minutes は画面表示しないため hidden に保持
                 const minEl = card.querySelector('.js-total-min');

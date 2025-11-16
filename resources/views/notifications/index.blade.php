@@ -62,9 +62,9 @@
             @php
                 $data = $n->data ?? [];
                 $isUnread = $n->is_unread ?? is_null($n->read_at);
-                $state = $n->computed_state; // approved|denied
-                $badge = $state === 'approved' ? 'success' : ($state === 'denied' ? 'secondary' : 'light');
-                $stateLabel = $state === 'approved' ? '承認済み' : ($state === 'denied' ? '却下' : '処理済み');
+                $state = $n->computed_state; // approved|rejected
+                $badge = $state === 'approved' ? 'success' : ($state === 'rejected' ? 'secondary' : 'light');
+                $stateLabel = $state === 'approved' ? '承認済み' : ($state === 'rejected' ? '差し戻し' : '処理済み');
             @endphp
             <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-start {{ $isUnread ? 'bg-light' : '' }}">
                 <div class="me-3">

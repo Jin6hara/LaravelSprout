@@ -11,6 +11,7 @@ use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\LeaveApplyController;
+use App\Http\Controllers\LeaveAttachmentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -85,6 +86,9 @@ Route::middleware(['auth'])->group(function () {
         ->name('approvals.approve');
     Route::post('/approvals/{approvalRequest}/deny', [ApprovalController::class, 'deny'])
         ->name('approvals.deny');
+
+    Route::get('/leaves/{leave}/attachments/{attachment}', [LeaveAttachmentController::class, 'show'])
+        ->name('leaves.attachments.show');
 });
 
 
