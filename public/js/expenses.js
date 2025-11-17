@@ -268,6 +268,7 @@
       const newRow = { date: dateStr, day: enWeekday(dateStr), from: '', to: '', cost: 0, trip: '', note: '', id: '', seq: newSeq };
       const updated = sortRowsByDateThenSeq([...rows, newRow]);
       renderRows(updated);
+      showToast('Row added.', 'success');
       enableAddButtonIfValid();
     });
 
@@ -281,6 +282,7 @@
         if (isLocked) return; // ★ ロックなら何もしない
 
         const rows = readCurrentRows();
+        showToast('Saved successfully.', 'success');
 
         for (const r of rows) {
           if (!/^\d{4}-\d{2}-\d{2}$/.test(r.date)) { showToast(`Invalid date format ${r.date}`, 'warning'); return; }
@@ -455,6 +457,7 @@
         const rowsWithNew = [...rows.slice(0, rowIndex + 1), newRow, ...rows.slice(rowIndex + 1)];
         const updated = rowsWithNew.slice().sort((a, b) => (a.date === b.date) ? (a.seq - b.seq) : (a.date < b.date ? -1 : 1));
         renderRows(updated);
+        showToast('Row Added.', 'success');
 
         const newIndex = updated.findIndex(r => r.date === date && r.seq === newSeq);
         if (newIndex >= 0) sheet[0].selectCell(COL.FROM, newIndex);
