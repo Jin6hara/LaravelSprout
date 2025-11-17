@@ -373,12 +373,16 @@
         newYesBtn.addEventListener('click', async () => {
           modal.hide();
 
-          // 未保存行はクライアント側だけで削除
+          // 未保存行の削除（フロントのみ）
           if (isUnsaved) {
-            sheet[0].deleteRow(rowIndex);
-            const rowsAfter = readCurrentRows();
-            renderRows(rowsAfter);
-            updateTotal(rowsAfter);
+            // 今のシート状態を全部読み取る
+            const current = readCurrentRows(); // ← sheet[0] から読む実装になっている前提
+            // この削除対象行（rowIndex番目）だけを除外
+            const filtered = current.filter((_, idx) => idx !== rowIndex);
+            // その配列でシートを再描画
+            renderRows(filtered);
+            // 合計再計算（必要ないと思う）
+            updateTotal(filtered);
             showToast('Unsaved rows have been deleted.', 'success');
             return;
           }
