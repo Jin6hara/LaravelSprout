@@ -268,7 +268,7 @@
       const newRow = { date: dateStr, day: enWeekday(dateStr), from: '', to: '', cost: 0, trip: '', note: '', id: '', seq: newSeq };
       const updated = sortRowsByDateThenSeq([...rows, newRow]);
       renderRows(updated);
-      showToast('Row added.', 'success');
+      showToast(`Row added for ${dateStr} (${enWeekday(dateStr)}).`, 'success');
       enableAddButtonIfValid();
     });
 
@@ -282,7 +282,6 @@
         if (isLocked) return; // ★ ロックなら何もしない
 
         const rows = readCurrentRows();
-        showToast('Saved successfully.', 'success');
 
         for (const r of rows) {
           if (!/^\d{4}-\d{2}-\d{2}$/.test(r.date)) { showToast(`Invalid date format ${r.date}`, 'warning'); return; }
@@ -333,7 +332,11 @@
           }
 
           showToast('Saved successfully.', 'success');
-          location.reload();
+
+          // ★ トーストを少し見せてからリロード
+          setTimeout(() => {
+            location.reload();
+          }, 2000); // 好みで 1000〜2000ms に調整OK
 
         } catch (err) {
           console.error(err);
@@ -379,13 +382,25 @@
           if (isUnsaved) {
             // 今のシート状態を全部読み取る
             const current = readCurrentRows(); // ← sheet[0] から読む実装になっている前提
+
+            // ★ 削除対象行の日付を控えておく
+            const target = current[rowIndex];
+            const deletedDate = target?.date || '';
+
             // この削除対象行（rowIndex番目）だけを除外
             const filtered = current.filter((_, idx) => idx !== rowIndex);
             // その配列でシートを再描画
             renderRows(filtered);
             // 合計再計算（必要ないと思う）
             updateTotal(filtered);
-            showToast('Unsaved rows have been deleted.', 'success');
+
+            // ★ 日付入りトースト
+            if (deletedDate) {
+              showToast(`Unsaved row on ${deletedDate}(${enWeekday(deletedDate)}) has been deleted.`, 'success');
+            } else {
+              showToast('Unsaved row has been deleted.', 'success');
+            }
+
             return;
           }
 
@@ -420,11 +435,22 @@
 
             // --- 成功時（DOMと合計の再計算） ---
             const current = readCurrentRows();
+
+            // ★ 削除される行の日付を控える
+            const target = current.find(r => String(r.id) === String(id));
+            const deletedDate = target?.date || '';
+
             const filtered = current.filter(r => String(r.id) !== String(id));
             renderRows(filtered);
             if (initialIdSet) initialIdSet.delete(String(id));
             updateTotal(filtered);
-            showToast('Deleted successfully.', 'success');
+
+            // ★ 日付入りトースト
+            if (deletedDate) {
+              showToast(`Row on ${deletedDate}(${enWeekday(deletedDate)}) has been deleted.`, 'success');
+            } else {
+              showToast('Deleted successfully.', 'success');
+            }
 
           } catch (err) {
             console.error(err);
@@ -457,7 +483,8 @@
         const rowsWithNew = [...rows.slice(0, rowIndex + 1), newRow, ...rows.slice(rowIndex + 1)];
         const updated = rowsWithNew.slice().sort((a, b) => (a.date === b.date) ? (a.seq - b.seq) : (a.date < b.date ? -1 : 1));
         renderRows(updated);
-        showToast('Row Added.', 'success');
+        showToast(`Row added for ${date} (${enWeekday(date)}).`, 'success');
+
 
         const newIndex = updated.findIndex(r => r.date === date && r.seq === newSeq);
         if (newIndex >= 0) sheet[0].selectCell(COL.FROM, newIndex);
