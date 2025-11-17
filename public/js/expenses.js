@@ -396,7 +396,7 @@
 
             // ★ 日付入りトースト
             if (deletedDate) {
-              showToast(`Unsaved row on ${deletedDate}(${enWeekday(deletedDate)}) has been deleted.`, 'success');
+              showToast(`Unsaved row on ${deletedDate} (${enWeekday(deletedDate)}) has been deleted.`, 'success');
             } else {
               showToast('Unsaved row has been deleted.', 'success');
             }
@@ -447,7 +447,7 @@
 
             // ★ 日付入りトースト
             if (deletedDate) {
-              showToast(`Row on ${deletedDate}(${enWeekday(deletedDate)}) has been deleted.`, 'success');
+              showToast(`Row on ${deletedDate} (${enWeekday(deletedDate)}) has been deleted.`, 'success');
             } else {
               showToast('Deleted successfully.', 'success');
             }
