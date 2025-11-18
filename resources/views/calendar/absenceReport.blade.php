@@ -141,12 +141,12 @@
             method="POST"
             action="{{ route('report.update', $leave) }}"
             class="d-inline-block"
-            enctype="multipart/form-data" {{-- ←★追加 --}}>
+            enctype="multipart/form-data">
             @csrf @method('PUT')
-            <button type="submit" class="btn btn-sm btn-primary w-70">Submit</button>
+            <button type="submit" class="btn btn-sm btn-primary w-100">Submit</button>
           </form>
           @else
-          <button type="button" class="btn btn-sm btn-outline-secondary w-70" disabled>✔️</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary w-100" disabled>✔️</button>
           @endif
         </div>
 
