@@ -17,12 +17,12 @@
 </div>
 
 <div class="card">
-  <div class="card-body p-2">
+  <div class="card-body p-1">
 
     @forelse($rows as $row)
     @php($leave = $row['leave'])
-    <div class="leave-row border rounded-3 p-2 mb-2 {{ $row['needsReport'] ? 'bg-required' : '' }}">
-      <div class="row g-2 align-items-end">
+    <div class="leave-row border rounded-2 p-1 mb-2 {{ $row['needsReport'] ? 'bg-required' : '' }}">
+      <div class="row g-1 align-items-end">
 
         {{-- Date --}}
         <div class="col-6 col-sm-6 col-md-6 col-lg-1 mb-1">
@@ -48,7 +48,7 @@
         </div>
 
         {{-- Reason --}}
-        <div class="col-12 col-sm-12 col-md-6 col-lg-3">
+        <div class="col-12 col-sm-12 col-md-6 col-lg-2">
           <label class="form-label small text-muted mb-1">Reason</label>
           @if($row['needsReport'])
           <textarea
@@ -66,8 +66,37 @@
           @endif
         </div>
 
+        {{-- Attachment --}}
+        <div class="col-12 col-sm-12 col-md-6 col-lg-2">
+          <label class="form-label small text-muted mb-1">Attachment</label>
+          @if($row['needsReport'])
+          <input
+            type="file"
+            name="attachment"
+            form="{{ $row['formId'] }}"
+            class="form-control form-control-sm">
+          @else
+          @if($leave->attachment)
+          <a
+            href="{{ route('absence.download', $leave) }}"
+            class="btn btn-sm btn-outline-primary w-100 px-1 py-1 text-truncate"
+            title="{{ $leave->attachment->original_name ?? 'View Attachment' }}">
+            <span class="d-block text-truncate" style="max-width: 100%;">
+              {{ $leave->attachment->original_name ?? 'View Attachment' }}
+            </span>
+          </a>
+          @else
+          <input
+            type="text"
+            class="form-control form-control-sm bg-body-tertiary"
+            value="No attachment"
+            readonly>
+          @endif
+          @endif
+        </div>
+
         {{-- Handle Type --}}
-        <div class="col-12 col-sm-12 col-md-6 col-lg-4">
+        <div class="col-12 col-sm-12 col-md-12 col-lg-3">
           <label class="form-label small text-muted mb-1">Handle Type</label>
           @if($row['needsReport'])
           <select
@@ -86,33 +115,6 @@
             class="form-control form-control-sm bg-body-tertiary"
             value="{{ $row['handleLabel'] }}"
             readonly>
-          @endif
-        </div>
-
-        {{-- Attachment --}}
-        <div class="col-12 col-sm-12 col-md-6 col-lg-3">
-          <label class="form-label small text-muted mb-1">Attachment</label>
-          @if($row['needsReport'])
-          <input
-            type="file"
-            name="attachment"
-            form="{{ $row['formId'] }}"
-            class="form-control form-control-sm">
-          @else
-          @if($leave->attachment)
-          {{-- ★ ここを absence.download に変更 --}}
-          <a
-            href="{{ route('absence.download', $leave) }}"
-            class="btn btn-sm btn-outline-primary w-100">
-            {{ $leave->attachment->original_name ?? 'View Attachment' }}
-          </a>
-          @else
-          <input
-            type="text"
-            class="form-control form-control-sm bg-body-tertiary"
-            value="No attachment"
-            readonly>
-          @endif
           @endif
         </div>
 
@@ -141,10 +143,10 @@
             class="d-inline-block"
             enctype="multipart/form-data" {{-- ←★追加 --}}>
             @csrf @method('PUT')
-            <button type="submit" class="btn btn-sm btn-primary w-100">Submit</button>
+            <button type="submit" class="btn btn-sm btn-primary w-70">Submit</button>
           </form>
           @else
-          <button type="button" class="btn btn-sm btn-outline-secondary w-100" disabled>Submitted</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary w-70" disabled>✔️</button>
           @endif
         </div>
 
