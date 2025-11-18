@@ -203,6 +203,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/absence_report/{user}', [LeaveController::class, 'absence'])->name('absence.edit');
     Route::get('/all_absence_report/', [LeaveController::class, 'allReport'])->name('absense.all');
     Route::put('/handle_type/{leave}', [LeaveController::class, 'report'])->name('report.update');
+    Route::get('/absence/{leave}/download', [LeaveController::class, 'download'])->name('absence.download');
 });
 
 use App\Http\Controllers\SchoolProfileController;

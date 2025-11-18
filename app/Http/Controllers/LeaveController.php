@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Storage;
 
 class LeaveController extends Controller
 {
@@ -169,12 +170,32 @@ class LeaveController extends Controller
         $validated = $request->validate([
             'reason'      => ['required', 'string', 'max:1000'],
             'handle_type' => ['required', 'in:apply_alp,no_alp,clinic,sick_child,special_leave,menstrual_leave'],
+            'attachment'  => ['nullable', 'file', 'max:10240'], // ★attachment（10MBなど）
         ]);
 
         $leave->update([
             'reason'      => $validated['reason'],
             'handle_type' => $validated['handle_type'],
         ]);
+
+        // ★ 添付ファイルの保存処理（最小追加）
+        if ($request->hasFile('attachment')) {
+            $file = $request->file('attachment');
+
+            // 既存の添付があれば削除したい場合（任意）
+            if ($leave->attachment) {
+                Storage::delete($leave->attachment->path);
+                $leave->attachment->delete();
+            }
+
+            $path = $file->store('attachments/' . now()->format('Y/m'));
+
+            $leave->attachment()->create([
+                'path'          => $path,
+                'original_name' => $file->getClientOriginalName(),
+                'size'          => $file->getSize(),
+            ]);
+        }
 
         return back()->with('status', 'Submitted.');
     }
@@ -292,5 +313,24 @@ class LeaveController extends Controller
             'userOptions'        => $userOptions,
             'filters'            => compact('status', 'kind', 'from', 'to', 'userId'),
         ]);
+    }
+
+    public function download(Leave $leave)
+    {
+        $viewer  = Auth::user();
+        $isAdmin = $viewer->hasRole(['admin', 'super_admin']);
+        if (!$isAdmin && $viewer->id !== $leave->user_id) {
+            abort(403);
+        }
+
+        $attachment = $leave->attachment;
+        if (!$attachment) {
+            abort(404);
+        }
+
+        // Storage::download は storage/app/ 以下を見に行く（デフォルト disk）
+        $downloadName = $attachment->original_name ?: 'attachment';
+
+        return Storage::download($attachment->path, $downloadName);
     }
 }

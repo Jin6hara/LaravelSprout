@@ -89,6 +89,33 @@
           @endif
         </div>
 
+        {{-- Attachment --}}
+        <div class="col-12 col-sm-12 col-md-6 col-lg-3">
+          <label class="form-label small text-muted mb-1">Attachment</label>
+          @if($row['needsReport'])
+          <input
+            type="file"
+            name="attachment"
+            form="{{ $row['formId'] }}"
+            class="form-control form-control-sm">
+          @else
+          @if($leave->attachment)
+          {{-- ★ ここを absence.download に変更 --}}
+          <a
+            href="{{ route('absence.download', $leave) }}"
+            class="btn btn-sm btn-outline-primary w-100">
+            {{ $leave->attachment->original_name ?? 'View Attachment' }}
+          </a>
+          @else
+          <input
+            type="text"
+            class="form-control form-control-sm bg-body-tertiary"
+            value="No attachment"
+            readonly>
+          @endif
+          @endif
+        </div>
+
         {{-- Status --}}
         <div class="col-6 col-sm-6 col-md-6 col-lg-1">
           <label class="form-label small text-muted mb-1">Status</label>
@@ -107,7 +134,12 @@
         <div class="col-6 col-sm-6 col-md-6 col-lg-1 text-end">
           <label class="form-label small text-muted mb-1 d-none d-md-block">&nbsp;</label>
           @if($row['needsReport'])
-          <form id="{{ $row['formId'] }}" method="POST" action="{{ route('report.update', $leave) }}" class="d-inline-block">
+          <form
+            id="{{ $row['formId'] }}"
+            method="POST"
+            action="{{ route('report.update', $leave) }}"
+            class="d-inline-block"
+            enctype="multipart/form-data" {{-- ←★追加 --}}>
             @csrf @method('PUT')
             <button type="submit" class="btn btn-sm btn-primary w-100">Submit</button>
           </form>
