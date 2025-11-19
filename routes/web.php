@@ -160,6 +160,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/expenses/generate-monthly', [ExpenseEditController::class, 'generateMonthly'])
         ->name('expenses.generateMonthly')
         ->middleware('role:admin|super_admin');
+    Route::post('/expenses/cleanup-empty', [ExpenseEditController::class, 'cleanupEmpty'])
+        ->name('expenses.cleanupEmpty')
+        ->middleware('role:admin|super_admin');
 });
 
 use App\Http\Controllers\ExpenseApiController;

@@ -35,18 +35,35 @@
       </a>
     </form>
 
-    {{-- 右側：管理者用 Generate ボタン --}}
+    {{-- 右側：管理者用ボタン群 --}}
     @if(auth()->user()?->hasAnyRole(['admin','super_admin']))
-    <form method="POST" action="{{ route('expenses.generateMonthly') }}" class="d-flex">
-      @csrf
-      <input type="hidden" name="year" value="{{ $y }}">
-      <input type="hidden" name="month" value="{{ $m }}">
-      <button type="submit"
-        class="btn btn-sm btn-outline-secondary"
-        onclick="return confirm('Generate expense rows for all active users for {{ sprintf('%04d-%02d', $y, $m) }} ?');">
-        Generate
-      </button>
-    </form>
+    <div class="d-flex align-items-center gap-2">
+
+      {{-- ★ 自動生成（対象月の全ユーザー分のレポート＆日別行を作成） --}}
+      <form method="POST" action="{{ route('expenses.generateMonthly') }}">
+        @csrf
+        <input type="hidden" name="year" value="{{ $y }}">
+        <input type="hidden" name="month" value="{{ $m }}">
+        <button type="submit"
+          class="btn btn-sm btn-outline-secondary"
+          onclick="return confirm('Generate expense rows for all active users for {{ sprintf('%04d-%02d', $y, $m) }} ?');">
+          Generate
+        </button>
+      </form>
+
+      {{-- ★ 空行削除（note=null & cost=0） --}}
+      <form method="POST" action="{{ route('expenses.cleanupEmpty') }}">
+        @csrf
+        <input type="hidden" name="year" value="{{ $y }}">
+        <input type="hidden" name="month" value="{{ $m }}">
+        <button type="submit"
+          class="btn btn-sm btn-outline-danger"
+          onclick="return confirm('Delete empty expenses (note is NULL & cost = 0) for {{ sprintf('%04d-%02d', $y, $m) }} ?');">
+          Cleanup
+        </button>
+      </form>
+
+    </div>
     @endif
   </div>
 

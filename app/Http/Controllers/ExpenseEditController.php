@@ -207,7 +207,11 @@ class ExpenseEditController extends Controller
 
         return back()->with('toast', 'Expense report has been returned to draft.');
     }
-
+    
+    /**
+     * 対象年月の当月分 expense_reports と expenses を生成
+     * Blade から手動実行する用
+     */
     public function generateMonthly(Request $request)
     {
         // 画面側から送ってくる year/month（なければ今月）
@@ -223,6 +227,35 @@ class ExpenseEditController extends Controller
         return back()->with(
             'toast',
             sprintf('Expense reports for %04d-%02d have been generated.', $year, $month)
+        );
+    }
+
+    /**
+     * 対象年月の「空の expense（note=null & cost=0）」を削除
+     * Blade から手動実行する用
+     */
+    public function cleanupEmpty(Request $request)
+    {
+        // 画面から year/month が送られてきたらそれを使う
+        // 何も無ければ「今から2ヶ月前」を対象にする
+        if ($request->filled('year') && $request->filled('month')) {
+            $year  = (int) $request->input('year');
+            $month = (int) $request->input('month');
+        } else {
+            $target = now()->subMonthsNoOverflow(2);
+            $year   = (int) $target->year;
+            $month  = (int) $target->month;
+        }
+
+        // 既存の Artisan コマンドをそのまま利用
+        Artisan::call('expenses:cleanup-empty', [
+            'year'  => $year,
+            'month' => $month,
+        ]);
+
+        return back()->with(
+            'toast',
+            sprintf('Empty expenses for %04d-%02d have been cleaned up.', $year, $month)
         );
     }
 }
