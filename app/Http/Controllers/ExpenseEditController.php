@@ -188,4 +188,22 @@ class ExpenseEditController extends Controller
                 ->with('toast', 'submitted. The user can no longer edit the report.');
         }
     }
+
+    public function unsubmit(Request $request, ExpenseReport $report)
+    {
+        // 後ほどポリシーの実装を行う
+        // $this->authorize('unsubmit', $report);
+
+        // ここは「SUBMITTED のときだけ戻せる」などルールを入れてもOK
+        if ($report->status !== ExpenseReportStatus::SUBMITTED) {
+            return back()->with('error', 'Only submitted reports can be unsubmitted.');
+        }
+
+        $report->update([
+            'submitted_at' => null,
+            'status'       => ExpenseReportStatus::DRAFT,
+        ]);
+
+        return back()->with('toast', 'Expense report has been returned to draft.');
+    }
 }

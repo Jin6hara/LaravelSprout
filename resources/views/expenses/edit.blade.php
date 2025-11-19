@@ -75,8 +75,28 @@
           Submit
         </button>
       @else
-        <div class="ms-auto mt-10"></div>
-        <span class="text-muted">Submitted（{{ optional($report->submitted_at)->format('Y-m-d H:i') }}）</span>
+        <div class="ms-auto mt-2 mt-sm-0 d-flex align-items-center gap-2">
+
+          @if(auth()->user()?->hasAnyRole(['admin','super_admin']))
+            {{-- 管理者のみ Unsubmit ボタン表示 --}}
+            <form method="POST" action="{{ route('expenses.unsubmit', $report) }}">
+              @csrf
+              @method('PATCH')
+              <button type="submit" class="btn btn-outline-danger btn-sm">
+                Unsubmit
+              </button>
+            </form>
+
+            <span class="text-muted small">
+              Submitted（{{ optional($report->submitted_at)->format('Y-m-d H:i') }}）
+            </span>
+          @else
+            {{-- 一般ユーザーは従来通り表示のみ --}}
+            <span class="text-muted">
+              Submitted（{{ optional($report->submitted_at)->format('Y-m-d H:i') }}）
+            </span>
+          @endif
+        </div>
       @endif
     </div>
     @else

@@ -154,6 +154,9 @@ Route::middleware(['auth'])->group(function () {
     // ★ 提出（report単位）
     Route::put('/expenses/reports/{report}/submit', [ExpenseEditController::class, 'submit'])
         ->name('expenses.submit');
+    Route::patch('/expenses/{report}/unsubmit', [ExpenseEditController::class, 'unsubmit'])
+        ->name('expenses.unsubmit')
+        ->middleware('role:admin|super_admin');
 });
 
 use App\Http\Controllers\ExpenseApiController;
