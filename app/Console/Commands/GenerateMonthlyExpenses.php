@@ -16,6 +16,13 @@ use Illuminate\Support\Facades\DB;
 
 class GenerateMonthlyExpenses extends Command
 {
+    /**
+     * 実行コマンド名
+     *
+     * 例）
+     * php artisan expenses:generate-monthly           ← デフォルト（今月分）
+     * php artisan expenses:generate-monthly 2025 03   ← 明示的に指定
+     */
     protected $signature = 'expenses:generate-monthly {year?} {month?}';
     protected $description = 'Generate monthly expense_reports and expenses for active employees';
 
