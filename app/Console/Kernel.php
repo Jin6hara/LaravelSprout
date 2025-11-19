@@ -13,6 +13,10 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         // $schedule->command('inspire')->hourly();
+        // 毎月 2 日の 0:00 に当月分を自動生成
+        $schedule->command('expenses:generate-monthly')
+            ->monthlyOn(19, '21:30')
+            ->withoutOverlapping();
     }
 
     /**

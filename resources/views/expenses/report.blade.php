@@ -20,17 +20,35 @@
 <div class="page-wrap">
   <h1>Commuting Expense Reports（{{ $y }}/{{ $m }}）</h1>
 
-  {{-- ▼ 月選択フォーム --}}
-  <form method="GET" class="mb-3 d-flex align-items-center gap-2" id="monthForm">
-    <label for="monthPick" class="form-label m-0">Target Month</label>
-    <input type="month" id="monthPick" name="monthpick"
-      class="form-control form-control-sm" style="width:170px"
-      value="{{ sprintf('%04d-%02d', $y, $m) }}">
-    <button id="monthSearchBtn" class="btn btn-sm btn-outline-primary" type="button">Search</button>
-    <a class="btn btn-sm btn-outline-success ms-2" href="{{ route('commuter.advisor.index') }}">
-      Commuter Pass Advisor
-    </a>
-  </form>
+  {{-- ▼ 月選択 + 自動生成ボタン行 --}}
+  <div class="d-flex justify-content-between align-items-center mb-3 gap-2">
+
+    {{-- 左側：月選択フォーム --}}
+    <form method="GET" class="d-flex align-items-center gap-2" id="monthForm">
+      <label for="monthPick" class="form-label m-0">Target Month</label>
+      <input type="month" id="monthPick" name="monthpick"
+        class="form-control form-control-sm" style="width:170px"
+        value="{{ sprintf('%04d-%02d', $y, $m) }}">
+      <button id="monthSearchBtn" class="btn btn-sm btn-outline-primary" type="button">Search</button>
+      <a class="btn btn-sm btn-outline-success ms-2" href="{{ route('commuter.advisor.index') }}">
+        Commuter Pass Advisor
+      </a>
+    </form>
+
+    {{-- 右側：管理者用 Generate ボタン --}}
+    @if(auth()->user()?->hasAnyRole(['admin','super_admin']))
+    <form method="POST" action="{{ route('expenses.generateMonthly') }}" class="d-flex">
+      @csrf
+      <input type="hidden" name="year" value="{{ $y }}">
+      <input type="hidden" name="month" value="{{ $m }}">
+      <button type="submit"
+        class="btn btn-sm btn-outline-secondary"
+        onclick="return confirm('Generate expense rows for all active users for {{ sprintf('%04d-%02d', $y, $m) }} ?');">
+        Generate
+      </button>
+    </form>
+    @endif
+  </div>
 
   <div class="header-box mb-4">
     <div class="meta w-100" style="gap:24px">

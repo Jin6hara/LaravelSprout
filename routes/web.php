@@ -157,6 +157,9 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/expenses/{report}/unsubmit', [ExpenseEditController::class, 'unsubmit'])
         ->name('expenses.unsubmit')
         ->middleware('role:admin|super_admin');
+    Route::post('/expenses/generate-monthly', [ExpenseEditController::class, 'generateMonthly'])
+        ->name('expenses.generateMonthly')
+        ->middleware('role:admin|super_admin');
 });
 
 use App\Http\Controllers\ExpenseApiController;

@@ -8,6 +8,7 @@ use App\Services\CommutingExpenses\RouteDeclarationService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use App\Enums\ExpenseReportStatus;
+use Illuminate\Support\Facades\Artisan;
 
 class ExpenseEditController extends Controller
 {
@@ -205,5 +206,23 @@ class ExpenseEditController extends Controller
         ]);
 
         return back()->with('toast', 'Expense report has been returned to draft.');
+    }
+
+    public function generateMonthly(Request $request)
+    {
+        // 画面側から送ってくる year/month（なければ今月）
+        $year  = (int) $request->input('year', now()->year);
+        $month = (int) $request->input('month', now()->month);
+
+        // 既存の Artisan コマンドをそのまま利用
+        Artisan::call('expenses:generate-monthly', [
+            'year'  => $year,
+            'month' => $month,
+        ]);
+
+        return back()->with(
+            'toast',
+            sprintf('Expense reports for %04d-%02d have been generated.', $year, $month)
+        );
     }
 }
