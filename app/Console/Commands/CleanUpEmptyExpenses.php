@@ -56,7 +56,7 @@ class CleanUpEmptyExpenses extends Command
 
         $deleted = $query->delete();
 
-        $this->info("Deleted {$deleted} expense rows.");
+        $this->info("Deleted {$deleted} expense rows for {$year}-{$month}.");
 
         return Command::SUCCESS;
     }

@@ -207,7 +207,7 @@ class ExpenseEditController extends Controller
 
         return back()->with('toast', 'Expense report has been returned to draft.');
     }
-    
+
     /**
      * 対象年月の当月分 expense_reports と expenses を生成
      * Blade から手動実行する用
@@ -253,9 +253,16 @@ class ExpenseEditController extends Controller
             'month' => $month,
         ]);
 
-        return back()->with(
-            'toast',
-            sprintf('Empty expenses for %04d-%02d have been cleaned up.', $year, $month)
-        );
+        // コマンドの出力を取得
+        $output = trim(Artisan::output());
+
+        // 最後の行だけ抜き出す（例: "Deleted 12 expense rows."）
+        $lines = preg_split('/\r\n|\r|\n/', $output);
+        $lastLine = $lines ? trim(end($lines)) : null;
+
+        // フォールバック（何も取れなかった場合用）
+        $toast = $lastLine ?: sprintf('Cleanup finished for %04d-%02d.', $year, $month);
+
+        return back()->with('toast', $toast);
     }
 }
