@@ -19,10 +19,19 @@
 
             {{-- expenses/edit: More ボタン --}}
             @if(($showMore ?? false) && isset($d->user))
+            @if(auth()->user()?->hasAnyRole(['admin', 'super_admin']))
+            {{-- admin以上：今まで通りユーザー別のルート画面へ --}}
             <a href="{{ route('routes.user', ['user' => $d->user->employee_code]) }}"
                 class="btn btn-outline-primary btn-sm">
                 More
             </a>
+            @else
+            {{-- それ以外：routes.index へ --}}
+            <a href="{{ route('routes.index') }}"
+                class="btn btn-outline-primary btn-sm">
+                More
+            </a>
+            @endif
             @endif
         </div>
 

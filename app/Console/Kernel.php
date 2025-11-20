@@ -13,6 +13,16 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         // $schedule->command('inspire')->hourly();
+
+        // 毎月 2 日の 0:00 に当月分を自動生成
+        $schedule->command('expenses:generate-monthly')
+            ->monthlyOn(2, '0:00')
+            ->withoutOverlapping();
+
+        // 毎月 3 日の 0:00 に「2ヶ月前」をクリーンアップ
+        $schedule->command('expenses:cleanup-empty')
+            ->monthlyOn(3, '0:00')
+            ->withoutOverlapping();
     }
 
     /**
@@ -26,6 +36,6 @@ class Kernel extends ConsoleKernel
     }
 
     protected $commands = [
-        \App\Console\Commands\GrantLeaveDays::class,//php artisan leave:grant 10 --date=2025-04-13 一斉付与　（テスト用）
+        \App\Console\Commands\GrantLeaveDays::class, //php artisan leave:grant 10 --date=2025-04-13 一斉付与　（テスト用）
     ];
 }

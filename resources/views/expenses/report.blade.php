@@ -20,17 +20,52 @@
 <div class="page-wrap">
   <h1>Commuting Expense Reports（{{ $y }}/{{ $m }}）</h1>
 
-  {{-- ▼ 月選択フォーム --}}
-  <form method="GET" class="mb-3 d-flex align-items-center gap-2" id="monthForm">
-    <label for="monthPick" class="form-label m-0">Target Month</label>
-    <input type="month" id="monthPick" name="monthpick"
-      class="form-control form-control-sm" style="width:170px"
-      value="{{ sprintf('%04d-%02d', $y, $m) }}">
-    <button id="monthSearchBtn" class="btn btn-sm btn-outline-primary" type="button">Search</button>
-    <a class="btn btn-sm btn-outline-success ms-2" href="{{ route('commuter.advisor.index') }}">
-      Commuter Pass Advisor
-    </a>
-  </form>
+  {{-- ▼ 月選択 + 自動生成ボタン行 --}}
+  <div class="d-flex justify-content-between align-items-center mb-3 gap-2">
+
+    {{-- 左側：月選択フォーム --}}
+    <form method="GET" class="d-flex align-items-center gap-2" id="monthForm">
+      <label for="monthPick" class="form-label m-0">Target Month</label>
+      <input type="month" id="monthPick" name="monthpick"
+        class="form-control form-control-sm" style="width:170px"
+        value="{{ sprintf('%04d-%02d', $y, $m) }}">
+      <button id="monthSearchBtn" class="btn btn-sm btn-outline-primary" type="button">Search</button>
+      <a class="btn btn-sm btn-outline-success ms-2" href="{{ route('commuter.advisor.index') }}">
+        Commuter Pass Advisor
+      </a>
+    </form>
+
+    {{-- 右側：管理者用ボタン群 --}}
+    @if(auth()->user()?->hasAnyRole(['admin','super_admin']))
+    <div class="d-flex align-items-center gap-2">
+
+      {{-- ★ 自動生成（対象月の全ユーザー分のレポート＆日別行を作成） --}}
+      <form method="POST" action="{{ route('expenses.generateMonthly') }}">
+        @csrf
+        <input type="hidden" name="year" value="{{ $y }}">
+        <input type="hidden" name="month" value="{{ $m }}">
+        <button type="submit"
+          class="btn btn-sm btn-outline-secondary"
+          onclick="return confirm('Generate expense rows for all active users for {{ sprintf('%04d-%02d', $y, $m) }} ?');">
+          Generate
+        </button>
+      </form>
+
+      {{-- ★ 空行削除（note=null & cost=0） --}}
+      <form method="POST" action="{{ route('expenses.cleanupEmpty') }}">
+        @csrf
+        <input type="hidden" name="year" value="{{ $y }}">
+        <input type="hidden" name="month" value="{{ $m }}">
+        <button type="submit"
+          class="btn btn-sm btn-outline-danger"
+          onclick="return confirm('Delete empty expenses (note is NULL & cost = 0) for {{ sprintf('%04d-%02d', $y, $m) }} ?');">
+          Cleanup
+        </button>
+      </form>
+
+    </div>
+    @endif
+  </div>
 
   <div class="header-box mb-4">
     <div class="meta w-100" style="gap:24px">
