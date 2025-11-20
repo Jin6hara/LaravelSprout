@@ -16,7 +16,7 @@ class Kernel extends ConsoleKernel
 
         // 毎月 2 日の 0:00 に当月分を自動生成
         $schedule->command('expenses:generate-monthly')
-            ->monthlyOn(19, '21:30')
+            ->monthlyOn(2, '0:00')
             ->withoutOverlapping();
 
         // 毎月 3 日の 0:00 に「2ヶ月前」をクリーンアップ
