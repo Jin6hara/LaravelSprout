@@ -288,6 +288,30 @@ Route::middleware(['auth'])->group(function () {
         ->name('routes.user');
 });
 
+use App\Http\Controllers\CommuterPassController;
+
+Route::middleware(['auth'])->group(function () {
+    // 本人用：定期登録画面
+    Route::get('/commuter-passes/create', [CommuterPassController::class, 'create'])
+        ->name('commuter_passes.create');
+
+    // 本人用：保存
+    Route::post('/commuter-passes', [CommuterPassController::class, 'store'])
+        ->name('commuter_passes.store');
+
+    // 管理者用：他人分の定期登録
+    Route::middleware('role:admin|super_admin')->group(function () {
+        // admin: 指定ユーザーの定期登録画面
+        Route::get('/commuter-passes/{user}/create', [CommuterPassController::class, 'create'])
+            ->name('commuter_passes.admin.create');
+
+        // admin: 指定ユーザーの定期保存
+        Route::post('/commuter-passes/{user}', [CommuterPassController::class, 'store'])
+            ->name('commuter_passes.admin.store')
+            ->whereNumber('user');
+    });
+});
+
 use App\Http\Controllers\OverTimeController;
 
 // 残業一覧（in_process のみ）
