@@ -264,13 +264,6 @@ Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
 use App\Http\Controllers\RouteDeclarationController;
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('/routes', [RouteDeclarationController::class, 'index'])
-        ->name('routes.index');
-
-    // 管理者専用ルート
-    Route::get('/routes/{user}', [RouteDeclarationController::class, 'showUser'])
-        ->middleware('role:admin|super_admin')
-        ->name('routes.user');
 
     // 本人が自分のルート申告を作成
     Route::get('/routes/create', [RouteDeclarationController::class, 'create'])
@@ -285,6 +278,14 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/routes/{user}', [RouteDeclarationController::class, 'store'])
             ->name('routes.admin.store');  // 保存（同じstoreメソッドを使う）
     });
+
+    Route::get('/routes', [RouteDeclarationController::class, 'index'])
+        ->name('routes.index');
+
+    // 管理者専用ルート
+    Route::get('/routes/{user}', [RouteDeclarationController::class, 'showUser'])
+        ->middleware('role:admin|super_admin')
+        ->name('routes.user');
 });
 
 use App\Http\Controllers\OverTimeController;

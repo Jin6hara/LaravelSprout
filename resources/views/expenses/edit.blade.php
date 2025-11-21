@@ -14,7 +14,27 @@
 
 @section('content')
 <div class="page-wrap">
-  <h1 class="mb-3">Commuting Expense（{{ $y }}/{{ $m }}）</h1>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1 class="mb-0">
+          Commuting Expense（{{ $y }}/{{ $m }}）
+      </h1>
+
+      @php $me = auth()->user(); @endphp
+
+      @if($me->hasAnyRole(['admin','super_admin']))
+          {{-- 管理者以上：表示しているユーザー分の Route Declaration --}}
+          <a href="{{ route('routes.admin.create', $report->employee_code) }}"
+            class="btn btn-outline-primary btn-sm">
+              Create Route Declaration
+          </a>
+      @else
+          {{-- 一般ユーザー：自分の Route Declaration --}}
+          <a href="{{ route('routes.create') }}"
+            class="btn btn-outline-primary btn-sm">
+              Create Route Declaration
+          </a>
+      @endif
+  </div>
 
   {{-- ▼ 月選択フォーム --}}
   <form method="GET" class="mb-3 d-flex align-items-center gap-2" id="monthForm">
