@@ -291,4 +291,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Comment::class, 'user_id');
     }
+
+    public function routeDeclarations()
+    {
+        return $this->hasMany(RouteDeclaration::class);
+    }
 }
