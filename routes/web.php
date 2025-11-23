@@ -265,30 +265,36 @@ use App\Http\Controllers\RouteDeclarationController;
 
 Route::middleware(['auth'])->group(function () {
 
-    // 本人が自分のルート申告を作成
-    Route::get('/routes/create', [RouteDeclarationController::class, 'create'])
-        ->name('routes.create');    // 画面
-    Route::post('/routes', [RouteDeclarationController::class, 'store'])
-        ->name('routes.store');     // 保存
-
-    // 管理者が他人分を作成
-    Route::middleware('role:admin|super_admin')->group(function () {
-        Route::get('/routes/{user}/create', [RouteDeclarationController::class, 'create'])
-            ->name('routes.admin.create'); // 画面（同じcreateメソッドを使う）
-        Route::post('/routes/{user}', [RouteDeclarationController::class, 'store'])
-            ->name('routes.admin.store');  // 保存（同じstoreメソッドを使う）
-    });
-
+    // ===== 一般ユーザー / 共通 =====
     Route::get('/routes', [RouteDeclarationController::class, 'index'])
         ->name('routes.index');
 
-    // 管理者専用ルート
-    Route::get('/routes/{user}', [RouteDeclarationController::class, 'showUser'])
-        ->middleware('role:admin|super_admin')
-        ->name('routes.user');
+    Route::get('/routes/create', [RouteDeclarationController::class, 'create'])
+        ->name('routes.create');    // 本人用 画面
 
-    Route::get('/routes/declarations/report', [RouteDeclarationController::class, 'report'])
-        ->name('routes.report');
+    Route::post('/routes', [RouteDeclarationController::class, 'store'])
+        ->name('routes.store');     // 本人用 保存
+
+
+    // ===== 管理者専用 =====
+    Route::middleware('role:admin|super_admin')->group(function () {
+
+        // ルート申告レポート
+        Route::get('/routes/declarations/report', [RouteDeclarationController::class, 'report'])
+            ->name('routes.report');
+
+        // 管理者が他人分を作成
+        Route::get('/routes/{user}/create', [RouteDeclarationController::class, 'create'])
+            ->name('routes.admin.create'); // 同じ create メソッドを使う
+
+        Route::post('/routes/{user}', [RouteDeclarationController::class, 'store'])
+            ->name('routes.admin.store');  // 同じ store メソッドを使う
+
+        // 特定ユーザーの一覧・表示
+        Route::get('/routes/{user}', [RouteDeclarationController::class, 'showUser'])
+            ->name('routes.user')
+            ->whereNumber('user'); // ← これ重要（/routes/declarations/... を食べないため）
+    });
 });
 
 use App\Http\Controllers\CommuterPassController;
