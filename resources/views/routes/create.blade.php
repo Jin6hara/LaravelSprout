@@ -138,13 +138,13 @@
                                 min="0" step="1">
                         </div>
 
-                        <div class="col-md-6 mt-1">
+                        {{-- <div class="col-md-6 mt-1">
                             <label class="form-label small mb-0">Route Text</label>
                             <input type="text"
                                 name="details[{{ $i }}][route_text]"
                                 value="{{ $row['route_text'] ?? '' }}"
                                 class="form-control form-control-sm">
-                        </div>
+                        </div> --}}
 
                         <div class="col-md-5 mt-1">
                             <label class="form-label small mb-0">Note</label>
