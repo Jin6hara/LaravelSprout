@@ -286,6 +286,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/routes/{user}', [RouteDeclarationController::class, 'showUser'])
         ->middleware('role:admin|super_admin')
         ->name('routes.user');
+
+    Route::get('/routes/declarations/report', [RouteDeclarationController::class, 'report'])
+        ->name('routes.report');
 });
 
 use App\Http\Controllers\CommuterPassController;
