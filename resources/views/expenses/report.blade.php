@@ -18,7 +18,19 @@
 
 @section('content')
 <div class="page-wrap">
-  <h1>Commuting Expense Reports（{{ $y }}/{{ $m }}）</h1>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1 class="mb-0">
+        Commuting Expense Reports（{{ $y }}/{{ $m }}）
+      </h1>
+
+      @php $me = auth()->user(); @endphp
+      @if($me && $me->hasAnyRole(['admin','super_admin']))
+        <a href="{{ route('routes.report') }}"
+          class="btn btn-outline-primary btn-sm">
+          Route Declaration Report
+        </a>
+      @endif
+    </div>
 
   {{-- ▼ 月選択 + 自動生成ボタン行 --}}
   <div class="d-flex justify-content-between align-items-center mb-3 gap-2">
