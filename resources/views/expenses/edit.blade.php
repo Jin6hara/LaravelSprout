@@ -14,7 +14,38 @@
 
 @section('content')
 <div class="page-wrap">
-  <h1 class="mb-3">Commuting Expense（{{ $y }}/{{ $m }}）</h1>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1 class="mb-0">
+          Commuting Expense（{{ $y }}/{{ $m }}）
+      </h1>
+
+      @php $me = auth()->user(); @endphp
+      <div class="d-flex flex-wrap gap-2">
+          @if($me->hasAnyRole(['admin','super_admin']))
+              <a href="{{ route('routes.admin.create', $report->employee_code) }}"
+                class="btn btn-outline-primary btn-sm btn-route-fixed">
+                  ＋ Route Declaration
+              </a>
+          @else
+              <a href="{{ route('routes.create') }}"
+                class="btn btn-outline-primary btn-sm btn-route-fixed">
+                  ＋ Route Declaration
+              </a>
+          @endif
+
+          @if($me->hasAnyRole(['admin','super_admin']))
+              <a href="{{ route('commuter_passes.admin.create', $report->employee_code) }}"
+                class="btn btn-outline-primary btn-sm btn-route-fixed">
+                  ＋ Commuter Pass
+              </a>
+          @else
+              <a href="{{ route('commuter_passes.create') }}"
+                class="btn btn-outline-primary btn-sm btn-route-fixed">
+                  ＋ Commuter Pass
+              </a>
+          @endif
+      </div>
+  </div>
 
   {{-- ▼ 月選択フォーム --}}
   <form method="GET" class="mb-3 d-flex align-items-center gap-2" id="monthForm">
@@ -191,6 +222,16 @@
 </div>
 @endif
 @endsection
+
+@push('styles')
+<style>
+  .btn-route-fixed {
+    width: 150px;        /* 好きな幅に調整してOK */
+    text-align: center;  /* 文字を中央揃え */
+    white-space: nowrap; /* 改行しないように（任意） */
+  }
+</style>
+@endpush
 
 @push('scripts')
 {{-- ✅ 必要なCDNはここで1回だけ --}}

@@ -14,6 +14,8 @@
     </a>
 </li>
 
+<span class="nav-divider">|</span>
+
 <li class="nav-item">
     <a href="{{ route('overtime.index') }}" class="btn btn-sm btn-outline-secondary header-btn">
         OT Chance
