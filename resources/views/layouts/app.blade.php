@@ -11,19 +11,26 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- FontAwesome -->
     <script defer src="https://use.fontawesome.com/releases/v6.5.0/js/all.js"></script>
+
+    {{-- ★ ここで Vite 経由で app.js を読み込む --}}
+    @vite('resources/js/app.js')
+
     @stack('styles')
 </head>
 
 <body>
-    @include('commons.header')
+    <div id="app"> {{-- ★ Vue の root 要素 --}}
 
-    <div class="container mt-4">
-        @include('commons.messages')
-        @yield('content')
+        @include('commons.header')
+
+        <div class="container mt-4">
+            @include('commons.messages')
+            @yield('content')
+        </div>
+
+        @include('commons.footer')
+
     </div>
-
-    @include('commons.footer')
-
     <!-- JS Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     @stack('scripts')
