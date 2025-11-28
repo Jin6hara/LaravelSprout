@@ -4,11 +4,15 @@ import { createApp } from 'vue';
 // Vue コンポーネントを import
 import ExampleComponent from './components/ExampleComponent.vue';
 
-// Vue アプリを作成
-const app = createApp({});
+import AdminCreateControls from './components/AdminCreateControls.vue';
 
-// コンポーネント登録（<example-component> というタグで使えるようにする）
-app.component('example-component', ExampleComponent);
+const exampleEl = document.getElementById('ExampleComponent');
+if (exampleEl) {
+    createApp(ExampleComponent).mount(exampleEl);
+}
 
-// #app にマウント
-app.mount('#app');
+const el = document.getElementById('adminCreateControls');
+if (el) {
+    const props = el.dataset.props ? JSON.parse(el.dataset.props) : {};
+    createApp(AdminCreateControls, props).mount(el);
+}
