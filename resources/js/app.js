@@ -1,4 +1,5 @@
 import './bootstrap';
+import './toast';
 import { createApp } from 'vue';
 
 // Vue コンポーネントを import
