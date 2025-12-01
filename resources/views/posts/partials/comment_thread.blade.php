@@ -46,20 +46,4 @@
         @endforeach
     </div>
 
-    {{-- ▼ 移動式 返信フォーム（初期は退避場所に置いておく） --}}
-    <div id="replyFormParking" class="d-none"></div>
-
-    <form id="floatingReplyForm" method="POST" action="{{ route('messages.comments.store', $post) }}" class="card d-none mt-2">
-        @csrf
-        <input type="hidden" name="parent_id" id="replyParentId" value="">
-        <div class="card-body p-2">
-            <label class="form-label small mb-1">Add a reply</label>
-            <textarea name="body" class="form-control form-control-sm" rows="3" required></textarea>
-            <div class="d-flex align-items-center gap-2 mt-2">
-                <button class="btn btn-primary btn-sm" type="submit">Reply</button>
-                <button class="btn btn-outline-secondary btn-sm" type="button" id="cancelReplyBtn">Cancel</button>
-                <span class="small text-muted" id="replyingToHint"></span>
-            </div>
-        </div>
-    </form>
 </div>
