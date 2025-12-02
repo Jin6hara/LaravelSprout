@@ -138,14 +138,16 @@ class ReceivedPostController extends Controller
             if (!$ok) return back()->with('toast_errors', ['Invalid parent comment.']);
         }
 
-        Comment::create([
+        $new = Comment::create([
             'post_id'   => $post->id,
             'user_id'   => $me->id,
             'parent_id' => $data['parent_id'] ?? null,
             'body'      => $data['body'],
         ]);
 
-        return back()->with('toast', 'Reply posted.');
+        $url = url()->previous() . '#comment-' . $new->id;
+
+        return redirect($url)->with('toast', 'Reply posted.');
     }
 
     /** 自分宛のポストを「確認済み」にする（代理は確認不可） */
