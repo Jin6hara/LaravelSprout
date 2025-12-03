@@ -28,7 +28,15 @@
 <li class="nav-item">
     <div class="btn-group btn-group-sm w-100">
         <a href="{{ route('posts.adminCreate') }}" class="btn btn-outline-secondary header-btn">Create<br>Message</a>
-        <a href="{{ route('messages.index') }}" class="btn btn-outline-secondary header-btn">Inbox</a>
+        <a href="{{ route('messages.index') }}"
+            class="btn btn-outline-secondary header-btn position-relative">
+            Inbox
+            @if(($inboxUnconfirmed ?? 0) > 0)
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                {{ $inboxUnconfirmed }}
+            </span>
+            @endif
+        </a>
     </div>
 </li>
 

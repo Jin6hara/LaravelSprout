@@ -43,10 +43,16 @@ class ReceivedPostController extends Controller
             ->paginate(20)
             ->withQueryString();
 
+        // Unconfirmed count（受信者pivot confirmed_atがNULLの件数）
+        $unconfirmedCount = $target->postsVisible() // ← viewers()の逆リレーションがあるならこれが最強
+            ->wherePivotNull('confirmed_at')
+            ->count();
+
         return view('posts.received.index', [
             'posts'  => $posts,
             'target' => $target,
             'isProxy' => $target->id !== $r->user()->id,
+            'unconfirmedCount' => $unconfirmedCount,
         ]);
     }
 

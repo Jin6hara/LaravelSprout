@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\View;
 use App\Services\Calendar\CalendarResolver;
 use App\Services\Calendar\Contracts\CalendarEventProvider;
 use App\Models\Leave;
@@ -48,7 +49,7 @@ class AppServiceProvider extends ServiceProvider
             $providers = [
                 $app->make(HolidayProvider::class),
                 $app->make(ClosureProvider::class),
-                $app->make(SubCountProvider::class), 
+                $app->make(SubCountProvider::class),
                 $app->make(AllEventProvider::class),
             ];
             return new ForecastResolver($providers);
@@ -58,7 +59,7 @@ class AppServiceProvider extends ServiceProvider
             // ここで「祝日」と「会社長期休み」だけに限定
             $providers = [
                 $app->make(HolidayProvider::class),
-                $app->make(ClosureProvider::class), 
+                $app->make(ClosureProvider::class),
                 $app->make(AllLeaveProvider::class),
             ];
             return new LeaveResolver($providers);
@@ -73,5 +74,17 @@ class AppServiceProvider extends ServiceProvider
         Paginator::useBootstrapFive(); //user.userListのpagination用に
         Leave::observe(LeaveObserver::class);
         Event::observe(EventObserver::class);
+
+        View::composer('*', function ($view) {
+            $user = auth()->user();
+            if (!$user) return;
+
+            // 代理閲覧中でもヘッダーは「自分の未確認」を出す想定
+            $inboxUnconfirmed = $user->postsVisible()
+                ->wherePivotNull('confirmed_at')
+                ->count();
+
+            $view->with('inboxUnconfirmed', $inboxUnconfirmed);
+        });
     }
 }

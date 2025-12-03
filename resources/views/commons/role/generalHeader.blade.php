@@ -57,8 +57,14 @@
 <span class="nav-divider">|</span>
 
 <li class="nav-item">
-    <a class="btn btn-sm btn-outline-secondary header-btn" href="{{ route('messages.index') }}">
+    <a href="{{ route('messages.index') }}"
+        class="btn btn-outline-secondary header-btn position-relative">
         Inbox
+        @if(($inboxUnconfirmed ?? 0) > 0)
+        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+            {{ $inboxUnconfirmed }}
+        </span>
+        @endif
     </a>
 </li>
 
