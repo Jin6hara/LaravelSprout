@@ -25,3 +25,11 @@ if (rc) {
     const props = rc.dataset.props ? JSON.parse(rc.dataset.props) : {};
     createApp(ReplyComposer, props).mount(rc);
 }
+
+import InboxBadge from './components/InboxBadge.vue';
+
+const inboxEl = document.getElementById('inboxBadge');
+if (inboxEl) {
+    const props = inboxEl.dataset.props ? JSON.parse(inboxEl.dataset.props) : {};
+    createApp(InboxBadge, props).mount(inboxEl);
+}

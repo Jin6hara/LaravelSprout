@@ -57,14 +57,18 @@
 <span class="nav-divider">|</span>
 
 <li class="nav-item">
+    @php
+    $inboxBadgeProps = [
+    'endpoint' => route('api.inbox.unconfirmed_count'),
+    'initialCount' => (int) ($inboxUnconfirmed ?? 0),
+    'intervalMs' => 5000,
+    ];
+    @endphp
+
     <a href="{{ route('messages.index') }}"
         class="btn btn-outline-secondary header-btn position-relative">
         Inbox
-        @if(($inboxUnconfirmed ?? 0) > 0)
-        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-            {{ $inboxUnconfirmed }}
-        </span>
-        @endif
+        <span id="inboxBadge" data-props='@json($inboxBadgeProps)'></span>
     </a>
 </li>
 
