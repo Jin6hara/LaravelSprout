@@ -31,7 +31,9 @@
                 $senderName = trim(($p->author->family_name ?? '').' '.($p->author->first_name ?? ''));
                 $senderCode = $p->author->employee_code ?? null;
                 @endphp
-                <tr>
+                <tr role="button"
+                    class="cursor-pointer"
+                    onclick="window.location='{{ route('messages.show', $p) }}'">
                     <td class="text-nowrap">
                         <div>{{ $p->created_at->format('Y-m-d') }}</div>
                         <div class="small text-muted">{{ $p->created_at->format('H:i') }}</div>
