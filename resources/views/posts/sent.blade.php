@@ -11,6 +11,10 @@
         Showing only your sent posts.
         @endif
     </div>
+
+    <a href="{{ route('posts.adminCreate') }}" class="btn btn-primary btn-sm">
+        Create Message
+    </a>
 </div>
 
 <div class="card mt-2">
