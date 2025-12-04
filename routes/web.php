@@ -353,6 +353,13 @@ Route::middleware(['auth'])->group(function () {
         ->name('posts.attachments.show');
 });
 
+use App\Http\Controllers\SentPostController;
+
+Route::middleware('auth')->group(function () {
+    Route::get('/post/sent', [SentPostController::class, 'index'])
+        ->name('post.sent');
+});
+
 // ---------------------------------------------------------------------------------------------------------▼ CSV関連ルート
 use App\Http\Controllers\ScheduleLineCsvController;
 
