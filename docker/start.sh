@@ -19,8 +19,8 @@ php artisan view:cache
 
 php-fpm -D
 
-# Render Web Service は $PORT でHTTP待ち受けする必要がある
-sed -i -E "s/listen 80[^;]*;/listen ${PORT:-10000};/" /etc/nginx/sites-available/default
+# Render Web Service は 0.0.0.0:$PORT でHTTP待ち受けする必要がある
+sed -i -E "s/listen 80[^;]*;/listen 0.0.0.0:${PORT:-10000};/" /etc/nginx/sites-available/default
 
 echo "Nginx config after port replacement:"
 grep -n "listen" /etc/nginx/sites-available/default
