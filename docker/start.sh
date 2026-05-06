@@ -18,4 +18,7 @@ php artisan view:cache
 
 php-fpm -D
 
+# Render Web Service は $PORT でHTTP待ち受けする必要がある
+sed -i "s/listen 80;/listen ${PORT:-80};/" /etc/nginx/sites-available/default
+
 nginx -g "daemon off;"
