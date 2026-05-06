@@ -10,9 +10,9 @@ class ScheduleDetailSeeder extends Seeder
 {
     public function run(): void
     {
-        // 固定の有効期間（FY2025）
-        $EFFECTIVE_START = '2025-04-01';
-        $EFFECTIVE_END   = '2026-03-31';
+        // 固定の有効期間（FY2026）
+        $EFFECTIVE_START = '2026-04-01';
+        $EFFECTIVE_END   = '2027-03-31';
 
         // まとめて使う現在時刻（timestamps 用）
         $NOW = Carbon::now();

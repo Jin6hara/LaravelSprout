@@ -10,8 +10,8 @@ class ScheduleDetailsCopySeeder extends Seeder
     public function run(): void
     {
         // 画像と同じ内容
-        $effectiveStart = '2025-04-01';
-        $effectiveEnd   = '2026-03-31';
+        $effectiveStart = '2026-04-01';
+        $effectiveEnd   = '2027-03-31';
 
         // lesson_id => lesson_start_time_id の対応
         $rows = [

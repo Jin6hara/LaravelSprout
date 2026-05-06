@@ -12,8 +12,8 @@ class ScheduleSeeder extends Seeder
     public function run(): void
     {
         // 共通: 期間
-        $s = '2025-04-01';
-        $e = '2026-03-31';
+        $s = '2026-04-01';
+        $e = '2027-03-31';
 
         // ---------- schedule 1 (James, 7:45, 週5日・土2ライン) ----------
         $sc1 = Schedule::updateOrCreate(
@@ -74,12 +74,12 @@ class ScheduleSeeder extends Seeder
         // 4/1〜7/31: 土のみ
         $this->lines($sc3, [
             [6, 'Sannomiya', '10:00', '17:45'],
-        ], '2025-04-01', '2025-07-31');
+        ], '2026-04-01', '2026-07-31');
 
         // 8/1〜3/31: 金のみ
         $this->lines($sc3, [
             [5, 'Umada GB',  '14:00', '21:45'],
-        ], '2025-08-01', '2026-03-31');
+        ], '2026-08-01', '2027-03-31');
 
         // ★ 旧: UserScheduleAssignment は不要なので削除
         // UserScheduleAssignment::updateOrCreate(...) も全削除でOK
@@ -130,18 +130,18 @@ class ScheduleSeeder extends Seeder
         );
         $this->lines($sc7, [
             [0, 'Tennoji MP', '10:00', '17:45'], // Sun
-        ],'2025-04-01', '2025-11-30');
+        ],'2026-04-01', '2026-11-30');
 
         $this->lines($sc7, [
             [0, 'Kids Tennoji', '10:00', '17:45'], // Sun
-        ],'2025-12-01', '2026-03-31');
+        ],'2026-12-01', '2027-03-31');
 
         $this->lines($sc7, [
             [6, 'Tennoji MP', '10:00', '17:45'], // Sat
             [1, 'Tennoji MP', '14:00', '21:45'], // Mon
             [2, 'Tennoji MP', '14:00', '21:45'], // Tue
             [3, 'Tennoji MP', '14:00', '21:45'], // Wed
-        ], '2025-04-01', '2026-03-31');
+        ], '2026-04-01', '2027-03-31');
 
         // ---------- schedule 8 (user_id=9, Thu/Fri off, Yao: Sun–Wed / Sub: Sat) ----------
         $sc8 = Schedule::updateOrCreate(
@@ -162,23 +162,23 @@ class ScheduleSeeder extends Seeder
             ['effective_end' => $e, 'total_minutes' => 465, 'is_active' => true]
         );
 
-        // 2025-04-01〜2025-11-30: 土=Sub
+        // 2026-04-01〜2026-11-30: 土=Sub
         $this->lines($sc9, [
             [0, 'Fuse', '10:00', '17:45'], // Sun
             [1, 'Fuse', '14:00', '21:45'], // Mon
             [2, 'Fuse', '14:00', '21:45'], // Tue
             [3, 'Fuse', '14:00', '21:45'], // Wed
-        ], '2025-04-01', '2026-03-31');
+        ], '2026-04-01', '2027-03-31');
 
-        // 2025-04-01〜2025-11-30: 土=Sub
+        // 2026-04-01〜2026-11-30: 土=Sub
         $this->lines($sc9, [
             [6, 'Sub',  '10:00', '17:45'], // Sat
-        ], '2025-04-01', '2025-12-31');
+        ], '2026-04-01', '2026-12-31');
 
-        // 2025-12-01〜2026-03-31: 土=Fuse（Sub→Fuseに変更）
+        // 2026-12-01〜2027-03-31: 土=Fuse（Sub→Fuseに変更）
         $this->lines($sc9, [
             [6, 'Fuse', '10:00', '17:45'], // Sat
-        ], '2026-01-01', '2026-03-31');
+        ], '2026-01-01', '2027-03-31');
     }
 
     private function lines(Schedule $sc, array $rows, string $start, string $end): void
