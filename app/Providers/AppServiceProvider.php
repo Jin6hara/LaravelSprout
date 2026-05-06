@@ -18,6 +18,7 @@ use App\Services\Calendar\Providers\ClosureProvider;
 use App\Services\Calendar\Providers\SubCountProvider;
 use App\Services\Calendar\Providers\AllEventProvider;
 use App\Services\Calendar\Providers\AllLeaveProvider;
+use Illuminate\Support\Facades\URL;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -86,5 +87,9 @@ class AppServiceProvider extends ServiceProvider
 
             $view->with('inboxUnconfirmed', $inboxUnconfirmed);
         });
+
+        if (app()->environment('production')) {
+            URL::forceScheme('https');
+        }
     }
 }
