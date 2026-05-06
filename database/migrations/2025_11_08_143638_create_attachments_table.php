@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -18,6 +19,10 @@ return new class extends Migration
             $t->unsignedBigInteger('size')->nullable();
             $t->timestamps();
         });
+
+        if (Schema::getConnection()->getDriverName() === 'pgsql') {
+            DB::statement('alter table "attachments" add constraint "attachments_size_non_negative" check ("size" >= 0)');
+        }
     }
 
     /**

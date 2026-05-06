@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -19,6 +20,10 @@ return new class extends Migration
             $t->enum('lesson_type', ['kids','adults','break','other'])->default('other');
             $t->timestamps();
         });
+
+        if (Schema::getConnection()->getDriverName() === 'pgsql') {
+            DB::statement('alter table "lessons" add constraint "lessons_lesson_minute_non_negative" check ("lesson_minute" >= 0)');
+        }
     }
 
     /**

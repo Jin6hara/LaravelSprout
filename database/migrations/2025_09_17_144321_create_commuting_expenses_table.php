@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use App\Enums\ExpenseReportStatus;
 use App\Enums\ExpenseCategory;
@@ -93,6 +94,15 @@ return new class extends Migration
             // 同一レポート内で、日付＋並び順の組み合わせは一意
             $t->index(['expense_report_id', 'expense_date', 'seq']);
         });
+
+        if (Schema::getConnection()->getDriverName() === 'pgsql') {
+            DB::statement('alter table "expense_reports" add constraint "expense_reports_year_non_negative" check ("year" >= 0)');
+            DB::statement('alter table "expense_reports" add constraint "expense_reports_month_non_negative" check ("month" >= 0)');
+            DB::statement('alter table "expense_reports" add constraint "expense_reports_total_amount_non_negative" check ("total_amount" >= 0)');
+            DB::statement('alter table "commuter_passes" add constraint "commuter_passes_cost_non_negative" check ("cost" >= 0)');
+            DB::statement('alter table "expenses" add constraint "expenses_seq_non_negative" check ("seq" >= 0)');
+            DB::statement('alter table "expenses" add constraint "expenses_cost_non_negative" check ("cost" >= 0)');
+        }
     }
 
     /**
@@ -100,8 +110,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('expense_reports');
-        Schema::dropIfExists('commuter_passes');
         Schema::dropIfExists('expenses');
+        Schema::dropIfExists('commuter_passes');
+        Schema::dropIfExists('expense_reports');
     }
 };

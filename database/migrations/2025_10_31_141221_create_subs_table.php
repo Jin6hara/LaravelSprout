@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -33,6 +34,10 @@ return new class extends Migration
             // よく使う検索用に複合インデックス
             $t->index(['user_id', 'sub_date']);
         });
+
+        if (Schema::getConnection()->getDriverName() === 'pgsql') {
+            DB::statement('alter table "subs" add constraint "subs_total_duration_non_negative" check ("total_duration" >= 0)');
+        }
     }
 
     /**
