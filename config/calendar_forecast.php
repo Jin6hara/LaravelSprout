@@ -18,9 +18,6 @@ return [
         'on_adds_to_background'         => true,
         'holiday_untouchable'           => true,
     ],
-];
-
-return [
     // 「Sub」を示す school_name の含意キーワード（適宜追加/変更可）
     'sub_keywords' => ['sub', 'SUB', 'Sub'],
 ];

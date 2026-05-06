@@ -17,7 +17,7 @@ class SubCountProvider implements CalendarEventProvider
         $endDate   = $end->copy()->subDay()->toDateString(); // FC end は排他
 
         // === Sub 判定（校名に含まれる語） ===
-        $kw = (array) config('calendar.sub_keywords', ['sub', 'SUB', 'サブ', '代行']);
+        $kw = (array) config('calendar_forecast.sub_keywords', ['sub', 'SUB', 'Sub', 'サブ', '代行']);
         $isSubName = function (?string $name) use ($kw): bool {
             if (!$name) return false;
             foreach ($kw as $w) if (mb_stripos($name, $w) !== false) return true;
@@ -77,7 +77,12 @@ class SubCountProvider implements CalendarEventProvider
             ->whereDate('effective_start', '<=', $endDate)
             ->whereDate('effective_end', '>=', $startDate)
             ->where(function ($q) use ($kw) {
-                foreach ($kw as $w) $q->orWhere('school_name', 'like', "%{$w}%");
+                foreach ($kw as $w) {
+                    $q->orWhereRaw(
+                        "LOWER(COALESCE(school_name, '')) LIKE ?",
+                        ['%' . mb_strtolower($w, 'UTF-8') . '%']
+                    );
+                }
             })
             ->get()
             ->filter(fn($ln) => $isSubName($ln->school_name))
