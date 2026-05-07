@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
+use App\Support\SchoolName;
 
 class ScheduleLine extends Model
 {
@@ -12,6 +13,11 @@ class ScheduleLine extends Model
 
     protected $fillable = ['schedule_id', 'parent_line_id', 'dow', 'school_name', 'start_time', 'end_time', 'effective_start', 'effective_end', 'handover_memo'];
     protected $casts = ['effective_start' => 'date', 'effective_end' => 'date'];
+
+    public function setSchoolNameAttribute($value): void
+    {
+        $this->attributes['school_name'] = SchoolName::normalize($value);
+    }
 
     public function parent()
     {

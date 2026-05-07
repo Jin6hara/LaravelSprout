@@ -86,8 +86,8 @@ class ScheduleController extends Controller
         if ($request->filled('username')) {
             $name = $request->input('username');
             $query->whereHas('user', function ($q) use ($name) {
-                $q->where('first_name', 'like', "%{$name}%")
-                    ->orWhere('family_name', 'like', "%{$name}%");
+                $q->whereLikeInsensitive('first_name', $name)
+                    ->orWhereLikeInsensitive('family_name', $name);
             });
         }
 
@@ -98,7 +98,7 @@ class ScheduleController extends Controller
 
         if ($request->filled('label')) {
             $label = $request->input('label');
-            $query->where('label', 'like', "%{$label}%");
+            $query->whereLikeInsensitive('label', $label);
         }
 
         // === ソート ===

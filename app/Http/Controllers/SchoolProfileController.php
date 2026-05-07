@@ -22,11 +22,10 @@ class SchoolProfileController extends Controller
             // 検索条件
             ->when($q !== '', function ($qq) use ($q) {
                 $qq->where(function ($w) use ($q) {
-                    $w->where('school_name', 'like', "%{$q}%")
-                      ->orWhere('name_kana', 'like', "%{$q}%")
-                      ->orWhere('school_code', 'like', "%{$q}%")
-                      // aliases(JSON) 部分一致（MySQL/MariaDB想定）
-                      ->orWhereRaw("JSON_SEARCH(aliases, 'one', ?, NULL, '$') IS NOT NULL", [$q]);
+                    $w->whereLikeInsensitive('school_name', $q)
+                      ->orWhereLikeInsensitive('name_kana', $q)
+                      ->orWhereLikeInsensitive('school_code', $q)
+                      ->orWhereLikeInsensitive('aliases', $q);
                 });
             })
             // 現行プロファイル + 駅リストを eager load

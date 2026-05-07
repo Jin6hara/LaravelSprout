@@ -4,6 +4,7 @@ namespace App\Services\ScheduleCsv;
 
 use App\Models\{ScheduleLine, ScheduleDetail, Lesson, LessonStartTime};
 use Carbon\Carbon;
+use App\Support\SchoolName;
 use Illuminate\Support\Facades\DB;
 
 class ScheduleLineCsvImportService
@@ -20,7 +21,7 @@ class ScheduleLineCsvImportService
                 $r = array_combine($header, $row);
 
                 $dow = $this->toDowIndex($r['dow']);
-                $school = trim($r['school_name']);
+                $school = SchoolName::normalize($r['school_name']);
                 $start = $this->toTime($r['start_time']);
                 $end   = $this->toTime($r['end_time']);
                 $winStart = $r['effective_start'];
@@ -33,15 +34,31 @@ class ScheduleLineCsvImportService
 
                 if (!$lsTimeId || !$lessonId) continue;
 
-                $line = ScheduleLine::firstOrCreate([
-                    'schedule_id'     => $scheduleId,
-                    'dow'             => $dow,
-                    'school_name'     => $school,
-                    'start_time'      => $start,
-                    'end_time'        => $end,
-                    'effective_start' => $winStart,
-                    'effective_end'   => $winEnd,
-                ]);
+                $line = ScheduleLine::query()
+                    ->when(
+                        is_null($scheduleId),
+                        fn($q) => $q->whereNull('schedule_id'),
+                        fn($q) => $q->where('schedule_id', $scheduleId)
+                    )
+                    ->where('dow', $dow)
+                    ->whereEqualsInsensitive('school_name', $school)
+                    ->where('start_time', $start)
+                    ->where('end_time', $end)
+                    ->where('effective_start', $winStart)
+                    ->where('effective_end', $winEnd)
+                    ->first();
+
+                if (!$line) {
+                    $line = ScheduleLine::create([
+                        'schedule_id'     => $scheduleId,
+                        'dow'             => $dow,
+                        'school_name'     => $school,
+                        'start_time'      => $start,
+                        'end_time'        => $end,
+                        'effective_start' => $winStart,
+                        'effective_end'   => $winEnd,
+                    ]);
+                }
 
                 ScheduleDetail::updateOrCreate([
                     'schedule_line_id'     => $line->id,

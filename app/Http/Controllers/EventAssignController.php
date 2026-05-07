@@ -80,22 +80,22 @@ class EventAssignController extends Controller
             ->when(
                 $leaveType !== null && $leaveType !== '',
                 fn($q) =>
-                $q->where('Leave_type', 'like', '%' . $leaveType . '%')
+                $q->whereLikeInsensitive('Leave_type', $leaveType)
             )
             ->when(
                 $schoolName !== null && $schoolName !== '',
                 fn($q) =>
-                $q->where('school_name', 'like', '%' . $schoolName . '%')
+                $q->whereLikeInsensitive('school_name', $schoolName)
             )
             ->when(
                 $title !== null && $title !== '',
                 fn($q) =>
-                $q->where('title', 'like', '%' . $title . '%')
+                $q->whereLikeInsensitive('title', $title)
             )
             ->when(
                 $lesson !== null && $lesson !== '',
                 fn($q) =>
-                $q->where('Lesson', 'like', '%' . $lesson . '%')
+                $q->whereLikeInsensitive('Lesson', $lesson)
             )
             ->orderByDesc('event_date')
             ->orderBy('school_name')
@@ -484,19 +484,19 @@ class EventAssignController extends Controller
 
             ->when(
                 $leaveType !== null && $leaveType !== '',
-                fn($q) => $q->where('Leave_type', 'like', "%{$leaveType}%")
+                fn($q) => $q->whereLikeInsensitive('Leave_type', $leaveType)
             )
             ->when(
                 $schoolName !== null && $schoolName !== '',
-                fn($q) => $q->where('school_name', 'like', "%{$schoolName}%")
+                fn($q) => $q->whereLikeInsensitive('school_name', $schoolName)
             )
             ->when(
                 $title !== null && $title !== '',
-                fn($q) => $q->where('title', 'like', "%{$title}%")
+                fn($q) => $q->whereLikeInsensitive('title', $title)
             )
             ->when(
                 $lesson !== null && $lesson !== '',
-                fn($q) => $q->where('Lesson', 'like', "%{$lesson}%")
+                fn($q) => $q->whereLikeInsensitive('Lesson', $lesson)
             )
 
             ->orderBy('event_date')
