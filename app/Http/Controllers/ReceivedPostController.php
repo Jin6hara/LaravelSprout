@@ -43,10 +43,16 @@ class ReceivedPostController extends Controller
             ->paginate(20)
             ->withQueryString();
 
+        // Unconfirmed count（受信者pivot confirmed_atがNULLの件数）
+        $unconfirmedCount = $target->postsVisible() // ← viewers()の逆リレーションがあるならこれが最強
+            ->wherePivotNull('confirmed_at')
+            ->count();
+
         return view('posts.received.index', [
             'posts'  => $posts,
             'target' => $target,
             'isProxy' => $target->id !== $r->user()->id,
+            'unconfirmedCount' => $unconfirmedCount,
         ]);
     }
 
@@ -138,14 +144,16 @@ class ReceivedPostController extends Controller
             if (!$ok) return back()->with('toast_errors', ['Invalid parent comment.']);
         }
 
-        Comment::create([
+        $new = Comment::create([
             'post_id'   => $post->id,
             'user_id'   => $me->id,
             'parent_id' => $data['parent_id'] ?? null,
             'body'      => $data['body'],
         ]);
 
-        return back()->with('toast', 'Reply posted.');
+        $url = url()->previous() . '#comment-' . $new->id;
+
+        return redirect($url)->with('toast', 'Reply posted.');
     }
 
     /** 自分宛のポストを「確認済み」にする（代理は確認不可） */

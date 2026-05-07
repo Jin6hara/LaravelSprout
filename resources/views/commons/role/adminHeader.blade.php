@@ -27,8 +27,19 @@
 {{-- 4️⃣ Inbox & Create --}}
 <li class="nav-item">
     <div class="btn-group btn-group-sm w-100">
-        <a href="{{ route('posts.adminCreate') }}" class="btn btn-outline-secondary header-btn">Create<br>Message</a>
-        <a href="{{ route('messages.index') }}" class="btn btn-outline-secondary header-btn">Inbox</a>
+        <a href="{{ route('post.sent') }}" class="btn btn-outline-secondary header-btn"> Sent </a>
+        @php
+        $inboxBadgeProps = [
+        'endpoint' => route('api.inbox.unconfirmed_count'),
+        'initialCount' => (int) ($inboxUnconfirmed ?? 0),
+        'intervalMs' => 5000,
+        ];
+        @endphp
+        <a href="{{ route('messages.index') }}"
+            class="btn btn-outline-secondary header-btn position-relative">
+            Inbox
+            <span id="inboxBadge" data-props='@json($inboxBadgeProps)'></span>
+        </a>
     </div>
 </li>
 

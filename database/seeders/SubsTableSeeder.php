@@ -12,7 +12,7 @@ class SubsTableSeeder extends Seeder
         DB::table('subs')->insert([
             [
                 'user_id'        => 2,
-                'sub_date'       => '2025-11-06',
+                'sub_date'       => '2026-11-06',
                 'start_time'     => '14:00',
                 'end_time'       => '21:45',
                 'note'           => 'Adjustment Day',
@@ -21,7 +21,7 @@ class SubsTableSeeder extends Seeder
             ],
             [
                 'user_id'        => 2,
-                'sub_date'       => '2025-11-07',
+                'sub_date'       => '2026-11-07',
                 'start_time'     => '14:00',
                 'end_time'       => '21:45',
                 'note'           => 'Adjustment Day',
@@ -30,7 +30,7 @@ class SubsTableSeeder extends Seeder
             ],
             [
                 'user_id'        => 2,
-                'sub_date'       => '2025-11-08',
+                'sub_date'       => '2026-11-08',
                 'start_time'     => '10:00',
                 'end_time'       => '17:45',
                 'note'           => 'Adjustment Day',
@@ -39,7 +39,7 @@ class SubsTableSeeder extends Seeder
             ],
             [
                 'user_id'        => 1,
-                'sub_date'       => '2025-11-08',
+                'sub_date'       => '2026-11-08',
                 'start_time'     => '10:00',
                 'end_time'       => '17:45',
                 'note'           => 'Adjustment Day',

@@ -33,6 +33,7 @@ return new class extends Migration
 
             $t->unique(['post_id', 'user_id']);
             $t->index(['user_id', 'post_id']);
+            $t->index(['user_id', 'confirmed_at']);
         });
 
         Schema::create('comments', function (Blueprint $t) {
@@ -53,8 +54,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('posts');
-        Schema::dropIfExists('post_user');
         Schema::dropIfExists('comments');
+        Schema::dropIfExists('post_user');
+        Schema::dropIfExists('posts');
     }
 };

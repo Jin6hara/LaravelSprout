@@ -9,6 +9,25 @@ class UserSearchController extends Controller
 {
     public function index(Request $r)
     {
+        // ▼ old('recipients') でIDしか復元できない場合に、Vueのチップ表示用にユーザー情報を取得する
+        $ids = trim((string) $r->query('ids', ''));
+        if ($ids !== '') {
+            $idArr = collect(explode(',', $ids))
+                ->map(fn($v) => (int) trim($v))
+                ->filter(fn($v) => $v > 0)
+                ->unique()
+                ->values()
+                ->all();
+
+            $users = User::query()
+                ->whereIn('id', $idArr)
+                ->orderBy('family_name')->orderBy('first_name')
+                ->get(['id', 'first_name', 'family_name', 'employee_code', 'email']);
+
+            return response()->json($users);
+        }
+        // ▲
+        
         $q = trim((string) $r->query('q', ''));
         $limit = (int) min(max((int) $r->query('limit', 20), 1), 50);
 
@@ -16,10 +35,10 @@ class UserSearchController extends Controller
             ->when($q !== '', function ($qb) use ($q) {
                 $qb->where(
                     fn($w) =>
-                    $w->where('first_name', 'like', "%{$q}%")
-                        ->orWhere('family_name', 'like', "%{$q}%")
-                        ->orWhere('employee_code', 'like', "%{$q}%")
-                        ->orWhere('email', 'like', "%{$q}%")
+                    $w->whereLikeInsensitive('first_name', $q)
+                        ->orWhereLikeInsensitive('family_name', $q)
+                        ->orWhereLikeInsensitive('employee_code', $q)
+                        ->orWhereLikeInsensitive('email', $q)
                 );
             })
             ->orderBy('family_name')

@@ -353,6 +353,13 @@ Route::middleware(['auth'])->group(function () {
         ->name('posts.attachments.show');
 });
 
+use App\Http\Controllers\SentPostController;
+
+Route::middleware('auth')->group(function () {
+    Route::get('/post/sent', [SentPostController::class, 'index'])
+        ->name('post.sent');
+});
+
 // ---------------------------------------------------------------------------------------------------------▼ CSV関連ルート
 use App\Http\Controllers\ScheduleLineCsvController;
 
@@ -388,3 +395,16 @@ Route::get('/csv/user_schedule_line/export/download', [UserScheduleLineExportCon
     ->name('csv.user_schedule_line.export.download');
 
 // ---------------------------------------------------------------------------------------------------------▲ CSV関連ルート
+
+use Illuminate\Http\Request;
+
+Route::get('/api/inbox/unconfirmed-count', function (Request $r) {
+    $user = $r->user();
+    abort_unless($user, 401);
+
+    $count = $user->postsVisible()
+        ->wherePivotNull('confirmed_at')
+        ->count();
+
+    return response()->json(['count' => $count]);
+})->middleware('auth')->name('api.inbox.unconfirmed_count');

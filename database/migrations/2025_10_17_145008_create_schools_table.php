@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -56,6 +57,11 @@ return new class extends Migration
             $t->index(['school_profile_id', 'sort_order']);
             $t->index('station_name'); // 名前での簡易検索用（任意）
         });
+
+        if (Schema::getConnection()->getDriverName() === 'pgsql') {
+            DB::statement('alter table "school_stations" add constraint "school_stations_walk_minutes_non_negative" check ("walk_minutes" >= 0)');
+            DB::statement('alter table "school_stations" add constraint "school_stations_sort_order_non_negative" check ("sort_order" >= 0)');
+        }
     }
 
     /**
@@ -63,8 +69,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('schools');
-        Schema::dropIfExists('school_profiles');
         Schema::dropIfExists('school_stations');
+        Schema::dropIfExists('school_profiles');
+        Schema::dropIfExists('schools');
     }
 };

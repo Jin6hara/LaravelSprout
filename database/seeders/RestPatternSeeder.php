@@ -34,7 +34,7 @@ class RestPatternSeeder extends Seeder
             6 => 'work',
         ]);
 
-        $year = 2025; // 任意で指定（例: リクエストや設定値から）
+        $year = 2026; // 任意で指定（例: リクエストや設定値から）
 
         $fyStart = Carbon::create($year, 4, 1)->toDateString();
         $fyEnd   = Carbon::create($year + 1, 3, 31)->toDateString();

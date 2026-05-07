@@ -57,8 +57,18 @@
 <span class="nav-divider">|</span>
 
 <li class="nav-item">
-    <a class="btn btn-sm btn-outline-secondary header-btn" href="{{ route('messages.index') }}">
+    @php
+    $inboxBadgeProps = [
+    'endpoint' => route('api.inbox.unconfirmed_count'),
+    'initialCount' => (int) ($inboxUnconfirmed ?? 0),
+    'intervalMs' => 5000,
+    ];
+    @endphp
+
+    <a href="{{ route('messages.index') }}"
+        class="btn btn-outline-secondary header-btn position-relative">
         Inbox
+        <span id="inboxBadge" data-props='@json($inboxBadgeProps)'></span>
     </a>
 </li>
 

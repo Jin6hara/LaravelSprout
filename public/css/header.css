@@ -31,6 +31,14 @@
     vertical-align: middle;
 }
 
+/* btn-group内の2ボタンを「大きい方の幅」に揃える（PC） */
+.navbar .btn-group {
+    width: fit-content !important;
+}
+.navbar .btn-group .header-btn {
+    flex: 0 0 50px; /* ← ここだけ変更（幅は好みで 92〜110px くらいで調整） */
+}
+
 .navbar .nav-item {
     margin-right: .25rem;
 }

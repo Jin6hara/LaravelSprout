@@ -48,9 +48,9 @@
             <div class="fw-bold mb-2">添付</div>
             @foreach($post->attachments as $att)
             <div class="mb-1">
-            <a href="{{ route('posts.attachments.show', [$post, $att]) }}" target="_blank">
-                {{ $att->original_name ?? basename($att->path) }}
-            </a>
+                <a href="{{ route('posts.attachments.show', [$post, $att]) }}" target="_blank">
+                    {{ $att->original_name ?? basename($att->path) }}
+                </a>
                 <span class="text-muted small">({{ number_format(($att->size ?? 0)/1024,1) }} KB)</span>
             </div>
             @endforeach
@@ -68,18 +68,21 @@
 
         {{-- 投稿フォーム（返信可のみ） --}}
         @if(method_exists($post, 'allowsReplies') ? $post->allowsReplies() : true)
-        <form method="POST" action="{{ route('messages.comments.store', $post) }}" class="mb-3">
-            @csrf
-            <input type="hidden" name="parent_id" id="replyParentId" value="">
-            <div class="mb-2">
-                <label class="form-label small">Add a reply</label>
-                <textarea name="body" class="form-control" rows="3" required>{{ old('body') }}</textarea>
-            </div>
-            <div class="d-flex align-items-center gap-2">
-                <button class="btn btn-primary btn-sm" type="submit">Reply</button>
-                <span class="small text-muted" id="replyingToHint"></span>
-            </div>
-        </form>
+        @php
+        $replyProps = [
+        'actionUrl' => route('messages.comments.store', $post),
+        'csrf' => csrf_token(),
+        'parkingSelector' => '#replyFormParking',
+        'initialBody' => old('body', ''),
+        'initialParentId' => old('parent_id', ''),
+        ];
+        @endphp
+
+        {{-- Vue mount point --}}
+        <div id="replyComposer" data-props='@json($replyProps)'></div>
+
+        {{-- ここにフォームが表示される（初期位置/キャンセル時の戻り場所） --}}
+        <div id="replyFormParking"></div>
         @else
         <div class="alert alert-warning py-2 mb-3">
             Replies are closed for this message.
@@ -97,49 +100,4 @@
 </div>
 
 </div>
-
-{{-- 返信先セット用 JS（移動式フォーム版） --}}
-<script>
-    (function() {
-        const form = document.getElementById('floatingReplyForm');
-        const parking = document.getElementById('replyFormParking');
-
-        function parkForm() {
-            parking.appendChild(form);
-            form.classList.add('d-none');
-            form.querySelector('#replyParentId').value = '';
-            form.querySelector('#replyingToHint').textContent = '';
-            // 入力も消したければ次行を有効化
-            // form.querySelector('textarea[name="body"]').value = '';
-        }
-
-        function mountFormUnder(commentId, authorName) {
-            const slot = document.querySelector(`.reply-slot[data-reply-slot="${commentId}"]`);
-            if (!slot) return;
-            slot.appendChild(form);
-            form.classList.remove('d-none');
-            form.querySelector('#replyParentId').value = commentId;
-            form.querySelector('#replyingToHint').textContent = `Replying to: ${authorName}`;
-            form.querySelector('textarea[name="body"]').focus({
-                preventScroll: false
-            });
-        }
-
-        // Reply ボタン（どの枠でもOK）
-        document.addEventListener('click', function(e) {
-            const btn = e.target.closest('.btn-reply');
-            if (btn) {
-                mountFormUnder(btn.dataset.commentId, btn.dataset.authorName);
-                return;
-            }
-            // Cancel ボタン（フォーム内のボタンだけ反応）
-            if (e.target.closest('#floatingReplyForm #cancelReplyBtn')) {
-                parkForm();
-            }
-        });
-
-        // ページ離脱時（任意）
-        window.addEventListener('beforeunload', parkForm);
-    })();
-</script>
 @endsection
