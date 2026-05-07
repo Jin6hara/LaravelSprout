@@ -71,7 +71,11 @@ class ApprovalController extends Controller
     {
         $this->authorize('act', $approvalRequest);
 
-        DB::transaction(function () use ($approvalRequest) {
+        $actorId = Auth::id();
+        $comment = $request->input('comment');
+        $leaveBalanceService = app(LeaveBalanceService::class);
+
+        DB::transaction(function () use ($approvalRequest, $actorId, $comment, $leaveBalanceService) {
             $meta       = $approvalRequest->metadata ?? [];
             $approvable = $approvalRequest->approvable; // e.g. RoleChange
 
@@ -83,6 +87,7 @@ class ApprovalController extends Controller
                 $allRequests = ApprovalRequest::query()
                     ->where('approvable_type', Leave::class)
                     ->where('metadata->batch_id', $batchId)
+                    ->with('approvable')
                     ->get();
 
                 foreach ($allRequests as $req) {
@@ -95,9 +100,9 @@ class ApprovalController extends Controller
 
                     // 1) アクション履歴
                     $req->actions()->create([
-                        'actor_id' => Auth::id(),
+                        'actor_id' => $actorId,
                         'action'   => 'approved',
-                        'comment'  => request('comment'),
+                        'comment'  => $comment,
                     ]);
 
                     // 2) 承認リクエスト状態更新
@@ -106,11 +111,11 @@ class ApprovalController extends Controller
                     // 3) ドメイン反映（Leave）
                     $leave->update([
                         'status'      => 'approved',
-                        'approved_by' => auth()->id(),
+                        'approved_by' => $actorId,
                     ]);
 
                     // 4) 有給残数の消化
-                    app(LeaveBalanceService::class)->consume($leave);
+                    $leaveBalanceService->consume($leave);
                 }
 
                 return;
@@ -119,9 +124,9 @@ class ApprovalController extends Controller
             // ★ ここから下は従来どおり「単体」の承認（RoleChange 等）
             // 1) アクション履歴
             $approvalRequest->actions()->create([
-                'actor_id' => Auth::id(),
+                'actor_id' => $actorId,
                 'action'   => 'approved',
-                'comment'  => request('comment'),
+                'comment'  => $comment,
             ]);
 
             // 2) 承認リクエスト状態更新
@@ -139,11 +144,10 @@ class ApprovalController extends Controller
             if ($approvable instanceof Leave) {
                 $approvable->update([
                     // 'status' は上で更新済み
-                    'approved_by' => auth()->id(),
+                    'approved_by' => $actorId,
                 ]);
 
-                app(LeaveBalanceService::class)
-                    ->consume($approvable);
+                $leaveBalanceService->consume($approvable);
             }
         });
 
@@ -154,7 +158,10 @@ class ApprovalController extends Controller
     {
         $this->authorize('act', $approvalRequest);
 
-        DB::transaction(function () use ($approvalRequest) {
+        $actorId = Auth::id();
+        $comment = $request->input('comment');
+
+        DB::transaction(function () use ($approvalRequest, $actorId, $comment) {
             $meta       = $approvalRequest->metadata ?? [];
             $approvable = $approvalRequest->approvable;
 
@@ -166,6 +173,7 @@ class ApprovalController extends Controller
                 $allRequests = ApprovalRequest::query()
                     ->where('approvable_type', Leave::class)
                     ->where('metadata->batch_id', $batchId)
+                    ->with('approvable')
                     ->get();
 
                 foreach ($allRequests as $req) {
@@ -177,9 +185,9 @@ class ApprovalController extends Controller
                     }
 
                     $req->actions()->create([
-                        'actor_id' => Auth::id(),
+                        'actor_id' => $actorId,
                         'action'   => 'rejected',
-                        'comment'  => request('comment'),
+                        'comment'  => $comment,
                     ]);
 
                     $req->update(['current_state' => 'rejected']);
@@ -192,9 +200,9 @@ class ApprovalController extends Controller
 
             // ★ ここから下は従来どおり「単体」の却下（RoleChange 等）
             $approvalRequest->actions()->create([
-                'actor_id' => Auth::id(),
+                'actor_id' => $actorId,
                 'action'   => 'rejected',
-                'comment'  => request('comment'),
+                'comment'  => $comment,
             ]);
 
             $approvalRequest->update(['current_state' => 'rejected']);

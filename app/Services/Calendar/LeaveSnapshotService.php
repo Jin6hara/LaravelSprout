@@ -5,8 +5,6 @@ namespace App\Services\Calendar;
 use App\Models\Event;
 use App\Models\EventDetail;
 use App\Models\Leave;
-use App\Models\Lesson;
-use App\Models\ScheduleLine;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
@@ -56,6 +54,7 @@ class LeaveSnapshotService
         $userId = $leave->user_id;
         $dow    = $date->dayOfWeek; // 0..6
         $ymd    = $date->toDateString();
+        $skipSubs = true; // ← OFFにしたいときは false に
 
         // ▼ assignments を使わず、schedules.user_id 直付け＋期間で取得
         $sch = Schedule::with(['lines.details' /* ★ */, 'lines.details.start', 'lines.details.lesson'])
@@ -79,6 +78,24 @@ class LeaveSnapshotService
             })
             ->values();
 
+        if ($skipSubs) {
+            $existsInSubs = DB::table('subs')
+                ->where('user_id', $userId)
+                ->whereDate('sub_date', $ymd)
+                ->exists();
+
+            if ($existsInSubs) {
+                return;
+            }
+        }
+
+        $existingLineIds = Event::query()
+            ->whereDate('event_date', $ymd)
+            ->where('source_leave_id', $leave->id)
+            ->whereIn('source_schedule_line_id', $lines->pluck('id')->all())
+            ->pluck('source_schedule_line_id')
+            ->flip();
+
         foreach ($lines as $line) {
             // Subシフトはスナップショット対象外
             $school = (string)($line->school_name ?? '');
@@ -86,28 +103,9 @@ class LeaveSnapshotService
                 continue;
             }
 
-            // ▼ subsテーブルに同日の記録がある場合はスキップ（ON/OFF可能ブロック）
-            $skipSubs = true; // ← OFFにしたいときは false に
-            if ($skipSubs) {
-                $existsInSubs = DB::table('subs')
-                    ->where('user_id', $userId)
-                    ->whereDate('sub_date', $ymd)
-                    ->exists();
-                if ($existsInSubs) {
-                    // subsテーブルに登録がある → スナップショット作成スキップ
-                    continue;
-                }
-            }
-
-            // 二重生成の保険
-            $exists = Event::query()
-                ->whereDate('event_date', $ymd)
-                ->where('source_schedule_line_id', $line->id)
-                ->where('source_leave_id', $leave->id)
-                ->exists();
-            if ($exists) {
+            if ($existingLineIds->has($line->id)) {
                 continue;
-            } // ブロック構文（波かっこあり）
+            }
 
             // event 作成
             $event = Event::create([
@@ -166,9 +164,9 @@ class LeaveSnapshotService
                     ]);
 
                     // lesson_code を取得して配列に追加
-                    if ($d->lesson_id) {
-                        $code = Lesson::where('id', $d->lesson_id)->value('lesson_code');
-                        if ($code) $lessonCodes[] = $code;
+                    $code = $d->lesson?->lesson_code;
+                    if ($code) {
+                        $lessonCodes[] = $code;
                     }
                 }
             }

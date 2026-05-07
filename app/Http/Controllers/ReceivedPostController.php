@@ -44,9 +44,7 @@ class ReceivedPostController extends Controller
             ->withQueryString();
 
         // Unconfirmed count（受信者pivot confirmed_atがNULLの件数）
-        $unconfirmedCount = $target->postsVisible() // ← viewers()の逆リレーションがあるならこれが最強
-            ->wherePivotNull('confirmed_at')
-            ->count();
+        $unconfirmedCount = $target->inboxUnconfirmedCount();
 
         return view('posts.received.index', [
             'posts'  => $posts,

@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Carbon\Carbon;
 use Spatie\Permission\Traits\HasRoles;
 use App\Models\Pivots\PostViewer;
+use Illuminate\Support\Facades\DB;
 
 class User extends Authenticatable
 {
@@ -287,6 +288,15 @@ class User extends Authenticatable
             ->withPivot(['confirmed_at'])
             ->withTimestamps();
     }
+
+    public function inboxUnconfirmedCount(): int
+    {
+        return (int) DB::table('post_user')
+            ->where('user_id', $this->id)
+            ->whereNull('confirmed_at')
+            ->count();
+    }
+
     public function commentsAuthored()
     {
         return $this->hasMany(Comment::class, 'user_id');

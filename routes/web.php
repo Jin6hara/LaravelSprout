@@ -402,9 +402,7 @@ Route::get('/api/inbox/unconfirmed-count', function (Request $r) {
     $user = $r->user();
     abort_unless($user, 401);
 
-    $count = $user->postsVisible()
-        ->wherePivotNull('confirmed_at')
-        ->count();
+    $count = $user->inboxUnconfirmedCount();
 
     return response()->json(['count' => $count]);
 })->middleware('auth')->name('api.inbox.unconfirmed_count');

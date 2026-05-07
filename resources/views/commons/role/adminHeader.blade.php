@@ -71,10 +71,10 @@
 </li>
 
 <li class="nav-item">
-    @php $unread = auth()->user()->unreadNotifications()->count(); @endphp
     <a href="{{ route('notifications.index') }}" class="btn btn-sm btn-outline-secondary header-btn position-relative">
         Notification
         <i class="bi bi-bell ms-1"></i>
+        @php $unread = (int) ($unreadNotificationsCount ?? 0); @endphp
         @if($unread > 0)
         <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
             {{ $unread }}

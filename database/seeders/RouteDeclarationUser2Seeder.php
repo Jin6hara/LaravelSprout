@@ -23,7 +23,7 @@ class RouteDeclarationUser2Seeder extends Seeder
             $declaration = RouteDeclaration::updateOrCreate(
                 [
                     'user_id'        => $user2->id,
-                    'effective_date' => '2025-04-01',
+                    'effective_date' => '2026-04-01',
                 ],
                 [
                     'submitted_at'    => Carbon::now($tz),
@@ -70,7 +70,7 @@ class RouteDeclarationUser2Seeder extends Seeder
             $declaration = RouteDeclaration::updateOrCreate(
                 [
                     'user_id'        => $user4->id,
-                    'effective_date' => '2025-04-01',
+                    'effective_date' => '2026-04-01',
                 ],
                 [
                     'submitted_at'    => Carbon::now($tz),
