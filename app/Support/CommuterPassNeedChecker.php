@@ -40,7 +40,10 @@ final class CommuterPassNeedChecker
         }
 
         // 条件3：学校名が全て同じ
-        $schools = $lines->pluck('school_name')->filter()->unique();
+        $schools = $lines->pluck('school_name')
+            ->map(fn($school) => SchoolName::key($school))
+            ->filter()
+            ->unique();
         if ($schools->count() !== 1) {
             return false;
         }

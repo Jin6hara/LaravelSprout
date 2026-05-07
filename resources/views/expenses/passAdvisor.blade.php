@@ -63,9 +63,9 @@ $userPasses = $passesMap[$userId] ?? collect();
         <div class="col-md-6">
             <div class="border rounded p-3 bg-light h-100">
                 <h6 class="fw-bold mb-2 text-primary">School Schedule</h6>
-                @foreach($schools as $school => $info)
+                @foreach($schools as $schoolKey => $info)
                 <div class="mb-2">
-                    <div class="fw-bold text-dark">{{ $school }}</div>
+                    <div class="fw-bold text-dark">{{ $info['school_name'] }}</div>
                     @forelse($info['lines'] as $line)
                     <div class="small text-secondary">
                         {{ ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][$line->dow] ?? $line->dow }}

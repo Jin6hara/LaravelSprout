@@ -10,7 +10,7 @@ use Carbon\Carbon;
 class RouteDeclarationService
 {
     /** Sun→Sat の固定順 */
-    public const DOW_ORDER = "FIELD(dow,'Sun','Mon','Tue','Wed','Thu','Fri','Sat')";
+    public const DOW_ORDER = "CASE dow WHEN 'Sun' THEN 0 WHEN 'Mon' THEN 1 WHEN 'Tue' THEN 2 WHEN 'Wed' THEN 3 WHEN 'Thu' THEN 4 WHEN 'Fri' THEN 5 WHEN 'Sat' THEN 6 ELSE 99 END";
 
     /**
      * 指定ユーザーの RouteDeclaration をすべて取得（effective_date 降順）

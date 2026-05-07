@@ -66,9 +66,9 @@ public function edit(Request $request)
         ->when($kind,        fn($q) => $q->where('kind', $kind))
         ->when($excused,     fn($q) => $q->where('excused', $excused))
         ->when($status,      fn($q) => $q->where('status', $status))
-        ->when($specialType, fn($q) => $q->where('special_type', 'like', '%'.$specialType.'%'))
-        ->when($handleType,  fn($q) => $q->where('handle_type',  'like', '%'.$handleType.'%'))
-        ->when($reason,      fn($q) => $q->where('reason',      'like', '%'.$reason.'%'))
+        ->when($specialType, fn($q) => $q->whereLikeInsensitive('special_type', $specialType))
+        ->when($handleType,  fn($q) => $q->whereLikeInsensitive('handle_type', $handleType))
+        ->when($reason,      fn($q) => $q->whereLikeInsensitive('reason', $reason))
         // ⬇︎ 日付フィルタ（単日= start_date、期間= start_date..end_date）
         //   → end_effective = COALESCE(end_date, start_date) として区間重なりを一本化
         ->when($startDate && $endDate, function ($q) use ($startDate, $endDate) {

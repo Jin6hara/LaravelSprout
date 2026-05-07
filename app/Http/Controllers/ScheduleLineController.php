@@ -68,7 +68,7 @@ class ScheduleLineController extends Controller
             $linesQuery->where('dow', $fDow);
         }
         if ($fSchoolName !== '') {
-            $linesQuery->where('school_name', 'like', "%{$fSchoolName}%");
+            $linesQuery->whereLikeInsensitive('school_name', $fSchoolName);
         }
 
         // ▼ Schedule 所有ユーザーを取得（user_id 経由）
@@ -422,7 +422,7 @@ class ScheduleLineController extends Controller
                     fn($q) => $q->where('schedule_id', $targetScheduleId)
                 )
                 ->where('dow', $line->dow)
-                ->where('school_name', $line->school_name)
+                ->whereEqualsInsensitive('school_name', $line->school_name)
                 ->where('start_time', $line->start_time)
                 ->where('end_time', $line->end_time)
                 ->where(function ($q) use ($newStart, $newEnd) {
