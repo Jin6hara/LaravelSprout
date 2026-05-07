@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
@@ -54,11 +55,15 @@ return new class extends Migration {
             // パフォーマンス系
             $t->index(['route_declaration_id', 'dow']);
         });
+
+        if (Schema::getConnection()->getDriverName() === 'pgsql') {
+            DB::statement('alter table "route_details" add constraint "route_details_amount_non_negative" check ("amount" >= 0)');
+        }
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('route_declarations');
         Schema::dropIfExists('route_details');
+        Schema::dropIfExists('route_declarations');
     }
 };

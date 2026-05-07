@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -40,6 +41,10 @@ return new class extends Migration
             $t->index(['schedule_id', 'dow', 'effective_start', 'effective_end'], 'sch_line_idx');
             $t->index(['school_name', 'effective_start', 'effective_end'], 'sch_line_school_period_idx');
         });
+
+        if (Schema::getConnection()->getDriverName() === 'pgsql') {
+            DB::statement('alter table "schedules" add constraint "schedules_total_minutes_non_negative" check ("total_minutes" >= 0)');
+        }
     }
 
     /**
@@ -47,7 +52,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('schedules');
         Schema::dropIfExists('schedule_lines');
+        Schema::dropIfExists('schedules');
     }
 };
