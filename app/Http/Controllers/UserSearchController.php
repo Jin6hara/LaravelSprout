@@ -35,10 +35,10 @@ class UserSearchController extends Controller
             ->when($q !== '', function ($qb) use ($q) {
                 $qb->where(
                     fn($w) =>
-                    $w->where('first_name', 'like', "%{$q}%")
-                        ->orWhere('family_name', 'like', "%{$q}%")
-                        ->orWhere('employee_code', 'like', "%{$q}%")
-                        ->orWhere('email', 'like', "%{$q}%")
+                    $w->whereLikeInsensitive('first_name', $q)
+                        ->orWhereLikeInsensitive('family_name', $q)
+                        ->orWhereLikeInsensitive('employee_code', $q)
+                        ->orWhereLikeInsensitive('email', $q)
                 );
             })
             ->orderBy('family_name')

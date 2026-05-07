@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\School;
 use App\Models\SchoolProfile;
+use App\Support\SchoolName;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -145,15 +146,20 @@ class SchoolSeeder extends Seeder
 
         DB::transaction(function () use ($schools, $now, $makeCode, $profileMapImage, $stationGuideImage) {
             foreach ($schools as $s) {
-                $school = School::firstOrCreate(
-                    ['school_name' => $s['name']],
-                    [
+                $schoolName = SchoolName::normalize($s['name']);
+                $school = School::query()
+                    ->whereEqualsInsensitive('school_name', $schoolName)
+                    ->first();
+
+                if (!$school) {
+                    $school = School::create([
+                        'school_name' => $schoolName,
                         'school_code' => $makeCode(),
                         'name_kana'   => null,
                         'aliases'     => null,
                         'is_active'   => true,
-                    ]
-                );
+                    ]);
+                }
 
                 // ✅ map_image_path fixed
                 $profile = SchoolProfile::create([

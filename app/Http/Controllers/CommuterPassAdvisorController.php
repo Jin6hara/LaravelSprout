@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Support\DatabaseText;
+use App\Support\SchoolName;
 use App\Support\TimeString;
 
 class CommuterPassAdvisorController extends Controller
@@ -24,6 +26,10 @@ class CommuterPassAdvisorController extends Controller
             : null; // null = 上限なし（from 以降）
 
         $min = (int)($request->query('min_count') ?: 5);
+        $text = DB::query();
+        $slSchoolKeyExpr = DatabaseText::loweredExpression($text, 'sl.school_name');
+        $baseSchoolKeyExpr = DatabaseText::loweredExpression($text, 'base.school_name');
+        $peerSchoolKeyExpr = DatabaseText::loweredExpression($text, 'peer.school_name');
 
         // --- 共通: 期間条件を適用するクロージャ ---
         $applyPeriod = function ($q) use ($from, $to) {
@@ -45,11 +51,12 @@ class CommuterPassAdvisorController extends Controller
         $groupsSub = DB::table('schedule_lines as sl')
             ->join('schedules as s', 's.id', '=', 'sl.schedule_id')
             ->tap($applyPeriod)
-            ->groupBy('s.user_id', 'sl.school_name')
+            ->groupBy('s.user_id', DB::raw($slSchoolKeyExpr))
             ->havingRaw('COUNT(*) >= ?', [$min])
             ->select([
                 's.user_id',
-                'sl.school_name',
+                DB::raw('MIN(sl.school_name) as school_name'),
+                DB::raw("{$slSchoolKeyExpr} as school_name_key"),
                 DB::raw('COUNT(*) as cnt'),
             ]);
 
@@ -68,8 +75,8 @@ class CommuterPassAdvisorController extends Controller
         // schedule_id 同士の一致縛りは外し、user_id で合わせるのが安全。
         $qualSub = DB::table('schedule_lines as base')
             ->join('schedules as bs', 'bs.id', '=', 'base.schedule_id') // base の user を得る
-            ->join('schedule_lines as peer', function ($join) {
-                $join->on('peer.school_name', '=', 'base.school_name')
+            ->join('schedule_lines as peer', function ($join) use ($baseSchoolKeyExpr, $peerSchoolKeyExpr) {
+                $join->whereRaw("{$peerSchoolKeyExpr} = {$baseSchoolKeyExpr}")
                     ->on('peer.schedule_id', '=', 'base.schedule_id'); // 同一 schedule_id 内で突き合わせ（必要に応じて user_id へ変更）
             })
             ->join('schedules as ps', 'ps.id', '=', 'peer.schedule_id')
@@ -93,9 +100,9 @@ class CommuterPassAdvisorController extends Controller
         // --- 3) 明細: groupsSub（候補グループ）と qualSub（同時稼働曜日数）を join して抽出 ---
         $details = DB::table('schedule_lines as sl')
             ->join('schedules as s', 's.id', '=', 'sl.schedule_id')
-            ->joinSub($groupsSub, 'g', function ($join) {
+            ->joinSub($groupsSub, 'g', function ($join) use ($slSchoolKeyExpr) {
                 $join->on('g.user_id', '=', 's.user_id')
-                    ->on('g.school_name', '=', 'sl.school_name');
+                    ->whereRaw("g.school_name_key = {$slSchoolKeyExpr}");
             })
             ->joinSub($qualSub, 'qual', function ($join) {
                 $join->on('qual.line_id', '=', 'sl.id');
@@ -106,26 +113,31 @@ class CommuterPassAdvisorController extends Controller
                 's.user_id',
                 'sl.id as line_id',
                 'sl.school_name',
+                DB::raw("{$slSchoolKeyExpr} as school_name_key"),
                 'sl.dow',
                 'sl.effective_start',
                 'sl.effective_end',
             ])
             ->orderBy('s.user_id')
-            ->orderBy('sl.school_name')
+            ->orderByRaw($slSchoolKeyExpr)
             ->orderBy('sl.dow')
             ->get();
 
         $details = $details->unique(
             fn($r) =>
-            $r->user_id . '_' . $r->school_name . '_' . $r->dow . '_' . $r->effective_start . '_' . $r->effective_end
+            $r->user_id . '_' . $r->school_name_key . '_' . $r->dow . '_' . $r->effective_start . '_' . $r->effective_end
         )->values();
         // ▲▲▲▲ 明細取得ロジック：対象外の詳細は含まない ▲▲▲▲
 
         // --- 4) 画面用に（user_id → school_name）でグルーピング ---
         $grouped = $groups->groupBy('user_id')->map(function ($rows, $uid) use ($details) {
-            return $rows->keyBy('school_name')->map(function ($row, $school) use ($details, $uid) {
-                $lines = $details->where('user_id', $uid)->where('school_name', $school)->values();
-                return ['count' => $row->cnt, 'lines' => $lines];
+            return $rows->keyBy('school_name_key')->map(function ($row, $schoolKey) use ($details, $uid) {
+                $lines = $details->where('user_id', $uid)->where('school_name_key', $schoolKey)->values();
+                return [
+                    'school_name' => SchoolName::normalize($row->school_name) ?? $row->school_name,
+                    'count'       => $row->cnt,
+                    'lines'       => $lines,
+                ];
             });
         });
 

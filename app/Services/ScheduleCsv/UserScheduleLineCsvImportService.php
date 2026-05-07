@@ -8,6 +8,7 @@ use App\Models\ScheduleLine;
 use App\Models\ScheduleDetail;
 use App\Models\Lesson;
 use App\Models\LessonStartTime;
+use App\Support\SchoolName;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -101,7 +102,7 @@ class UserScheduleLineCsvImportService
                 $schTo   = $this->toDate($schTo);
 
                 $dow = $this->toDowIndex17($dowIn); // 1..7 → 0..6 (7を0に)
-                $school = $school !== null ? trim($school) : null;
+                $school = SchoolName::normalize($school);
                 $lineStart = $this->toTimeHms($shiftFr); // "H:i"→"H:i:00"
                 $lineEnd   = $this->toTimeHms($shiftTo);
 
@@ -167,15 +168,27 @@ class UserScheduleLineCsvImportService
                 }
 
                 // === 3) ライン（器） firstOrCreate ===
-                $line = ScheduleLine::firstOrCreate([
-                    'schedule_id'     => $schedule->id,     // ← 裏で schedule_id を紐付け
-                    'dow'             => $dow,
-                    'school_name'     => $school,
-                    'start_time'      => $lineStart,        // DBは "H:i:00"
-                    'end_time'        => $lineEnd,
-                    'effective_start' => $lineFrom,
-                    'effective_end'   => $lineTo,
-                ]);
+                $line = ScheduleLine::query()
+                    ->where('schedule_id', $schedule->id)
+                    ->where('dow', $dow)
+                    ->whereEqualsInsensitive('school_name', $school)
+                    ->where('start_time', $lineStart)
+                    ->where('end_time', $lineEnd)
+                    ->where('effective_start', $lineFrom)
+                    ->where('effective_end', $lineTo)
+                    ->first();
+
+                if (!$line) {
+                    $line = ScheduleLine::create([
+                        'schedule_id'     => $schedule->id,     // ← 裏で schedule_id を紐付け
+                        'dow'             => $dow,
+                        'school_name'     => $school,
+                        'start_time'      => $lineStart,        // DBは "H:i:00"
+                        'end_time'        => $lineEnd,
+                        'effective_start' => $lineFrom,
+                        'effective_end'   => $lineTo,
+                    ]);
+                }
 
                 // === 4) ディテール（中身） upsert ===
                 $lsTimeId = LessonStartTime::where('start_time', $lessonStartAt)->value('id');

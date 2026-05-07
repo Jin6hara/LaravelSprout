@@ -18,6 +18,10 @@ use App\Services\Calendar\Providers\ClosureProvider;
 use App\Services\Calendar\Providers\SubCountProvider;
 use App\Services\Calendar\Providers\AllEventProvider;
 use App\Services\Calendar\Providers\AllLeaveProvider;
+use App\Support\DatabaseText;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Support\Facades\URL;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -71,6 +75,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->bootQueryTextMacros();
+
         Paginator::useBootstrapFive(); //user.userListのpagination用に
         Leave::observe(LeaveObserver::class);
         Event::observe(EventObserver::class);
@@ -85,6 +91,53 @@ class AppServiceProvider extends ServiceProvider
                 ->count();
 
             $view->with('inboxUnconfirmed', $inboxUnconfirmed);
+        });
+
+        if (app()->environment('production')) {
+            URL::forceScheme('https');
+        }
+    }
+
+    private function bootQueryTextMacros(): void
+    {
+        if (!QueryBuilder::hasMacro('whereLikeInsensitive')) {
+            QueryBuilder::macro('whereLikeInsensitive', function (string $column, ?string $value, string $boolean = 'and') {
+                return DatabaseText::whereContainsInsensitive($this, $column, $value, $boolean);
+            });
+        }
+
+        if (!QueryBuilder::hasMacro('orWhereLikeInsensitive')) {
+            QueryBuilder::macro('orWhereLikeInsensitive', function (string $column, ?string $value) {
+                return DatabaseText::whereContainsInsensitive($this, $column, $value, 'or');
+            });
+        }
+
+        if (!QueryBuilder::hasMacro('whereEqualsInsensitive')) {
+            QueryBuilder::macro('whereEqualsInsensitive', function (string $column, ?string $value, string $boolean = 'and') {
+                return DatabaseText::whereEqualsInsensitive($this, $column, $value, $boolean);
+            });
+        }
+
+        if (!QueryBuilder::hasMacro('orWhereEqualsInsensitive')) {
+            QueryBuilder::macro('orWhereEqualsInsensitive', function (string $column, ?string $value) {
+                return DatabaseText::whereEqualsInsensitive($this, $column, $value, 'or');
+            });
+        }
+
+        EloquentBuilder::macro('whereLikeInsensitive', function (string $column, ?string $value, string $boolean = 'and') {
+            return DatabaseText::whereContainsInsensitive($this, $column, $value, $boolean);
+        });
+
+        EloquentBuilder::macro('orWhereLikeInsensitive', function (string $column, ?string $value) {
+            return DatabaseText::whereContainsInsensitive($this, $column, $value, 'or');
+        });
+
+        EloquentBuilder::macro('whereEqualsInsensitive', function (string $column, ?string $value, string $boolean = 'and') {
+            return DatabaseText::whereEqualsInsensitive($this, $column, $value, $boolean);
+        });
+
+        EloquentBuilder::macro('orWhereEqualsInsensitive', function (string $column, ?string $value) {
+            return DatabaseText::whereEqualsInsensitive($this, $column, $value, 'or');
         });
     }
 }

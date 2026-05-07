@@ -40,8 +40,8 @@ class AdminController extends Controller
             ->when(filled($word), function (Builder $q) use ($word, $fields) {
                 $q->where(function (Builder $w) use ($word, $fields) {
                     $fields->values()->each(function ($field, $i) use ($w, $word) {
-                        $method = $i === 0 ? 'where' : 'orWhere';
-                        $w->{$method}($field, 'like', "%{$word}%");
+                        $method = $i === 0 ? 'whereLikeInsensitive' : 'orWhereLikeInsensitive';
+                        $w->{$method}($field, $word);
                     });
                 });
             });
@@ -125,8 +125,8 @@ class AdminController extends Controller
             ->when(filled($word), function (Builder $q) use ($word, $fields) {
                 $q->where(function (Builder $w) use ($word, $fields) {
                     $fields->values()->each(function ($field, $i) use ($w, $word) {
-                        $method = $i === 0 ? 'where' : 'orWhere';
-                        $w->{$method}($field, 'like', "%{$word}%");
+                        $method = $i === 0 ? 'whereLikeInsensitive' : 'orWhereLikeInsensitive';
+                        $w->{$method}($field, $word);
                     });
                 });
             });
