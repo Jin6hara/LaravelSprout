@@ -3,6 +3,7 @@
 namespace App\Services\Calendar\Providers;
 
 use App\Models\User;
+use App\Services\CurrentScopeService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use App\Services\Calendar\Contracts\CalendarEventProvider;
@@ -15,6 +16,9 @@ class SubCountProvider implements CalendarEventProvider
     {
         $startDate = $start->toDateString();
         $endDate   = $end->copy()->subDay()->toDateString(); // FC end は排他
+
+        // 現在の管理スコープ内ユーザーのみ対象にする
+        $targetUserIds = app(CurrentScopeService::class)->targetUserIds();
 
         // === Sub 判定（校名に含まれる語） ===
         $kw = (array) config('calendar_forecast.sub_keywords', ['sub', 'SUB', 'Sub', 'サブ', '代行']);
@@ -29,6 +33,7 @@ class SubCountProvider implements CalendarEventProvider
         $rangeE = $end->copy()->startOfDay(); // 排他
         $leaveRows = DB::table('leaves')
             ->select('user_id', 'start_date', 'end_date', 'time_start', 'time_end', 'status')
+            ->whereIn('user_id', $targetUserIds)
             ->whereIn('status', ['approved', 'pending'])
             ->whereDate('start_date', '<=', $endDate)
             ->where(function ($q) use ($startDate) {
@@ -59,6 +64,7 @@ class SubCountProvider implements CalendarEventProvider
             ->where(function ($q) {
                 $q->whereNull('urp.end_date')->orWhereColumn('urp.end_date', '>=', 'rpa.date');
             })
+            ->whereIn('urp.user_id', $targetUserIds)
             ->select('rpa.date', 'urp.user_id')
             ->get();
 
@@ -98,6 +104,7 @@ class SubCountProvider implements CalendarEventProvider
                 DB::raw('effective_end as end_date'),
             ])
             ->whereIn('id', $scheduleIds)
+            ->whereIn('user_id', $targetUserIds)
             ->whereDate('effective_start', '<=', $endDate)
             ->whereDate('effective_end', '>=', $startDate)
             ->get();
@@ -150,6 +157,7 @@ class SubCountProvider implements CalendarEventProvider
         // === (D) subs: 直接登録された代行（日付ベース、欠席控除） ===
         $subsRows = DB::table('subs')
             ->select('user_id', 'sub_date', 'start_time', 'end_time') // ← 時間も取得（モーダル用）
+            ->whereIn('user_id', $targetUserIds)
             ->whereBetween('sub_date', [$startDate, $endDate])
             ->get();
 
