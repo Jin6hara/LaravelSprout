@@ -7,6 +7,19 @@
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
+
+            {{-- 左: scope selector (admin / super_admin のみ) --}}
+            @auth
+            @if(auth()->user()->isAdmin() && $scopeSelectorData)
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    @include('commons.scope_selector')
+                </li>
+            </ul>
+            @endif
+            @endauth
+
+            {{-- 右: 既存ナビアイテム（変更なし） --}}
             <ul class="navbar-nav ms-auto">
                 @auth
                 @include('commons.role.adminHeader')
@@ -21,6 +34,7 @@
                 <li class="nav-item"><a class="nav-link" href="{{ route('login') }}">Please Login</a></li>
                 @endauth
             </ul>
+
         </div>
     </div>
 </nav>

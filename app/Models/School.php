@@ -10,7 +10,7 @@ class School extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'school_code', 'school_name', 'name_kana', 'aliases', 'is_active',
+        'school_code', 'school_name', 'name_kana', 'aliases', 'is_active', 'district_id',
     ];
 
     protected $casts = [
@@ -28,5 +28,10 @@ class School extends Model
         return $this->hasOne(SchoolProfile::class)
             ->whereNull('valid_to')
             ->latest('valid_from');
+    }
+
+    public function district()
+    {
+        return $this->belongsTo(District::class);
     }
 }

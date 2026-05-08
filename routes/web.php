@@ -12,6 +12,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\LeaveApplyController;
 use App\Http\Controllers\LeaveAttachmentController;
+use App\Http\Controllers\CurrentScopeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,6 +31,11 @@ use App\Http\Controllers\LeaveAttachmentController;
 Route::get('/login', [LoginController::class, 'showForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+//スコープ切替（admin / super_admin のみ）
+Route::middleware(['auth', 'role:admin|super_admin'])
+    ->post('/current-scope', [CurrentScopeController::class, 'store'])
+    ->name('current-scope.store');
 
 //共通
 Route::middleware(['auth', 'role:general|admin|super_admin'])->group(function () {
