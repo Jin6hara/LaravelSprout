@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Leave;
-use App\Models\User;
+use App\Services\CurrentScopeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -12,6 +12,8 @@ use Illuminate\Validation\Rule;
 
 class LeaveManageController extends Controller
 {
+    public function __construct(private CurrentScopeService $scopeService) {}
+
     /**
      * Leaveの月次一覧（管理者用）
      * - 月/ユーザーで絞り込み
@@ -20,7 +22,7 @@ class LeaveManageController extends Controller
 public function edit(Request $request)
 {
     // 1) ユーザー候補
-    $userOptions = User::query()
+    $userOptions = $this->scopeService->targetUserQuery()
         ->select('id', 'first_name', 'family_name', 'employee_code')
         ->orderBy('employee_code')
         ->limit(500)
@@ -61,6 +63,7 @@ public function edit(Request $request)
     // 4) クエリ（Event版と同順序・構成）
     $leaves = Leave::query()
         ->with(['user:id,first_name,family_name,employee_code'])
+        ->whereIn('user_id', $this->scopeService->targetUserIds())
         ->when($leaveId,     fn($q) => $q->where('id', $leaveId)) // ★個別編集用パラメータ: leave_id があれば最優先で一意絞り込み
         ->when($userId,      fn($q) => $q->where('user_id', $userId))
         ->when($kind,        fn($q) => $q->where('kind', $kind))

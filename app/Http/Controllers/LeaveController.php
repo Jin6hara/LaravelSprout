@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreLeaveRequest;
 use App\Models\Leave;
 use App\Models\User;
+use App\Services\CurrentScopeService;
 use App\Services\LeaveBalanceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,6 +15,8 @@ use Illuminate\Support\Facades\Storage;
 
 class LeaveController extends Controller
 {
+    public function __construct(private CurrentScopeService $scopeService) {}
+
     public function create()
     {
         $user = auth()->user();
@@ -229,6 +232,7 @@ class LeaveController extends Controller
 
         $q = Leave::query()
             ->with(['user:id,first_name,family_name,name,employee_code'])
+            ->whereIn('user_id', $this->scopeService->targetUserIds())
             ->whereIn('kind', $kinds);
 
         if ($from) $q->whereDate('start_date', '>=', $from);
@@ -304,7 +308,7 @@ class LeaveController extends Controller
         $leaves->setCollection($rows);
 
         // ユーザー選択用（任意）
-        $userOptions = User::query()->orderBy('family_name')->orderBy('first_name')->get(['id', 'family_name', 'first_name', 'employee_code']);
+        $userOptions = $this->scopeService->targetUserQuery()->orderBy('family_name')->orderBy('first_name')->get(['id', 'family_name', 'first_name', 'employee_code']);
 
         return view('calendar.absenceReportAll', [
             'viewer'             => $viewer,
