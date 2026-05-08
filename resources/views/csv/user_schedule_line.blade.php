@@ -35,13 +35,13 @@
         <pre class="bg-light p-2 mb-2">
 Employ Code ('user_id'),Type ('label'),Total Minutes ('total_minutes'),Contract Start ('effective_start'),Contract End ('effective_end'),
 School ('school_name'),DOW ('dow'),Shift From ('start_time'),Shift To ('end_time'),Line Start ('effective_start'),Line End ('effective_end'),
-Start At ('lesson_start_times'),Lesson Name ('lesson_code'),Lesson Start ('effective_start'),Lesson End ('effective_end')
+Start At ('start_time'),Lesson Name ('lesson_code'),Lesson Start ('effective_start'),Lesson End ('effective_end')
 000013,TS,465,2025-04-01,2026-03-31,Umeda GB,7:日,15:00,21:00,2025-04-01,2026-03-31,15:00,BW,2025-04-01,2026-03-31
 </pre>
         <small class="text-muted">
             ※ DOW は <b>1:月〜6:土, 7:日</b> を想定（システム内では <b>7→0（日）</b> に変換）<br>
             ※ DB格納は TIME が秒を持つため、内部的に <b>「H:i:00」</b> で保存。UI表示は H:i でOK。<br>
-            ※ Lesson Start At は既存の <code>lesson_start_times.start_time</code>（5分刻み）に存在する値を指定してください。
+            ※ Start At は <code>H:i</code> 形式（例: 15:00）で入力してください。
         </small>
     </div>
 </div>

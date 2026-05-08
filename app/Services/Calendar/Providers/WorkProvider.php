@@ -13,7 +13,6 @@ class WorkProvider implements CalendarEventProvider
     public function provide(User $user, Carbon $start, Carbon $end): array
     {
         $asgs = Schedule::with([
-            'lines.details.start',
             'lines.details.lesson',
         ])
             ->where('user_id', $user->id)
@@ -71,18 +70,17 @@ class WorkProvider implements CalendarEventProvider
                                 (is_null($d->effective_end) || $d->effective_end->gte($cur));
                             if (!$inRange) return false;
 
-                            $startObj = $d->start?->start_time; // cast: datetime:H:i
-                            if (!$startObj) return false;
-                            $hm = $startObj->format('H:i');
+                            if (!$d->start_time) return false;
+                            $hm = substr($d->start_time, 0, 5);
                             $m  = $toMinutes($hm);
                             return $m !== null && $lineStartMin !== null && $lineEndMin !== null
                                 && $m >= $lineStartMin && $m <= $lineEndMin;
                         })
-                        ->sortBy(fn($d) => $d->start->start_time) // H:i でOK
+                        ->sortBy(fn($d) => $d->start_time)
                         ->values()
                         ->map(function ($d) {
                             return [
-                                'start_hm'    => $d->start->start_time->format('H:i'),
+                                'start_hm'    => substr($d->start_time, 0, 5),
                                 'lesson_code' => $d->lesson->lesson_code,
                                 'lesson_name' => $d->lesson->lesson_name,
                                 'lesson_min'  => $d->lesson->lesson_minute,

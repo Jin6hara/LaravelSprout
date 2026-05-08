@@ -15,8 +15,11 @@ const props = defineProps({
 
 const count = ref(props.initialCount);
 let timer = null;
+let handleVisibilityChange = null;
 
 async function fetchCount() {
+    if (document.hidden) return;
+
     try {
         const res = await fetch(props.endpoint, {
             headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
@@ -31,16 +34,14 @@ async function fetchCount() {
 }
 
 onMounted(() => {
-    // 初回も念のため同期
-    fetchCount();
-
     timer = window.setInterval(fetchCount, props.intervalMs);
 
     // タブ復帰・フォーカス復帰で即更新
     window.addEventListener('focus', fetchCount);
-    document.addEventListener('visibilitychange', () => {
+    handleVisibilityChange = () => {
         if (!document.hidden) fetchCount();
-    });
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // 任意：他画面から強制更新イベント
     window.addEventListener('inbox:refresh', fetchCount);
@@ -49,6 +50,9 @@ onMounted(() => {
 onBeforeUnmount(() => {
     if (timer) window.clearInterval(timer);
     window.removeEventListener('focus', fetchCount);
+    if (handleVisibilityChange) {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }
     window.removeEventListener('inbox:refresh', fetchCount);
 });
 </script>

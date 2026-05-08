@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('schedule_details', function (Blueprint $t) {
             $t->id();
             $t->foreignId('schedule_line_id')->constrained('schedule_lines')->cascadeOnDelete();
-            $t->foreignId('lesson_start_time_id')->constrained('lesson_start_times')->cascadeOnDelete();
+            $t->time('start_time');
             $t->foreignId('lesson_id')->constrained('lessons')->cascadeOnDelete();
 
             // ▼ 有効期間
@@ -23,12 +23,6 @@ return new class extends Migration
 
             $t->timestamps();
 
-            // ▼ 重複防止（完全同一の開始日での二重登録を禁止）
-            //$t->unique(
-                //['schedule_line_id', 'lesson_start_time_id', 'lesson_id', 'effective_start'],
-                //'sch_details_unique_start'
-            //);
-
             // ▼ 期間検索のための複合インデックス（範囲→行絞り込みの順で効きやすい並び）
             $t->index(
                 ['schedule_line_id', 'effective_start', 'effective_end'],
@@ -36,7 +30,7 @@ return new class extends Migration
             );
             // 「当日表示」最適化（行→開始時刻→期間）
             $t->index(
-                ['schedule_line_id', 'lesson_start_time_id', 'effective_start', 'effective_end'],
+                ['schedule_line_id', 'start_time', 'effective_start', 'effective_end'],
                 'sch_details_line_start_window_idx'
             );
         });

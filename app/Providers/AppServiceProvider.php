@@ -81,16 +81,23 @@ class AppServiceProvider extends ServiceProvider
         Leave::observe(LeaveObserver::class);
         Event::observe(EventObserver::class);
 
-        View::composer('*', function ($view) {
+        View::composer('layouts.app', function ($view) {
             $user = auth()->user();
-            if (!$user) return;
+            if (!$user) {
+                return;
+            }
 
             // 代理閲覧中でもヘッダーは「自分の未確認」を出す想定
-            $inboxUnconfirmed = $user->postsVisible()
-                ->wherePivotNull('confirmed_at')
-                ->count();
+            $inboxUnconfirmed = $user->inboxUnconfirmedCount();
 
-            $view->with('inboxUnconfirmed', $inboxUnconfirmed);
+            $unreadNotificationsCount = $user->hasRole(['admin', 'super_admin'])
+                ? $user->unreadNotifications()->count()
+                : 0;
+
+            $view->with([
+                'inboxUnconfirmed' => $inboxUnconfirmed,
+                'unreadNotificationsCount' => $unreadNotificationsCount,
+            ]);
         });
 
         if (app()->environment('production')) {

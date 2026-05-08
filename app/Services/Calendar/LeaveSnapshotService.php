@@ -5,8 +5,6 @@ namespace App\Services\Calendar;
 use App\Models\Event;
 use App\Models\EventDetail;
 use App\Models\Leave;
-use App\Models\Lesson;
-use App\Models\ScheduleLine;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
@@ -56,9 +54,10 @@ class LeaveSnapshotService
         $userId = $leave->user_id;
         $dow    = $date->dayOfWeek; // 0..6
         $ymd    = $date->toDateString();
+        $skipSubs = true; // ← OFFにしたいときは false に
 
         // ▼ assignments を使わず、schedules.user_id 直付け＋期間で取得
-        $sch = Schedule::with(['lines.details' /* ★ */, 'lines.details.start', 'lines.details.lesson'])
+        $sch = Schedule::with(['lines.details', 'lines.details.lesson'])
             ->where('user_id', $userId)
             ->whereDate('effective_start', '<=', $ymd)
             ->whereDate('effective_end', '>=', $ymd)
@@ -79,6 +78,24 @@ class LeaveSnapshotService
             })
             ->values();
 
+        if ($skipSubs) {
+            $existsInSubs = DB::table('subs')
+                ->where('user_id', $userId)
+                ->whereDate('sub_date', $ymd)
+                ->exists();
+
+            if ($existsInSubs) {
+                return;
+            }
+        }
+
+        $existingLineIds = Event::query()
+            ->whereDate('event_date', $ymd)
+            ->where('source_leave_id', $leave->id)
+            ->whereIn('source_schedule_line_id', $lines->pluck('id')->all())
+            ->pluck('source_schedule_line_id')
+            ->flip();
+
         foreach ($lines as $line) {
             // Subシフトはスナップショット対象外
             $school = (string)($line->school_name ?? '');
@@ -86,28 +103,9 @@ class LeaveSnapshotService
                 continue;
             }
 
-            // ▼ subsテーブルに同日の記録がある場合はスキップ（ON/OFF可能ブロック）
-            $skipSubs = true; // ← OFFにしたいときは false に
-            if ($skipSubs) {
-                $existsInSubs = DB::table('subs')
-                    ->where('user_id', $userId)
-                    ->whereDate('sub_date', $ymd)
-                    ->exists();
-                if ($existsInSubs) {
-                    // subsテーブルに登録がある → スナップショット作成スキップ
-                    continue;
-                }
-            }
-
-            // 二重生成の保険
-            $exists = Event::query()
-                ->whereDate('event_date', $ymd)
-                ->where('source_schedule_line_id', $line->id)
-                ->where('source_leave_id', $leave->id)
-                ->exists();
-            if ($exists) {
+            if ($existingLineIds->has($line->id)) {
                 continue;
-            } // ブロック構文（波かっこあり）
+            }
 
             // event 作成
             $event = Event::create([
@@ -126,10 +124,10 @@ class LeaveSnapshotService
                 'notes'                   => null,
             ]);
 
-            // details コピー（lesson_start_time_id / lesson_id をスナップショットに保持）
+            // details コピー（start_time / lesson_id をスナップショットに保持）
             $lessonCodes = []; // ← lesson_code 収集用
 
-            // ★ 同一event内で (lesson_start_time_id, lesson_id) の重複を防止
+            // ★ 同一event内で (start_time, lesson_id) の重複を防止
             $seen = [];
 
             foreach ($line->details as $d) {
@@ -139,7 +137,7 @@ class LeaveSnapshotService
                 if (!($okStart && $okEnd)) continue;
 
                 // line 時間帯内の detail のみ（WorkProvider と同じ基準）
-                $startHm = $d->start?->start_time?->format('H:i');
+                $startHm = $d->start_time ? substr($d->start_time, 0, 5) : null;
                 if (!$startHm) continue;
 
                 $lineStartHm = substr($line->start_time, 0, 5);
@@ -151,24 +149,24 @@ class LeaveSnapshotService
                 $le = $toMin($lineEndHm);
 
                 if ($m !== null && $ls !== null && $le !== null && $m >= $ls && $m <= $le) {
-                    // ★ event_details のユニーク制約 (event_id, lesson_start_time_id, lesson_id) 対策
-                    $k = $d->lesson_start_time_id . '-' . $d->lesson_id;
+                    // ★ event_details のユニーク制約 (event_id, start_time, lesson_id) 対策
+                    $k = $d->start_time . '-' . $d->lesson_id;
                     if (isset($seen[$k])) {
                         continue;
                     }
                     $seen[$k] = true;
 
                     EventDetail::create([
-                        'event_id'             => $event->id,
-                        'schedule_detail_id'   => $d->id,
-                        'lesson_start_time_id' => $d->lesson_start_time_id,
-                        'lesson_id'            => $d->lesson_id,
+                        'event_id'           => $event->id,
+                        'schedule_detail_id' => $d->id,
+                        'start_time'         => $d->start_time,
+                        'lesson_id'          => $d->lesson_id,
                     ]);
 
                     // lesson_code を取得して配列に追加
-                    if ($d->lesson_id) {
-                        $code = Lesson::where('id', $d->lesson_id)->value('lesson_code');
-                        if ($code) $lessonCodes[] = $code;
+                    $code = $d->lesson?->lesson_code;
+                    if ($code) {
+                        $lessonCodes[] = $code;
                     }
                 }
             }

@@ -46,9 +46,8 @@ class ScheduleLineController extends Controller
                 // details（開始時刻/レッスン情報を一緒に）
                 'details' => function ($q) {
                     $q->with([
-                        'start:id,start_time', // lesson_start_times
                         'lesson:id,lesson_name,lesson_code,lesson_minute,lesson_type',
-                    ])->orderBy('lesson_start_time_id');
+                    ])->orderBy('start_time');
                 },
             ])
             // 並び順
@@ -490,7 +489,7 @@ class ScheduleLineController extends Controller
     /**
      * schedule_details を内容の変化点で分割して「時間系列」へ整形
      *
-     * @param  \Illuminate\Support\Collection  $details  // of ScheduleDetail (with ->start, ->lesson)
+     * @param  \Illuminate\Support\Collection  $details  // of ScheduleDetail (with ->lesson)
      * @return array<int, array{start:?Carbon, end:?Carbon, items:array<int,array{time:string,name:?string,code:?string,minute:?int,type:?string}>}>
      */
     private function buildTimeSeries(Collection $details): array
@@ -553,16 +552,14 @@ class ScheduleLineController extends Controller
 
             // 4) 表示アイテム（開始時刻順）
             $items = $active->sortBy(function ($d) {
-                return optional($d->start)->start_time ?? '99:99:99';
+                return $d->start_time ?? '99:99:99';
             })
                 ->map(function ($d) {
                     // 1) start_time を多様な入力から "HH:MM" に正規化
-                    $raw = optional($d->start)->start_time; // 文字列/Carbon/null の可能性
+                    $raw = $d->start_time;
                     $startStr = null;
 
-                    if ($raw instanceof \DateTimeInterface) {
-                        $startStr = \Carbon\Carbon::instance($raw)->format('H:i');
-                    } else if ($raw !== null) {
+                    if ($raw !== null) {
                         $s = trim((string)$raw);
 
                         // 全角コロン対策

@@ -76,7 +76,7 @@
     @foreach($details as $d)
     @php
     // 開始・終了の算出（既に導入済みの TimeString 利用）
-    $st = \App\Support\TimeString::normalizeToHm(optional($d->start)->start_time);
+    $st = \App\Support\TimeString::normalizeToHm($d->start_time);
     $minsVal = optional($d->lesson)->lesson_minute;
     $mins = is_numeric($minsVal) ? (int)$minsVal : null;
     $endCalc = ($st && $mins !== null) ? \App\Support\TimeString::addMinutesHm($st, $mins) : '';

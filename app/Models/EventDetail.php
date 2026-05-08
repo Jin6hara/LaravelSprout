@@ -13,9 +13,9 @@ class EventDetail extends Model
     public $timestamps = false;
     protected $fillable = [
         'event_id',
-        'lesson_start_time_id',
+        'start_time',
         'lesson_id',
-        'source_schedule_detail_id'
+        'schedule_detail_id',
     ];
 
     public function event(): BelongsTo
@@ -26,11 +26,6 @@ class EventDetail extends Model
     public function scheduleDetail(): BelongsTo
     {
         return $this->belongsTo(ScheduleDetail::class);
-    }
-
-    public function start(): BelongsTo
-    {
-        return $this->belongsTo(LessonStartTime::class, 'lesson_start_time_id');
     }
 
     public function lesson(): BelongsTo
