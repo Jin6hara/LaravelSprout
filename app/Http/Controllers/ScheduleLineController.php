@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ScheduleLine;
 use App\Models\Schedule;
 use App\Models\User;
+use App\Services\CurrentScopeService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rule;
@@ -16,8 +17,12 @@ use Carbon\Carbon;
 
 class ScheduleLineController extends Controller
 {
+    public function __construct(private CurrentScopeService $scopeService) {}
+
     public function edit(Request $request)
     {
+        $targetUserIds = $this->scopeService->targetUserIds();
+
         // フィルタ
         $activeOn   = $request->input('active_on', now()->toDateString());   // Y-m-d or today
         $activeOn = $request->has('active_on')
@@ -55,6 +60,12 @@ class ScheduleLineController extends Controller
             ->orderBy('school_name')
             ->orderBy('effective_start');
 
+        // スコープ: schedule 経由で管理外ユーザーのデータを除外
+        $linesQuery->where(function ($q) use ($targetUserIds) {
+            $q->whereNull('schedule_id')
+              ->orWhereHas('schedule', fn($sq) => $sq->whereIn('user_id', $targetUserIds));
+        });
+
         // ▼ schedule_id フィルタ（'null' は未割当のみ、数値はそのID、空はすべて）
         if ($scheduleIdRaw === 'null') {
             $linesQuery->whereNull('schedule_id');
@@ -73,6 +84,7 @@ class ScheduleLineController extends Controller
         // ▼ Schedule 所有ユーザーを取得（user_id 経由）
         $scheduleOptions = Schedule::query()
             ->with(['user:id,first_name,family_name,employee_code'])
+            ->whereIn('user_id', $targetUserIds)
             ->get()
             ->map(function ($s) {
                 $u = $s->user;

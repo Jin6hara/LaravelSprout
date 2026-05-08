@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\Schedule;
 use App\Models\User;
+use App\Services\CurrentScopeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Support\TimeString;
 
 class ScheduleController extends Controller
 {
+    public function __construct(private CurrentScopeService $scopeService) {}
+
     public function index(Request $request)
     {
         $viewer = Auth::user();
@@ -20,7 +23,7 @@ class ScheduleController extends Controller
         }
 
         // 全ユーザーをセレクトボックス用に取得
-        $userOptions = User::query()
+        $userOptions = $this->scopeService->targetUserQuery()
             ->orderBy('first_name')
             ->orderBy('family_name')
             ->get(['id', 'first_name', 'family_name', 'employee_code']);
@@ -32,7 +35,7 @@ class ScheduleController extends Controller
         $today = now()->toDateString();
         $inOneMonth = now()->addMonth()->toDateString();
 
-        $eligibleUsers = User::query()
+        $eligibleUsers = $this->scopeService->targetUserQuery()
             ->where(function ($q) use ($today, $inOneMonth) {
                 $q->whereExists(function ($sq) use ($today) {
                     $sq->from('employment_terms as et')
@@ -53,7 +56,8 @@ class ScheduleController extends Controller
             ->orderBy('family_name')
             ->get(['id', 'first_name', 'family_name', 'employee_code']);
 
-        $query = Schedule::query()->with('user');
+        $query = Schedule::query()->with('user')
+            ->whereIn('user_id', $this->scopeService->targetUserIds());
 
         // === フィルタ ===
         // Active On: 指定日が範囲に含まれる
