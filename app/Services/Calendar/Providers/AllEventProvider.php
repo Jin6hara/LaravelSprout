@@ -20,7 +20,6 @@ class AllEventProvider implements CalendarEventProvider
         $rows = Event::query()
             ->whereBetween('event_date', [$start->toDateString(), $end->toDateString()])
             ->with([
-                'details.start',
                 'details.lesson',
                 'originalUser:id,first_name,family_name',
                 'assignedUser:id,first_name,family_name'
@@ -56,12 +55,12 @@ class AllEventProvider implements CalendarEventProvider
 
             // EventDetails を time順にマップ
             $details = collect($e->details)
-                ->filter(fn($d) => !empty($d->start?->start_time))
-                ->sortBy(fn($d) => $d->start->start_time)
+                ->filter(fn($d) => !empty($d->start_time))
+                ->sortBy(fn($d) => $d->start_time)
                 ->values()
                 ->map(function ($d) {
                     return [
-                        'start_hm'    => $d->start->start_time->format('H:i'),
+                        'start_hm'    => substr($d->start_time, 0, 5),
                         'lesson_code' => $d->lesson?->lesson_code,
                         'lesson_name' => $d->lesson?->lesson_name,
                         'lesson_min'  => $d->lesson?->lesson_minute,

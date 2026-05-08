@@ -9,43 +9,40 @@ class ScheduleDetailsCopySeeder extends Seeder
 {
     public function run(): void
     {
-        // 画像と同じ内容
         $effectiveStart = '2026-04-01';
         $effectiveEnd   = '2027-03-31';
 
-        // lesson_id => lesson_start_time_id の対応
+        // lesson_id => start_time（旧テーブルIDを時刻値に変換済み）
         $rows = [
-            1 => 61,
-            2 => 78,
-            3 => 95,
-            4 => 112,
-            5 => 129,
-            6 => 146,
+            1 => '14:00:00',
+            2 => '15:25:00',
+            3 => '16:50:00',
+            4 => '18:15:00',
+            5 => '19:40:00',
+            6 => '21:05:00',
         ];
 
-        // 作成対象の schedule_line_id
         $targets = [33, 38];
 
         foreach ($targets as $lineId) {
-            foreach ($rows as $lessonId => $lstId) {
-                // 既存があればスキップ（重複作成防止）
+            foreach ($rows as $lessonId => $startTime) {
                 $exists = DB::table('schedule_details')->where([
-                    'schedule_line_id'      => $lineId,
-                    'lesson_start_time_id'  => $lstId,
-                    'lesson_id'             => $lessonId,
-                    'effective_start'       => $effectiveStart,
+                    'schedule_line_id' => $lineId,
+                    'start_time'       => $startTime,
+                    'lesson_id'        => $lessonId,
+                    'effective_start'  => $effectiveStart,
                 ])->exists();
 
                 if ($exists) continue;
 
                 DB::table('schedule_details')->insert([
-                    'schedule_line_id'      => $lineId,
-                    'lesson_start_time_id'  => $lstId,
-                    'lesson_id'             => $lessonId,
-                    'effective_start'       => $effectiveStart,
-                    'effective_end'         => $effectiveEnd,
-                    'created_at'            => now(),
-                    'updated_at'            => now(),
+                    'schedule_line_id' => $lineId,
+                    'start_time'       => $startTime,
+                    'lesson_id'        => $lessonId,
+                    'effective_start'  => $effectiveStart,
+                    'effective_end'    => $effectiveEnd,
+                    'created_at'       => now(),
+                    'updated_at'       => now(),
                 ]);
             }
         }

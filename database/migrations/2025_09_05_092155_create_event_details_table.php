@@ -20,11 +20,11 @@ return new class extends Migration
                 ->constrained('schedule_details')->nullOnDelete();
 
             // スナップショット（冗長だが安全・速い）
-            $t->foreignId('lesson_start_time_id')->constrained('lesson_start_times')->cascadeOnDelete();
+            $t->time('start_time');
             $t->foreignId('lesson_id')->constrained('lessons')->cascadeOnDelete();
 
-            $t->unique(['event_id', 'lesson_start_time_id', 'lesson_id'], 'event_details_unique');
-            $t->index(['event_id', 'lesson_start_time_id'], 'event_details_event_start_idx');
+            $t->unique(['event_id', 'start_time', 'lesson_id'], 'event_details_unique');
+            $t->index(['event_id', 'start_time'], 'event_details_event_start_idx');
             // timestamps不要
         });
     }

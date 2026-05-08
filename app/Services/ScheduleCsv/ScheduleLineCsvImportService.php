@@ -2,7 +2,7 @@
 
 namespace App\Services\ScheduleCsv;
 
-use App\Models\{ScheduleLine, ScheduleDetail, Lesson, LessonStartTime};
+use App\Models\{ScheduleLine, ScheduleDetail, Lesson};
 use Carbon\Carbon;
 use App\Support\SchoolName;
 use Illuminate\Support\Facades\DB;
@@ -28,11 +28,9 @@ class ScheduleLineCsvImportService
                 $winEnd   = $r['effective_end'] ?: null;
 
                 $lessonStart = $this->toTime($r['lesson_start_time']);
-                $lsTimeId = LessonStartTime::where('start_time', $lessonStart)->value('id');
-
                 $lessonId = Lesson::where('lesson_code', $r['lesson_code'])->value('id');
 
-                if (!$lsTimeId || !$lessonId) continue;
+                if (!$lessonStart || !$lessonId) continue;
 
                 $line = ScheduleLine::query()
                     ->when(
@@ -61,11 +59,11 @@ class ScheduleLineCsvImportService
                 }
 
                 ScheduleDetail::updateOrCreate([
-                    'schedule_line_id'     => $line->id,
-                    'lesson_start_time_id' => $lsTimeId,
-                    'lesson_id'            => $lessonId,
-                    'effective_start'      => $winStart,
-                    'effective_end'        => $winEnd,
+                    'schedule_line_id' => $line->id,
+                    'start_time'       => $lessonStart,
+                    'lesson_id'        => $lessonId,
+                    'effective_start'  => $winStart,
+                    'effective_end'    => $winEnd,
                 ]);
 
                 $count++;

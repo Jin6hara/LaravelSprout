@@ -57,7 +57,7 @@ class LeaveSnapshotService
         $skipSubs = true; // ← OFFにしたいときは false に
 
         // ▼ assignments を使わず、schedules.user_id 直付け＋期間で取得
-        $sch = Schedule::with(['lines.details' /* ★ */, 'lines.details.start', 'lines.details.lesson'])
+        $sch = Schedule::with(['lines.details', 'lines.details.lesson'])
             ->where('user_id', $userId)
             ->whereDate('effective_start', '<=', $ymd)
             ->whereDate('effective_end', '>=', $ymd)
@@ -124,10 +124,10 @@ class LeaveSnapshotService
                 'notes'                   => null,
             ]);
 
-            // details コピー（lesson_start_time_id / lesson_id をスナップショットに保持）
+            // details コピー（start_time / lesson_id をスナップショットに保持）
             $lessonCodes = []; // ← lesson_code 収集用
 
-            // ★ 同一event内で (lesson_start_time_id, lesson_id) の重複を防止
+            // ★ 同一event内で (start_time, lesson_id) の重複を防止
             $seen = [];
 
             foreach ($line->details as $d) {
@@ -137,7 +137,7 @@ class LeaveSnapshotService
                 if (!($okStart && $okEnd)) continue;
 
                 // line 時間帯内の detail のみ（WorkProvider と同じ基準）
-                $startHm = $d->start?->start_time?->format('H:i');
+                $startHm = $d->start_time ? substr($d->start_time, 0, 5) : null;
                 if (!$startHm) continue;
 
                 $lineStartHm = substr($line->start_time, 0, 5);
@@ -149,18 +149,18 @@ class LeaveSnapshotService
                 $le = $toMin($lineEndHm);
 
                 if ($m !== null && $ls !== null && $le !== null && $m >= $ls && $m <= $le) {
-                    // ★ event_details のユニーク制約 (event_id, lesson_start_time_id, lesson_id) 対策
-                    $k = $d->lesson_start_time_id . '-' . $d->lesson_id;
+                    // ★ event_details のユニーク制約 (event_id, start_time, lesson_id) 対策
+                    $k = $d->start_time . '-' . $d->lesson_id;
                     if (isset($seen[$k])) {
                         continue;
                     }
                     $seen[$k] = true;
 
                     EventDetail::create([
-                        'event_id'             => $event->id,
-                        'schedule_detail_id'   => $d->id,
-                        'lesson_start_time_id' => $d->lesson_start_time_id,
-                        'lesson_id'            => $d->lesson_id,
+                        'event_id'           => $event->id,
+                        'schedule_detail_id' => $d->id,
+                        'start_time'         => $d->start_time,
+                        'lesson_id'          => $d->lesson_id,
                     ]);
 
                     // lesson_code を取得して配列に追加

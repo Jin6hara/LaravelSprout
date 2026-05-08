@@ -15,7 +15,7 @@ class ScheduleDetail extends Model
 
     protected $fillable = [
         'schedule_line_id',
-        'lesson_start_time_id',
+        'start_time',
         'lesson_id',
         'effective_start',
         'effective_end',
@@ -28,17 +28,12 @@ class ScheduleDetail extends Model
 
     public function getStartHmAttribute(): string
     {
-        return TimeString::normalizeToHm(optional($this->start)->start_time);
+        return TimeString::normalizeToHm($this->start_time);
     }
 
     public function scheduleLine(): BelongsTo
     {
         return $this->belongsTo(ScheduleLine::class);
-    }
-
-    public function start(): BelongsTo
-    {
-        return $this->belongsTo(LessonStartTime::class, 'lesson_start_time_id');
     }
 
     public function lesson(): BelongsTo

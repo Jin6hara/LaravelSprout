@@ -20,7 +20,7 @@ class EventProvider implements CalendarEventProvider
             ->whereIn('status', ['fixed', 'filled'])
             // sub 条件を撤去
             ->whereBetween('event_date', [$start->toDateString(), $end->toDateString()])
-            ->with(['details.start', 'details.lesson'])
+            ->with(['details.lesson'])
             ->orderBy('event_date')->orderBy('start_time')
             ->get();
 
@@ -48,12 +48,12 @@ class EventProvider implements CalendarEventProvider
 
             // details（WorkProvider と同じ形：start_hm / lesson_*）
             $details = collect($e->details)
-                ->filter(fn($d) => !empty($d->start?->start_time))
-                ->sortBy(fn($d) => $d->start->start_time)
+                ->filter(fn($d) => !empty($d->start_time))
+                ->sortBy(fn($d) => $d->start_time)
                 ->values()
                 ->map(function ($d) {
                     return [
-                        'start_hm'    => $d->start->start_time->format('H:i'),
+                        'start_hm'    => substr($d->start_time, 0, 5),
                         'lesson_code' => $d->lesson?->lesson_code,
                         'lesson_name' => $d->lesson?->lesson_name,
                         'lesson_min'  => $d->lesson?->lesson_minute,

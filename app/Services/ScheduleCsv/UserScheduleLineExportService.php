@@ -41,7 +41,7 @@ class UserScheduleLineExportService
                 "Shift To ('end_time')",
                 "Line Start ('effective_start')",
                 "Line End ('effective_end')",
-                "Start At ('lesson_start_times')",
+                "Start At ('start_time')",
                 "Lesson Name ('lesson_code')",
                 "Lesson Start ('effective_start')",
                 "Lesson End ('effective_end')",
@@ -53,7 +53,6 @@ class UserScheduleLineExportService
                 ->join('schedule_lines as sl', 'sd.schedule_line_id', '=', 'sl.id')
                 ->join('schedules as s', 'sl.schedule_id', '=', 's.id')
                 ->join('users as u', 's.user_id', '=', 'u.id')
-                ->join('lesson_start_times as lst', 'sd.lesson_start_time_id', '=', 'lst.id')
                 ->join('lessons as l', 'sd.lesson_id', '=', 'l.id')
                 ->selectRaw("
                     u.name as user_name,
@@ -68,7 +67,7 @@ class UserScheduleLineExportService
                     sl.end_time,
                     sl.effective_start as line_from,
                     sl.effective_end   as line_to,
-                    lst.start_time     as start_at,
+                    sd.start_time      as start_at,
                     l.lesson_code,
                     sd.effective_start as det_from,
                     sd.effective_end   as det_to

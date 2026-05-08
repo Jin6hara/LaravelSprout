@@ -5,13 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\ScheduleLine;
 use App\Models\ScheduleDetail;
 use App\Models\Lesson;
-use App\Models\LessonStartTime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Carbon\Carbon;
-use App\Support\TimeString;
 
 class ScheduleDetailController extends Controller
 {
@@ -20,11 +18,10 @@ class ScheduleDetailController extends Controller
     {
         $details = ScheduleDetail::query()
             ->with([
-                'start:id,start_time',
                 'lesson:id,lesson_name,lesson_code,note,lesson_minute,lesson_type',
             ])
             ->where('schedule_line_id', $line->id)
-            ->orderBy('lesson_start_time_id')
+            ->orderBy('start_time')
             ->orderBy('schedule_details.effective_start')
             ->get();
 
@@ -113,20 +110,16 @@ class ScheduleDetailController extends Controller
                     continue;
                 }
 
-                // 2) start_time → lesson_start_times を find-or-create
-                $startTimeStr = $data['start_time'] . ':00';
-                $start = LessonStartTime::query()->firstOrCreate(['start_time' => $startTimeStr]);
-
-                // 3) schedule_details を更新
-                $detail->lesson_id = $lesson->id;
-                $detail->lesson_start_time_id = $start->id;
+                // 2) schedule_details を更新
+                $detail->lesson_id    = $lesson->id;
+                $detail->start_time   = $data['start_time'] . ':00';
                 $detail->effective_start = Carbon::parse($data['effective_start'])->toDateString();
                 $detail->effective_end   = isset($data['effective_end']) && $data['effective_end'] !== ''
                     ? Carbon::parse($data['effective_end'])->toDateString()
                     : null;
                 $detail->save();
 
-                // 4) lesson の note を更新（画面の「note」は lessons.note を指す）
+                // 3) lesson の note を更新（画面の「note」は lessons.note を指す）
                 if (array_key_exists('note', $data)) {
                     $lesson->note = $data['note'] ?? null;
                     $lesson->save();
@@ -179,12 +172,6 @@ class ScheduleDetailController extends Controller
     {
         DB::beginTransaction();
         try {
-            // start_time: 既存の最小 or 00:00 を作成
-            $start = LessonStartTime::query()->orderBy('start_time')->first();
-            if (!$start) {
-                $start = LessonStartTime::create(['start_time' => '00:00:00']);
-            }
-
             // lesson: 既存の先頭 or プレースホルダ作成
             $lesson = Lesson::query()->orderBy('id')->first();
             if (!$lesson) {
@@ -198,18 +185,17 @@ class ScheduleDetailController extends Controller
             }
 
             $detail = ScheduleDetail::create([
-                'schedule_line_id'     => $line->id,
-                'lesson_start_time_id' => $start->id,
-                'lesson_id'            => $lesson->id,
-                'effective_start'      => Carbon::today()->toDateString(),
-                'effective_end'        => null,
+                'schedule_line_id' => $line->id,
+                'start_time'       => '00:00:00',
+                'lesson_id'        => $lesson->id,
+                'effective_start'  => Carbon::today()->toDateString(),
+                'effective_end'    => null,
             ]);
 
             DB::commit();
-            $startDisplay = TimeString::normalizeToHm($start->start_time);
             return response()->json([
                 'ok' => true,
-                'message' => sprintf("空白明細を追加しました（%s %s）。", $startDisplay, $lesson->lesson_code),
+                'message' => sprintf("空白明細を追加しました（%s %s）。", '00:00', $lesson->lesson_code),
                 'new_id' => $detail->id,
             ]);
         } catch (\Throwable $e) {
@@ -238,10 +224,10 @@ class ScheduleDetailController extends Controller
             do {
                 $candidateStart = $baseStart->copy()->addDays($delta)->toDateString();
                 $exists = ScheduleDetail::query()
-                    ->where('schedule_line_id',     $detail->schedule_line_id)
-                    ->where('lesson_start_time_id', $detail->lesson_start_time_id)
-                    ->where('lesson_id',            $detail->lesson_id)
-                    ->whereDate('effective_start',  $candidateStart)
+                    ->where('schedule_line_id', $detail->schedule_line_id)
+                    ->where('start_time',       $detail->start_time)
+                    ->where('lesson_id',        $detail->lesson_id)
+                    ->whereDate('effective_start', $candidateStart)
                     ->exists();
 
                 if (!$exists) {
@@ -258,13 +244,8 @@ class ScheduleDetailController extends Controller
 
             $created->save();
 
-            // start_timeとlesson_codeを取得
-
-            $lessonCode = optional($detail->lesson)->lesson_code ?? '-';
-
             DB::commit();
-            $detail->loadMissing(['start', 'lesson']);
-            $startDisplay = $detail->start_hm ?? TimeString::normalizeToHm(optional($detail->start)->start_time);
+            $startDisplay = $detail->start_hm;
             $lessonCode   = optional($detail->lesson)->lesson_code ?? '-';
             return response()->json([
                 'ok' => true,
@@ -286,12 +267,7 @@ class ScheduleDetailController extends Controller
     public function destroy(Request $request, ScheduleDetail $detail)
     {
         try {
-
-            $lessonCode = optional($detail->lesson)->lesson_code ?? '-';
-
-            $detail->delete();
-            $detail->loadMissing(['start', 'lesson']);
-            $startDisplay = $detail->start_hm ?? TimeString::normalizeToHm(optional($detail->start)->start_time);
+            $startDisplay = $detail->start_hm;
             $lessonCode   = optional($detail->lesson)->lesson_code ?? '-';
             $detail->delete();
             return response()->json([

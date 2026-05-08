@@ -7,7 +7,6 @@ use App\Models\Schedule;
 use App\Models\ScheduleLine;
 use App\Models\ScheduleDetail;
 use App\Models\Lesson;
-use App\Models\LessonStartTime;
 use App\Support\SchoolName;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -29,7 +28,7 @@ class UserScheduleLineCsvImportService
      *  - Line Start ('effective_start') / line_start / line_effective_start
      *  - Line End   ('effective_end')   / line_end   / line_effective_end
      *
-     *  - Start At ('lesson_start_times') / lesson_start_time / start_at ← "H:i"
+     *  - Start At ('start_time') / lesson_start_time / start_at ← "H:i"
      *  - Lesson Name ('lesson_code') / lesson_code
      *  - Lesson Start ('effective_start') / lesson_start / lesson_effective_start
      *  - Lesson End   ('effective_end')   / lesson_end   / lesson_effective_end
@@ -88,7 +87,7 @@ class UserScheduleLineCsvImportService
                 $lineTo   = $get(['line_effective_end', 'line_end', "Line End ('effective_end')", 'Line End', 'effective_end']);
 
                 // ディテール（中身）
-                $lessonStartAt = $get(['lesson_start_time', 'lesson_start_times', 'start_at', "Start At ('lesson_start_times')", 'Start At']);
+                $lessonStartAt = $get(['lesson_start_time', 'start_at', "Start At ('start_time')", "Start At ('lesson_start_times')", 'Start At']);
                 $lessonCode    = $get(['lesson_code', "Lesson Name ('lesson_code')", 'Lesson Name']);
                 $detFrom       = $get(['lesson_effective_start', 'lesson_start', "Lesson Start ('effective_start')", 'Lesson Start', 'effective_start']);
                 $detTo         = $get(['lesson_effective_end', 'lesson_end', "Lesson End ('effective_end')", 'Lesson End', 'effective_end']);
@@ -191,24 +190,23 @@ class UserScheduleLineCsvImportService
                 }
 
                 // === 4) ディテール（中身） upsert ===
-                $lsTimeId = LessonStartTime::where('start_time', $lessonStartAt)->value('id');
                 $lessonId = Lesson::where('lesson_code', $lessonCode)->value('id');
 
-                if (!$lsTimeId || !$lessonId) {
+                if (!$lessonStartAt || !$lessonId) {
                     $summary['invalid']++;
-                    $logs[] = "マスタ未解決(lesson_start_time_id/lesson_id) start_at={$lessonStartAt}, code={$lessonCode}";
+                    $logs[] = "マスタ未解決(start_time/lesson_id) start_at={$lessonStartAt}, code={$lessonCode}";
                     continue;
                 }
 
                 ScheduleDetail::updateOrCreate(
                     [
-                        'schedule_line_id'     => $line->id, // ← 裏で schedule_line_id を紐付け
-                        'lesson_start_time_id' => $lsTimeId,
-                        'lesson_id'            => $lessonId,
-                        'effective_start'      => $detFrom,
-                        'effective_end'        => $detTo,
+                        'schedule_line_id' => $line->id,
+                        'start_time'       => $lessonStartAt,
+                        'lesson_id'        => $lessonId,
+                        'effective_start'  => $detFrom,
+                        'effective_end'    => $detTo,
                     ],
-                    [] // 更新するカラムがあればここへ
+                    []
                 );
             }
         });

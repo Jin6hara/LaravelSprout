@@ -27,7 +27,6 @@ class DatabaseSeeder extends Seeder
             ScheduleSeeder::class,
             LeaveSeeder::class,
             //EventSeeder::class, //LeaveSnapshotServiceで生成されるのでコメントアウト
-            LessonStartTimeSeeder::class,
             LessonSeeder::class,
             ScheduleDetailSeeder::class,
             ExpenseReportSeptemberSeeder::class,
