@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\CurrentScopeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Services\CommutingExpenses\RouteDeclarationService;
@@ -13,13 +14,15 @@ use App\Models\Schedule;
 
 class RouteDeclarationController extends Controller
 {
+    public function __construct(private CurrentScopeService $scopeService) {}
+
     public function index(Request $request, RouteDeclarationService $svc)
     {
         $viewer = Auth::user();
 
         $targetUser = $viewer;
         if ($viewer->hasRole(['admin', 'super_admin']) && $request->filled('user_id')) {
-            $targetUser = User::query()->findOrFail($request->query('user_id'));
+            $targetUser = $this->scopeService->targetUserQuery()->findOrFail($request->query('user_id'));
         }
 
         $declarations = $svc->allForUser($targetUser);
@@ -35,6 +38,7 @@ class RouteDeclarationController extends Controller
     {
         $viewer = Auth::user();
         if (!$viewer->hasRole(['admin', 'super_admin'])) abort(403);
+        if (!in_array($user->id, $this->scopeService->targetUserIds())) abort(404);
 
         $declarations = $svc->allForUser($user);
 
@@ -62,6 +66,10 @@ class RouteDeclarationController extends Controller
             abort(403);
         }
 
+        if ($isAdminMode && !in_array($target->id, $this->scopeService->targetUserIds())) {
+            abort(404);
+        }
+
         return view('routes.create', [
             'target'      => $target,      // 申告対象ユーザー
             'isAdminMode' => $isAdminMode, // 管理者モードかどうか
@@ -81,6 +89,10 @@ class RouteDeclarationController extends Controller
 
         if ($isAdminMode && !$me->hasAnyRole(['admin', 'super_admin'])) {
             abort(403);
+        }
+
+        if ($isAdminMode && !in_array($target->id, $this->scopeService->targetUserIds())) {
+            abort(404);
         }
 
         $data = $this->validateRequest($request);
@@ -146,6 +158,9 @@ class RouteDeclarationController extends Controller
             $selectedUserId = $request->integer('user_id') ?: null;
         }
 
+        // 管理スコープ内の user_id に絞り込む
+        $scopedUserIds = $this->scopeService->targetUserIds();
+
         // 対象ユーザーの id 集合
         $userIds = collect();
 
@@ -176,6 +191,11 @@ class RouteDeclarationController extends Controller
             } else {
                 $userIds = collect(); // ユーザー未選択なら空
             }
+        }
+
+        // 管理スコープ外の user_id を除外
+        if ($userIds->isNotEmpty()) {
+            $userIds = $userIds->intersect($scopedUserIds)->values();
         }
 
         // 対象ユーザー本体
@@ -241,7 +261,7 @@ class RouteDeclarationController extends Controller
         ];
 
         // Specific user 用の選択肢
-        $allUsers = User::query()
+        $allUsers = $this->scopeService->targetUserQuery()
             ->orderBy('employee_code')
             ->get(['id', 'employee_code', 'first_name', 'family_name']);
 

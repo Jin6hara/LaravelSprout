@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Post;
 use App\Models\User;
+use App\Services\CurrentScopeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use App\Models\Comment;
@@ -13,6 +14,8 @@ use Illuminate\Support\Facades\Storage;
 
 class ReceivedPostController extends Controller
 {
+    public function __construct(private CurrentScopeService $scopeService) {}
+
     /** admin/super_admin なら employee_code で代理閲覧。なければ自分 */
     private function resolveTarget(Request $r): User
     {
@@ -21,7 +24,7 @@ class ReceivedPostController extends Controller
         $code = trim((string) $r->query('employee_code', ''));
 
         if ($isAdmin && $code !== '') {
-            $u = User::where('employee_code', $code)->first();
+            $u = $this->scopeService->targetUserQuery()->where('employee_code', $code)->first();
             if ($u) return $u;
         }
         return $me;
@@ -62,7 +65,7 @@ class ReceivedPostController extends Controller
         $target = $me;
         $isProxy = false;
         if ($me->isAdmin() && $r->filled('employee_code')) {
-            $target = User::where('employee_code', $r->query('employee_code'))->firstOrFail();
+            $target = $this->scopeService->targetUserQuery()->where('employee_code', $r->query('employee_code'))->firstOrFail();
             if ($target->id !== $me->id) $isProxy = true;
         }
 
