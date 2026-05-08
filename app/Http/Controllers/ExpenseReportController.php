@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\ExpenseReport;
+use App\Services\CurrentScopeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 
 class ExpenseReportController extends Controller
 {
+    public function __construct(private CurrentScopeService $scopeService) {}
+
     public function show(Request $request)
     {
         // Asia/Tokyo 前提
@@ -37,6 +40,7 @@ class ExpenseReportController extends Controller
                 'year',
                 'month'
             )
+            ->whereIn('user_id', $this->scopeService->targetUserIds())
             ->forYm($y, $m)
             ->orderBy('employee_code')
             ->get();

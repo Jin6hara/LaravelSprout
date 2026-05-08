@@ -85,14 +85,10 @@ class CurrentScopeService
     /**
      * 対象ユーザーのクエリビルダーを返す。
      *
-     * 全体を where(function) で括ることで、呼び出し側が後続 where を
-     * チェーンしても OR が外へ漏れないようにする。
-     *
      * SQL イメージ:
-     *   WHERE ((district_id = ? AND department_id = ?) OR id = ?)
-     *   追加後: WHERE ((district_id = ? AND department_id = ?) OR id = ?) AND extra = ?
+     *   WHERE (district_id = ? AND department_id = ?)
      *
-     * - admin / super_admin: 現在の district_id AND department_id に一致する User + 自分自身
+     * - admin / super_admin: 現在の district_id AND department_id に一致する User
      *   スコープ未設定（どちらかが null）の場合は自分自身のみ
      * - general: 自分自身のみ
      */
@@ -106,13 +102,8 @@ class CurrentScopeService
             $dep = $this->currentDepartmentId();
 
             if ($did !== null && $dep !== null) {
-                // 外側の where(function) でグループ化して OR 漏れを防ぐ
-                return User::where(function ($outer) use ($did, $dep, $selfId) {
-                    $outer->where(function ($inner) use ($did, $dep) {
-                        $inner->where('district_id', $did)
-                              ->where('department_id', $dep);
-                    })->orWhere('id', $selfId);
-                });
+                return User::where('district_id', $did)
+                           ->where('department_id', $dep);
             }
         }
 

@@ -33,25 +33,25 @@ class ManagementScopeSeeder extends Seeder
         // 1) ユーザーへの district / department 割り当て
         // id => [district, department]
         $userAssignments = [
-            1  => [$kinki,  $native],
-            2  => [$kinki,  $native],
-            3  => [$kinki,  $native],
-            4  => [$kinki,  $native],
-            5  => [$kinki,  $native],    // admin
-            6  => [$kinki,  $native],    // super_admin
-            7  => [$kanto,  $bilingual],
-            8  => [$kanto,  $bilingual],
-            9  => [$kanto,  $bilingual],
-            10 => [$kanto,  $bilingual],
-            11 => [$chubu,  $native],
-            12 => [$chubu,  $native],
-            13 => [$chubu,  $native],
-            14 => [$chubu,  $native],
-            15 => [$kinki,  $bilingual],
-            16 => [$kinki,  $bilingual],
-            17 => [$kinki,  $bilingual],
-            18 => [$chubu,  $bilingual],
-            19 => [$chubu,  $bilingual],
+            1  => [$kinki, $native],
+            2  => [$kinki, $native],
+            3  => [$kinki, $native],
+            4  => [$kinki, $native],
+            5  => [$kinki, $native],    // admin
+            6  => [$kinki, $native],    // super_admin
+            7  => [$kinki, $native],
+            8  => [$kinki, $native],
+            9  => [$kinki, $native],
+            10 => [$kinki, $native],
+            11 => [$kinki, $native],
+            12 => [$kinki, $native],
+            13 => [$kinki, $native],
+            14 => [$kinki, $native],
+            15 => [$kinki, $native],
+            16 => [$kanto, $native],
+            17 => [$kanto, $native],
+            18 => [$kanto, $native],
+            19 => [$kanto, $native],
         ];
 
         foreach ($userAssignments as $userId => [$district, $dept]) {
