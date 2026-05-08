@@ -8,9 +8,12 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use App\Services\Calendar\CalendarEventService;
+use App\Services\CurrentScopeService;
 
 class CalendarController extends Controller
 {
+    public function __construct(private CurrentScopeService $scopeService) {}
+
     public function index(Request $request, ?User $user = null)
     {
         $viewer = Auth::user();
@@ -22,11 +25,11 @@ class CalendarController extends Controller
 
         // ★ 追加：管理者だけにセレクト用リストを渡す（一般は空のコレクション）
         $userOptions = $viewer->hasRole(['admin', 'super_admin'])
-            ? User::query()
-            ->select('id', 'first_name', 'family_name', 'employee_code')
-            ->orderBy('employee_code')
-            ->limit(500)
-            ->get()
+            ? $this->scopeService->targetUserQuery()
+                ->select('id', 'first_name', 'family_name', 'employee_code')
+                ->orderBy('employee_code')
+                ->limit(500)
+                ->get()
             : collect();
 
         return view('calendar.index', [

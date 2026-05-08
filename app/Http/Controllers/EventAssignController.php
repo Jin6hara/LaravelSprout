@@ -3,8 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
-use App\Models\User;
-use App\Models\School;
+use App\Services\CurrentScopeService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Carbon;
@@ -14,16 +13,20 @@ use App\Services\Calendar\Providers\SubCountProvider;
 
 class EventAssignController extends Controller
 {
+    public function __construct(private CurrentScopeService $scopeService) {}
+
     public function edit(Request $request)
     {
-        $userOptions = User::query()
+        $targetUserIds = $this->scopeService->targetUserIds();
+
+        $userOptions = $this->scopeService->targetUserQuery()
             ->select('id', 'first_name', 'family_name', 'employee_code')
             ->orderBy('employee_code')
             ->limit(500)
             ->get();
 
         // ★追加：School名の候補（重複除去＆名前順）
-        $schoolNames = School::query()
+        $schoolNames = $this->scopeService->schoolQuery()
             ->where('is_active', true)
             ->orderBy('school_name')
             ->distinct()
@@ -61,6 +64,13 @@ class EventAssignController extends Controller
         }
 
         $events = Event::query()
+            ->where(function ($q) use ($targetUserIds) {
+                $q->whereIn('original_user_id', $targetUserIds)
+                  ->orWhere(function ($q2) use ($targetUserIds) {
+                      $q2->whereNull('original_user_id')
+                         ->whereIn('assigned_user_id', $targetUserIds);
+                  });
+            })
 
             // モーダルからevent_id が来ていれば最優先で絞り込み（ID一致のみ）
             ->when($eventId, fn($q) => $q->whereKey($eventId))
@@ -436,6 +446,8 @@ class EventAssignController extends Controller
     // 共通のイベントクエリビルダ
     protected function baseEventQuery(Request $request)
     {
+        $targetUserIds = $this->scopeService->targetUserIds();
+
         $eventId        = $request->input('event_id');
         $originalUserId = $request->input('original_user_id');
         $assignedUserId = $request->input('assigned_user_id');
@@ -463,6 +475,13 @@ class EventAssignController extends Controller
         }
 
         return Event::query()
+            ->where(function ($q) use ($targetUserIds) {
+                $q->whereIn('original_user_id', $targetUserIds)
+                  ->orWhere(function ($q2) use ($targetUserIds) {
+                      $q2->whereNull('original_user_id')
+                         ->whereIn('assigned_user_id', $targetUserIds);
+                  });
+            })
             ->when($eventId, fn($q) => $q->whereKey($eventId))
             ->with([
                 'assignedUser:id,name,employee_code',

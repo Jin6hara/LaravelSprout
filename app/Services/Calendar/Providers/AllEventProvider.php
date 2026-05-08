@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\User;
 use App\Services\Calendar\{CandidateEvent, EventType, PlanGroup};
 use App\Services\Calendar\Contracts\CalendarEventProvider;
+use App\Services\CurrentScopeService;
 use Carbon\Carbon;
 
 class AllEventProvider implements CalendarEventProvider
@@ -17,8 +18,18 @@ class AllEventProvider implements CalendarEventProvider
      */
     public function provide(User $user, Carbon $start, Carbon $end): array
     {
+        // 現在の管理スコープ内ユーザーのみ対象にする
+        $targetUserIds = app(CurrentScopeService::class)->targetUserIds();
+
         $rows = Event::query()
             ->whereBetween('event_date', [$start->toDateString(), $end->toDateString()])
+            ->where(function ($q) use ($targetUserIds) {
+                $q->whereIn('original_user_id', $targetUserIds)
+                  ->orWhere(function ($q2) use ($targetUserIds) {
+                      $q2->whereNull('original_user_id')
+                         ->whereIn('assigned_user_id', $targetUserIds);
+                  });
+            })
             ->with([
                 'details.lesson',
                 'originalUser:id,first_name,family_name',
