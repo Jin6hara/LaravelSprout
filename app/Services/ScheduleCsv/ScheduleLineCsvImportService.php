@@ -3,20 +3,19 @@
 namespace App\Services\ScheduleCsv;
 
 use App\Models\{ScheduleLine, ScheduleDetail, Lesson};
-use Carbon\Carbon;
 use App\Support\SchoolName;
 use Illuminate\Support\Facades\DB;
 
 class ScheduleLineCsvImportService
 {
-    public function import(string $csvPath, ?int $scheduleId = null): array
+    public function import(string $csvPath): array
     {
         $fp = fopen($csvPath, 'r');
         $header = fgetcsv($fp);
 
         $count = 0;
 
-        DB::transaction(function () use ($fp, $header, $scheduleId, &$count) {
+        DB::transaction(function () use ($fp, $header, &$count) {
             while ($row = fgetcsv($fp)) {
                 $r = array_combine($header, $row);
 
@@ -33,11 +32,6 @@ class ScheduleLineCsvImportService
                 if (!$lessonStart || !$lessonId) continue;
 
                 $line = ScheduleLine::query()
-                    ->when(
-                        is_null($scheduleId),
-                        fn($q) => $q->whereNull('schedule_id'),
-                        fn($q) => $q->where('schedule_id', $scheduleId)
-                    )
                     ->where('dow', $dow)
                     ->whereEqualsInsensitive('school_name', $school)
                     ->where('start_time', $start)
@@ -48,7 +42,6 @@ class ScheduleLineCsvImportService
 
                 if (!$line) {
                     $line = ScheduleLine::create([
-                        'schedule_id'     => $scheduleId,
                         'dow'             => $dow,
                         'school_name'     => $school,
                         'start_time'      => $start,

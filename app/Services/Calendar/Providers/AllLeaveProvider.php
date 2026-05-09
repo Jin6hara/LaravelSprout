@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Event;
 use App\Services\Calendar\EventType;
 use App\Services\Calendar\PlanGroup;
+use App\Services\CurrentScopeService;
 use Carbon\Carbon;
 use Carbon\CarbonInterface; // ★added(11/3)
 use Illuminate\Support\Collection;
@@ -28,9 +29,12 @@ class AllLeaveProvider
      */
     public function provide(User $viewer, Carbon $start, Carbon $end): Collection
     {
-        // 全ユーザー分を対象にするため user_id フィルタは掛けない
+        // 現在の管理スコープ内ユーザーのみ対象にする
+        $targetUserIds = app(CurrentScopeService::class)->targetUserIds();
+
         $leaves = Leave::query()
             // ->approved()  // ← 承認済み限定を撤去（全件取得）
+            ->whereIn('user_id', $targetUserIds)
             ->between($start, $end)
             ->with(['user:id,name,first_name,family_name,employee_code']) // 表示用
             ->get();

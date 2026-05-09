@@ -241,7 +241,7 @@ class LeaveApplyController extends Controller
         //    例: 「有給（ALP） 山田太郎 [000123] (2025-11-01, 2025-11-02)」
         $titleBase = "{$typeLabel} {$userLabel} ({$dateListStr})";
 
-        DB::transaction(function () use ($userId, $dates, $reason, $requestedByUserId, $batchId, $titleBase, &$result) {
+        DB::transaction(function () use ($userId, $user, $dates, $reason, $requestedByUserId, $batchId, $titleBase, &$result) {
             foreach ($dates as $ymd) {
                 // --- 重複チェック：同日に paid leave の pending/approved があるか ---
                 $already = Leave::query()
@@ -259,14 +259,16 @@ class LeaveApplyController extends Controller
 
                 // --- Leave を pending で作成（単日） ---
                 $leave = Leave::create([
-                    'user_id'      => $userId,
-                    'start_date'   => $ymd,
-                    'end_date'     => null,
-                    'kind'         => 'paid',
-                    'excused'      => 'excused',
-                    'reason'       => $reason,
-                    'status'       => 'pending',
-                    'special_type' => null,
+                    'user_id'       => $userId,
+                    'start_date'    => $ymd,
+                    'end_date'      => null,
+                    'kind'          => 'paid',
+                    'excused'       => 'excused',
+                    'reason'        => $reason,
+                    'status'        => 'pending',
+                    'special_type'  => null,
+                    'district_id'   => $user?->district_id,
+                    'department_id' => $user?->department_id,
                 ]);
 
                 // --- 承認リクエスト（ポリモーフィック） ---
@@ -327,7 +329,7 @@ class LeaveApplyController extends Controller
         }
         $typeLabel = '**Special Leave**';
 
-        DB::transaction(function () use ($userId, $dates, $reason, $requestedByUserId, $specialType, $attachmentMeta, $batchId, $userLabel, $typeLabel, &$result) {
+        DB::transaction(function () use ($userId, $user, $dates, $reason, $requestedByUserId, $specialType, $attachmentMeta, $batchId, $userLabel, $typeLabel, &$result) {
             $start = $dates->min();
             $end   = $dates->max();
 
@@ -365,14 +367,16 @@ class LeaveApplyController extends Controller
 
             // --- Leave（期間）を1レコード作成 ---
             $leave = Leave::create([
-                'user_id'      => $userId,
-                'start_date'   => $start,
-                'end_date'     => $end,
-                'kind'         => 'special',
-                'excused'      => 'excused',
-                'reason'       => $reason,
-                'status'       => 'pending',
-                'special_type' => $specialType ?: null,
+                'user_id'       => $userId,
+                'start_date'    => $start,
+                'end_date'      => $end,
+                'kind'          => 'special',
+                'excused'       => 'excused',
+                'reason'        => $reason,
+                'status'        => 'pending',
+                'special_type'  => $specialType ?: null,
+                'district_id'   => $user?->district_id,
+                'department_id' => $user?->department_id,
             ]);
 
             // ★ 添付（証明書）があれば 1:1 で紐付け

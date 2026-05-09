@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use App\Services\CurrentScopeService;
 use Illuminate\Http\Request;
 
 class UserSearchController extends Controller
 {
+    public function __construct(private CurrentScopeService $scopeService) {}
+
     public function index(Request $r)
     {
         // ▼ old('recipients') でIDしか復元できない場合に、Vueのチップ表示用にユーザー情報を取得する
@@ -19,7 +21,7 @@ class UserSearchController extends Controller
                 ->values()
                 ->all();
 
-            $users = User::query()
+            $users = $this->scopeService->targetUserQuery()
                 ->whereIn('id', $idArr)
                 ->orderBy('family_name')->orderBy('first_name')
                 ->get(['id', 'first_name', 'family_name', 'employee_code', 'email']);
@@ -31,7 +33,7 @@ class UserSearchController extends Controller
         $q = trim((string) $r->query('q', ''));
         $limit = (int) min(max((int) $r->query('limit', 20), 1), 50);
 
-        $users = User::query()
+        $users = $this->scopeService->targetUserQuery()
             ->when($q !== '', function ($qb) use ($q) {
                 $qb->where(
                     fn($w) =>

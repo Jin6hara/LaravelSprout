@@ -38,6 +38,8 @@ class User extends Authenticatable
         'profile_picture',
         'note',
         'created_at',
+        'district_id',
+        'department_id',
     ];
 
     /**
@@ -247,9 +249,9 @@ class User extends Authenticatable
         return $state === 'active';
     }
 
-    public function schedules(): HasMany
+    public function scheduleLines(): HasMany
     {
-        return $this->hasMany(Schedule::class);
+        return $this->hasMany(ScheduleLine::class);
     }
 
     public function expenseReports()
@@ -305,5 +307,23 @@ class User extends Authenticatable
     public function routeDeclarations()
     {
         return $this->hasMany(RouteDeclaration::class);
+    }
+
+    public function district()
+    {
+        return $this->belongsTo(District::class);
+    }
+
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    /**
+     * admin/super_admin が管理できる district×department の組み合わせ一覧
+     */
+    public function managementScopes()
+    {
+        return $this->hasMany(UserManagementScope::class);
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreLeaveRequest;
 use App\Models\Leave;
 use App\Models\User;
+use App\Services\CurrentScopeService;
 use App\Services\LeaveBalanceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,6 +15,8 @@ use Illuminate\Support\Facades\Storage;
 
 class LeaveController extends Controller
 {
+    public function __construct(private CurrentScopeService $scopeService) {}
+
     public function create()
     {
         $user = auth()->user();
@@ -25,18 +28,21 @@ class LeaveController extends Controller
     public function store(StoreLeaveRequest $request)
     {
         // 承認フローがある場合は pending から始めるなど調整してください
+        $targetUser = \App\Models\User::find((int) $request->input('user_id'));
         $leave = Leave::create([
-            'user_id'     => (int)$request->input('user_id'),
-            'start_date'  => $request->date('start_date'),
-            'end_date'    => $request->input('end_date') ? $request->date('end_date') : null,
-            'kind'        => $request->input('kind'),
-            'excused'     => $request->input('excused', 'unexcused'),
-            'special_type' => $request->input('special_type'),
-            'reason'      => $request->input('reason'),
-            'time_start'  => $request->input('time_start'),
-            'time_end'    => $request->input('time_end'),
-            'status'      => $request->input('status', 'approved'),
-            'approved_by' => auth()->id(), // 簡易に自分で承認した体
+            'user_id'       => (int)$request->input('user_id'),
+            'start_date'    => $request->date('start_date'),
+            'end_date'      => $request->input('end_date') ? $request->date('end_date') : null,
+            'kind'          => $request->input('kind'),
+            'excused'       => $request->input('excused', 'unexcused'),
+            'special_type'  => $request->input('special_type'),
+            'reason'        => $request->input('reason'),
+            'time_start'    => $request->input('time_start'),
+            'time_end'      => $request->input('time_end'),
+            'status'        => $request->input('status', 'approved'),
+            'approved_by'   => auth()->id(), // 簡易に自分で承認した体
+            'district_id'   => $targetUser?->district_id,
+            'department_id' => $targetUser?->department_id,
         ]);
 
         // 作成日のカレンダー画面に遷移
@@ -229,6 +235,7 @@ class LeaveController extends Controller
 
         $q = Leave::query()
             ->with(['user:id,first_name,family_name,name,employee_code'])
+            ->whereIn('user_id', $this->scopeService->targetUserIds())
             ->whereIn('kind', $kinds);
 
         if ($from) $q->whereDate('start_date', '>=', $from);
@@ -304,7 +311,7 @@ class LeaveController extends Controller
         $leaves->setCollection($rows);
 
         // ユーザー選択用（任意）
-        $userOptions = User::query()->orderBy('family_name')->orderBy('first_name')->get(['id', 'family_name', 'first_name', 'employee_code']);
+        $userOptions = $this->scopeService->targetUserQuery()->orderBy('family_name')->orderBy('first_name')->get(['id', 'family_name', 'first_name', 'employee_code']);
 
         return view('calendar.absenceReportAll', [
             'viewer'             => $viewer,

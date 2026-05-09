@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\User;
 use App\Services\Calendar\{CandidateEvent, EventType, PlanGroup};
 use App\Services\Calendar\Contracts\CalendarEventProvider;
+use App\Services\CurrentScopeService;
 use Carbon\Carbon;
 
 class AllEventProvider implements CalendarEventProvider
@@ -17,8 +18,18 @@ class AllEventProvider implements CalendarEventProvider
      */
     public function provide(User $user, Carbon $start, Carbon $end): array
     {
+        $scopeService = app(CurrentScopeService::class);
+        $districtId = $scopeService->currentDistrictId();
+        $departmentId = $scopeService->currentDepartmentId();
+
+        if ($districtId === null || $departmentId === null) {
+            return [];
+        }
+
         $rows = Event::query()
             ->whereBetween('event_date', [$start->toDateString(), $end->toDateString()])
+            ->where('district_id', $districtId)
+            ->where('department_id', $departmentId)
             ->with([
                 'details.lesson',
                 'originalUser:id,first_name,family_name',

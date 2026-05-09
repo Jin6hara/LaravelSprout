@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Expense;
 use App\Models\ExpenseReport;
 use App\Models\CommuterPass;
+use App\Services\CurrentScopeService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Carbon\Carbon;
@@ -54,6 +55,7 @@ class ExpenseApiController extends Controller
         if (method_exists($req->user(), 'isAdmin') && !$req->user()->isAdmin()) {
             abort_unless($req->user()->id === $report->user_id, 403);
         }
+        abort_unless(in_array($report->user_id, app(CurrentScopeService::class)->targetUserIds()), 403);
 
         $this->abortIfLocked($report);
 

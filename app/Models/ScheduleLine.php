@@ -11,12 +11,17 @@ class ScheduleLine extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['schedule_id', 'parent_line_id', 'dow', 'school_name', 'start_time', 'end_time', 'effective_start', 'effective_end', 'handover_memo'];
+    protected $fillable = ['user_id', 'total_minutes', 'parent_line_id', 'dow', 'school_name', 'start_time', 'end_time', 'effective_start', 'effective_end', 'handover_memo', 'district_id', 'department_id'];
     protected $casts = ['effective_start' => 'date', 'effective_end' => 'date'];
 
     public function setSchoolNameAttribute($value): void
     {
         $this->attributes['school_name'] = SchoolName::normalize($value);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function parent()
@@ -27,11 +32,6 @@ class ScheduleLine extends Model
     public function children()
     {
         return $this->hasMany(self::class, 'parent_line_id');
-    }
-
-    public function schedule()
-    {
-        return $this->belongsTo(Schedule::class);
     }
 
     public function scopeActiveOn($q, Carbon $d)

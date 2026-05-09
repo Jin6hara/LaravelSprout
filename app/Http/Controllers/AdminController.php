@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Services\CurrentScopeService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -16,6 +17,8 @@ use Illuminate\Http\JsonResponse;
 
 class AdminController extends Controller
 {
+    public function __construct(private CurrentScopeService $scopeService) {}
+
     /**
      * ダッシュボード（初期表示：全件→検索UIも表示）
      */
@@ -36,7 +39,7 @@ class AdminController extends Controller
         }
 
         // 検索クエリ
-        $query = User::query()
+        $query = $this->scopeService->targetUserQuery()
             ->when(filled($word), function (Builder $q) use ($word, $fields) {
                 $q->where(function (Builder $w) use ($word, $fields) {
                     $fields->values()->each(function ($field, $i) use ($w, $word) {
@@ -121,7 +124,7 @@ class AdminController extends Controller
             $fields = collect($allowedFields);
         }
 
-        $query = User::query()
+        $query = $this->scopeService->targetUserQuery()
             ->when(filled($word), function (Builder $q) use ($word, $fields) {
                 $q->where(function (Builder $w) use ($word, $fields) {
                     $fields->values()->each(function ($field, $i) use ($w, $word) {

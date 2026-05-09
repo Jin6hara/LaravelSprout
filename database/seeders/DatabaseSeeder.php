@@ -7,6 +7,8 @@ namespace Database\Seeders;
 use App\Models\Leave;
 use Illuminate\Database\Seeder;
 use Database\Seeders\UsersSeeder;
+use Database\Seeders\DistrictDepartmentSeeder;
+use Database\Seeders\ManagementScopeSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -16,6 +18,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            DistrictDepartmentSeeder::class,
             UsersSeeder::class,
             EmploymentTermsSeeder::class,
             LeavePeriodsSeeder::class,
@@ -32,6 +35,7 @@ class DatabaseSeeder extends Seeder
             ExpenseReportSeptemberSeeder::class,
             ExpenseSeptemberBlankSeeder::class,
             SchoolSeeder::class,
+            ManagementScopeSeeder::class,
             CommuterPassSeeder::class,
             SubsTableSeeder::class,
             RouteDeclarationUser2Seeder::class,

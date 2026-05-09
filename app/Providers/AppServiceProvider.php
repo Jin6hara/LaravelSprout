@@ -30,6 +30,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->singleton(\App\Services\CurrentScopeService::class);
+
         // Provider群をタグ付け（ここに作ったProviderを列挙）
         $this->app->tag([
             \App\Services\Calendar\Providers\HolidayProvider::class,
@@ -94,9 +96,19 @@ class AppServiceProvider extends ServiceProvider
                 ? $user->unreadNotifications()->count()
                 : 0;
 
+            // scope selector 用データ（admin / super_admin のみ）
+            $scopeSelectorData = null;
+            if ($user->isAdmin()) {
+                $scopeService    = app(\App\Services\CurrentScopeService::class);
+                $adminScopes     = $user->managementScopes()->with(['district', 'department'])->get();
+                $selectedScopeId = $scopeService->currentScope()?->id;
+                $scopeSelectorData = compact('adminScopes', 'selectedScopeId');
+            }
+
             $view->with([
-                'inboxUnconfirmed' => $inboxUnconfirmed,
+                'inboxUnconfirmed'         => $inboxUnconfirmed,
                 'unreadNotificationsCount' => $unreadNotificationsCount,
+                'scopeSelectorData'        => $scopeSelectorData,
             ]);
         });
 

@@ -16,11 +16,10 @@ class UserScheduleLineExportController extends Controller
     {
         // 任意のフィルタ
         $filters = [
-            'employee_code' => $request->string('employee_code')->toString() ?: null, // 6桁 or 部分一致
-            'schedule_id'   => $request->integer('schedule_id') ?: null,
+            'employee_code' => $request->string('employee_code')->toString() ?: null,
+            'user_id'       => $request->integer('user_id') ?: null,
             'date_from'     => $request->date('date_from')?->format('Y-m-d'),
             'date_to'       => $request->date('date_to')?->format('Y-m-d'),
-            'active_only'   => $request->boolean('active_only', false),
         ];
 
         $filename = 'user_schedule_line_export_' . now()->format('Ymd_His') . '.csv';

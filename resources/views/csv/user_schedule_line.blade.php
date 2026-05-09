@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="container">
-    <h2 class="mb-3">User → Schedule → Line → Detail 一括CSVインポート</h2>
+    <h2 class="mb-3">User → Line → Detail 一括CSVインポート</h2>
 
     <div class="card">
         <div class="card-body">
@@ -47,7 +47,7 @@ Start At ('start_time'),Lesson Name ('lesson_code'),Lesson Start ('effective_sta
 </div>
 
 <div class="container mt-5">
-    <h2 class="mb-3">User → Schedule → Line → Detail 一括エクスポート</h2>
+    <h2 class="mb-3">User → Line → Detail 一括エクスポート</h2>
 
     <div class="card">
         <div class="card-body">
@@ -57,22 +57,12 @@ Start At ('start_time'),Lesson Name ('lesson_code'),Lesson Start ('effective_sta
                     <input type="text" name="employee_code" class="form-control form-control-sm" placeholder="000013">
                 </div>
                 <div class="col-6 col-md-2">
-                    <label class="form-label small mb-1">Schedule ID</label>
-                    <input type="number" name="schedule_id" class="form-control form-control-sm">
-                </div>
-                <div class="col-6 col-md-2">
                     <label class="form-label small mb-1">Detail From</label>
                     <input type="date" name="date_from" class="form-control form-control-sm">
                 </div>
                 <div class="col-6 col-md-2">
                     <label class="form-label small mb-1">Detail To</label>
                     <input type="date" name="date_to" class="form-control form-control-sm">
-                </div>
-                <div class="col-6 col-md-2 d-flex align-items-end">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="active_only" id="active_only" value="1">
-                        <label class="form-check-label" for="active_only">Active schedules only</label>
-                    </div>
                 </div>
                 <div class="col-12">
                     <button class="btn btn-primary btn-sm">CSV をダウンロード</button>

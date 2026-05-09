@@ -12,6 +12,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\LeaveApplyController;
 use App\Http\Controllers\LeaveAttachmentController;
+use App\Http\Controllers\CurrentScopeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,6 +31,11 @@ use App\Http\Controllers\LeaveAttachmentController;
 Route::get('/login', [LoginController::class, 'showForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+//スコープ切替（admin / super_admin のみ）
+Route::middleware(['auth', 'role:admin|super_admin'])
+    ->post('/current-scope', [CurrentScopeController::class, 'store'])
+    ->name('current-scope.store');
 
 //共通
 Route::middleware(['auth', 'role:general|admin|super_admin'])->group(function () {
@@ -245,14 +251,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/lessons/by-code/{code}', [ScheduleDetailController::class, 'findLessonByCode'])->name('lessons.by_code');
 });
 
-use App\Http\Controllers\ScheduleController;
-
-Route::middleware(['auth'])->group(function () {
-    Route::get('/schedules', [ScheduleController::class, 'index'])->name('schedules.index');
-    Route::put('/schedules/{schedule}', [ScheduleController::class, 'update'])->name('schedules.update');
-    Route::post('/schedules', [ScheduleController::class, 'store'])->name('schedules.store');
-    Route::delete('/schedules/{schedule}', [ScheduleController::class, 'destroy'])->name('schedules.destroy');
-});
 
 use App\Http\Controllers\CommuterPassAdvisorController;
 
@@ -369,13 +367,6 @@ Route::get('/cvs/schedule_line', [ScheduleLineCsvController::class, 'form'])
 Route::post('/cvs/schedule_line/import', [ScheduleLineCsvController::class, 'import'])
     ->name('cvs.schedule_line.import');
 
-use App\Http\Controllers\UserScheduleCsvController;
-
-Route::get('/csv/user_schedule', [UserScheduleCsvController::class, 'form'])
-    ->name('csv.user_schedule.form');
-
-Route::post('/csv/user_schedule/import', [UserScheduleCsvController::class, 'import'])
-    ->name('csv.user_schedule.import');
 
 use App\Http\Controllers\UserScheduleLineController;
 

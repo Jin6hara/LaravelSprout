@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\School;
+use App\Services\CurrentScopeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -12,12 +13,12 @@ class SchoolProfileController extends Controller
      * 学校検索 + 現行プロファイルをカード表示
      * GET /schools/search?q=...
      */
-    public function search(Request $request)
+    public function search(Request $request, CurrentScopeService $scopeService)
     {
         $q = trim((string)$request->input('q', ''));
         $perPage = (int)($request->input('per_page', 12)) ?: 12;
 
-        $query = School::query()
+        $query = $scopeService->schoolQuery()
             ->where('is_active', true)
             // 検索条件
             ->when($q !== '', function ($qq) use ($q) {

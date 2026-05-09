@@ -3,8 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
-use App\Models\User;
-use App\Models\School;
+use App\Services\CurrentScopeService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Carbon;
@@ -14,16 +13,18 @@ use App\Services\Calendar\Providers\SubCountProvider;
 
 class EventAssignController extends Controller
 {
+    public function __construct(private CurrentScopeService $scopeService) {}
+
     public function edit(Request $request)
     {
-        $userOptions = User::query()
+        $userOptions = $this->scopeService->targetUserQuery()
             ->select('id', 'first_name', 'family_name', 'employee_code')
             ->orderBy('employee_code')
             ->limit(500)
             ->get();
 
         // ★追加：School名の候補（重複除去＆名前順）
-        $schoolNames = School::query()
+        $schoolNames = $this->scopeService->schoolQuery()
             ->where('is_active', true)
             ->orderBy('school_name')
             ->distinct()
@@ -61,6 +62,8 @@ class EventAssignController extends Controller
         }
 
         $events = Event::query()
+            ->where('district_id', $this->scopeService->currentDistrictId())
+            ->where('department_id', $this->scopeService->currentDepartmentId())
 
             // モーダルからevent_id が来ていれば最優先で絞り込み（ID一致のみ）
             ->when($eventId, fn($q) => $q->whereKey($eventId))
@@ -224,6 +227,8 @@ class EventAssignController extends Controller
             $validated['total_duration'] = sprintf('%d:%02d', intdiv($mins, 60), $mins % 60);
         }
 
+        $validated['district_id']   = $this->scopeService->currentDistrictId();
+        $validated['department_id'] = $this->scopeService->currentDepartmentId();
         Event::create($validated);
 
         return back()->with('toast', 'Shift copied.');
@@ -236,9 +241,11 @@ class EventAssignController extends Controller
 
         // 空白イベントを作成
         $event = Event::create([
-            'event_date' => $date,
-            'status'     => 'pending',
-            'type'       => 'regular_time',
+            'event_date'    => $date,
+            'status'        => 'pending',
+            'type'          => 'regular_time',
+            'district_id'   => $this->scopeService->currentDistrictId(),
+            'department_id' => $this->scopeService->currentDepartmentId(),
         ]);
 
         return back()->with('toast', "Created shift at {$date}.");
@@ -463,6 +470,8 @@ class EventAssignController extends Controller
         }
 
         return Event::query()
+            ->where('district_id', $this->scopeService->currentDistrictId())
+            ->where('department_id', $this->scopeService->currentDepartmentId())
             ->when($eventId, fn($q) => $q->whereKey($eventId))
             ->with([
                 'assignedUser:id,name,employee_code',

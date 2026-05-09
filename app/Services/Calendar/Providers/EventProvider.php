@@ -14,8 +14,14 @@ class EventProvider implements CalendarEventProvider
     {
         // 表示対象は requied/none_required両方（後者は消しもいいけどとりあえず残しておく）
 
+        $scopeService  = app(\App\Services\CurrentScopeService::class);
+        $districtId    = $scopeService->currentDistrictId();
+        $departmentId  = $scopeService->currentDepartmentId();
+
         $rows = Event::query()
             ->where('assigned_user_id', $user->id)
+            ->when($districtId,   fn($q) => $q->where('district_id',   $districtId))
+            ->when($departmentId, fn($q) => $q->where('department_id', $departmentId))
             // status: fixed/filled のみ対象（cancelled 等はここで除外される）
             ->whereIn('status', ['fixed', 'filled'])
             // sub 条件を撤去

@@ -3,36 +3,32 @@
 namespace App\Http\Controllers;
 
 use App\Models\ScheduleLine;
-use App\Models\Schedule;
 use App\Models\User;
+use App\Services\CurrentScopeService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 
 class ScheduleLineController extends Controller
 {
+    public function __construct(private CurrentScopeService $scopeService) {}
+
     public function edit(Request $request)
     {
         // フィルタ
-        $activeOn   = $request->input('active_on', now()->toDateString());   // Y-m-d or today
         $activeOn = $request->has('active_on')
-            ? $request->input('active_on') : now()->toDateString();          // 複写後等にactive_onの既定値を上書きしないため
-        $activeUntil = $request->input('active_until');                      // Y-m-d or null
+            ? $request->input('active_on') : now()->toDateString();
+        $activeUntil = $request->input('active_until');
 
-        // 「Not Assigned」は 'null' 文字列で送られる想定
-        $scheduleIdRaw = $request->input('schedule_id', ''); // '', 'null', '12' など
-        $scheduleId    = $scheduleIdRaw;
+        $userIdRaw = $request->input('user_id', '');
 
-        // 追加フィルタ
-        $fDow         = $request->filled('dow') ? (int)$request->input('dow') : null;               // 0-6 or null
-        $fSchoolName  = trim((string)$request->input('school_name', ''));                           // 部分一致
+        $fDow        = $request->filled('dow') ? (int)$request->input('dow') : null;
+        $fSchoolName = trim((string)$request->input('school_name', ''));
 
-        // ★ 追加: 関連検索用（このIDの前後＝親子系統を表示）
         $refLineId = $request->filled('schedule_line_id')
             ? (int)$request->input('schedule_line_id')
             : null;
@@ -40,29 +36,28 @@ class ScheduleLineController extends Controller
         // ScheduleLine 本体 + 関連ロード
         $linesQuery = ScheduleLine::query()
             ->with([
-                'schedule:id,label,effective_start,effective_end,user_id',
-                // ▼ 追加: schedule 所有ユーザーを同時ロード
-                'schedule.user:id,first_name,family_name,employee_code',
-                // details（開始時刻/レッスン情報を一緒に）
+                'user:id,first_name,family_name,employee_code',
                 'details' => function ($q) {
                     $q->with([
                         'lesson:id,lesson_name,lesson_code,lesson_minute,lesson_type',
                     ])->orderBy('start_time');
                 },
             ])
-            // 並び順
             ->orderBy('dow')
             ->orderBy('school_name')
             ->orderBy('effective_start');
 
-        // ▼ schedule_id フィルタ（'null' は未割当のみ、数値はそのID、空はすべて）
-        if ($scheduleIdRaw === 'null') {
-            $linesQuery->whereNull('schedule_id');
-        } elseif (is_numeric($scheduleIdRaw) && $scheduleIdRaw !== '') {
-            $linesQuery->where('schedule_id', (int)$scheduleIdRaw);
+        // スコープ: schedule_lines.district_id / department_id で絞る
+        $linesQuery->where('district_id', $this->scopeService->currentDistrictId())
+                   ->where('department_id', $this->scopeService->currentDepartmentId());
+
+        // ▼ user_id フィルタ（'null' は未割当のみ、数値はそのID、空はすべて）
+        if ($userIdRaw === 'null') {
+            $linesQuery->whereNull('user_id');
+        } elseif (is_numeric($userIdRaw) && $userIdRaw !== '') {
+            $linesQuery->where('user_id', (int)$userIdRaw);
         }
 
-        // ▼ DOW / School / フィルタ（デフォルト空白＝無条件）
         if (!is_null($fDow)) {
             $linesQuery->where('dow', $fDow);
         }
@@ -70,47 +65,19 @@ class ScheduleLineController extends Controller
             $linesQuery->whereLikeInsensitive('school_name', $fSchoolName);
         }
 
-        // ▼ Schedule 所有ユーザーを取得（user_id 経由）
-        $scheduleOptions = Schedule::query()
-            ->with(['user:id,first_name,family_name,employee_code'])
-            ->get()
-            ->map(function ($s) {
-                $u = $s->user;
-                if ($u) {
-                    // 表示を「family first [code]」に
-                    $label = trim($u->family_name . ' ' . ($u->first_name ?? ''));
-                    if (!empty($u->employee_code)) {
-                        $label .= " [{$u->employee_code}]";
-                    }
-                } else {
-                    // ユーザーが紐づいていない場合
-                    $label = "(未割当) Schedule #{$s->id}";
-                }
-
-                return [
-                    'id'    => $s->id,
-                    'label' => $label,
-                ];
-            })
-            ->sortBy('label')
-            ->values();
-
-        // ★ 追加：関連 ScheduleLine（祖先・子孫）で絞り込み
+        // ★ 関連検索用（このIDの前後＝親子系統を表示）
         if ($refLineId) {
-            // 種行取得（無ければ全て空にする）
             $seed = ScheduleLine::query()->select(['id', 'parent_line_id'])->find($refLineId);
 
             if ($seed) {
                 $relatedIds = [];
 
-                // 1) 祖先を遡る
                 $cur = $seed;
                 while ($cur && $cur->parent_line_id) {
                     $relatedIds[] = $cur->parent_line_id;
                     $cur = ScheduleLine::query()->select(['id', 'parent_line_id'])->find($cur->parent_line_id);
                 }
 
-                // 2) 子孫を辿る（幅優先）
                 $frontier = [$seed->id];
                 $visited  = [$seed->id => true];
                 do {
@@ -129,20 +96,15 @@ class ScheduleLineController extends Controller
                     $frontier = $next;
                 } while (!empty($frontier));
 
-                // 自分自身も含める
                 $relatedIds[] = $seed->id;
                 $relatedIds = array_values(array_unique($relatedIds));
 
                 $linesQuery->whereIn('id', $relatedIds);
-
-                // 系統検索のときは期間フィルタは掛けない（“前と後両方”を漏れなく表示）
             } else {
-                $linesQuery->whereRaw('1=0'); // 見つからなければ空
+                $linesQuery->whereRaw('1=0');
             }
         } else {
-            // 有効日フィルタ（line 自体の有効期間で絞る）
             if (!empty($activeOn)) {
-                // 期間指定：active_until が空なら active_on と同日扱い
                 $periodStart = \Carbon\Carbon::parse($activeOn)->toDateString();
                 $periodEnd   = $activeUntil ? \Carbon\Carbon::parse($activeUntil)->toDateString() : $periodStart;
 
@@ -150,32 +112,26 @@ class ScheduleLineController extends Controller
                     ->whereDate('effective_start', '<=', $periodEnd)
                     ->where(function ($q) use ($periodStart) {
                         $q->whereDate('effective_end', '>=', $periodStart)
-                            ->orWhereNull('effective_end'); // オープンエンドを含む
+                            ->orWhereNull('effective_end');
                     });
             }
         }
 
         $lines = $linesQuery->get();
 
-        // 担当ユーザー（active_on が未指定なら今日を基準）
-        $baseDate = Carbon::parse($activeOn ?? now())->toDateString();
-
-        $usersBySchedule = [];
-        if ($lines->isNotEmpty()) {
-            $scheduleIds = $lines->pluck('schedule_id')->unique()->values()->all();
-
-            // assignments を使わず、Schedule に直付けされた user を取得
-            $schedules = Schedule::query()
-                ->with(['user:id,first_name,family_name,employee_code'])
-                ->whereIn('id', $scheduleIds)
-                ->get(['id', 'user_id']);
-
-            foreach ($schedules as $sch) {
-                $u = $sch->user;
-                // 旧来の chips 互換のため Collection を渡す（0 or 1件）
-                $usersBySchedule[$sch->id] = collect($u ? [$u] : [])->values();
-            }
-        }
+        // ユーザー選択肢（スコープ内のユーザー一覧）
+        $userOptions = $this->scopeService->targetUserQuery()
+            ->orderBy('family_name')
+            ->orderBy('first_name')
+            ->get(['id', 'first_name', 'family_name', 'employee_code'])
+            ->map(function ($u) {
+                $label = trim($u->family_name . ' ' . ($u->first_name ?? ''));
+                if (!empty($u->employee_code)) {
+                    $label .= " [{$u->employee_code}]";
+                }
+                return ['id' => $u->id, 'label' => $label];
+            })
+            ->values();
 
         // details を「期間の変化点」で区切った時間系列へ整形
         $seriesByLine = [];
@@ -183,35 +139,24 @@ class ScheduleLineController extends Controller
             $seriesByLine[$line->id] = $this->buildTimeSeries($line->details);
         }
 
-        // セレクト等
         $dowOptions = [
-            0 => '日',
-            1 => '月',
-            2 => '火',
-            3 => '水',
-            4 => '木',
-            5 => '金',
-            6 => '土',
+            0 => '日', 1 => '月', 2 => '火', 3 => '水', 4 => '木', 5 => '金', 6 => '土',
         ];
-        // ▼ 重複定義を避けるため、既に上で生成した $scheduleOptions をそのまま利用
-        // $scheduleOptions = Schedule::orderBy('id')->get(['id', 'label']);
 
         return view('schedule.lineEdit', [
-            'lines'           => $lines,
-            'dowOptions'      => $dowOptions,
-            'scheduleOptions' => $scheduleOptions,
-            'activeOn'        => $activeOn,
-            'scheduleId'      => $scheduleId,
-            'usersBySchedule' => $usersBySchedule,
-            'seriesByLine'    => $seriesByLine,
+            'lines'       => $lines,
+            'dowOptions'  => $dowOptions,
+            'userOptions' => $userOptions,
+            'activeOn'    => $activeOn,
+            'userId'      => $userIdRaw,
+            'seriesByLine' => $seriesByLine,
         ]);
     }
 
     public function update(Request $request, ScheduleLine $line)
     {
-        // バリデーション
         $data = $request->validate([
-            'schedule_id'     => ['nullable', 'exists:schedules,id'], //'required',
+            'user_id'         => ['nullable', 'exists:users,id'],
             'dow'             => ['required', 'integer', Rule::in([0, 1, 2, 3, 4, 5, 6])],
             'school_name'     => ['required', 'string', 'max:255'],
             'start_time'      => ['required', 'date_format:H:i'],
@@ -236,13 +181,9 @@ class ScheduleLineController extends Controller
 
     public function bulkUpdate(Request $request): JsonResponse
     {
-        // payload: { items: [ {id, schedule_id, dow, school_name, start_time, end_time, effective_start, effective_end}, … ] }
         $items = $request->input('items', []);
         if (!is_array($items) || empty($items)) {
-            return response()->json([
-                'ok' => false,
-                'message' => '更新対象がありません。',
-            ], 422);
+            return response()->json(['ok' => false, 'message' => '更新対象がありません。'], 422);
         }
 
         $errors = [];
@@ -250,25 +191,21 @@ class ScheduleLineController extends Controller
 
         DB::beginTransaction();
         try {
-            foreach ($items as $idx => $raw) {
-                // id 必須
+            foreach ($items as $raw) {
                 $lineId = $raw['id'] ?? null;
                 if (!$lineId) {
                     $errors[] = ['id' => null, 'messages' => ['行IDが指定されていません。']];
                     continue;
                 }
 
-                // 行取得
-                /** @var \App\Models\ScheduleLine|null $line */
                 $line = ScheduleLine::find($lineId);
                 if (!$line) {
                     $errors[] = ['id' => $lineId, 'messages' => ['対象行が見つかりません。']];
                     continue;
                 }
 
-                // バリデーション
                 $v = Validator::make($raw, [
-                    'schedule_id'     => ['nullable', 'exists:schedules,id'],
+                    'user_id'         => ['nullable', 'exists:users,id'],
                     'dow'             => ['required', 'integer', Rule::in([0, 1, 2, 3, 4, 5, 6])],
                     'school_name'     => ['required', 'string', 'max:255'],
                     'start_time'      => ['required', 'date_format:H:i'],
@@ -291,17 +228,14 @@ class ScheduleLineController extends Controller
                     continue;
                 }
 
-                // 正規化
                 $data = $v->validated();
                 $data['start_time'] = $data['start_time'] . ':00';
                 $data['end_time']   = $data['end_time']   . ':00';
 
-                // 更新
                 $line->fill($data)->save();
                 $updated++;
             }
 
-            // 一部でも更新できていればコミット（要件次第で all-or-nothing にしてもOK）
             DB::commit();
 
             $msg = "一括保存が完了しました（{$updated} 件更新";
@@ -312,8 +246,8 @@ class ScheduleLineController extends Controller
                 'ok'      => empty($errors),
                 'message' => $msg,
                 'updated' => $updated,
-                'errors'  => $errors, // [{id, messages:[]}, …]
-            ], empty($errors) ? 200 : 207); // 207 Multi-Status 風に扱う
+                'errors'  => $errors,
+            ], empty($errors) ? 200 : 207);
         } catch (\Throwable $e) {
             DB::rollBack();
             report($e);
@@ -327,20 +261,22 @@ class ScheduleLineController extends Controller
 
     public function store(Request $request)
     {
-
         $data = $request->validate([
-            'schedule_id' => ['nullable', 'exists:schedules,id'],
+            'user_id' => ['nullable', 'exists:users,id'],
         ]);
 
         $line = new ScheduleLine();
-        $line->schedule_id     = $data['schedule_id'] ?? null; // 新講師用に役立つ
-        $line->dow             = 0;           // ディフォルト日曜
-        $line->school_name     = '';          // 空文字
-        $line->start_time      = '00:00:00';  // 空扱い
+        $line->user_id         = $data['user_id'] ?? null;
+        $line->total_minutes   = 0;
+        $line->dow             = 0;
+        $line->school_name     = '';
+        $line->start_time      = '00:00:00';
         $line->end_time        = '00:00:00';
         $line->effective_start = now()->toDateString();
-        $line->effective_end   = now()->addMonths(1)->toDateString(); // 仮の1ヶ月（後で編集可）
-        $line->handover_memo   = null;        // 空
+        $line->effective_end   = now()->addMonths(1)->toDateString();
+        $line->handover_memo   = null;
+        $line->district_id     = $this->scopeService->currentDistrictId();
+        $line->department_id   = $this->scopeService->currentDepartmentId();
         $line->save();
 
         return response()->json([
@@ -350,17 +286,9 @@ class ScheduleLineController extends Controller
         ]);
     }
 
-    /**
-     * ScheduleLine を削除（JSON）
-     */
     public function destroy(Request $request, ScheduleLine $line): JsonResponse
     {
-        // （必要なら）ポリシー等
-        // $this->authorize('delete', $line);
-
         try {
-            // 参照整合: details が外部キー制約の場合は先に削除
-            // （migrations で cascadeOnDelete なら不要だが安全側で）
             if (method_exists($line, 'details')) {
                 $line->details()->delete();
             }
@@ -383,28 +311,22 @@ class ScheduleLineController extends Controller
         }
     }
 
-    /**
-     * ScheduleLine を期間指定で複写（JSON）。
-     * - 新規行: 入力期間で作成
-     * - 元行: 新規開始日の前日でクローズ（effective_end を詰める）
-     * - details も複写し、入れ替え期間にクリップ
-     */
     public function copy(Request $request, ScheduleLine $line): \Illuminate\Http\JsonResponse
     {
         $data = $request->validate([
             'effective_start' => ['required', 'date'],
             'effective_end'   => ['required', 'date', 'after_or_equal:effective_start'],
-            'schedule_id'     => ['nullable', 'exists:schedules,id'],
+            'user_id'         => ['nullable', 'exists:users,id'],
             'handover_memo'   => ['nullable', 'string', 'max:2000'],
         ]);
 
         $newStart = \Carbon\Carbon::parse($data['effective_start'])->startOfDay();
         $newEnd   = \Carbon\Carbon::parse($data['effective_end'])->startOfDay();
-        $targetScheduleId = $data['schedule_id'] ?? null; // ★ コピー先 schedule（NULL 可）
+        $targetUserId = $data['user_id'] ?? null;
 
         DB::beginTransaction();
         try {
-            // 1) 元行クローズ（newStart 前日）
+            // 1) 元行クローズ
             $lineStart = \Carbon\Carbon::parse($line->effective_start)->startOfDay();
             $lineEnd   = $line->effective_end ? \Carbon\Carbon::parse($line->effective_end)->startOfDay() : null;
 
@@ -413,12 +335,12 @@ class ScheduleLineController extends Controller
                 $line->save();
             }
 
-            // 2) 重複チェック（比較キー：コピー先 schedule + 同一属性）
+            // 2) 重複チェック
             $sameAttrs = \App\Models\ScheduleLine::query()
                 ->when(
-                    is_null($targetScheduleId),
-                    fn($q) => $q->whereNull('schedule_id'),
-                    fn($q) => $q->where('schedule_id', $targetScheduleId)
+                    is_null($targetUserId),
+                    fn($q) => $q->whereNull('user_id'),
+                    fn($q) => $q->where('user_id', $targetUserId)
                 )
                 ->where('dow', $line->dow)
                 ->whereEqualsInsensitive('school_name', $line->school_name)
@@ -441,13 +363,13 @@ class ScheduleLineController extends Controller
                 ], 422);
             }
 
-            // 3) 新規作成（schedule_id をコピー先へ）
+            // 3) 新規作成
             $created = $line->replicate(['effective_start', 'effective_end', 'created_at', 'updated_at', 'id']);
-            $created->schedule_id     = $targetScheduleId;                    // ★ ここがポイント
+            $created->user_id         = $targetUserId;
             $created->effective_start = $newStart->toDateString();
             $created->effective_end   = $newEnd->toDateString();
-            $created->parent_line_id  = $line->id;                            // 親IDをセット
-            $created->handover_memo   = $data['handover_memo'] ?? null;       // 未入力は空白
+            $created->parent_line_id  = $line->id;
+            $created->handover_memo   = $data['handover_memo'] ?? null;
             $created->save();
 
             // 4) details クリップ複写
@@ -462,7 +384,7 @@ class ScheduleLineController extends Controller
                 if ($overlapStart->gt($overlapEnd)) continue;
 
                 $newDetail = $d->replicate(['id', 'created_at', 'updated_at']);
-                $newDetail->schedule_line_id = $created->id;                  // 実FK名に合わせる
+                $newDetail->schedule_line_id = $created->id;
                 $newDetail->effective_start  = $overlapStart->toDateString();
                 $newDetail->effective_end    = $overlapEnd ? $overlapEnd->toDateString() : null;
                 $newDetail->save();
@@ -472,7 +394,7 @@ class ScheduleLineController extends Controller
 
             return response()->json([
                 'ok' => true,
-                'message' => "Line #{$line->id} を複写して新規 Line #{$created->id} を作成しました（schedule: " . ($targetScheduleId ?? 'NULL') . "）。",
+                'message' => "Line #{$line->id} を複写して新規 Line #{$created->id} を作成しました（user: " . ($targetUserId ?? 'NULL') . "）。",
                 'new_id' => $created->id,
             ]);
         } catch (\Throwable $e) {
@@ -486,19 +408,12 @@ class ScheduleLineController extends Controller
         }
     }
 
-    /**
-     * schedule_details を内容の変化点で分割して「時間系列」へ整形
-     *
-     * @param  \Illuminate\Support\Collection  $details  // of ScheduleDetail (with ->lesson)
-     * @return array<int, array{start:?Carbon, end:?Carbon, items:array<int,array{time:string,name:?string,code:?string,minute:?int,type:?string}>}>
-     */
     private function buildTimeSeries(Collection $details): array
     {
         if ($details->isEmpty()) {
             return [];
         }
 
-        // 1) 変化点候補（start, end+1日）を収集
         $points = collect();
         $maxEnd = null;
         $hasOpenEnd = false;
@@ -509,10 +424,10 @@ class ScheduleLineController extends Controller
 
             if ($d->effective_end) {
                 $e = Carbon::parse($d->effective_end)->startOfDay();
-                $points->push($e->copy()->addDay()); // 終了日の翌日を区切り点に
+                $points->push($e->copy()->addDay());
                 $maxEnd = $maxEnd ? $e->max($maxEnd) : $e;
             } else {
-                $hasOpenEnd = true; // オープンエンドあり
+                $hasOpenEnd = true;
             }
         }
 
@@ -525,7 +440,6 @@ class ScheduleLineController extends Controller
             return [];
         }
 
-        // 2) 区間生成：[points[i], points[i+1]-1]、末尾は open もしくは maxEnd
         $segments = [];
         for ($i = 0; $i < $points->count(); $i++) {
             $start = $points[$i]->copy();
@@ -535,14 +449,12 @@ class ScheduleLineController extends Controller
                 $end = $hasOpenEnd ? null : $maxEnd;
             }
 
-            // 3) 区間に有効な details を抽出（重なり判定）
             $active = $details->filter(function ($d) use ($start, $end) {
                 $ds = Carbon::parse($d->effective_start)->startOfDay();
                 $de = $d->effective_end ? Carbon::parse($d->effective_end)->startOfDay() : null;
 
-                // 重なり: [ds, de(または∞)] と [start, end(または∞)] が交差
-                $leftOk  = $de ? $de >= $start : true;      // detail の終端が start 以降
-                $rightOk = $end ? $ds <= $end : true;       // detail の始端が end 以前
+                $leftOk  = $de ? $de >= $start : true;
+                $rightOk = $end ? $ds <= $end : true;
                 return $leftOk && $rightOk;
             });
 
@@ -550,33 +462,25 @@ class ScheduleLineController extends Controller
                 continue;
             }
 
-            // 4) 表示アイテム（開始時刻順）
             $items = $active->sortBy(function ($d) {
                 return $d->start_time ?? '99:99:99';
             })
                 ->map(function ($d) {
-                    // 1) start_time を多様な入力から "HH:MM" に正規化
                     $raw = $d->start_time;
                     $startStr = null;
 
                     if ($raw !== null) {
                         $s = trim((string)$raw);
-
-                        // 全角コロン対策
                         $s = str_replace('：', ':', $s);
 
                         if (preg_match('/^\d{1,2}:\d{2}$/', $s)) {
-                            // 09:00
                             $startStr = $s;
                         } elseif (preg_match('/^\d{1,2}:\d{2}:\d{2}$/', $s)) {
-                            // 09:00:00 -> 09:00
                             $startStr = substr($s, 0, 5);
                         } elseif (preg_match('/^\d{3,4}$/', $s)) {
-                            // 900 / 0900 -> 09:00
                             $s = str_pad($s, 4, '0', STR_PAD_LEFT);
                             $startStr = substr($s, 0, 2) . ':' . substr($s, 2, 2);
                         } else {
-                            // どうしても不明なら Carbon::parse に賭けて H:i に整形（失敗は無視）
                             try {
                                 $startStr = \Carbon\Carbon::parse($s)->format('H:i');
                             } catch (\Throwable $e) {
@@ -585,12 +489,10 @@ class ScheduleLineController extends Controller
                         }
                     }
 
-                    // 2) lesson_minute を取得
                     $lesson = $d->lesson;
                     $minute = $lesson->lesson_minute ?? null;
                     $minute = is_numeric($minute) ? (int)$minute : null;
 
-                    // 3) 終了時刻 = start + minute （両方そろっている時だけ算出）
                     $endStr = null;
                     if ($startStr && $minute !== null) {
                         $endStr = \Carbon\Carbon::createFromFormat('H:i', $startStr)
@@ -602,8 +504,8 @@ class ScheduleLineController extends Controller
                         'name'   => $lesson->lesson_name ?? null,
                         'code'   => $lesson->lesson_code ?? null,
                         'minute' => $minute,
-                        'start'  => $startStr,   // "HH:MM" or null
-                        'end'    => $endStr,     // "HH:MM" or null
+                        'start'  => $startStr,
+                        'end'    => $endStr,
                     ];
                 })
                 ->values()

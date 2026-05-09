@@ -26,7 +26,9 @@ class Leave extends Model
         'time_end',
         'status',
         'approved_by',
-        'handle_type'
+        'handle_type',
+        'district_id',
+        'department_id',
     ];
 
     protected $casts = [
