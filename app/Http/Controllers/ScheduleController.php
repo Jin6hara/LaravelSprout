@@ -151,7 +151,7 @@ class ScheduleController extends Controller
         $inOneMonth = now()->addMonth()->toDateString();
 
         // サーバー側でも必ず「追加可能ユーザー」条件をチェック
-        $isEligible = User::query()
+        $isEligible = $this->scopeService->targetUserQuery()
             ->where('id', $uid)
             ->where(function ($q) use ($today, $inOneMonth) {
                 $q->whereExists(function ($sq) use ($today) {

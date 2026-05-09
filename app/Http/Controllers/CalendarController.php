@@ -47,7 +47,9 @@ class CalendarController extends Controller
 
             $targetUserId = (int) $request->query('user_id', $viewer->id);
             if (!$viewer->hasRole(['admin', 'super_admin']) && $targetUserId !== $viewer->id) abort(403);
-            $user = User::findOrFail($targetUserId);
+            $user = $viewer->hasRole(['admin', 'super_admin'])
+                ? $this->scopeService->targetUserQuery()->findOrFail($targetUserId)
+                : User::findOrFail($targetUserId);
 
             $events = $resolver->build($user, $start, $end);
             return response()->json($events);

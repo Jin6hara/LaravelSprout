@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\ExpenseReport;
 use App\Services\CommutingExpenses\RouteDeclarationService;
+use App\Services\CurrentScopeService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use App\Enums\ExpenseReportStatus;
@@ -26,6 +27,7 @@ class ExpenseEditController extends Controller
         if (!method_exists($req->user(), 'isAdmin') || !$req->user()->isAdmin()) {
             abort(403);
         }
+        abort_unless(in_array($user->id, app(CurrentScopeService::class)->targetUserIds()), 404);
         return $this->renderFor($user, $req);
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\CurrentScopeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Support\DatabaseText;
@@ -26,6 +27,7 @@ class CommuterPassAdvisorController extends Controller
             : null; // null = 上限なし（from 以降）
 
         $min = (int)($request->query('min_count') ?: 5);
+        $targetUserIds = app(CurrentScopeService::class)->targetUserIds();
         $text = DB::query();
         $slSchoolKeyExpr = DatabaseText::loweredExpression($text, 'sl.school_name');
         $baseSchoolKeyExpr = DatabaseText::loweredExpression($text, 'base.school_name');
@@ -50,6 +52,7 @@ class CommuterPassAdvisorController extends Controller
         // --- 1) 候補グループ: user_id × school_name ごとの件数（期間重複あり、min 以上） ---
         $groupsSub = DB::table('schedule_lines as sl')
             ->join('schedules as s', 's.id', '=', 'sl.schedule_id')
+            ->whereIn('s.user_id', $targetUserIds)
             ->tap($applyPeriod)
             ->groupBy('s.user_id', DB::raw($slSchoolKeyExpr))
             ->havingRaw('COUNT(*) >= ?', [$min])
@@ -75,6 +78,7 @@ class CommuterPassAdvisorController extends Controller
         // schedule_id 同士の一致縛りは外し、user_id で合わせるのが安全。
         $qualSub = DB::table('schedule_lines as base')
             ->join('schedules as bs', 'bs.id', '=', 'base.schedule_id') // base の user を得る
+            ->whereIn('bs.user_id', $targetUserIds)
             ->join('schedule_lines as peer', function ($join) use ($baseSchoolKeyExpr, $peerSchoolKeyExpr) {
                 $join->whereRaw("{$peerSchoolKeyExpr} = {$baseSchoolKeyExpr}")
                     ->on('peer.schedule_id', '=', 'base.schedule_id'); // 同一 schedule_id 内で突き合わせ（必要に応じて user_id へ変更）
@@ -100,6 +104,7 @@ class CommuterPassAdvisorController extends Controller
         // --- 3) 明細: groupsSub（候補グループ）と qualSub（同時稼働曜日数）を join して抽出 ---
         $details = DB::table('schedule_lines as sl')
             ->join('schedules as s', 's.id', '=', 'sl.schedule_id')
+            ->whereIn('s.user_id', $targetUserIds)
             ->joinSub($groupsSub, 'g', function ($join) use ($slSchoolKeyExpr) {
                 $join->on('g.user_id', '=', 's.user_id')
                     ->whereRaw("g.school_name_key = {$slSchoolKeyExpr}");
