@@ -2,7 +2,6 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -12,24 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // 1) schedules
-        Schema::create('schedules', function (Blueprint $t) {
-            $t->id();
-            $t->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $t->string('label')->nullable();               // 表示用 (例: "James weekly")
-            $t->unsignedInteger('total_minutes')->default(0);
-            $t->date('effective_start');
-            $t->date('effective_end');
-            $t->boolean('is_active')->default(true);
-            $t->timestamps();
-            $t->index(['user_id', 'effective_start', 'effective_end'], 'sch_user_period_idx');
-        });
-
-        // 2) schedule_lines
         Schema::create('schedule_lines', function (Blueprint $t) {
             $t->id();
-            $t->foreignId('schedule_id')->nullable()->constrained()->restrictOnDelete();
+            $t->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
             $t->foreignId('parent_line_id')->nullable()->constrained('schedule_lines')->nullOnDelete();
+            $t->unsignedInteger('total_minutes')->default(0);
             $t->tinyInteger('dow');                        // 0(日)〜6(土)
             $t->string('school_name');
             $t->time('start_time');
@@ -38,13 +24,9 @@ return new class extends Migration
             $t->date('effective_end');
             $t->text('handover_memo')->nullable();
             $t->timestamps();
-            $t->index(['schedule_id', 'dow', 'effective_start', 'effective_end'], 'sch_line_idx');
+            $t->index(['user_id', 'dow', 'effective_start', 'effective_end'], 'sch_line_idx');
             $t->index(['school_name', 'effective_start', 'effective_end'], 'sch_line_school_period_idx');
         });
-
-        if (Schema::getConnection()->getDriverName() === 'pgsql') {
-            DB::statement('alter table "schedules" add constraint "schedules_total_minutes_non_negative" check ("total_minutes" >= 0)');
-        }
     }
 
     /**
@@ -53,6 +35,5 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('schedule_lines');
-        Schema::dropIfExists('schedules');
     }
 };

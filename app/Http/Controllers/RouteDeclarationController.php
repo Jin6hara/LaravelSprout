@@ -10,7 +10,7 @@ use App\Services\CommutingExpenses\RouteDeclarationService;
 use Illuminate\Http\RedirectResponse;
 use App\Models\RouteDeclaration;
 use App\Models\EmploymentTerm;
-use App\Models\Schedule;
+use App\Models\ScheduleLine;
 
 class RouteDeclarationController extends Controller
 {
@@ -166,10 +166,11 @@ class RouteDeclarationController extends Controller
 
         if ($mode === 'schedule') {
             // Users with active Schedule only
-            $userIds = Schedule::query()
-                ->where('is_active', true)
+            $userIds = ScheduleLine::query()
                 ->where('effective_start', '<=', $activeOn)
                 ->where('effective_end', '>=', $activeOn)
+                ->whereNotNull('user_id')
+                ->distinct()
                 ->pluck('user_id')
                 ->unique()
                 ->values();

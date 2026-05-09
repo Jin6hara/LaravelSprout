@@ -30,8 +30,7 @@ class ScheduleDetailController extends Controller
             ->orderBy('lesson_code')
             ->get(['id', 'lesson_code', 'lesson_name']);
 
-        // ヘッダー表示用の関連と値を用意
-        $line->loadMissing(['schedule.user']); // schedule 所有ユーザー
+        // ヘッダー表示用の値を用意
 
         $dowOptions = [
             0 => '日',
@@ -43,8 +42,8 @@ class ScheduleDetailController extends Controller
             6 => '土',
         ];
 
-        // chips 相当（0 or 1件想定）
-        $chips = collect($line->schedule && $line->schedule->user ? [$line->schedule->user] : []);
+        // schedule リレーションは廃止したため、所有ユーザーchipsは表示しない
+        $chips = collect();
 
         $lineStart = optional($line->effective_start)->toDateString();
         $lineEnd   = optional($line->effective_end)->toDateString();

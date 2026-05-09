@@ -17,8 +17,6 @@ class EventAssignController extends Controller
 
     public function edit(Request $request)
     {
-        $targetUserIds = $this->scopeService->targetUserIds();
-
         $userOptions = $this->scopeService->targetUserQuery()
             ->select('id', 'first_name', 'family_name', 'employee_code')
             ->orderBy('employee_code')
@@ -64,13 +62,8 @@ class EventAssignController extends Controller
         }
 
         $events = Event::query()
-            ->where(function ($q) use ($targetUserIds) {
-                $q->whereIn('original_user_id', $targetUserIds)
-                  ->orWhere(function ($q2) use ($targetUserIds) {
-                      $q2->whereNull('original_user_id')
-                         ->whereIn('assigned_user_id', $targetUserIds);
-                  });
-            })
+            ->where('district_id', $this->scopeService->currentDistrictId())
+            ->where('department_id', $this->scopeService->currentDepartmentId())
 
             // モーダルからevent_id が来ていれば最優先で絞り込み（ID一致のみ）
             ->when($eventId, fn($q) => $q->whereKey($eventId))
@@ -234,6 +227,8 @@ class EventAssignController extends Controller
             $validated['total_duration'] = sprintf('%d:%02d', intdiv($mins, 60), $mins % 60);
         }
 
+        $validated['district_id']   = $this->scopeService->currentDistrictId();
+        $validated['department_id'] = $this->scopeService->currentDepartmentId();
         Event::create($validated);
 
         return back()->with('toast', 'Shift copied.');
@@ -246,9 +241,11 @@ class EventAssignController extends Controller
 
         // 空白イベントを作成
         $event = Event::create([
-            'event_date' => $date,
-            'status'     => 'pending',
-            'type'       => 'regular_time',
+            'event_date'    => $date,
+            'status'        => 'pending',
+            'type'          => 'regular_time',
+            'district_id'   => $this->scopeService->currentDistrictId(),
+            'department_id' => $this->scopeService->currentDepartmentId(),
         ]);
 
         return back()->with('toast', "Created shift at {$date}.");
@@ -446,8 +443,6 @@ class EventAssignController extends Controller
     // 共通のイベントクエリビルダ
     protected function baseEventQuery(Request $request)
     {
-        $targetUserIds = $this->scopeService->targetUserIds();
-
         $eventId        = $request->input('event_id');
         $originalUserId = $request->input('original_user_id');
         $assignedUserId = $request->input('assigned_user_id');
@@ -475,13 +470,8 @@ class EventAssignController extends Controller
         }
 
         return Event::query()
-            ->where(function ($q) use ($targetUserIds) {
-                $q->whereIn('original_user_id', $targetUserIds)
-                  ->orWhere(function ($q2) use ($targetUserIds) {
-                      $q2->whereNull('original_user_id')
-                         ->whereIn('assigned_user_id', $targetUserIds);
-                  });
-            })
+            ->where('district_id', $this->scopeService->currentDistrictId())
+            ->where('department_id', $this->scopeService->currentDepartmentId())
             ->when($eventId, fn($q) => $q->whereKey($eventId))
             ->with([
                 'assignedUser:id,name,employee_code',

@@ -6,14 +6,9 @@
     <div>
         <h2 class="mb-0">Schedule Lines</h2>
     </div>
-    <div>
-        <a href="{{ route('schedules.index') }}" class="small text-decoration-none text-primary">
-            Create Schedule
-        </a>
-    </div>
 </div>
 
-{{-- 検索フォーム（基準日/スケジュール） --}}
+{{-- 検索フォーム --}}
 <form method="GET" action="{{ route('schedules.edit') }}" class="card mb-2">
     <div class="card-body py-2">
         <div class="row g-2 align-items-end">
@@ -28,13 +23,13 @@
                     value="{{ request('active_until') }}">
             </div>
             <div class="col-12 col-sm-6 col-md-4 col-lg-2">
-                <label class="form-label small mb-1">Schedule</label>
-                <select name="schedule_id" class="form-select form-select-sm">
+                <label class="form-label small mb-1">User</label>
+                <select name="user_id" class="form-select form-select-sm">
                     <option value="">(All)</option>
-                    <option value="null" @selected($scheduleId==='null' )>Not Assigned</option>
-                    @foreach($scheduleOptions as $opt)
-                    <option value="{{ $opt['id'] }}" @selected($scheduleId==$opt['id'])>
-                        {{ $opt['label'] ?? ('Schedule #' . $opt['id']) }}
+                    <option value="null" @selected($userId==='null')>Not Assigned</option>
+                    @foreach($userOptions as $opt)
+                    <option value="{{ $opt['id'] }}" @selected($userId==$opt['id'])>
+                        {{ $opt['label'] }}
                     </option>
                     @endforeach
                 </select>
@@ -71,7 +66,6 @@
 </form>
 
 <div class="text-start mb-2">
-    {{-- ★ 新規追加ボタン --}}
     <button type="button"
         id="add-line-btn"
         class="btn btn-sm btn-outline-primary">
@@ -86,7 +80,6 @@
 @if($lines->isEmpty())
 <div class="alert alert-secondary">該当する Schedule Line はありません。</div>
 @else
-{{-- ★ 1カード/行に固定 --}}
 <div class="row g-2">
     @foreach($lines as $line)
     <div class="col-12">
@@ -95,42 +88,25 @@
             {{-- ヘッダー --}}
             <div class="card-header py-1">
                 @php
-                // 担当ユーザー（active_on が無ければ today 基準）
-                $chips = collect($usersBySchedule[$line->schedule_id] ?? []);
-                $baseLabel = $activeOn ?: 'today';
-
-                // 検索期間（active_until が無ければ active_on と同じ日）
-                $searchStart = $activeOn ?: now()->toDateString();
-                $searchEnd = request('active_until') ?: $searchStart;
-
-                // Line の有効期間
+                $user = $line->user;
                 $lineStart = optional($line->effective_start)->toDateString();
-                $lineEnd = optional($line->effective_end)->toDateString(); // NULL想定なら '—' にする
+                $lineEnd = optional($line->effective_end)->toDateString();
                 @endphp
 
                 <div class="d-flex flex-wrap align-items-center gap-2">
                     <span class="fw-bold">#{{ $line->id }}</span>
 
-                    {{-- 担当ユーザー（横並び・コンパクト） --}}
+                    {{-- 担当ユーザー --}}
                     <div class="mt-1">
-
-                        @if($chips->isNotEmpty())
-                        <div class="d-flex flex-wrap gap-1">
-                            @foreach($chips as $u)
-                            <span class="badge rounded-pill text-bg-secondary">
-                                {{ $u->family_name }}@if(!empty($u->first_name)) {{ ' ' . $u->first_name }} @endif
-                                @if(!empty($u->employee_code)) [{{ $u->employee_code }}] @endif
-                            </span>
-                            @endforeach
-                        </div>
+                        @if($user)
+                        <span class="badge rounded-pill text-bg-secondary">
+                            {{ $user->family_name }}@if(!empty($user->first_name)) {{ ' ' . $user->first_name }} @endif
+                            @if(!empty($user->employee_code)) [{{ $user->employee_code }}] @endif
+                        </span>
                         @else
                         <div class="text-muted small">—</div>
                         @endif
                     </div>
-
-                    <span class="badge text-bg-light text-truncate" style="max-width: 240px;">
-                        {{ $line->schedule->label ?? 'Not Assigned' }}
-                    </span>
 
                     <span class="badge bg-secondary-subtle text-body-secondary">
                         {{ $dowOptions[$line->dow] ?? $line->dow }}
@@ -146,7 +122,6 @@
                         {{ \Illuminate\Support\Str::of($line->end_time)->substr(0,5) }}
                     </span>
 
-                    {{-- 期間（Lineの有効期間） --}}
                     <span class="ms-auto small text-muted">
                         期間: {{ $lineStart }} 〜 {{ $lineEnd ?: '—' }}
                     </span>
@@ -158,7 +133,6 @@
                 @csrf
                 @method('PUT')
 
-                {{-- 自分のフォーム識別用（oldスコープ） --}}
                 <input type="hidden" name="__line_id" value="{{ $line->id }}">
 
                 @php $isMyOld = old('__line_id') == $line->id; @endphp
@@ -167,11 +141,11 @@
                     <div class="row g-1 align-items-end">
 
                         <div class="col-12 col-md-4 col-lg-3">
-                            <label class="form-label small mb-1">Schedule (Owner)</label>
-                            <select name="schedule_id" class="form-select form-select-sm">
-                                <option value="">— Select —</option>
-                                @foreach($scheduleOptions as $opt)
-                                <option value="{{ $opt['id'] }}" @selected($line->schedule_id === $opt['id'])>
+                            <label class="form-label small mb-1">User (Owner)</label>
+                            <select name="user_id" class="form-select form-select-sm">
+                                <option value="">— None —</option>
+                                @foreach($userOptions as $opt)
+                                <option value="{{ $opt['id'] }}" @selected($line->user_id == $opt['id'])>
                                     {{ $opt['label'] }}
                                 </option>
                                 @endforeach
@@ -230,7 +204,6 @@
                         <div class="col-12 col-lg-2 d-flex t gap-1">
                             <button type="submit" class="btn btn-sm btn-success mt-3 mt-lg-0">保存</button>
 
-                            {{-- ★  削除（AJAX） --}}
                             <button
                                 type="button"
                                 class="btn btn-sm btn-outline-danger mt-3 mt-lg-0 js-delete-line"
@@ -239,22 +212,21 @@
                                 削除
                             </button>
 
-                            {{-- ★ 複写ボタン（AJAX） --}}
                             <button
                                 type="button"
                                 class="btn btn-sm btn-outline-secondary mt-3 mt-lg-0 js-copy-line"
                                 data-copy-url="{{ route('schedule_lines.copy', $line) }}"
                                 data-line-id="{{ $line->id }}"
-                                data-current-schedule="{{ $line->schedule_id ?? '' }}"
+                                data-current-user="{{ $line->user_id ?? '' }}"
                                 data-effective-end="{{ optional($line->effective_end)?->toDateString() ?? '' }}"
-                                data-handover-memo="{{ $line->handover_memo }}" {{-- ★ Memo --}}>
+                                data-handover-memo="{{ $line->handover_memo }}">
                                 複写
                             </button>
 
                             <a href="{{ route('schedule_details.edit', $line) }}"
                                 class="btn btn-sm btn-outline-info mt-3 mt-lg-0"
-                                target="_blank" {{-- ← 新しいタブで開く --}}
-                                rel="noopener noreferrer" {{-- ← セキュリティ推奨 --}}>
+                                target="_blank"
+                                rel="noopener noreferrer">
                                 詳細
                             </a>
 
@@ -263,9 +235,8 @@
                 </div>
             </form>
 
-            {{-- ▼▼▼ 閲覧専用：Schedule Details（高密度） ▼▼▼ --}}
+            {{-- 閲覧専用：Schedule Details --}}
             @include('schedule.detailsView', ['line' => $line, 'seriesByLine' => $seriesByLine])
-            {{-- ▲▲▲ 詳細ここまで ▲▲▲ --}}
 
             <div class="card-footer d-flex justify-content-between align-items-center py-2">
                 <small class="text-muted">更新: {{ $line->updated_at?->format('Y-m-d H:i') }}</small>
@@ -286,14 +257,14 @@
             </div>
             <div class="modal-body">
                 <div class="mb-2">
-                    <label class="form-label small">コピー先 Schedule</label>
-                    <select id="copy-schedule-id" class="form-select form-select-sm">
-                        <option value="">（Not Assigned / NULL）</option>
-                        @foreach($scheduleOptions as $opt)
-                        <option value="{{ $opt['id'] }}">{{ $opt['label'] ?? ('Schedule #'.$opt['id']) }}</option>
+                    <label class="form-label small">コピー先 User</label>
+                    <select id="copy-user-id" class="form-select form-select-sm">
+                        <option value="">（None / NULL）</option>
+                        @foreach($userOptions as $opt)
+                        <option value="{{ $opt['id'] }}">{{ $opt['label'] }}</option>
                         @endforeach
                     </select>
-                    <div class="form-text">別のスケジュール所有者へ複写する場合はここで選択。</div>
+                    <div class="form-text">別のユーザーへ複写する場合はここで選択。</div>
                 </div>
 
                 <div class="mb-2">
@@ -324,37 +295,28 @@
 @push('scripts')
 <script>
     (function() {
-        // CSRF トークンを取得
         const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
             document.querySelector('input[name="_token"]')?.value;
 
         function showFlash(message, type = 'success') {
             const area = document.getElementById('flash-area');
             if (!area) return;
-
-            // Bootstrap alert を生成（success / danger）
             const wrapper = document.createElement('div');
             wrapper.innerHTML = `
       <div class="alert alert-${type} alert-dismissible fade show" role="alert">
         ${message}
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>`;
-            // 先頭に差し込む
             area.prepend(wrapper.firstElementChild);
         }
 
         async function handleDelete(btn) {
             const url = btn.getAttribute('data-delete-url');
             const lineId = btn.getAttribute('data-line-id');
-
             if (!url) return;
-
-            // 確認ダイアログ
             const ok = window.confirm(`Line #${lineId} を削除します。よろしいですか？`);
             if (!ok) return;
-
             btn.disabled = true;
-
             try {
                 const res = await fetch(url, {
                     method: 'DELETE',
@@ -364,25 +326,12 @@
                         'Accept': 'application/json',
                     },
                 });
-
-                const data = await res.json().catch(() => ({
-                    ok: false,
-                    message: 'Unexpected response'
-                }));
-
-                if (!res.ok || !data.ok) {
-                    throw new Error(data?.message || '削除に失敗しました。');
-                }
-
-                // カードDOMを削除
-                // ボタン-> col -> row -> card -> col-12 を辿る（構造に応じて調整）
+                const data = await res.json().catch(() => ({ ok: false, message: 'Unexpected response' }));
+                if (!res.ok || !data.ok) throw new Error(data?.message || '削除に失敗しました。');
                 let card = btn.closest('.card');
                 let col = card?.closest('.col-12') || card?.parentElement;
                 (col || card)?.remove();
-
-                // “フラッシュ風”に表示
                 showFlash(data.message || `Line #${lineId} を削除しました。`, 'success');
-
             } catch (err) {
                 console.error(err);
                 showFlash(err.message || '削除に失敗しました。', 'danger');
@@ -390,24 +339,15 @@
             }
         }
 
-        // クリック委譲
         document.addEventListener('click', function(e) {
             const t = e.target;
-            if (t && t.classList.contains('js-delete-line')) {
-                handleDelete(t);
-            }
+            if (t && t.classList.contains('js-delete-line')) handleDelete(t);
         }, false);
     })();
 </script>
 
 <script>
-    /**
-     * Schedule Line 複写 + リロード越しフラッシュ（対象A）
-     * 依存: Bootstrap JS（Modal, Alert）
-     * 前提: <div id="flash-area"> がページ内に1ヶ所あること
-     */
     (function() {
-        // ========= 共通ユーティリティ =========
         const csrf =
             document.querySelector('meta[name="csrf-token"]')?.content ||
             document.querySelector('input[name="_token"]')?.value;
@@ -425,85 +365,56 @@
         }
 
         function persistFlash(message, type = 'success') {
-            try {
-                sessionStorage.setItem('flash', JSON.stringify({
-                    message,
-                    type,
-                    t: Date.now()
-                }));
-            } catch (e) {}
+            try { sessionStorage.setItem('flash', JSON.stringify({ message, type, t: Date.now() })); } catch (e) {}
         }
 
         function restoreFlashOnce() {
             try {
                 const raw = sessionStorage.getItem('flash');
                 if (!raw) return;
-                const {
-                    message,
-                    type
-                } = JSON.parse(raw);
+                const { message, type } = JSON.parse(raw);
                 if (message) showFlash(message, type || 'success');
                 sessionStorage.removeItem('flash');
             } catch (e) {}
         }
 
-        // ========= ページロード時：保存済みフラッシュを表示 =========
         restoreFlashOnce();
 
-        // ========= 複写モーダルコンテキスト =========
-        let copyCtx = {
-            url: null,
-            lineId: null,
-            currentSchedule: ''
-        };
+        let copyCtx = { url: null, lineId: null, currentUser: '' };
 
-        // 複写ボタン → モーダル起動＆初期値セット
         document.addEventListener('click', (e) => {
             const btn = e.target.closest('.js-copy-line');
             if (!btn) return;
 
             copyCtx.url = btn.getAttribute('data-copy-url');
             copyCtx.lineId = btn.getAttribute('data-line-id');
-            copyCtx.currentSchedule = btn.getAttribute('data-current-schedule') || '';
+            copyCtx.currentUser = btn.getAttribute('data-current-user') || '';
 
-            // 開始は空白、終了は元行の effective_end
             const srcEnd = btn.getAttribute('data-effective-end') || '';
             const startEl = document.getElementById('copy-start');
             const endEl = document.getElementById('copy-end');
             if (startEl) startEl.value = '';
             if (endEl) endEl.value = srcEnd;
 
-            // ★ メモ初期値（ボタンの data-handover-memo から）
             const memoEl = document.getElementById('copy-memo');
             if (memoEl) memoEl.value = btn.getAttribute('data-handover-memo') || '';
 
-            // schedule 初期選択（元の schedule_id）
-            const sel = document.getElementById('copy-schedule-id');
-            if (sel) sel.value = copyCtx.currentSchedule;
+            const sel = document.getElementById('copy-user-id');
+            if (sel) sel.value = copyCtx.currentUser;
 
             const modalEl = document.getElementById('copyLineModal');
             bootstrap.Modal.getOrCreateInstance(modalEl).show();
         });
 
-        // 「複写する」
         document.getElementById('copy-submit')?.addEventListener('click', async () => {
             const start = document.getElementById('copy-start')?.value;
             const end = document.getElementById('copy-end')?.value;
-            const scheduleId = document.getElementById('copy-schedule-id')?.value || null;
-
-            // ★ 空なら null
+            const userId = document.getElementById('copy-user-id')?.value || null;
             const memoInput = document.getElementById('copy-memo');
-            const memoValue = memoInput?.value?.trim() || '';
-            const memo = memoValue === '' ? null : memoValue;
+            const memo = memoInput?.value?.trim() || null;
 
-            if (!start || !end) {
-                showFlash('開始日と終了日を入力してください。', 'danger');
-                return;
-            }
-            if (start > end) {
-                showFlash('終了日は開始日以降にしてください。', 'danger');
-                return;
-            }
+            if (!start || !end) { showFlash('開始日と終了日を入力してください。', 'danger'); return; }
+            if (start > end) { showFlash('終了日は開始日以降にしてください。', 'danger'); return; }
             if (!copyCtx.url) return;
 
             try {
@@ -518,40 +429,31 @@
                     body: JSON.stringify({
                         effective_start: start,
                         effective_end: end,
-                        schedule_id: scheduleId,
-                        handover_memo: memo, // ← これが実際に null または文字列で送信されます
+                        user_id: userId,
+                        handover_memo: memo,
                     }),
                 });
-
-                const data = await res.json().catch(() => ({
-                    ok: false,
-                    message: 'Unexpected response'
-                }));
+                const data = await res.json().catch(() => ({ ok: false, message: 'Unexpected response' }));
                 if (!res.ok || !data.ok) throw new Error(data?.message || '複写に失敗しました。');
-
-                // 既存のフラッシュ保存＆クエリ維持リロード（そのまま）
                 persistFlash(data.message || '複写が完了しました。', 'success');
-                const currentUrl = new URL(window.location.href);
-                window.location.href = currentUrl.toString();
-
+                window.location.href = new URL(window.location.href).toString();
             } catch (err) {
                 console.error(err);
                 showFlash(err.message || '複写に失敗しました。', 'danger');
             } finally {
-                modal.hide();
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('copyLineModal')).hide();
             }
         });
     })();
 </script>
 <script>
-    // ========= 空白Line追加 =========
     document.getElementById('add-line-btn')?.addEventListener('click', async () => {
         const csrf =
             document.querySelector('meta[name="csrf-token"]')?.content ||
             document.querySelector('input[name="_token"]')?.value;
 
-        const sel = document.querySelector('select[name="schedule_id"]');
-        const scheduleId = sel?.value || null;
+        const sel = document.querySelector('select[name="user_id"]');
+        const userId = sel?.value || null;
 
         try {
             const res = await fetch('/schedule_lines', {
@@ -561,23 +463,12 @@
                     'Accept': 'application/json',
                     'X-CSRF-TOKEN': csrf,
                 },
-                body: JSON.stringify({
-                    schedule_id: scheduleId
-                }),
+                body: JSON.stringify({ user_id: userId }),
             });
             const data = await res.json();
-
             if (!res.ok || !data.ok) throw new Error(data?.message || '追加に失敗しました。');
-
-            // フラッシュ保存 + 再読み込み（既存と同様）
-            sessionStorage.setItem('flash', JSON.stringify({
-                message: data.message || '追加が完了しました。',
-                type: 'success',
-            }));
-
-            const currentUrl = new URL(window.location.href);
-            window.location.href = currentUrl.toString(); // クエリ維持リロード
-
+            sessionStorage.setItem('flash', JSON.stringify({ message: data.message || '追加が完了しました。', type: 'success' }));
+            window.location.href = new URL(window.location.href).toString();
         } catch (err) {
             console.error(err);
             const area = document.getElementById('flash-area');
@@ -612,18 +503,10 @@
         }
 
         function persistFlash(message, type = 'success') {
-            try {
-                sessionStorage.setItem('flash', JSON.stringify({
-                    message,
-                    type,
-                    t: Date.now()
-                }));
-            } catch (e) {}
+            try { sessionStorage.setItem('flash', JSON.stringify({ message, type, t: Date.now() })); } catch (e) {}
         }
 
-        // ★ 一括保存
         document.getElementById('bulk-save-btn')?.addEventListener('click', async () => {
-            // 収集: 表示されている各行フォームから値を集める
             const forms = document.querySelectorAll(
                 'form[action*="schedule_lines"][method="post"], form[action*="schedule_lines"][method="POST"], form[action*="schedule_lines"][method="put"], form[action*="schedule_lines"][method="PUT"]'
             );
@@ -631,38 +514,31 @@
             const items = [];
             forms.forEach((f) => {
                 try {
-                    const id = f.querySelector('input[name="__line_id"]')?.value || null; // 自分のフォーム識別
+                    const id = f.querySelector('input[name="__line_id"]')?.value || null;
                     if (!id) return;
-
-                    const scheduleId = f.querySelector('select[name="schedule_id"]')?.value || null;
+                    const userId = f.querySelector('select[name="user_id"]')?.value || null;
                     const dow = f.querySelector('select[name="dow"]')?.value ?? '';
                     const school = f.querySelector('input[name="school_name"]')?.value ?? '';
                     const st = f.querySelector('input[name="start_time"]')?.value ?? '';
                     const et = f.querySelector('input[name="end_time"]')?.value ?? '';
                     const es = f.querySelector('input[name="effective_start"]')?.value ?? '';
                     const ee = f.querySelector('input[name="effective_end"]')?.value ?? '';
-                    const memo = f.querySelector('textarea[name="handover_memo"]')?.value ?? ''; // ★ 追加：メモ
-
+                    const memo = f.querySelector('textarea[name="handover_memo"]')?.value ?? '';
                     items.push({
                         id: Number(id),
-                        schedule_id: scheduleId === '' ? null : scheduleId,
+                        user_id: userId === '' ? null : Number(userId),
                         dow: dow === '' ? null : Number(dow),
                         school_name: school,
-                        start_time: st, // 'HH:MM'
-                        end_time: et, // 'HH:MM'
+                        start_time: st,
+                        end_time: et,
                         effective_start: es,
                         effective_end: ee,
-                        handover_memo: memo, // ★ 追加：メモ
+                        handover_memo: memo,
                     });
-                } catch (e) {
-                    console.warn('collect error:', e);
-                }
+                } catch (e) { console.warn('collect error:', e); }
             });
 
-            if (!items.length) {
-                showFlash('保存対象がありません。', 'danger');
-                return;
-            }
+            if (!items.length) { showFlash('保存対象がありません。', 'danger'); return; }
 
             try {
                 const res = await fetch(`{{ route('schedule_lines.bulk_update') }}`, {
@@ -673,23 +549,16 @@
                         'X-Requested-With': 'XMLHttpRequest',
                         'X-CSRF-TOKEN': csrf,
                     },
-                    body: JSON.stringify({
-                        items
-                    }),
+                    body: JSON.stringify({ items }),
                 });
-                const data = await res.json().catch(() => ({
-                    ok: false,
-                    message: 'Unexpected response'
-                }));
-
+                const data = await res.json().catch(() => ({ ok: false, message: 'Unexpected response' }));
                 if (res.ok && (data.ok || data.updated > 0)) {
                     if (data.errors && data.errors.length) {
                         const list = data.errors.map(e => `#${e.id ?? '-'}: ${e.messages.join(' / ')}`).join('<br>');
                         showFlash(`${data.message}<br>${list}`, 'warning');
                     } else {
                         persistFlash(data.message || '一括保存が完了しました。', 'success');
-                        const currentUrl = new URL(window.location.href); // クエリ維持
-                        window.location.href = currentUrl.toString();
+                        window.location.href = new URL(window.location.href).toString();
                         return;
                     }
                 } else {

@@ -249,9 +249,9 @@ class User extends Authenticatable
         return $state === 'active';
     }
 
-    public function schedules(): HasMany
+    public function scheduleLines(): HasMany
     {
-        return $this->hasMany(Schedule::class);
+        return $this->hasMany(ScheduleLine::class);
     }
 
     public function expenseReports()

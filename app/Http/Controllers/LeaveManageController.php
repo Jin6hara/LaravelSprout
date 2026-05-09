@@ -63,7 +63,8 @@ public function edit(Request $request)
     // 4) クエリ（Event版と同順序・構成）
     $leaves = Leave::query()
         ->with(['user:id,first_name,family_name,employee_code'])
-        ->whereIn('user_id', $this->scopeService->targetUserIds())
+        ->where('district_id', $this->scopeService->currentDistrictId())
+        ->where('department_id', $this->scopeService->currentDepartmentId())
         ->when($leaveId,     fn($q) => $q->where('id', $leaveId)) // ★個別編集用パラメータ: leave_id があれば最優先で一意絞り込み
         ->when($userId,      fn($q) => $q->where('user_id', $userId))
         ->when($kind,        fn($q) => $q->where('kind', $kind))
@@ -211,16 +212,18 @@ public function edit(Request $request)
 
         // デフォルト値（必要ならここを調整）
         $leave = Leave::create([
-            'user_id'      => null,
-            'start_date'   => $data['start_date'],
-            'end_date'     => null,
-            'reason'       => null,
-            'kind'         => 'special',
-            'excused'      => 'excused',
-            'time_start'   => null,
-            'time_end'     => null,
-            'handle_type'  => null,
-            'status'       => 'approved',
+            'user_id'       => null,
+            'start_date'    => $data['start_date'],
+            'end_date'      => null,
+            'reason'        => null,
+            'kind'          => 'special',
+            'excused'       => 'excused',
+            'time_start'    => null,
+            'time_end'      => null,
+            'handle_type'   => null,
+            'status'        => 'approved',
+            'district_id'   => $this->scopeService->currentDistrictId(),
+            'department_id' => $this->scopeService->currentDepartmentId(),
         ]);
 
         return back()->with('toast', "Leave created at {$leave->start_date->format('Y-m-d')}.");

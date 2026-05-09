@@ -23,9 +23,13 @@ class CalendarController extends Controller
             abort(403);
         }
 
-        // ★ 追加：管理者だけにセレクト用リストを渡す（一般は空のコレクション）
+        // 管理者だけにセレクト用リストを渡す（district/department で直接絞り込み）
         $userOptions = $viewer->hasRole(['admin', 'super_admin'])
-            ? $this->scopeService->targetUserQuery()
+            ? User::query()
+                ->when($this->scopeService->currentDistrictId(),
+                    fn($q, $did) => $q->where('district_id', $did))
+                ->when($this->scopeService->currentDepartmentId(),
+                    fn($q, $dep) => $q->where('department_id', $dep))
                 ->select('id', 'first_name', 'family_name', 'employee_code')
                 ->orderBy('employee_code')
                 ->limit(500)
@@ -47,9 +51,17 @@ class CalendarController extends Controller
 
             $targetUserId = (int) $request->query('user_id', $viewer->id);
             if (!$viewer->hasRole(['admin', 'super_admin']) && $targetUserId !== $viewer->id) abort(403);
-            $user = $viewer->hasRole(['admin', 'super_admin'])
-                ? $this->scopeService->targetUserQuery()->findOrFail($targetUserId)
-                : User::findOrFail($targetUserId);
+
+            $user = User::findOrFail($targetUserId);
+
+            // admin: district/department スコープ内ユーザーのみ閲覧可
+            if ($viewer->hasRole(['admin', 'super_admin'])) {
+                $did = $this->scopeService->currentDistrictId();
+                $dep = $this->scopeService->currentDepartmentId();
+                if (($did && $user->district_id !== $did) || ($dep && $user->department_id !== $dep)) {
+                    abort(404);
+                }
+            }
 
             $events = $resolver->build($user, $start, $end);
             return response()->json($events);

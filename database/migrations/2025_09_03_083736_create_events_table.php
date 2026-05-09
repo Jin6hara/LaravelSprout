@@ -35,7 +35,7 @@ return new class extends Migration
                 ->constrained('leaves')              // ← references + on をまとめて書ける
                 ->cascadeOnDelete();                 // ← Leave 削除時に関連イベントも削除
             $t->timestamps();
-            // 重複防止の最低限（完全な“時間かぶり”はアプリ層で検証）
+            // 重複防止の最低限（完全な”時間かぶり”はアプリ層で検証）
             $t->index(['assigned_user_id', 'event_date', 'start_time', 'end_time'], 'events_user_date_time_idx');
             $t->index(['source_leave_id', 'event_date'], 'events_leave_date_idx');
         });

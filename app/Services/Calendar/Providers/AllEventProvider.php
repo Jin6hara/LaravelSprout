@@ -18,18 +18,18 @@ class AllEventProvider implements CalendarEventProvider
      */
     public function provide(User $user, Carbon $start, Carbon $end): array
     {
-        // 現在の管理スコープ内ユーザーのみ対象にする
-        $targetUserIds = app(CurrentScopeService::class)->targetUserIds();
+        $scopeService = app(CurrentScopeService::class);
+        $districtId = $scopeService->currentDistrictId();
+        $departmentId = $scopeService->currentDepartmentId();
+
+        if ($districtId === null || $departmentId === null) {
+            return [];
+        }
 
         $rows = Event::query()
             ->whereBetween('event_date', [$start->toDateString(), $end->toDateString()])
-            ->where(function ($q) use ($targetUserIds) {
-                $q->whereIn('original_user_id', $targetUserIds)
-                  ->orWhere(function ($q2) use ($targetUserIds) {
-                      $q2->whereNull('original_user_id')
-                         ->whereIn('assigned_user_id', $targetUserIds);
-                  });
-            })
+            ->where('district_id', $districtId)
+            ->where('department_id', $departmentId)
             ->with([
                 'details.lesson',
                 'originalUser:id,first_name,family_name',

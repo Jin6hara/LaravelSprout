@@ -5,10 +5,10 @@ namespace App\Services\Calendar;
 use App\Models\Event;
 use App\Models\EventDetail;
 use App\Models\Leave;
+use App\Models\ScheduleLine;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
-use App\Models\Schedule; // 直付けスキーマ対応（Schedule を直接参照）
 
 class LeaveSnapshotService
 {
@@ -56,27 +56,18 @@ class LeaveSnapshotService
         $ymd    = $date->toDateString();
         $skipSubs = true; // ← OFFにしたいときは false に
 
-        // ▼ assignments を使わず、schedules.user_id 直付け＋期間で取得
-        $sch = Schedule::with(['lines.details', 'lines.details.lesson'])
+        // ▼ schedule_lines.user_id で直接取得
+        $lines = ScheduleLine::with(['details', 'details.lesson'])
             ->where('user_id', $userId)
             ->whereDate('effective_start', '<=', $ymd)
             ->whereDate('effective_end', '>=', $ymd)
-            ->first();
+            ->where('dow', $dow)
+            ->get()
+            ->values();
 
-        if (!$sch) {
+        if ($lines->isEmpty()) {
             return; // 割当なし → スナップショット対象なし
         }
-
-        /** @var \Illuminate\Support\Collection<int,\App\Models\ScheduleLine> $lines */
-        $lines = $sch->lines
-            ->filter(function ($ln) use ($dow, $ymd) {
-                // DOW一致 + effective_start <= 日付 <= (effective_end or null=無期限)
-                $okDow = (int)$ln->dow === (int)$dow;
-                $okStart = $ln->effective_start && $ln->effective_start->toDateString() <= $ymd;
-                $okEnd   = is_null($ln->effective_end) || $ln->effective_end->toDateString() >= $ymd;
-                return $okDow && $okStart && $okEnd;
-            })
-            ->values();
 
         if ($skipSubs) {
             $existsInSubs = DB::table('subs')
@@ -99,7 +90,7 @@ class LeaveSnapshotService
         foreach ($lines as $line) {
             // Subシフトはスナップショット対象外
             $school = (string)($line->school_name ?? '');
-            if (strcasecmp(trim($school), 'sub') === 0) {  // ← 完全一致（大文字小文字無視）
+            if (strcasecmp(trim($school), 'sub') === 0) {
                 continue;
             }
 
@@ -108,35 +99,37 @@ class LeaveSnapshotService
             }
 
             // event 作成
+            $originalUser  = \App\Models\User::find($userId);
+            $districtId    = $originalUser?->district_id ?? $leave->district_id;
+            $departmentId  = $originalUser?->department_id ?? $leave->department_id;
+
             $event = Event::create([
                 'event_date'              => $ymd,
                 'title'                   => 'Cover Shift',
                 'school_name'             => $line->school_name,
-                'start_time'              => substr($line->start_time, 0, 8), // H:i[:s]対策で正規化
+                'start_time'              => substr($line->start_time, 0, 8),
                 'end_time'                => substr($line->end_time,   0, 8),
                 'type'                    => 'regular_time',
-                'assigned_user_id'        => null, // 後ほどSubシフトに担当してもらう
+                'assigned_user_id'        => null,
                 'original_user_id'        => $userId,
                 'Leave_type'              => (string) $leave->kind,
                 'source_schedule_line_id' => $line->id,
                 'source_leave_id'         => $leave->id,
-                'status'                  => 'pending', // 後ほどSubシフトに担当してもらう  
+                'status'                  => 'pending',
                 'notes'                   => null,
+                'district_id'             => $districtId,
+                'department_id'           => $departmentId,
             ]);
 
             // details コピー（start_time / lesson_id をスナップショットに保持）
-            $lessonCodes = []; // ← lesson_code 収集用
-
-            // ★ 同一event内で (start_time, lesson_id) の重複を防止
+            $lessonCodes = [];
             $seen = [];
 
             foreach ($line->details as $d) {
-                // ★ detail も effective_start / effective_end の期間に絞る
                 $okStart = $d->effective_start && $d->effective_start->toDateString() <= $ymd;
                 $okEnd   = is_null($d->effective_end) || $d->effective_end->toDateString() >= $ymd;
                 if (!($okStart && $okEnd)) continue;
 
-                // line 時間帯内の detail のみ（WorkProvider と同じ基準）
                 $startHm = $d->start_time ? substr($d->start_time, 0, 5) : null;
                 if (!$startHm) continue;
 
@@ -149,7 +142,6 @@ class LeaveSnapshotService
                 $le = $toMin($lineEndHm);
 
                 if ($m !== null && $ls !== null && $le !== null && $m >= $ls && $m <= $le) {
-                    // ★ event_details のユニーク制約 (event_id, start_time, lesson_id) 対策
                     $k = $d->start_time . '-' . $d->lesson_id;
                     if (isset($seen[$k])) {
                         continue;
@@ -163,7 +155,6 @@ class LeaveSnapshotService
                         'lesson_id'          => $d->lesson_id,
                     ]);
 
-                    // lesson_code を取得して配列に追加
                     $code = $d->lesson?->lesson_code;
                     if ($code) {
                         $lessonCodes[] = $code;
@@ -171,7 +162,6 @@ class LeaveSnapshotService
                 }
             }
 
-            // Lesson列に "AAA, BBB, CCC" のように保存
             if (!empty($lessonCodes)) {
                 $event->Lesson = implode(', ', $lessonCodes);
                 $event->save();

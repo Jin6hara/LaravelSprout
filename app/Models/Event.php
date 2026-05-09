@@ -29,6 +29,8 @@ class Event extends Model
         'notes',
         'source_schedule_line_id',
         'source_leave_id',
+        'district_id',
+        'department_id',
     ];
 
     protected $casts = [

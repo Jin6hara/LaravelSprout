@@ -251,14 +251,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/lessons/by-code/{code}', [ScheduleDetailController::class, 'findLessonByCode'])->name('lessons.by_code');
 });
 
-use App\Http\Controllers\ScheduleController;
-
-Route::middleware(['auth'])->group(function () {
-    Route::get('/schedules', [ScheduleController::class, 'index'])->name('schedules.index');
-    Route::put('/schedules/{schedule}', [ScheduleController::class, 'update'])->name('schedules.update');
-    Route::post('/schedules', [ScheduleController::class, 'store'])->name('schedules.store');
-    Route::delete('/schedules/{schedule}', [ScheduleController::class, 'destroy'])->name('schedules.destroy');
-});
 
 use App\Http\Controllers\CommuterPassAdvisorController;
 
@@ -375,13 +367,6 @@ Route::get('/cvs/schedule_line', [ScheduleLineCsvController::class, 'form'])
 Route::post('/cvs/schedule_line/import', [ScheduleLineCsvController::class, 'import'])
     ->name('cvs.schedule_line.import');
 
-use App\Http\Controllers\UserScheduleCsvController;
-
-Route::get('/csv/user_schedule', [UserScheduleCsvController::class, 'form'])
-    ->name('csv.user_schedule.form');
-
-Route::post('/csv/user_schedule/import', [UserScheduleCsvController::class, 'import'])
-    ->name('csv.user_schedule.import');
 
 use App\Http\Controllers\UserScheduleLineController;
 
