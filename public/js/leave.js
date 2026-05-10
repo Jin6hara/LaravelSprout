@@ -1,12 +1,17 @@
 document.addEventListener('DOMContentLoaded', function () {
+    const storedView = localStorage.getItem('leaveCalendarView');
+    const savedView = ['dayGridMonth', 'listMonth'].includes(storedView)
+        ? storedView
+        : 'dayGridMonth';
+    const savedDate = localStorage.getItem('leaveCalendarDate') || window.initialDate;
     const calendarEl = document.getElementById('calendar');
     console.log('[] loaded - leave.js:3');
 
     // ▼▼ FullCalendar 初期化（基本のみ）▼▼
     const calendar = new FullCalendar.Calendar(calendarEl, {
         locale: 'en',
-        initialView: 'dayGridMonth',
-        initialDate: window.initialDate,
+        initialView: savedView,
+        initialDate: savedDate,
         height: 'auto',
         firstDay: 0,
         slotDuration: '00:10:00',
@@ -14,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function () {
         slotMinTime: '09:00:00',
         slotMaxTime: '23:00:00',
         eventOrder: "extendedProps.category,title,start",
-        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,listWeek' },
+        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,listMonth' },
         dayMaxEventRows: true,
         navLinks: true,
         displayEventTime: false, //Listの時間を表示しない
@@ -23,10 +28,19 @@ document.addEventListener('DOMContentLoaded', function () {
         editable: false,
 
         views: {
-            listWeek: {
-                listDayFormat: { weekday: 'long' },
-                listDaySideFormat: { month: 'short', day: 'numeric' }
+            listMonth: {
+                listDayFormat: {
+                    weekday: 'long',
+                    month: 'short',
+                    day: 'numeric'
+                },
+                listDaySideFormat: false
             }
+        },
+
+        datesSet(info) {
+            localStorage.setItem('leaveCalendarView', info.view.type);
+            localStorage.setItem('leaveCalendarDate', info.startStr);
         },
 
         events: {

@@ -1,10 +1,10 @@
 document.addEventListener('DOMContentLoaded', function () {
+    const storedView = localStorage.getItem('forecastCalendarView');
+    const savedView = ['dayGridMonth', 'listWeek'].includes(storedView)
+        ? storedView
+        : 'dayGridMonth';
+    const savedDate = localStorage.getItem('forecastCalendarDate') || window.initialDate;
     const calendarEl = document.getElementById('calendar');
-    console.log('[] loaded - forecast.js:3');
-    function openSubModal(ev) {
-        console.log('[] openSubModal - forecast.js:5', ev.extendedProps);
-    }
-
     // ▼▼ Total Subs 明細モーダル ▼▼
     function openSubModal(ev) {
         const p = ev.extendedProps || {};
@@ -101,8 +101,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // ▼▼ FullCalendar 初期化 ▼▼
     const calendar = new FullCalendar.Calendar(calendarEl, {
         locale: 'en',
-        initialView: 'dayGridMonth',
-        initialDate: window.initialDate,
+        initialView: savedView,
+        initialDate: savedDate,
         height: 'auto',
         firstDay: 0,
         slotDuration: '00:10:00',
@@ -117,14 +117,23 @@ document.addEventListener('DOMContentLoaded', function () {
         displayEventTime: false, //Listの時間を表示しない
         nowIndicator: true,
         validRange: { start: '2025-04-01', end: '' },
-        editable: true, //eventDrop: (info) => updateEvent(info.event), // ← updateもできるらしい
+        editable: false,
         //その他面白い機能：selectable, selectMirror, dayMaxEvents, weekends, businessHours, etc.
 
         views: {
             listWeek: {
-                listDayFormat: { weekday: 'long' }, // Monday のように
-                listDaySideFormat: { month: 'short', day: 'numeric' } // Jan 1 のように
+                listDayFormat: {
+                    weekday: 'long',
+                    month: 'short',
+                    day: 'numeric'
+                },
+                listDaySideFormat: false
             }
+        },
+
+        datesSet(info) {
+            localStorage.setItem('forecastCalendarView', info.view.type);
+            localStorage.setItem('forecastCalendarDate', info.startStr);
         },
 
         events: {
