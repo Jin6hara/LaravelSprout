@@ -17,10 +17,18 @@ class CalendarController extends Controller
     public function index(Request $request, ?User $user = null)
     {
         $viewer = Auth::user();
-        $viewUser = $user ?? $viewer; // 自分
-        // general は自分のみ、admin/super_admin は誰でも
-        if (!$viewer->hasRole(['admin', 'super_admin']) && $viewUser->id !== $viewer->id) {
+        $isAdmin = $viewer->hasRole(['admin', 'super_admin']);
+        $viewUser = $user ?? ($isAdmin ? null : $viewer);
+        if (!$isAdmin && ($viewUser?->id !== $viewer->id)) {
             abort(403);
+        }
+
+        // スコープが切り替わった後に古いユーザーのURLが残っている場合はリセット
+        if ($isAdmin && $viewUser !== null) {
+            $currentDid = $this->scopeService->currentDistrictId();
+            if ($currentDid !== null && $viewUser->district_id !== $currentDid) {
+                return redirect()->route('calendar.index');
+            }
         }
 
         // 管理者だけにセレクト用リストを渡す（district/department で直接絞り込み）
@@ -49,19 +57,22 @@ class CalendarController extends Controller
             $start = Carbon::parse($request->query('start', now()->startOfYear()))->startOfDay();
             $end   = Carbon::parse($request->query('end',   now()->endOfYear()))->endOfDay();
 
+            $rawUserId = $request->query('user_id');
+            $noUserSelected = $rawUserId === null || $rawUserId === '' || $rawUserId === 'null' || (int)$rawUserId <= 0;
+
+            if ($noUserSelected && $viewer->hasRole(['admin', 'super_admin'])) {
+                $holidays = app(\App\Services\Calendar\Providers\HolidayProvider::class)->provide($viewer, $start, $end);
+                $closures = app(\App\Services\Calendar\Providers\ClosureProvider::class)->provide($viewer, $start, $end);
+                $holidayDates = array_flip(array_map(fn($e) => $e->dateKey, $holidays));
+                $filteredClosures = array_filter($closures, fn($e) => !isset($holidayDates[$e->dateKey]));
+                $events = array_map(fn($e) => $e->toArray(), array_merge($holidays, array_values($filteredClosures)));
+                return response()->json($events);
+            }
+
             $targetUserId = (int) $request->query('user_id', $viewer->id);
             if (!$viewer->hasRole(['admin', 'super_admin']) && $targetUserId !== $viewer->id) abort(403);
 
             $user = User::findOrFail($targetUserId);
-
-            // admin: district/department スコープ内ユーザーのみ閲覧可
-            if ($viewer->hasRole(['admin', 'super_admin'])) {
-                $did = $this->scopeService->currentDistrictId();
-                $dep = $this->scopeService->currentDepartmentId();
-                if (($did && $user->district_id !== $did) || ($dep && $user->department_id !== $dep)) {
-                    abort(404);
-                }
-            }
 
             $events = $resolver->build($user, $start, $end);
             return response()->json($events);

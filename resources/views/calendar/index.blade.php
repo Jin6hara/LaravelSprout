@@ -5,7 +5,7 @@
   <h2 class="mb-0">Schedule</h2>
   {{-- 役割ヒント --}}
   @role('admin|super_admin')
-  <span class="badge text-bg-primary">Admin View: {{ $viewUser->name ?? ('ID:'.$viewUser->id) }}</span>
+  <span class="badge text-bg-primary">Admin View: {{ $viewUser ? ($viewUser->name ?? 'ID:'.$viewUser->id) : '（未選択）' }}</span>
   @else
   <span class="badge text-bg-secondary">Schedule</span>
   @endrole
@@ -35,7 +35,7 @@
         <option value="">（選択）</option>
         @foreach($userOptions as $u)
           <option value="{{ $u->employee_code }}"
-            @selected((string)($viewUser->employee_code) === (string)$u->employee_code)>
+            @selected($viewUser && (string)$viewUser->employee_code === (string)$u->employee_code)>
             {{ $u->first_name }} {{ $u->family_name }} [{{ $u->employee_code }}]
           </option>
         @endforeach
@@ -75,7 +75,7 @@
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js"></script>
 <script>
   window.calendarEventsUrl = "{{ route('calendar.events') }}";
-  window.calendarUserId    = @json($viewUser->id);
+  window.calendarUserId    = @json($viewUser?->id);
   window.initialDate       = "{{ request('month', now()->format('Y-m')) }}";
 </script>
 <script src="{{ asset('js/fullcalendar.js') }}"></script>

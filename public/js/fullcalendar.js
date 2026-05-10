@@ -45,8 +45,8 @@ document.addEventListener('DOMContentLoaded', function () {
         editable: false,
         events: {
             url: window.calendarEventsUrl, // テンプレート埋め込み用
-            extraParams: { user_id: window.calendarUserId }, // テンプレート埋め込み用
-            failure: () => alert('イベント取得に失敗しました'),
+            extraParams: window.calendarUserId != null ? { user_id: window.calendarUserId } : {}, // テンプレート埋め込み用
+            failure: () => console.warn('Calendar: イベントの取得に失敗しました'),
             error: (xhr) => console.error('FC error:', xhr?.xhr?.responseText || xhr)
         },
         // 週の日付表示制御
