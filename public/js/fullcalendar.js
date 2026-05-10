@@ -1,9 +1,9 @@
 document.addEventListener('DOMContentLoaded', function () {
-    const storedView = localStorage.getItem('forecastCalendarView');
+    const storedView = localStorage.getItem('userCalendarView');
     const savedView = ['dayGridMonth', 'listWeek'].includes(storedView)
         ? storedView
         : 'dayGridMonth';
-    const savedDate = localStorage.getItem('forecastCalendarDate') || window.initialDate;
+    const savedDate = localStorage.getItem('userCalendarDate') || window.initialDate;
 
     // ▼▼ これによりLessonの終了時間を計算 ▼▼
     // HH:MM 形式の文字列に分数を加算して HH:MM 形式で返す
@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', function () {
         events: {
             url: window.calendarEventsUrl, // テンプレート埋め込み用
             extraParams: window.calendarUserId != null ? { user_id: window.calendarUserId } : {}, // テンプレート埋め込み用
-            failure: () => console.warn('Calendar: イベントの取得に失敗しました'),
+            failure: () => alert('イベント取得に失敗しました'),
             error: (xhr) => console.error('FC error:', xhr?.xhr?.responseText || xhr)
         },
 
@@ -78,8 +78,8 @@ document.addEventListener('DOMContentLoaded', function () {
         },
 
         datesSet(info) {
-            localStorage.setItem('forecastCalendarView', info.view.type);
-            localStorage.setItem('forecastCalendarDate', info.startStr);
+            localStorage.setItem('userCalendarView', info.view.type);
+            localStorage.setItem('userCalendarDate', info.startStr);
         },
 
         eventContent: function (arg) {
@@ -129,7 +129,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }   // ▲▲ 詳細がないときは従来の簡易情報 ▲▲
 
             document.getElementById('eventModalBody').innerHTML = html;
-            const modal = new bootstrap.Modal(document.getElementById('eventModal'));
+            const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('eventModal'));
             modal.show();
         }
     });

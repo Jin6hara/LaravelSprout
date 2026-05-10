@@ -1,6 +1,9 @@
 document.addEventListener('DOMContentLoaded', function () {
-    const savedView = localStorage.getItem('forecastCalendarView') || 'dayGridMonth';
-    const savedDate = localStorage.getItem('forecastCalendarDate') || window.initialDate;
+    const storedView = localStorage.getItem('leaveCalendarView');
+    const savedView = ['dayGridMonth', 'listMonth'].includes(storedView)
+        ? storedView
+        : 'dayGridMonth';
+    const savedDate = localStorage.getItem('leaveCalendarDate') || window.initialDate;
     const calendarEl = document.getElementById('calendar');
     console.log('[] loaded - leave.js:3');
 
@@ -25,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function () {
         editable: false,
 
         views: {
-            listWeek: {
+            listMonth: {
                 listDayFormat: {
                     weekday: 'long',
                     month: 'short',
@@ -36,8 +39,8 @@ document.addEventListener('DOMContentLoaded', function () {
         },
 
         datesSet(info) {
-            localStorage.setItem('forecastCalendarView', info.view.type);
-            localStorage.setItem('forecastCalendarDate', info.startStr);
+            localStorage.setItem('leaveCalendarView', info.view.type);
+            localStorage.setItem('leaveCalendarDate', info.startStr);
         },
 
         events: {
