@@ -54,15 +54,6 @@ class CalendarController extends Controller
 
             $user = User::findOrFail($targetUserId);
 
-            // admin: district/department スコープ内ユーザーのみ閲覧可
-            if ($viewer->hasRole(['admin', 'super_admin'])) {
-                $did = $this->scopeService->currentDistrictId();
-                $dep = $this->scopeService->currentDepartmentId();
-                if (($did && $user->district_id !== $did) || ($dep && $user->department_id !== $dep)) {
-                    abort(404);
-                }
-            }
-
             $events = $resolver->build($user, $start, $end);
             return response()->json($events);
         } catch (\Throwable $e) {
