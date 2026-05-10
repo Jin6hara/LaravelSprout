@@ -18,44 +18,23 @@
 
 @section('content')
 <div class="page-wrap">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h1 class="mb-0">
-        Commuting Expense Reports（{{ $y }}/{{ $m }}）
-      </h1>
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <h1 class="mb-0">
+      Commuting Expense Reports（{{ $y }}/{{ $m }}）
+    </h1>
 
-      @php $me = auth()->user(); @endphp
-      @if($me && $me->hasAnyRole(['admin','super_admin']))
-        <a href="{{ route('routes.report') }}"
-          class="btn btn-outline-primary btn-sm">
-          Route Declaration Report
-        </a>
-      @endif
-    </div>
+    @php $me = auth()->user(); @endphp
 
-  {{-- ▼ 月選択 + 自動生成ボタン行 --}}
-  <div class="d-flex justify-content-between align-items-center mb-3 gap-2">
-
-    {{-- 左側：月選択フォーム --}}
-    <form method="GET" class="d-flex align-items-center gap-2" id="monthForm">
-      <label for="monthPick" class="form-label m-0">Target Month</label>
-      <input type="month" id="monthPick" name="monthpick"
-        class="form-control form-control-sm" style="width:170px"
-        value="{{ sprintf('%04d-%02d', $y, $m) }}">
-      <button id="monthSearchBtn" class="btn btn-sm btn-outline-primary" type="button">Search</button>
-      <a class="btn btn-sm btn-outline-success ms-2" href="{{ route('commuter.advisor.index') }}">
-        Commuter Pass Advisor
-      </a>
-    </form>
-
-    {{-- 右側：管理者用ボタン群 --}}
-    @if(auth()->user()?->hasAnyRole(['admin','super_admin']))
+    {{-- 右側：管理者用 Generate / Cleanup ボタン群 --}}
+    @if($me && $me->hasAnyRole(['admin','super_admin']))
     <div class="d-flex align-items-center gap-2">
 
       {{-- ★ 自動生成（対象月の全ユーザー分のレポート＆日別行を作成） --}}
-      <form method="POST" action="{{ route('expenses.generateMonthly') }}">
+      <form method="POST" action="{{ route('expenses.generateMonthly') }}" class="mb-0">
         @csrf
         <input type="hidden" name="year" value="{{ $y }}">
         <input type="hidden" name="month" value="{{ $m }}">
+
         <button type="submit"
           class="btn btn-sm btn-outline-secondary"
           onclick="return confirm('Generate expense rows for all active users for {{ sprintf('%04d-%02d', $y, $m) }} ?');">
@@ -64,10 +43,11 @@
       </form>
 
       {{-- ★ 空行削除（note=null & cost=0） --}}
-      <form method="POST" action="{{ route('expenses.cleanupEmpty') }}">
+      <form method="POST" action="{{ route('expenses.cleanupEmpty') }}" class="mb-0">
         @csrf
         <input type="hidden" name="year" value="{{ $y }}">
         <input type="hidden" name="month" value="{{ $m }}">
+
         <button type="submit"
           class="btn btn-sm btn-outline-danger"
           onclick="return confirm('Delete empty expenses (note is NULL & cost = 0) for {{ sprintf('%04d-%02d', $y, $m) }} ?');">
@@ -77,6 +57,35 @@
 
     </div>
     @endif
+  </div>
+
+  {{-- ▼ 月選択 + 関連ページボタン行 --}}
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+
+    {{-- 月選択フォーム --}}
+    <form method="GET" class="d-flex flex-wrap align-items-center gap-2 mb-0" id="monthForm">
+      <label for="monthPick" class="form-label m-0">Target Month</label>
+
+      <input type="month" id="monthPick" name="monthpick"
+        class="form-control form-control-sm" style="width:170px"
+        value="{{ sprintf('%04d-%02d', $y, $m) }}">
+
+      <button id="monthSearchBtn" class="btn btn-sm btn-outline-primary" type="button">
+        Search
+      </button>
+    </form>
+
+    {{-- Route Declaration Report --}}
+    @if($me && $me->hasAnyRole(['admin','super_admin']))
+    <a href="{{ route('routes.report') }}"
+      class="btn btn-outline-primary mb-2 btn-sm ms-lg-auto">
+      Route Declaration Report
+    </a>
+    <a class="btn btn-sm mb-2 btn-outline-success" href="{{ route('commuter.advisor.index') }}">
+      Commuter Pass Advisor
+    </a>
+    @endif
+
   </div>
 
   <div class="header-box mb-4">
