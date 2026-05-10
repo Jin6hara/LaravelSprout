@@ -7,28 +7,31 @@
 </div>
 
 {{-- 検索フォーム --}}
+{{-- 検索フォーム --}}
 <form method="GET" class="card mb-3 p-3">
     <div class="row g-3 align-items-end">
-        <div class="col-md-2">
+        <div class="col-12 col-md-3 col-lg-2">
             <label class="form-label small mb-1">From</label>
             <input type="date" name="from" class="form-control form-control-sm"
                 value="{{ old('from', $from) }}">
         </div>
 
-        <div class="col-md-2">
+        <div class="col-12 col-md-3 col-lg-2">
             <label class="form-label small mb-1">To</label>
             <input type="date" name="to" class="form-control form-control-sm"
                 value="{{ old('to', $to) }}">
         </div>
 
-        <div class="col-md-1">
+        <div class="col-12 col-md-3 col-lg-2">
             <label class="form-label small mb-1">Min Count</label>
             <input type="number" name="min_count" min="1" class="form-control form-control-sm"
                 value="{{ old('min_count', $min) }}">
         </div>
 
-        <div class="col-md-1 text-end">
-            <button type="submit" class="btn btn-sm btn-outline-primary w-100">Search</button>
+        <div class="col-12 col-md-3 col-lg-2">
+            <button type="submit" class="btn btn-sm btn-outline-primary w-100">
+                Search
+            </button>
         </div>
     </div>
 </form>

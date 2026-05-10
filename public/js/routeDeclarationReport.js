@@ -21,17 +21,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 r.effective_date || '',
                 r.closest_station || '',
             ]);
+            // スマホ横スクロール：jSpreadsheet の外側をラップ
+            const scrollWrapper = document.createElement('div');
+            scrollWrapper.style.cssText = 'width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;';
+            sheetContainer.parentNode.insertBefore(scrollWrapper, sheetContainer);
+            scrollWrapper.appendChild(sheetContainer);
+
             jspreadsheet(sheetContainer, {
                 worksheets: [
                     {
                         data,
                         columns: [
                             { type: 'text', title: 'Employee Code', width: 120, readOnly: true },
-                            { type: 'text', title: 'Name', width: 220, readOnly: true },
-                            { type: 'text', title: 'Status', width: 120, readOnly: true },
-                            { type: 'text', title: 'Submitted At', width: 160, readOnly: true },
-                            { type: 'text', title: 'Effective Date', width: 130, readOnly: true },
-                            { type: 'text', title: 'Closest Station', width: 200, readOnly: true },
+                            { type: 'text', title: 'Name', width: 291, readOnly: true },
+                            { type: 'text', title: 'Status', width: 170, readOnly: true },
+                            { type: 'text', title: 'Submitted At', width: 170, readOnly: true },
+                            { type: 'text', title: 'Effective Date', width: 170, readOnly: true },
+                            { type: 'text', title: 'Closest Station', width: 320, readOnly: true },
                         ],
                         columnDrag: false,
                         allowInsertColumn: false,

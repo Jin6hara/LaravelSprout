@@ -39,8 +39,10 @@ document.addEventListener('DOMContentLoaded', function () {
         },
 
         datesSet(info) {
+            const d = info.view.currentStart;
+            const localDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
             localStorage.setItem('leaveCalendarView', info.view.type);
-            localStorage.setItem('leaveCalendarDate', info.startStr);
+            localStorage.setItem('leaveCalendarDate', localDate);
         },
 
         events: {
