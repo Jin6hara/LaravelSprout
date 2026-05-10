@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', function () {
+    const savedView = localStorage.getItem('forecastCalendarView') || 'dayGridMonth';
+    const savedDate = localStorage.getItem('forecastCalendarDate') || window.initialDate;
     const calendarEl = document.getElementById('calendar');
     console.log('[] loaded - forecast.js:3');
     function openSubModal(ev) {
@@ -101,8 +103,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // ▼▼ FullCalendar 初期化 ▼▼
     const calendar = new FullCalendar.Calendar(calendarEl, {
         locale: 'en',
-        initialView: 'dayGridMonth',
-        initialDate: window.initialDate,
+        initialView: savedView,
+        initialDate: savedDate,
         height: 'auto',
         firstDay: 0,
         slotDuration: '00:10:00',
@@ -122,9 +124,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
         views: {
             listWeek: {
-                listDayFormat: { weekday: 'long' }, // Monday のように
-                listDaySideFormat: { month: 'short', day: 'numeric' } // Jan 1 のように
+                listDayFormat: {
+                    weekday: 'long',
+                    month: 'short',
+                    day: 'numeric'
+                },
+                listDaySideFormat: false
             }
+        },
+
+        datesSet(info) {
+            localStorage.setItem('forecastCalendarView', info.view.type);
+            localStorage.setItem('forecastCalendarDate', info.startStr);
         },
 
         events: {

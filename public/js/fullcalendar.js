@@ -1,4 +1,10 @@
 document.addEventListener('DOMContentLoaded', function () {
+    const storedView = localStorage.getItem('forecastCalendarView');
+    const savedView = ['dayGridMonth', 'listWeek'].includes(storedView)
+        ? storedView
+        : 'dayGridMonth';
+    const savedDate = localStorage.getItem('forecastCalendarDate') || window.initialDate;
+
     // ▼▼ これによりLessonの終了時間を計算 ▼▼
     // HH:MM 形式の文字列に分数を加算して HH:MM 形式で返す
     function addMinutesToHHMM(hhmm, minutes) {
@@ -17,52 +23,72 @@ document.addEventListener('DOMContentLoaded', function () {
     const calendarEl = document.getElementById('calendar');
     const calendar = new FullCalendar.Calendar(calendarEl, {
         locale: 'en',
-        initialView: 'dayGridMonth',
-        initialDate: window.initialDate,
+        initialView: savedView,
+        initialDate: savedDate,
         height: 'auto',
         firstDay: 0,
+
         // 10分単位でスロットを区切る
         slotDuration: '00:10:00',
+
         // ラベルを 09:00, 09:10, … のように24h表記
         slotLabelFormat: {
             hour: '2-digit',
             minute: '2-digit',
             hour12: false
         },
+
         // 表示範囲を制限
         slotMinTime: '09:00:00',
         slotMaxTime: '23:00:00',
+
         eventOrder: "extendedProps.category,title,start",
+
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
-            right: 'dayGridMonth,timeGridWeek,listWeek'
+            // right: 'dayGridMonth,timeGridWeek,listWeek',
+            right: 'dayGridMonth,listWeek'
         },
+
         //buttonText: { today: '今日', month: '月', week: '週', day: '日', list: 'リスト' },
+
         dayMaxEventRows: true,
         navLinks: true,
         nowIndicator: true,
         editable: false,
+
         events: {
             url: window.calendarEventsUrl, // テンプレート埋め込み用
             extraParams: window.calendarUserId != null ? { user_id: window.calendarUserId } : {}, // テンプレート埋め込み用
             failure: () => console.warn('Calendar: イベントの取得に失敗しました'),
             error: (xhr) => console.error('FC error:', xhr?.xhr?.responseText || xhr)
         },
+
         // 週の日付表示制御
-        dayCellContent(info) {
-            if (info.view.type === 'dayGridMonth') {
-                return info.date.getDate();      // 月表示だけ日付数字
+        views: {
+            listWeek: {
+                listDayFormat: {
+                    weekday: 'long',
+                    month: 'short',
+                    day: 'numeric'
+                },
+                listDaySideFormat: false
             }
-            return { html: '' };               // timeGrid(週/日)では描画しない
         },
+
+        datesSet(info) {
+            localStorage.setItem('forecastCalendarView', info.view.type);
+            localStorage.setItem('forecastCalendarDate', info.startStr);
+        },
+
         eventContent: function (arg) {
             return { html: arg.event.title };
         },
 
         eventClick(info) {
-
             info.jsEvent.preventDefault();
+
             const e = info.event;
             const p = e.extendedProps || {};
             let html = `<div class="mb-2"><strong>${e.title}</strong></div>`;
@@ -83,7 +109,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 ${min != null ? `${min}分` : (d.lesson_type ?? '—')}
                 </span>`;
 
-                html += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                    html += `<li class="list-group-item d-flex justify-content-between align-items-center">
                     <span>${range} ${name}${code}</span>
                 ${badge}
                 </li>`;
@@ -93,8 +119,11 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 // ▼▼ 詳細がないときは従来の簡易情報 ▼▼
                 //html += `<div>Type: ${p.kind ?? ''}</div>`;
+
                 if (p.closure_code) html += `<div>Category: ${p.closure_code}</div>`;
+
                 const fmt = d => d ? d.toLocaleDateString('ja-JP') : '';
+
                 //if (e.start || e.end) html += `<div>日付：${fmt(e.start)}${e.end ? ' 〜 ' + fmt(e.end) : ''}</div>`; //endは使わないので削除
                 if (e.start || e.end) html += `<div>Date: ${fmt(e.start)}</div>`;
             }   // ▲▲ 詳細がないときは従来の簡易情報 ▲▲
@@ -104,5 +133,6 @@ document.addEventListener('DOMContentLoaded', function () {
             modal.show();
         }
     });
+
     calendar.render();
 });
