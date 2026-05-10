@@ -132,8 +132,10 @@ document.addEventListener('DOMContentLoaded', function () {
         },
 
         datesSet(info) {
+            const d = info.view.currentStart;
+            const localDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
             localStorage.setItem('forecastCalendarView', info.view.type);
-            localStorage.setItem('forecastCalendarDate', info.startStr);
+            localStorage.setItem('forecastCalendarDate', localDate);
         },
 
         events: {

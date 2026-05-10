@@ -78,8 +78,10 @@ document.addEventListener('DOMContentLoaded', function () {
         },
 
         datesSet(info) {
+            const d = info.view.currentStart;
+            const localDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
             localStorage.setItem('userCalendarView', info.view.type);
-            localStorage.setItem('userCalendarDate', info.startStr);
+            localStorage.setItem('userCalendarDate', localDate);
         },
 
         eventContent: function (arg) {
