@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function doSearch() {
         const v = monthInput?.value || '';
         if (!/^\d{4}-\d{2}$/.test(v)) {
-            alert('Please select a target month.');
+            showToast('Please select a target month.', 'warning');
             return;
         }
         const [yy, mm] = v.split('-');
@@ -39,6 +39,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
     btn?.addEventListener('click', (e) => { e.preventDefault(); doSearch(); });
     monthInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); doSearch(); } });
+
+    // ▼ 画面幅1300px以下のとき、フォームにだけ下部横スクロール
+    const monthForm = document.getElementById('monthForm');
+    function updateFormScrollStyle() {
+        if (!monthForm) return;
+        if (window.innerWidth <= 1300) {
+            monthForm.style.overflowX = 'auto';
+            monthForm.style.display = 'block';
+            monthForm.style.paddingBottom = '8px';
+        } else {
+            monthForm.style.overflowX = '';
+            monthForm.style.display = '';
+            monthForm.style.paddingBottom = '';
+        }
+    }
+    updateFormScrollStyle();
+    window.addEventListener('resize', updateFormScrollStyle);
 
     // === データ受け取り ===
     const dataEl = document.getElementById('expenseReportData');
@@ -82,6 +99,12 @@ document.addEventListener('DOMContentLoaded', function () {
     // === jSpreadsheet 初期化 ===
     const el = document.getElementById('sheet');
     if (!el) return;
+
+    // スマホ横スクロール：jSpreadsheet の外側をラップ
+    const scrollWrapper = document.createElement('div');
+    scrollWrapper.style.cssText = 'width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;';
+    el.parentNode.insertBefore(scrollWrapper, el);
+    scrollWrapper.appendChild(el);
 
     jspreadsheet(el, {
         worksheets: [{
