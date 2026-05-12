@@ -1,5 +1,33 @@
 @extends('layouts.app')
 
+@push('styles')
+<style>
+.details-edit-table {
+    font-size: 0.8125rem;
+}
+
+.details-edit-table th,
+.details-edit-table td {
+    padding: 0.25rem 0.35rem;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.details-edit-table .form-control-sm,
+.details-edit-table .form-select-sm {
+    min-height: 28px;
+    padding-top: 0.15rem;
+    padding-bottom: 0.15rem;
+    font-size: 0.8125rem;
+}
+
+.details-edit-table .btn-sm {
+    padding: 0.15rem 0.35rem;
+    font-size: 0.75rem;
+}
+</style>
+@endpush
+
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div class="card col-12 col-md-12 col-lg-12">
@@ -21,10 +49,6 @@
                     <div class="text-muted small">—</div>
                     @endif
                 </div>
-
-                <span class="badge text-bg-light text-truncate" style="max-width: 240px;">
-                    {{ $line->schedule->label ?? 'Not Assigned' }}
-                </span>
 
                 <span class="badge bg-secondary-subtle text-body-secondary">
                     {{ $dowOptions[$line->dow] ?? $line->dow }}
@@ -72,86 +96,81 @@
 @if($details->isEmpty())
 <div class="alert alert-secondary">このラインには明細がありません。</div>
 @else
-<div class="row g-2">
-    @foreach($details as $d)
-    @php
-    // 開始・終了の算出（既に導入済みの TimeString 利用）
-    $st = \App\Support\TimeString::normalizeToHm($d->start_time);
-    $minsVal = optional($d->lesson)->lesson_minute;
-    $mins = is_numeric($minsVal) ? (int)$minsVal : null;
-    $endCalc = ($st && $mins !== null) ? \App\Support\TimeString::addMinutesHm($st, $mins) : '';
+<div class="table-responsive">
+    <table class="table table-sm table-bordered align-middle details-edit-table">
+        <thead class="table-light">
+            <tr>
+                <th>Start</th>
+                <th>End</th>
+                <th>Code</th>
+                <th>Note</th>
+                <th>Effective</th>
+                <th>Until</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($details as $d)
+            @php
+            // 開始・終了の算出（既に導入済みの TimeString 利用）
+            $st = \App\Support\TimeString::normalizeToHm($d->start_time);
+            $minsVal = optional($d->lesson)->lesson_minute;
+            $mins = is_numeric($minsVal) ? (int)$minsVal : null;
+            $endCalc = ($st && $mins !== null) ? \App\Support\TimeString::addMinutesHm($st, $mins) : '';
 
-    // 期間（無ければ空文字）
-    $effStart = optional($d->effective_start)->toDateString() ?? '';
-    $effEnd = optional($d->effective_end)->toDateString() ?? '';
-    @endphp
+            // 期間（無ければ空文字）
+            $effStart = optional($d->effective_start)->toDateString() ?? '';
+            $effEnd = optional($d->effective_end)->toDateString() ?? '';
+            @endphp
 
-    <div class="col-12 col-md-12 col-lg-12">
-        <div class="card js-detail-row h-100" data-id="{{ $d->id }}">
-            <div class="card-body py-1">
-                <div class="row g-1">
-
-                    <div class="col-3 col-md-2 col-lg-1">
-                        <label class="form-label small mb-1">Start</label>
-                        <input type="time" class="form-control form-control-sm js-start-time" value="{{ $st }}">
+            <tr class="js-detail-row" data-id="{{ $d->id }}">
+                <td>
+                    <input type="time" class="form-control form-control-sm js-start-time" value="{{ $st }}">
+                </td>
+                <td>
+                    <input type="time" class="form-control form-control-sm js-end-time" value="{{ $endCalc }}" readonly>
+                </td>
+                <td>
+                    <select class="form-select form-select-sm js-lesson-code" style="min-width: 12rem;">
+                        <option value="">— Select —</option>
+                        @foreach($lessonOptions as $opt)
+                        <option value="{{ $opt->lesson_code }}"
+                            @selected(($d->lesson->lesson_code ?? '') === $opt->lesson_code)>
+                            {{ $opt->lesson_code }} — {{ $opt->lesson_name }}
+                        </option>
+                        @endforeach
+                    </select>
+                </td>
+                <td>
+                    <input type="text" class="form-control form-control-sm js-lesson-note"
+                        value="{{ $d->lesson->note ?? '' }}" style="min-width: 8rem;">
+                </td>
+                <td>
+                    <input type="date" class="form-control form-control-sm js-eff-start" value="{{ $effStart }}">
+                </td>
+                <td>
+                    <input type="date" class="form-control form-control-sm js-eff-end" value="{{ $effEnd }}">
+                </td>
+                <td>
+                    <div class="d-flex gap-1 flex-nowrap">
+                        <button type="button"
+                            class="btn btn-sm btn-outline-secondary js-copy-detail"
+                            data-copy-url="{{ route('schedule_details.copy', $d) }}">
+                            Copy
+                        </button>
+                        <button type="button"
+                            class="btn btn-sm btn-outline-danger js-delete-detail"
+                            data-delete-url="{{ route('schedule_details.destroy', $d) }}">
+                            Delete
+                        </button>
                     </div>
-
-                    <div class="col-3 col-md-2 col-lg-1">
-                        <label class="form-label small mb-1">End</label>
-                        <input type="time" class="form-control form-control-sm js-end-time" value="{{ $endCalc }}" readonly>
-                    </div>
-
-                    <div class="col-3 col-md-2 col-lg-2">
-                        <label class="form-label small mb-1">Code</label>
-                        <select class="form-select form-select-sm js-lesson-code">
-                            <option value="">— Select —</option>
-                            @foreach($lessonOptions as $opt)
-                            <option value="{{ $opt->lesson_code }}"
-                                @selected(($d->lesson->lesson_code ?? '') === $opt->lesson_code)>
-                                {{ $opt->lesson_code }} — {{ $opt->lesson_name }}
-                            </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div class="col-3 col-md-2 col-lg-2">
-                        <label class="form-label small mb-1">Note</label>
-                        <input type="text" class="form-control form-control-sm js-lesson-note"
-                            value="{{ $d->lesson->note ?? '' }}">
-                    </div>
-
-                    <div class="col-3 col-md-2 col-lg-2">
-                        <label class="form-label small mb-1">Effective</label>
-                        <input type="date" class="form-control form-control-sm js-eff-start" value="{{ $effStart }}">
-                    </div>
-
-                    <div class="col-3 col-md-2 col-lg-2">
-                        <label class="form-label small mb-1">Until</label>
-                        <input type="date" class="form-control form-control-sm js-eff-end" value="{{ $effEnd }}">
-                    </div>
-
-                    <div class="col-12 col-md-3 col-lg-2 d-flex align-items-end justify-content-start">
-                        <div class="btn-group btn-group-sm w-100">
-                            <button type="button"
-                                class="btn btn-outline-secondary js-copy-detail"
-                                data-copy-url="{{ route('schedule_details.copy', $d) }}">
-                                Copy
-                            </button>
-                            <button type="button"
-                                class="btn btn-outline-danger js-delete-detail"
-                                data-delete-url="{{ route('schedule_details.destroy', $d) }}">
-                                Delete
-                            </button>
-                        </div>
-                    </div>
-
                     {{-- ★ 追加：合計分は表示しないが、End再計算のため hidden で保持 --}}
                     <input type="hidden" class="js-total-min" value="{{ $mins ?? '' }}">
-                </div>
-            </div>
-        </div>
-    </div>
-    @endforeach
+                </td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
 </div>
 @endif
 @endsection

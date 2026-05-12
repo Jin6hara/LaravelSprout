@@ -22,8 +22,8 @@
     color: #cfcfcfff;
     align-items: center;
     justify-content: center;
-    height: 36px;
-    padding: 1px 5px !important;
+    height: 34px;
+    padding: 1px 4px !important;
     line-height: 1.1;
     white-space: normal;
     text-align: center;
@@ -36,49 +36,88 @@
     width: fit-content !important;
 }
 .navbar .btn-group .header-btn {
-    flex: 0 0 50px; /* ← ここだけ変更（幅は好みで 92〜110px くらいで調整） */
+    flex: 0 0 44px;
 }
 
 .navbar .nav-item {
-    margin-right: .25rem;
+    margin-right: 0.15rem;
 }
 
 .navbar .nav-item:last-child {
     margin-right: 0;
 }
 
-/* ===================== スマホ用 ===================== */
-@media (max-width: 768px) {
+/* ===================== タブレット・スマホ用（navbar-expand-lg に合わせて < 992px） ===================== */
+@media (max-width: 991.98px) {
 
-    .header-btn {
-        padding: 5px 5px !important;
-        margin: 2px 2px;
-    }
-
+    /* 横並び・折り返しで2列グリッドを実現 */
     .navbar-nav {
-        /* align-items: flex-start !important; */
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        align-items: stretch !important;
+        justify-content: center !important;
         width: 100%;
+        padding: 0.25rem 0;
+        margin: 0 !important;
     }
 
+    /* 単独ボタンは2列（50%幅） */
+    .navbar .nav-item {
+        width: 50%;
+        margin-right: 0;
+        margin-bottom: 2px;
+        box-sizing: border-box;
+        padding: 0 1px;
+    }
+
+    /* btn-group は2ボタン内包のため1列全幅 */
+    .navbar .nav-item:has(.btn-group) {
+        width: 100%;
+        padding: 0;
+    }
+
+    /* Log Out は1列全幅 */
+    .navbar .nav-item:has(form) {
+        width: 100%;
+        padding: 0;
+    }
+
+    /* 単独ボタンは全幅・中央揃え */
+    .header-btn {
+        width: 100%;
+        justify-content: center;
+        height: auto;
+        min-height: 34px;
+        padding: 0.35rem 0.6rem !important;
+        margin: 0;
+        white-space: nowrap;
+        text-align: center;
+    }
+
+    /* btn-group は全幅・均等分割 */
     .navbar .btn-group {
         display: flex;
         flex-wrap: nowrap;
-        justify-content: flex-start;
-        width: 100%;
+        width: 100% !important;
     }
 
     .navbar .btn-group .header-btn {
-        /* 横幅を均等に */
         flex: 1 1 0;
-        /* 改行禁止 */
-        white-space: nowrap;
-
-        height: 38px;
-        padding: 6px 6px !important;
-        display: inline-flex;
-        align-items: center;
         justify-content: center;
+        height: 38px;
+        padding: 0.35rem 0.4rem !important;
+        white-space: nowrap;
         min-width: 0;
+        text-align: center;
     }
 
+    /* モバイルでは <br> を非表示（1行表示） */
+    .header-btn br {
+        display: none;
+    }
+
+    /* 区切り線（generalHeader の nav-divider）は縦並び時に非表示 */
+    .nav-divider {
+        display: none !important;
+    }
 }
