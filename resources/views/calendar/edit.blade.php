@@ -38,8 +38,8 @@
     <input type="hidden" name="status" value="pending">
 
     <div class="card">
-      <div class="card-body p-2">
-        <div class="row g-2 align-items-end">
+      <div class="card-body py-1 px-2 light-blue">
+        <div class="row g-1 align-items-end">
           {{-- Original User --}}
           <div class="col-12 col-md-3 col-lg-3">
             <label class="form-label small mb-1">Original User</label>
@@ -86,8 +86,8 @@
   {{-- 検索フォーム -------------------------------------------------------------------------------------------}}
   <form method="GET" action="{{ route('calendar.edit') }}" class="search mb-2">
     <div class="card">
-      <div class="card-body p-2">
-        <div class="row g-2 align-items-end">
+      <div class="card-body py-1 px-2 light-blue">
+        <div class="row g-1 align-items-end">
 
           {{-- title（部分一致）--}}
           <div class="col-12 col-md-3">
@@ -251,7 +251,7 @@
           @csrf
           @method('PUT')
 
-          <div class="card-body p-2 light-blue">
+          <div class="card-body py-1 px-2 light-blue">
             <div class="mb-0 d-grid gap-0"> {{-- gapは下記四項目すべてに適用する --}}
               {{-- 0 --}}
               <div class="mb-0">
@@ -514,17 +514,9 @@
 
 @push('styles')
 <style>
-  /* ページ専用の薄青 */
-  .card-body.p-2.light-blue {
+  .card-body.light-blue {
     background-color: #eef6ff;
-    /* ごく淡い青 */
   }
-
-  /* 検索専用の薄青 */
-  .card-body.p-2 {
-    background-color: #eef6ff;
-    /* ごく淡い青 */
-  }  
 </style>
 @endpush
 

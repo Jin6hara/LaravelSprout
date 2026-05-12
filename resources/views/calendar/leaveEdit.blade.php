@@ -1,121 +1,122 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="mb-0">Leave Manager</h2>
+<div class="container py-3">
+
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h5 class="mb-0">Leave Manager</h5>
     <small class="text-muted">{{ $leaves->total() }} leave(s)</small>
-</div>
+  </div>
 
-{{-- ▼ 検索フォーム --}}
-<form method="GET" action="{{ route('leaves.edit') }}" class="mb-2" id="leave-search-form">
-  <div class="card">
-    <div class="card-body p-2">
-      <div class="row g-2 align-items-end">
+  {{-- ▼ 検索フォーム --}}
+  <form method="GET" action="{{ route('leaves.edit') }}" class="search mb-2" id="leave-search-form">
+    <div class="card">
+      <div class="card-body py-1 px-2">
+        <div class="row g-1 align-items-end">
 
-        {{-- User --}}
-        <div class="col-12 col-md-3">
-          <label class="form-label small mb-1">User</label>
-          <select name="user_id" class="form-select form-select-sm">
-            <option value="">—</option>
-            @foreach($userOptions as $u)
-              <option value="{{ $u->id }}" @selected(request('user_id')==$u->id)>
-                {{ $u->first_name }} {{ $u->family_name }} [{{ $u->employee_code }}]
-              </option>
-            @endforeach
-          </select>
-        </div>
+          {{-- User --}}
+          <div class="col-12 col-md-3">
+            <label class="form-label small mb-1">User</label>
+            <select name="user_id" class="form-select form-select-sm">
+              <option value="">—</option>
+              @foreach($userOptions as $u)
+                <option value="{{ $u->id }}" @selected(request('user_id')==$u->id)>
+                  {{ $u->first_name }} {{ $u->family_name }} [{{ $u->employee_code }}]
+                </option>
+              @endforeach
+            </select>
+          </div>
 
-        {{-- Kind / Excused / Status --}}
-        <div class="col-6 col-md-2">
-          <label class="form-label small mb-1">Kind</label>
-          <select name="kind" class="form-select form-select-sm">
-            <option value="">—</option>
-            @foreach($kindOptions as $v => $label)
-              <option value="{{ $v }}" @selected(request('kind')===$v)>{{ $label }}</option>
-            @endforeach
-          </select>
-        </div>
-        <div class="col-6 col-md-2">
-          <label class="form-label small mb-1">Excused</label>
-          <select name="excused" class="form-select form-select-sm">
-            <option value="">—</option>
-            @foreach($excusedOptions as $v => $label)
-              <option value="{{ $v }}" @selected(request('excused')===$v)>{{ $label }}</option>
-            @endforeach
-          </select>
-        </div>
-        <div class="col-6 col-md-2">
-          <label class="form-label small mb-1">Status</label>
-          <select name="status" class="form-select form-select-sm">
-            <option value="">—</option>
-            @foreach($statusOptions as $v => $label)
-              <option value="{{ $v }}" @selected(request('status')===$v)>{{ $label }}</option>
-            @endforeach
-          </select>
-        </div>
+          {{-- Kind / Excused / Status --}}
+          <div class="col-6 col-md-2">
+            <label class="form-label small mb-1">Kind</label>
+            <select name="kind" class="form-select form-select-sm">
+              <option value="">—</option>
+              @foreach($kindOptions as $v => $label)
+                <option value="{{ $v }}" @selected(request('kind')===$v)>{{ $label }}</option>
+              @endforeach
+            </select>
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label small mb-1">Excused</label>
+            <select name="excused" class="form-select form-select-sm">
+              <option value="">—</option>
+              @foreach($excusedOptions as $v => $label)
+                <option value="{{ $v }}" @selected(request('excused')===$v)>{{ $label }}</option>
+              @endforeach
+            </select>
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label small mb-1">Status</label>
+            <select name="status" class="form-select form-select-sm">
+              <option value="">—</option>
+              @foreach($statusOptions as $v => $label)
+                <option value="{{ $v }}" @selected(request('status')===$v)>{{ $label }}</option>
+              @endforeach
+            </select>
+          </div>
 
-        {{-- Special / Handle / Reason --}}
-        <div class="col-6 col-md-3">
-          <label class="form-label small mb-1">Special Type</label>
-          <input type="text" name="special_type" value="{{ request('special_type') }}" class="form-control form-control-sm" placeholder="">
-        </div>
-        <div class="col-6 col-md-3">
-          <label class="form-label small mb-1">Handle Type</label>
-          <input type="text" name="handle_type" value="{{ request('handle_type') }}" class="form-control form-control-sm" placeholder="">
-        </div>
-        <div class="col-12 col-md-3">
-          <label class="form-label small mb-1">Reason</label>
-          <input type="text" name="reason" value="{{ request('reason') }}" class="form-control form-control-sm" placeholder="">
-        </div>
+          {{-- Special / Handle / Reason --}}
+          <div class="col-6 col-md-3">
+            <label class="form-label small mb-1">Special Type</label>
+            <input type="text" name="special_type" value="{{ request('special_type') }}" class="form-control form-control-sm" placeholder="">
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label small mb-1">Handle Type</label>
+            <input type="text" name="handle_type" value="{{ request('handle_type') }}" class="form-control form-control-sm" placeholder="">
+          </div>
+          <div class="col-12 col-md-3">
+            <label class="form-label small mb-1">Reason</label>
+            <input type="text" name="reason" value="{{ request('reason') }}" class="form-control form-control-sm" placeholder="">
+          </div>
 
-        {{-- Start/End --}}
-        <div class="col-6 col-md-2">
-          <label class="form-label small mb-1">Start Date</label>
-          <input type="date" name="start_date" value="{{ request('start_date') }}" class="form-control form-control-sm" id="filter-start-date">
-        </div>
-        <div class="col-6 col-md-2">
-          <label class="form-label small mb-1">End Date</label>
-          <input type="date" name="end_date" value="{{ request('end_date') }}" class="form-control form-control-sm" id="filter-end-date">
-        </div>
+          {{-- Start/End --}}
+          <div class="col-6 col-md-2">
+            <label class="form-label small mb-1">Start Date</label>
+            <input type="date" name="start_date" value="{{ request('start_date') }}" class="form-control form-control-sm" id="filter-start-date">
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label small mb-1">End Date</label>
+            <input type="date" name="end_date" value="{{ request('end_date') }}" class="form-control form-control-sm" id="filter-end-date">
+          </div>
 
-        {{-- Buttons --}}
-        <div class="col-12 col-md-2 d-flex gap-1">
-          <button class="btn btn-sm btn-primary flex-fill">Search</button>
-          <button type="button" id="js-clear-filters" class="btn btn-sm btn-outline-secondary flex-fill">Clear</button>
-        </div>
+          {{-- Buttons --}}
+          <div class="col-12 col-md-2 d-flex gap-1">
+            <button class="btn btn-sm btn-primary flex-fill">Search</button>
+            <button type="button" id="js-clear-filters" class="btn btn-sm btn-outline-secondary flex-fill">Clear</button>
+          </div>
 
-        <div class="col-12">
-          <div class="invalid-feedback d-block" id="date-error" style="display:none;"></div>
         </div>
-
       </div>
     </div>
-  </div>
-</form>
 
-<div class="d-flex align-items-center gap-1 mb-2">
-  {{-- 空白Leave追加 --}}
-  <form method="POST" action="{{ route('leaves.store.blank') }}" class="m-0 p-0">
-    @csrf
-    {{-- 現在のフィルタを保持（なければ今日/ログインユーザーにフォールバック） --}}
-    <input type="hidden" name="start_date" value="{{ request('start_date', request('month', now()->toDateString())) }}">
-    <input type="hidden" name="user_id" value="{{ request('user_id', auth()->id()) }}">
-    <button type="submit" class="btn btn-sm btn-success">
-      ＋ Add Blank
-    </button>
+  {{-- 日付バリデーションエラー表示。検索カードのrowを崩さないためcard外に配置 --}}
+  <div class="invalid-feedback d-block mt-1" id="date-error" style="display:none;"></div>
   </form>
 
-  {{-- 一括保存 --}}
-  <button type="button"
-    class="btn btn-sm btn-primary"
-    id="js-bulk-save"
-    data-url="{{ route('leaves.bulk_update') }}">
-    Bulk Save
-  </button>
-</div>
+  <div class="d-flex align-items-center gap-1 mb-2">
+    {{-- 空白Leave追加 --}}
+    <form method="POST" action="{{ route('leaves.store.blank') }}" class="m-0 p-0">
+      @csrf
+      {{-- 現在のフィルタを保持（なければ今日/ログインユーザーにフォールバック） --}}
+      <input type="hidden" name="start_date" value="{{ request('start_date', request('month', now()->toDateString())) }}">
+      <input type="hidden" name="user_id" value="{{ request('user_id', auth()->id()) }}">
+      <button type="submit" class="btn btn-sm btn-success">
+        ＋ Add Blank
+      </button>
+    </form>
 
-@if($leaves->count())
-<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+    {{-- 一括保存 --}}
+    <button type="button"
+      class="btn btn-sm btn-primary"
+      id="js-bulk-save"
+      data-url="{{ route('leaves.bulk_update') }}">
+      Bulk Save
+    </button>
+  </div>
+
+  @if($leaves->count())
+  <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
     @foreach($leaves as $leave)
     @php
     $now = now();
@@ -130,180 +131,186 @@
         $time=optional($leave->updated_at)->format('Y-m-d H:i');
         @endphp
 
-        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-            <div class="card h-100 shadow-sm">
-                {{-- Leave Manager --}}
-                <form method="POST"
-                      action="{{ route('leaves.update', $leave) }}"
-                      class="h-100 d-flex flex-column js-leave-form"
-                      data-user-id="{{ $leave->user_id }}">
-                @csrf
-                @method('PUT')
+    <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+      <div class="card h-100 shadow-sm">
+        {{-- Leave Manager --}}
+        <form method="POST"
+              action="{{ route('leaves.update', $leave) }}"
+              class="h-100 d-flex flex-column js-leave-form"
+              data-user-id="{{ $leave->user_id }}">
+          @csrf
+          @method('PUT')
 
-                {{-- Add Bulk 用ID隠しフィールド (JS用？) --}}
-                <input type="hidden" name="id" value="{{ $leave->id }}">
+          {{-- Add Bulk 用ID隠しフィールド (JS用？) --}}
+          <input type="hidden" name="id" value="{{ $leave->id }}">
 
-                    <div class="card-body p-2 light-blue">
-                        <div class="mb-0 d-grid gap-0">
-                            {{-- 0: User --}}
-                            <div class="mb-0">
-                                <label class="form-label small text-muted mb-0">User</label>
-                            <select name="user_id" class="form-select form-select-sm" required>
-                                {{-- 空白オプション --}}
-                                <option value="">—</option>
-                                @foreach($userOptions as $u)
-                                    <option value="{{ $u->id }}" @selected($leave->user_id === $u->id)>
-                                        {{ $u->first_name }} {{ $u->family_name }} [{{ $u->employee_code }}]
-                                    </option>
-                                @endforeach
-                            </select>
-                            </div>
+          <div class="card-body py-1 px-2">
+            <div class="mb-0 d-grid gap-0">
+              {{-- 0: User --}}
+              <div class="mb-0">
+                <label class="form-label small text-muted mb-0">User</label>
+                <select name="user_id" class="form-select form-select-sm" required>
+                  {{-- 空白オプション --}}
+                  <option value="">—</option>
+                  @foreach($userOptions as $u)
+                    <option value="{{ $u->id }}" @selected($leave->user_id === $u->id)>
+                      {{ $u->first_name }} {{ $u->family_name }} [{{ $u->employee_code }}]
+                    </option>
+                  @endforeach
+                </select>
+              </div>
 
-                            {{-- 1: Kind / Special Type --}}
-                            <div class="row g-1 mb-0">
-                                <div class="col-6">
-                                    <label class="form-label small text-muted mb-0">Kind</label>
-                                    <select name="kind" class="form-select form-select-sm">
-                                        @foreach($kindOptions as $v => $label)
-                                        <option value="{{ $v }}" @selected($leave->kind===$v)>{{ $label }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label small text-muted mb-0">Special Type</label>
-                                    <input type="text" name="special_type" class="form-control form-control-sm"
-                                        value="{{ old('special_type', $leave->special_type) }}"
-                                        placeholder="">
-                                </div>
+              {{-- 1: Kind / Special Type --}}
+              <div class="row g-1 mb-0">
+                <div class="col-6">
+                  <label class="form-label small text-muted mb-0">Kind</label>
+                  <select name="kind" class="form-select form-select-sm">
+                    @foreach($kindOptions as $v => $label)
+                    <option value="{{ $v }}" @selected($leave->kind===$v)>{{ $label }}</option>
+                    @endforeach
+                  </select>
+                </div>
+                <div class="col-6">
+                  <label class="form-label small text-muted mb-0">Special Type</label>
+                  <input type="text" name="special_type" class="form-control form-control-sm"
+                    value="{{ old('special_type', $leave->special_type) }}"
+                    placeholder="">
+                </div>
+              </div>
 
-                            </div>
+              {{-- 2: Excused / Status --}}
+              <div class="row g-1 mb-0">
+                <div class="col-6">
+                  <label class="form-label small text-muted mb-0">Excused</label>
+                  <select name="excused" class="form-select form-select-sm">
+                    @foreach($excusedOptions as $v => $label)
+                    <option value="{{ $v }}" @selected($leave->excused===$v)>{{ $label }}</option>
+                    @endforeach
+                  </select>
+                </div>
+                <div class="col-6">
+                  <label class="form-label small text-muted mb-0">Status</label>
+                  <input type="hidden" name="status" value="approved">
+                  <select name="status" class="form-select form-select-sm">
+                    @foreach($statusOptions as $v => $label)
+                    <option value="{{ $v }}" @selected($leave->status===$v)>{{ $label }}</option>
+                    @endforeach
+                  </select>
+                </div>
+              </div>
 
-                            {{-- 2: Excused / Status --}}
-                            <div class="row g-1 mb-0">
-                                <div class="col-6">
-                                    <label class="form-label small text-muted mb-0">Excused</label>
-                                    <select name="excused" class="form-select form-select-sm">
-                                        @foreach($excusedOptions as $v => $label)
-                                        <option value="{{ $v }}" @selected($leave->excused===$v)>{{ $label }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label small text-muted mb-0">Status</label>
-                                    <input type="hidden" name="status" value="approved">
-                                    <select name="status" class="form-select form-select-sm">
-                                        @foreach($statusOptions as $v => $label)
-                                        <option value="{{ $v }}" @selected($leave->status===$v)>{{ $label }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                            </div>
+              {{-- 3: Start --}}
+              <div class="row g-1 mb-0">
+                <div class="col-7">
+                  <label class="form-label small text-muted mb-0">Start Date</label>
+                  <input type="date" name="start_date" class="form-control form-control-sm"
+                    value="{{ old('start_date', $fmtDate($leave->start_date)) }}">
+                </div>
+                {{-- <div class="col-5">
+                    <label class="form-label small text-muted mb-0">Time Start</label>
+                    <input type="time" name="time_start" class="form-control form-control-sm"
+                        value="{{ old('time_start', $fmtTime($leave->time_start)) }}"
+                        inputmode="numeric" step="60">
+                </div> --}}
+              </div>
 
-                            {{-- 3: Start --}}
-                            <div class="row g-1 mb-0">
-                                <div class="col-7">
-                                    <label class="form-label small text-muted mb-0">Start Date</label>
-                                    <input type="date" name="start_date" class="form-control form-control-sm"
-                                        value="{{ old('start_date', $fmtDate($leave->start_date)) }}">
-                                </div>
-                                {{-- <div class="col-5">
-                                    <label class="form-label small text-muted mb-0">Time Start</label>
-                                    <input type="time" name="time_start" class="form-control form-control-sm"
-                                        value="{{ old('time_start', $fmtTime($leave->time_start)) }}"
-                                        inputmode="numeric" step="60">
-                                </div> --}}
-                            </div>
+              {{-- 4: End --}}
+              <div class="row g-1 mb-0">
+                <div class="col-7">
+                  <label class="form-label small text-muted mb-0">End Date</label>
+                  <input type="date" name="end_date" class="form-control form-control-sm"
+                    value="{{ old('end_date', $fmtDate($leave->end_date)) }}">
+                </div>
+                {{-- <div class="col-5">
+                    <label class="form-label small text-muted mb-0">Time End</label>
+                    <input type="time" name="time_end" class="form-control form-control-sm"
+                        value="{{ old('time_end', $fmtTime($leave->time_end)) }}"
+                        inputmode="numeric" step="60">
+                </div> --}}
+              </div>
 
-                            {{-- 4: End --}}
-                            <div class="row g-1 mb-0">
-                                <div class="col-7">
-                                    <label class="form-label small text-muted mb-0">End Date</label>
-                                    <input type="date" name="end_date" class="form-control form-control-sm"
-                                        value="{{ old('end_date', $fmtDate($leave->end_date)) }}">
-                                </div>
-                                {{-- <div class="col-5">
-                                    <label class="form-label small text-muted mb-0">Time End</label>
-                                    <input type="time" name="time_end" class="form-control form-control-sm"
-                                        value="{{ old('time_end', $fmtTime($leave->time_end)) }}"
-                                        inputmode="numeric" step="60">
-                                </div> --}}
-                            </div>
+              {{-- 5: Reason --}}
+              <div class="mb-0">
+                <label class="form-label small text-muted mb-0">Reason</label>
+                <textarea name="reason" class="form-control form-control-sm" rows="2"
+                  placeholder="">{{ old('reason', $leave->reason) }}</textarea>
+              </div>
 
-                            {{-- 5: Reason --}}
-                            <div class="mb-0">
-                                <label class="form-label small text-muted mb-0">Reason</label>
-                                <textarea name="reason" class="form-control form-control-sm" rows="2"
-                                    placeholder="">{{ old('reason', $leave->reason) }}</textarea>
-                            </div>
-
-                            {{-- 6: Handle Type --}}
-                            <div class="mb-0">
-                                <label class="form-label small text-muted mb-0">Handle Type</label>
-                                <input type="text" name="handle_type" class="form-control form-control-sm"
-                                    value="{{ old('handle_type', $leave->handle_type) }}"
-                                    placeholder="Leave this blank">
-                            </div>
-                        </div>
-
-                        {{-- フッタ操作 --}}
-                        <div class="card-footer bg-white d-flex justify-content-between align-items-center py-2 px-2 gap-1 mt-2">
-                            {{-- 削除ボタン：クラスとdata属性をJSに合わせる --}}
-                            <button type="button"
-                                    class="btn btn-sm btn-outline-danger js-delete"
-                                    data-url="{{ route('leaves.destroy', $leave) }}"
-                                    data-date="{{ $leave->start_date?->format('Y-m-d') ?? 'この休暇' }}">
-                            Delete
-                            </button>
-
-                            {{-- 保存は通常送信 --}}
-                            <button type="submit" class="btn btn-sm btn-primary"> Save </button>
-                        </div>
-                        <small class="{{ $cls }} text-left d-block mt-1">
-                            {{ $action }}: {{ $time }}
-                        </small>
-                    </div>
-                </form>
-
-                <form id="js-delete-form" method="POST" class="d-none">
-                    @csrf
-                    @method('DELETE')
-                </form>
-
+              {{-- 6: Handle Type --}}
+              <div class="mb-0">
+                <label class="form-label small text-muted mb-0">Handle Type</label>
+                <input type="text" name="handle_type" class="form-control form-control-sm"
+                  value="{{ old('handle_type', $leave->handle_type) }}"
+                  placeholder="Leave this blank">
+              </div>
             </div>
-        </div>
-        @endforeach
-</div>
-@else
-<div class="alert alert-light border">
-    No Leave matches.
-</div>
-@endif
 
-  <!-- ✅ Delete Confirmation Modal -->
-  <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content border-0 shadow-sm">
-        <div class="modal-header bg-danger text-white py-2">
-          <h6 class="modal-title" id="deleteConfirmLabel">Delete Confirmation</h6>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <p class="mb-0" id="deleteConfirmText">Are you sure you want to delete this leave?</p>
-        </div>
-        <div class="modal-footer py-2">
-          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-danger btn-sm" id="confirmDeleteBtn">Delete</button>
-        </div>
+            {{-- フッタ操作 --}}
+            <div class="card-footer bg-white d-flex justify-content-between align-items-center py-2 px-2 gap-1">
+              {{-- 削除ボタン：クラスとdata属性をJSに合わせる --}}
+              <button type="button"
+                      class="btn btn-sm btn-outline-danger js-delete"
+                      data-url="{{ route('leaves.destroy', $leave) }}"
+                      data-date="{{ $leave->start_date?->format('Y-m-d') ?? 'この休暇' }}">
+                Delete
+              </button>
+
+              {{-- 保存は通常送信 --}}
+              <button type="submit" class="btn btn-sm btn-primary"> Save </button>
+            </div>
+            <small class="{{ $cls }} text-left d-block mt-1">
+              {{ $action }}: {{ $time }}
+            </small>
+          </div>
+        </form>
+      </div>
+    </div>
+    @endforeach
+  </div>
+
+  <form id="js-delete-form" method="POST" style="display:none;">
+    @csrf
+    @method('DELETE')
+  </form>
+
+  <div class="mt-3">
+    {{ $leaves->withQueryString()->links() }}
+  </div>
+  @else
+  <div class="alert alert-light border">
+    No Leave matches.
+  </div>
+  @endif
+
+</div>
+
+<!-- ✅ Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-sm">
+      <div class="modal-header bg-danger text-white py-2">
+        <h6 class="modal-title" id="deleteConfirmLabel">Delete Confirmation</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-0" id="deleteConfirmText">Are you sure you want to delete this leave?</p>
+      </div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger btn-sm" id="confirmDeleteBtn">Delete</button>
       </div>
     </div>
   </div>
+</div>
+
+@endsection
 
 @push('styles')
 <style>
-/* ✅ Leaveカード・検索フォームカード共通デザイン */
+/* Leaveカード・検索フォームカード共通デザイン */
 .card {
-  background-color: #ecececc4 !important; /* Bootstrapのlightより少し淡いグレー */
-  border: 1px solid #c1c5caff;           /* 薄い枠線 */
+  background-color: #ecececc4 !important;
+  border: 1px solid #c1c5caff;
   border-radius: 6px;
 }
 </style>
@@ -441,5 +448,3 @@ document.getElementById('js-bulk-save')?.addEventListener('click', async (e) => 
 })();
 </script>
 @endpush
-
-@endsection
