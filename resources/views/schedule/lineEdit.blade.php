@@ -21,7 +21,7 @@
 
 .schedule-line-left {
     border-right: 2px solid #333;
-    background: #f8f9fa;
+    background: #fdf7f8;
 }
 
 .schedule-line-right {
@@ -146,7 +146,7 @@
 </div>
 
 {{-- 検索フォーム --}}
-<form method="GET" action="{{ route('schedules.edit') }}" class="card mb-2">
+<form method="GET" action="{{ route('schedules.edit') }}" class="card mb-2" style="background:#fdf7f8;">
     <div class="card-body py-1 px-2">
         <div class="row g-1 align-items-end">
             <div class="col-12 col-sm-6 col-md-4 col-lg-2">
@@ -238,10 +238,14 @@
     {{-- 左側：Schedule Line 編集エリア --}}
     <div class="schedule-line-left">
 
-        {{-- ヘッダー行：ID / 更新日時 --}}
+        {{-- ヘッダー行：ID / 更新日時 / DOW・学校ハイライト --}}
         <div class="d-flex align-items-center gap-2 mb-1">
             <span class="fw-bold text-muted" style="font-size:0.78rem">#{{ $line->id }}</span>
             <span class="text-muted" style="font-size:0.7rem">更新: {{ $line->updated_at?->format('m-d H:i') }}</span>
+            <div class="ms-auto d-flex gap-1">
+                <span class="badge bg-secondary-subtle text-body-secondary" style="font-size:0.72rem">{{ $dowOptions[$line->dow] ?? $line->dow }}</span>
+                <span class="badge bg-info-subtle text-body" style="font-size:0.72rem; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $line->school_name }}</span>
+            </div>
         </div>
 
         {{-- 上段: User / DOW / School / Start / End --}}

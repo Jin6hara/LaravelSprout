@@ -5,17 +5,27 @@ namespace App\Http\Controllers;
 use App\Models\ScheduleLine;
 use App\Models\ScheduleDetail;
 use App\Models\Lesson;
+use App\Services\CurrentScopeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
 use Carbon\Carbon;
 
 class ScheduleDetailController extends Controller
 {
+    public function __construct(private CurrentScopeService $scopeService) {}
+
     // 詳細編集画面
-    public function edit(Request $request, ScheduleLine $line)
+    public function edit(ScheduleLine $line)
     {
+        // スコープ検証：lineのdistrict/departmentが現在のスコープと一致しなければ一覧へ戻す
+        $districtId   = $this->scopeService->currentDistrictId();
+        $departmentId = $this->scopeService->currentDepartmentId();
+        if (($districtId !== null && $line->district_id !== $districtId) ||
+            ($departmentId !== null && $line->department_id !== $departmentId)) {
+            return redirect('/schedule_manager')
+                ->with('toast', '所属が変更されたため、一覧に戻りました。');
+        }
         $details = ScheduleDetail::query()
             ->with([
                 'lesson:id,lesson_name,lesson_code,note,lesson_minute,lesson_type',
@@ -42,8 +52,8 @@ class ScheduleDetailController extends Controller
             6 => '土',
         ];
 
-        // schedule リレーションは廃止したため、所有ユーザーchipsは表示しない
-        $chips = collect();
+        $line->loadMissing('user');
+        $chips = collect([$line->user])->filter();
 
         $lineStart = optional($line->effective_start)->toDateString();
         $lineEnd   = optional($line->effective_end)->toDateString();
@@ -167,7 +177,7 @@ class ScheduleDetailController extends Controller
         ]);
     }
 
-    public function storeBlank(Request $request, ScheduleLine $line)
+    public function storeBlank(ScheduleLine $line)
     {
         DB::beginTransaction();
         try {
@@ -209,7 +219,7 @@ class ScheduleDetailController extends Controller
     }
 
 
-    public function copy(Request $request, ScheduleDetail $detail)
+    public function copy(ScheduleDetail $detail)
     {
         DB::beginTransaction();
         try {
@@ -263,7 +273,7 @@ class ScheduleDetailController extends Controller
     }
 
 
-    public function destroy(Request $request, ScheduleDetail $detail)
+    public function destroy(ScheduleDetail $detail)
     {
         try {
             $startDisplay = $detail->start_hm;

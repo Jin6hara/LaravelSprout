@@ -50,10 +50,6 @@
                     @endif
                 </div>
 
-                <span class="badge text-bg-light text-truncate" style="max-width: 240px;">
-                    {{ $line->schedule->label ?? 'Not Assigned' }}
-                </span>
-
                 <span class="badge bg-secondary-subtle text-body-secondary">
                     {{ $dowOptions[$line->dow] ?? $line->dow }}
                 </span>
