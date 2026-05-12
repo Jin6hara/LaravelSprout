@@ -5,6 +5,13 @@
     <div class="card-body">
         <h2 class="card-title text-center mb-4">新規登録</h2>
 
+        {{-- 現在のスコープ（地区・部署）確認 --}}
+        <div class="alert alert-info mb-4 small">
+            <strong>所属先の確認</strong><br>
+            地区：{{ $scope?->district?->name ?? '未設定' }}<br>
+            部署：{{ $scope?->department?->name ?? '未設定' }}
+        </div>
+
         <form method="POST" action="{{ route('register.submit') }}">
             @csrf
 
@@ -96,6 +103,28 @@
                     class="form-control @error('end_date') is-invalid @enderror"
                     value="{{ old('end_date') }}">
                 @error('end_date') <div class="invalid-feedback">{{ $message }}</div> @enderror
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">雇用形態コード</label>
+                <input type="text" name="type_code"
+                    class="form-control @error('type_code') is-invalid @enderror"
+                    value="{{ old('type_code', 'full_time') }}"
+                    placeholder="例：full_time, part_time, contract"
+                    maxlength="50"
+                    required>
+                @error('type_code') <div class="invalid-feedback">{{ $message }}</div> @enderror
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">雇用形態名</label>
+                <input type="text" name="type_name"
+                    class="form-control @error('type_name') is-invalid @enderror"
+                    value="{{ old('type_name', '正社員') }}"
+                    placeholder="例：正社員、契約社員、パートタイム"
+                    maxlength="100"
+                    required>
+                @error('type_name') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>
 
             <div class="mb-4">

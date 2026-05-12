@@ -159,6 +159,12 @@ class User extends Authenticatable
         return $this->hasMany(EmploymentTerm::class);
     }
 
+    /** 最新の雇用期間を1件だけ取得（N+1 を避けるための hasOne + latestOfMany） */
+    public function latestEmploymentTerm()
+    {
+        return $this->hasOne(EmploymentTerm::class)->latestOfMany('start_date');
+    }
+
     public function currentEmploymentTerm(?Carbon $date = null)
     {
         $d = ($date ?? now())->toDateString();
