@@ -54,6 +54,7 @@
     display: flex;
     gap: 0.25rem;
     flex-wrap: nowrap;
+    justify-content: flex-end;
 }
 
 .schedule-line-block .form-control-sm,
