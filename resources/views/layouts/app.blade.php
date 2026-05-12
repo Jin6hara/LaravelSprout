@@ -19,7 +19,7 @@
 </head>
 
 <body>
-    <div id="app"> {{-- ★ Vue の root 要素 --}}
+    <div id="app" style="overflow-x: hidden;"> {{-- ★ Vue の root 要素 --}}
 
         @include('commons.header')
 

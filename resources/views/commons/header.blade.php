@@ -3,21 +3,21 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark py-3">
     <div class="container">
         <a class="navbar-brand" href="{{ url('/') }}">Route Hub</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+
+        {{-- 左: scope selector（折りたたまない・常時表示） --}}
+        @auth
+        @if(auth()->user()->isAdmin() && $scopeSelectorData)
+        <div class="d-flex align-items-center ms-2">
+            @include('commons.scope_selector')
+        </div>
+        @endif
+        @endauth
+
+        <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
 
-            {{-- 左: scope selector (admin / super_admin のみ) --}}
-            @auth
-            @if(auth()->user()->isAdmin() && $scopeSelectorData)
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item">
-                    @include('commons.scope_selector')
-                </li>
-            </ul>
-            @endif
-            @endauth
+        <div class="collapse navbar-collapse" id="navbarNav">
 
             {{-- 右: 既存ナビアイテム（変更なし） --}}
             <ul class="navbar-nav ms-auto">

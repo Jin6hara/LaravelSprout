@@ -1,56 +1,40 @@
             {{-- ▼▼▼ 閲覧専用：Schedule Details（高密度） ▼▼▼ --}}
-            <div class="card-body py-1">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <div class="fw-semibold small">Details (Time-series)</div>
-                    <div class="small text-muted">
-                        Segments: {{ count($seriesByLine[$line->id] ?? []) }}
-                    </div>
-                </div>
+            <div class="schedule-details-compact">
 
-                @php $segments = $seriesByLine[$line->id] ?? []; @endphp
+                @php $allSegments = $seriesByLine[$line->id] ?? []; @endphp
 
-                @if(empty($segments))
-                <div class="text-muted small">（詳細は登録されていません）</div>
+                @if(empty($allSegments))
+                <div class="text-muted" style="font-size:0.78rem; padding: 0.1rem 0;">No details</div>
                 @else
-                <div class="d-flex flex-column gap-2">
-                    @foreach($segments as $seg)
-                    @php
-                    $segStart = $seg['start']?->toDateString();
-                    $segEnd = $seg['end']?->toDateString();
-                    $period = $segStart . ' 〜 ' . ($segEnd ?? 'Open');
-                    $items = $seg['items'];
-                    @endphp
 
-                    <div class="border rounded-3 p-1">
-                        <div class="d-flex justify-content-between align-items-center mb-0">
-                            <div class="small fw-semibold">
-                                {{ $period }}
-                            </div>
-                            <div class="small text-muted">Total: {{ count($items) }}</div>
-                        </div>
+                @foreach($allSegments as $seg)
+                @php
+                $segStart = $seg['start']?->toDateString();
+                $segEnd   = $seg['end']?->toDateString();
+                $items    = $seg['items'];
+                @endphp
 
-                        {{-- 横方向に高密度で並べる（各アイテムは2行表示） --}}
-                        <div class="d-flex flex-wrap gap-1">
-                            @foreach($items as $it)
-                            <div class="border rounded-3 px-2 py-1 bg-light small"
-                                style="min-width: 130px; max-width: 200px; line-height: 1.2;">
-                                {{-- 1行目：lesson_code（lesson_minute） ※code無ければnameでフォールバック --}}
-                                <div class="fw-semibold text-truncate">
-                                    {{ $it['code'] ?? $it['name'] ?? '—' }}
-                                    @if(!empty($it['minute']))
-                                    <span class="text-muted">({{ $it['minute'] }}m)</span>
-                                    @endif
-                                </div>
-                                {{-- 2行目：start_time ~ end_time（自動計算結果） --}}
-                                <div class="text-monospace">
-                                    {{ $it['start'] ?? '--:--' }} ~ {{ $it['end'] ?? '--:--' }}
-                                </div>
-                            </div>
-                            @endforeach
-                        </div>
-                    </div>
-                    @endforeach
+                {{-- 期間ヘッダー --}}
+                <div class="schedule-detail-period-header">
+                    <span>{{ $segStart }} – {{ $segEnd ?? 'Open' }}</span>
+                    <span class="sdr-count">{{ count($items) }} items</span>
                 </div>
+
+                {{-- 期間内の各 item を1行で表示 --}}
+                @foreach($items as $it)
+                <div class="schedule-detail-row">
+                    {{-- 1列目：lesson_code（lesson_minute） ※code無ければnameでフォールバック --}}
+                    <span class="text-truncate">
+                        {{ $it['code'] ?? $it['name'] ?? '—' }}@if(!empty($it['minute']))<span class="text-muted"> ({{ $it['minute'] }}m)</span>@endif
+                    </span>
+                    {{-- 2列目：start_time ~ end_time（自動計算結果） --}}
+                    <span class="text-monospace">{{ $it['start'] ?? '--:--' }} - {{ $it['end'] ?? '--:--' }}</span>
+                </div>
+                @endforeach
+
+                @endforeach
+
                 @endif
+
             </div>
             {{-- ▲▲▲ 詳細ここまで ▲▲▲ --}}

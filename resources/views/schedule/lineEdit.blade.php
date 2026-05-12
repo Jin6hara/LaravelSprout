@@ -3,33 +3,137 @@
 
 @push('styles')
 <style>
-.schedule-line-table {
-    font-size: 0.8125rem;
+.schedule-line-block {
+    display: grid;
+    grid-template-columns: minmax(540px, 75%) 1fr;
+    gap: 0;
+    border: 1px solid #999;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 0.35rem;
+    background: #fff;
 }
 
-.schedule-line-table th,
-.schedule-line-table td {
-    padding: 0.25rem 0.35rem;
-    white-space: nowrap;
-    vertical-align: middle;
+.schedule-line-left,
+.schedule-line-right {
+    padding: 0.35rem 0.5rem;
 }
 
-.schedule-line-table .form-control-sm,
-.schedule-line-table .form-select-sm {
-    min-height: 28px;
-    padding-top: 0.15rem;
-    padding-bottom: 0.15rem;
-    font-size: 0.8125rem;
+.schedule-line-left {
+    border-right: 2px solid #333;
+    background: #f8f9fa;
 }
 
-.schedule-line-table textarea.form-control-sm {
+.schedule-line-right {
+    background: #fff;
+    overflow-y: auto;
+    min-width: 0;
+    height: 155px;
+    min-height: 155px;
+    max-height: 420px;
     resize: vertical;
-    min-height: 28px;
 }
 
-.schedule-line-table .btn-sm {
-    padding: 0.15rem 0.35rem;
+.schedule-line-grid {
+    display: grid;
+    grid-template-columns: 2fr 0.6fr 1fr 80px 80px;
+    gap: 0.25rem;
+    align-items: end;
+    margin-bottom: 0.25rem;
+}
+
+.schedule-line-grid2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 2fr;
+    gap: 0.25rem;
+    align-items: end;
+    margin-bottom: 0.25rem;
+}
+
+.schedule-line-actions {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: nowrap;
+}
+
+.schedule-line-block .form-control-sm,
+.schedule-line-block .form-select-sm {
+    min-height: 26px;
+    padding-top: 0.1rem;
+    padding-bottom: 0.1rem;
+    font-size: 0.78rem;
+}
+
+.schedule-line-block label {
+    font-size: 0.7rem;
+    margin-bottom: 0.05rem;
+    color: #666;
+    display: block;
+}
+
+.schedule-line-block .btn-sm {
+    padding: 0.15rem 0.4rem;
     font-size: 0.75rem;
+}
+
+.schedule-details-compact {
+    font-size: 0.78rem;
+}
+
+.schedule-detail-period-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #444;
+    background: #e9ecef;
+    padding: 0.1rem 0.4rem;
+    margin-top: 0.3rem;
+    border-top: 1px solid #adb5bd;
+    border-radius: 3px 3px 0 0;
+    white-space: nowrap;
+}
+
+.schedule-details-compact > .schedule-detail-period-header:first-child {
+    margin-top: 0;
+    border-top: none;
+}
+
+.schedule-detail-period-header .sdr-count {
+    font-weight: 400;
+    color: #888;
+}
+
+.schedule-detail-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 100px);
+    gap: 0.5rem;
+    line-height: 1.65;
+    white-space: nowrap;
+    border-bottom: 1px solid #f0f0f0;
+    padding: 0 0.25rem;
+}
+
+.schedule-detail-row:last-child {
+    border-bottom: none;
+}
+
+.schedule-detail-row > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+
+@media (max-width: 992px) {
+    .schedule-line-block {
+        grid-template-columns: 1fr;
+    }
+
+    .schedule-line-left {
+        border-right: none;
+        border-bottom: 1px solid #999;
+    }
 }
 </style>
 @endpush
@@ -114,7 +218,7 @@
 <div class="alert alert-secondary">該当する Schedule Line はありません。</div>
 @else
 
-{{-- 各行の form を table 外に定義（HTML仕様上 tr 内に form を入れ子にできないため form 属性方式を使用） --}}
+{{-- 各行の form を block 外に定義（HTML仕様上 block 内に form を入れ子にすると崩れるため form 属性方式を使用） --}}
 @foreach($lines as $line)
 <form id="line-form-{{ $line->id }}"
       method="POST"
@@ -126,126 +230,119 @@
 </form>
 @endforeach
 
-<div class="table-responsive">
-    <table class="table table-sm table-bordered align-middle schedule-line-table">
-        <thead class="table-light">
-            <tr>
-                <th>ID</th>
-                <th>User (Owner)</th>
-                <th>DOW</th>
-                <th>School</th>
-                <th>Start</th>
-                <th>End</th>
-                <th>Eff. Start</th>
-                <th>Eff. End</th>
-                <th>Memo</th>
-                <th>Updated</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($lines as $line)
-            @php $isMyOld = old('__line_id') == $line->id; @endphp
-            <tr data-line-id="{{ $line->id }}">
-                <td class="text-muted">#{{ $line->id }}</td>
+@foreach($lines as $line)
+@php $isMyOld = old('__line_id') == $line->id; @endphp
 
-                <td>
-                    <select name="user_id" class="form-select form-select-sm" form="line-form-{{ $line->id }}" style="min-width:8rem">
-                        <option value="">— None —</option>
-                        @foreach($userOptions as $opt)
-                        <option value="{{ $opt['id'] }}" @selected($line->user_id == $opt['id'])>
-                            {{ $opt['label'] }}
-                        </option>
-                        @endforeach
-                    </select>
-                </td>
+<div class="schedule-line-block" data-line-id="{{ $line->id }}">
 
-                <td>
-                    <select name="dow" class="form-select form-select-sm" form="line-form-{{ $line->id }}" style="min-width:5rem">
-                        @foreach($dowOptions as $val => $label)
-                        <option value="{{ $val }}" @selected(($isMyOld ? (int)old('dow') : $line->dow) === $val)>
-                            {{ $label }}
-                        </option>
-                        @endforeach
-                    </select>
-                </td>
+    {{-- 左側：Schedule Line 編集エリア --}}
+    <div class="schedule-line-left">
 
-                <td>
-                    <input type="text" name="school_name" class="form-control form-control-sm" form="line-form-{{ $line->id }}"
-                        value="{{ $isMyOld ? old('school_name') : $line->school_name }}" style="min-width:7rem">
-                </td>
+        {{-- ヘッダー行：ID / 更新日時 --}}
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="fw-bold text-muted" style="font-size:0.78rem">#{{ $line->id }}</span>
+            <span class="text-muted" style="font-size:0.7rem">更新: {{ $line->updated_at?->format('m-d H:i') }}</span>
+        </div>
 
-                <td>
-                    <input type="time" name="start_time" class="form-control form-control-sm" form="line-form-{{ $line->id }}"
-                        value="{{ $isMyOld ? old('start_time') : \Illuminate\Support\Str::of($line->start_time)->substr(0,5) }}">
-                </td>
+        {{-- 上段: User / DOW / School / Start / End --}}
+        <div class="schedule-line-grid">
+            <div>
+                <label>User (Owner)</label>
+                <select name="user_id" class="form-select form-select-sm" form="line-form-{{ $line->id }}">
+                    <option value="">— None —</option>
+                    @foreach($userOptions as $opt)
+                    <option value="{{ $opt['id'] }}" @selected($line->user_id == $opt['id'])>
+                        {{ $opt['label'] }}
+                    </option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label>DOW</label>
+                <select name="dow" class="form-select form-select-sm" form="line-form-{{ $line->id }}">
+                    @foreach($dowOptions as $val => $label)
+                    <option value="{{ $val }}" @selected(($isMyOld ? (int)old('dow') : $line->dow) === $val)>
+                        {{ $label }}
+                    </option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label>School</label>
+                <input type="text" name="school_name" class="form-control form-control-sm" form="line-form-{{ $line->id }}"
+                    value="{{ $isMyOld ? old('school_name') : $line->school_name }}">
+            </div>
+            <div>
+                <label>Start</label>
+                <input type="time" name="start_time" class="form-control form-control-sm" form="line-form-{{ $line->id }}"
+                    value="{{ $isMyOld ? old('start_time') : \Illuminate\Support\Str::of($line->start_time)->substr(0,5) }}">
+            </div>
+            <div>
+                <label>End</label>
+                <input type="time" name="end_time" class="form-control form-control-sm" form="line-form-{{ $line->id }}"
+                    value="{{ $isMyOld ? old('end_time') : \Illuminate\Support\Str::of($line->end_time)->substr(0,5) }}">
+            </div>
+        </div>
 
-                <td>
-                    <input type="time" name="end_time" class="form-control form-control-sm" form="line-form-{{ $line->id }}"
-                        value="{{ $isMyOld ? old('end_time') : \Illuminate\Support\Str::of($line->end_time)->substr(0,5) }}">
-                </td>
+        {{-- 下段: Effective Start / Effective End / Memo --}}
+        <div class="schedule-line-grid2">
+            <div>
+                <label>Eff. Start</label>
+                <input type="date" name="effective_start" class="form-control form-control-sm" form="line-form-{{ $line->id }}"
+                    value="{{ $isMyOld ? old('effective_start') : optional($line->effective_start)->toDateString() }}">
+            </div>
+            <div>
+                <label>Eff. End</label>
+                <input type="date" name="effective_end" class="form-control form-control-sm" form="line-form-{{ $line->id }}"
+                    value="{{ $isMyOld ? old('effective_end') : optional($line->effective_end)->toDateString() }}">
+            </div>
+            <div>
+                <label>Memo</label>
+                <textarea name="handover_memo" class="form-control form-control-sm" form="line-form-{{ $line->id }}"
+                    rows="1" placeholder="Memo">{{ $isMyOld ? old('handover_memo') : $line->handover_memo }}</textarea>
+            </div>
+        </div>
 
-                <td>
-                    <input type="date" name="effective_start" class="form-control form-control-sm" form="line-form-{{ $line->id }}"
-                        value="{{ $isMyOld ? old('effective_start') : optional($line->effective_start)->toDateString() }}">
-                </td>
+        {{-- アクションボタン --}}
+        <div class="schedule-line-actions">
+            <button type="submit" class="btn btn-sm btn-success" form="line-form-{{ $line->id }}">保存</button>
 
-                <td>
-                    <input type="date" name="effective_end" class="form-control form-control-sm" form="line-form-{{ $line->id }}"
-                        value="{{ $isMyOld ? old('effective_end') : optional($line->effective_end)->toDateString() }}">
-                </td>
+            <button
+                type="button"
+                class="btn btn-sm btn-outline-danger js-delete-line"
+                data-delete-url="{{ route('schedule_lines.destroy', $line) }}"
+                data-line-id="{{ $line->id }}">
+                削除
+            </button>
 
-                <td>
-                    <textarea name="handover_memo" class="form-control form-control-sm" form="line-form-{{ $line->id }}"
-                        rows="1" placeholder="Memo" style="min-width:8rem">{{ $isMyOld ? old('handover_memo') : $line->handover_memo }}</textarea>
-                </td>
+            <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary js-copy-line"
+                data-copy-url="{{ route('schedule_lines.copy', $line) }}"
+                data-line-id="{{ $line->id }}"
+                data-current-user="{{ $line->user_id ?? '' }}"
+                data-effective-end="{{ optional($line->effective_end)?->toDateString() ?? '' }}"
+                data-handover-memo="{{ $line->handover_memo }}">
+                複写
+            </button>
 
-                <td class="text-muted small">{{ $line->updated_at?->format('m-d H:i') }}</td>
+            <a href="{{ route('schedule_details.edit', $line) }}"
+                class="btn btn-sm btn-outline-info"
+                target="_blank"
+                rel="noopener noreferrer">
+                詳細
+            </a>
+        </div>
+    </div>
 
-                <td>
-                    <div class="d-flex gap-1 flex-nowrap">
-                        <button type="submit" class="btn btn-sm btn-success" form="line-form-{{ $line->id }}">保存</button>
+    {{-- 右側：閲覧専用 Schedule Details --}}
+    <div class="schedule-line-right">
+        @include('schedule.detailsView', ['line' => $line, 'seriesByLine' => $seriesByLine])
+    </div>
 
-                        <button
-                            type="button"
-                            class="btn btn-sm btn-outline-danger js-delete-line"
-                            data-delete-url="{{ route('schedule_lines.destroy', $line) }}"
-                            data-line-id="{{ $line->id }}">
-                            削除
-                        </button>
-
-                        <button
-                            type="button"
-                            class="btn btn-sm btn-outline-secondary js-copy-line"
-                            data-copy-url="{{ route('schedule_lines.copy', $line) }}"
-                            data-line-id="{{ $line->id }}"
-                            data-current-user="{{ $line->user_id ?? '' }}"
-                            data-effective-end="{{ optional($line->effective_end)?->toDateString() ?? '' }}"
-                            data-handover-memo="{{ $line->handover_memo }}">
-                            複写
-                        </button>
-
-                        <a href="{{ route('schedule_details.edit', $line) }}"
-                            class="btn btn-sm btn-outline-info"
-                            target="_blank"
-                            rel="noopener noreferrer">
-                            詳細
-                        </a>
-                    </div>
-                </td>
-            </tr>
-
-            {{-- 閲覧専用：Schedule Details（非表示行として維持） --}}
-            <tr class="d-none" data-details-for="{{ $line->id }}">
-                <td colspan="11" class="p-0">
-                    @include('schedule.detailsView', ['line' => $line, 'seriesByLine' => $seriesByLine])
-                </td>
-            </tr>
-
-            @endforeach
-        </tbody>
-    </table>
 </div>
+@endforeach
+
 @endif
 
 {{-- 複写入力モーダル --}}
@@ -329,12 +426,8 @@
                 });
                 const data = await res.json().catch(() => ({ ok: false, message: 'Unexpected response' }));
                 if (!res.ok || !data.ok) throw new Error(data?.message || '削除に失敗しました。');
-                // table 行対応: 該当 tr（および detailsView の隠し tr）を削除する
-                const tr = btn.closest('tr');
-                const detailsTr = tr?.nextElementSibling;
-                if (detailsTr?.getAttribute('data-details-for') === lineId) detailsTr.remove();
-                tr?.remove();
-                // 対応する hidden form も削除
+                // block 対応: 該当 .schedule-line-block と hidden form を削除する
+                btn.closest('.schedule-line-block')?.remove();
                 document.getElementById(`line-form-${lineId}`)?.remove();
                 showFlash(data.message || `Line #${lineId} を削除しました。`, 'success');
             } catch (err) {
