@@ -1,6 +1,39 @@
 {{-- resources/views/schedule/lineEdit.blade.php --}}
 @extends('layouts.app')
 
+@push('styles')
+<style>
+.schedule-line-table {
+    font-size: 0.8125rem;
+}
+
+.schedule-line-table th,
+.schedule-line-table td {
+    padding: 0.25rem 0.35rem;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.schedule-line-table .form-control-sm,
+.schedule-line-table .form-select-sm {
+    min-height: 28px;
+    padding-top: 0.15rem;
+    padding-bottom: 0.15rem;
+    font-size: 0.8125rem;
+}
+
+.schedule-line-table textarea.form-control-sm {
+    resize: vertical;
+    min-height: 28px;
+}
+
+.schedule-line-table .btn-sm {
+    padding: 0.15rem 0.35rem;
+    font-size: 0.75rem;
+}
+</style>
+@endpush
+
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
@@ -10,8 +43,8 @@
 
 {{-- 検索フォーム --}}
 <form method="GET" action="{{ route('schedules.edit') }}" class="card mb-2">
-    <div class="card-body py-2">
-        <div class="row g-2 align-items-end">
+    <div class="card-body py-1 px-2">
+        <div class="row g-1 align-items-end">
             <div class="col-12 col-sm-6 col-md-4 col-lg-2">
                 <label class="form-label small mb-1">Active On</label>
                 <input type="date" name="active_on" class="form-control form-control-sm"
@@ -80,170 +113,138 @@
 @if($lines->isEmpty())
 <div class="alert alert-secondary">該当する Schedule Line はありません。</div>
 @else
-<div class="row g-2">
-    @foreach($lines as $line)
-    <div class="col-12">
-        <div class="card h-100">
 
-            {{-- ヘッダー --}}
-            <div class="card-header py-1">
-                @php
-                $user = $line->user;
-                $lineStart = optional($line->effective_start)->toDateString();
-                $lineEnd = optional($line->effective_end)->toDateString();
-                @endphp
+{{-- 各行の form を table 外に定義（HTML仕様上 tr 内に form を入れ子にできないため form 属性方式を使用） --}}
+@foreach($lines as $line)
+<form id="line-form-{{ $line->id }}"
+      method="POST"
+      action="{{ route('schedule_lines.update', $line) }}"
+      class="d-none">
+    @csrf
+    @method('PUT')
+    <input type="hidden" name="__line_id" value="{{ $line->id }}">
+</form>
+@endforeach
 
-                <div class="d-flex flex-wrap align-items-center gap-2">
-                    <span class="fw-bold">#{{ $line->id }}</span>
+<div class="table-responsive">
+    <table class="table table-sm table-bordered align-middle schedule-line-table">
+        <thead class="table-light">
+            <tr>
+                <th>ID</th>
+                <th>User (Owner)</th>
+                <th>DOW</th>
+                <th>School</th>
+                <th>Start</th>
+                <th>End</th>
+                <th>Eff. Start</th>
+                <th>Eff. End</th>
+                <th>Memo</th>
+                <th>Updated</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($lines as $line)
+            @php $isMyOld = old('__line_id') == $line->id; @endphp
+            <tr data-line-id="{{ $line->id }}">
+                <td class="text-muted">#{{ $line->id }}</td>
 
-                    {{-- 担当ユーザー --}}
-                    <div class="mt-1">
-                        @if($user)
-                        <span class="badge rounded-pill text-bg-secondary">
-                            {{ $user->family_name }}@if(!empty($user->first_name)) {{ ' ' . $user->first_name }} @endif
-                            @if(!empty($user->employee_code)) [{{ $user->employee_code }}] @endif
-                        </span>
-                        @else
-                        <div class="text-muted small">—</div>
-                        @endif
+                <td>
+                    <select name="user_id" class="form-select form-select-sm" form="line-form-{{ $line->id }}" style="min-width:8rem">
+                        <option value="">— None —</option>
+                        @foreach($userOptions as $opt)
+                        <option value="{{ $opt['id'] }}" @selected($line->user_id == $opt['id'])>
+                            {{ $opt['label'] }}
+                        </option>
+                        @endforeach
+                    </select>
+                </td>
+
+                <td>
+                    <select name="dow" class="form-select form-select-sm" form="line-form-{{ $line->id }}" style="min-width:5rem">
+                        @foreach($dowOptions as $val => $label)
+                        <option value="{{ $val }}" @selected(($isMyOld ? (int)old('dow') : $line->dow) === $val)>
+                            {{ $label }}
+                        </option>
+                        @endforeach
+                    </select>
+                </td>
+
+                <td>
+                    <input type="text" name="school_name" class="form-control form-control-sm" form="line-form-{{ $line->id }}"
+                        value="{{ $isMyOld ? old('school_name') : $line->school_name }}" style="min-width:7rem">
+                </td>
+
+                <td>
+                    <input type="time" name="start_time" class="form-control form-control-sm" form="line-form-{{ $line->id }}"
+                        value="{{ $isMyOld ? old('start_time') : \Illuminate\Support\Str::of($line->start_time)->substr(0,5) }}">
+                </td>
+
+                <td>
+                    <input type="time" name="end_time" class="form-control form-control-sm" form="line-form-{{ $line->id }}"
+                        value="{{ $isMyOld ? old('end_time') : \Illuminate\Support\Str::of($line->end_time)->substr(0,5) }}">
+                </td>
+
+                <td>
+                    <input type="date" name="effective_start" class="form-control form-control-sm" form="line-form-{{ $line->id }}"
+                        value="{{ $isMyOld ? old('effective_start') : optional($line->effective_start)->toDateString() }}">
+                </td>
+
+                <td>
+                    <input type="date" name="effective_end" class="form-control form-control-sm" form="line-form-{{ $line->id }}"
+                        value="{{ $isMyOld ? old('effective_end') : optional($line->effective_end)->toDateString() }}">
+                </td>
+
+                <td>
+                    <textarea name="handover_memo" class="form-control form-control-sm" form="line-form-{{ $line->id }}"
+                        rows="1" placeholder="Memo" style="min-width:8rem">{{ $isMyOld ? old('handover_memo') : $line->handover_memo }}</textarea>
+                </td>
+
+                <td class="text-muted small">{{ $line->updated_at?->format('m-d H:i') }}</td>
+
+                <td>
+                    <div class="d-flex gap-1 flex-nowrap">
+                        <button type="submit" class="btn btn-sm btn-success" form="line-form-{{ $line->id }}">保存</button>
+
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-danger js-delete-line"
+                            data-delete-url="{{ route('schedule_lines.destroy', $line) }}"
+                            data-line-id="{{ $line->id }}">
+                            削除
+                        </button>
+
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-secondary js-copy-line"
+                            data-copy-url="{{ route('schedule_lines.copy', $line) }}"
+                            data-line-id="{{ $line->id }}"
+                            data-current-user="{{ $line->user_id ?? '' }}"
+                            data-effective-end="{{ optional($line->effective_end)?->toDateString() ?? '' }}"
+                            data-handover-memo="{{ $line->handover_memo }}">
+                            複写
+                        </button>
+
+                        <a href="{{ route('schedule_details.edit', $line) }}"
+                            class="btn btn-sm btn-outline-info"
+                            target="_blank"
+                            rel="noopener noreferrer">
+                            詳細
+                        </a>
                     </div>
+                </td>
+            </tr>
 
-                    <span class="badge bg-secondary-subtle text-body-secondary">
-                        {{ $dowOptions[$line->dow] ?? $line->dow }}
-                    </span>
+            {{-- 閲覧専用：Schedule Details（非表示行として維持） --}}
+            <tr class="d-none" data-details-for="{{ $line->id }}">
+                <td colspan="11" class="p-0">
+                    @include('schedule.detailsView', ['line' => $line, 'seriesByLine' => $seriesByLine])
+                </td>
+            </tr>
 
-                    <span class="badge bg-info-subtle text-body">
-                        {{ $line->school_name }}
-                    </span>
-
-                    <span class="badge bg-light text-body-secondary">
-                        {{ \Illuminate\Support\Str::of($line->start_time)->substr(0,5) }}
-                        –
-                        {{ \Illuminate\Support\Str::of($line->end_time)->substr(0,5) }}
-                    </span>
-
-                    <span class="ms-auto small text-muted">
-                        期間: {{ $lineStart }} 〜 {{ $lineEnd ?: '—' }}
-                    </span>
-                </div>
-            </div>
-            {{-- ヘッダー --}}
-
-            <form method="POST" action="{{ route('schedule_lines.update', $line) }}">
-                @csrf
-                @method('PUT')
-
-                <input type="hidden" name="__line_id" value="{{ $line->id }}">
-
-                @php $isMyOld = old('__line_id') == $line->id; @endphp
-
-                <div class="card-body py-1 border-bottom">
-                    <div class="row g-1 align-items-end">
-
-                        <div class="col-12 col-md-4 col-lg-3">
-                            <label class="form-label small mb-1">User (Owner)</label>
-                            <select name="user_id" class="form-select form-select-sm">
-                                <option value="">— None —</option>
-                                @foreach($userOptions as $opt)
-                                <option value="{{ $opt['id'] }}" @selected($line->user_id == $opt['id'])>
-                                    {{ $opt['label'] }}
-                                </option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="col-12 col-md-4 col-lg-1">
-                            <label class="form-label small mb-1">DOW</label>
-                            <select name="dow" class="form-select form-select-sm">
-                                @foreach($dowOptions as $val => $label)
-                                <option value="{{ $val }}" @selected(($isMyOld ? (int)old('dow') : $line->dow) === $val)>
-                                    {{ $label }}
-                                </option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="col-12 col-md-4 col-lg-2">
-                            <label class="form-label small mb-1">School</label>
-                            <input type="text" name="school_name" class="form-control form-control-sm"
-                                value="{{ $isMyOld ? old('school_name') : $line->school_name }}">
-                        </div>
-
-                        <div class="col-6 col-md-3 col-lg-1">
-                            <label class="form-label small mb-1">Start</label>
-                            <input type="time" name="start_time" class="form-control form-control-sm"
-                                value="{{ $isMyOld ? old('start_time') : \Illuminate\Support\Str::of($line->start_time)->substr(0,5) }}">
-                        </div>
-
-                        <div class="col-6 col-md-3 col-lg-1">
-                            <label class="form-label small mb-1">End</label>
-                            <input type="time" name="end_time" class="form-control form-control-sm"
-                                value="{{ $isMyOld ? old('end_time') : \Illuminate\Support\Str::of($line->end_time)->substr(0,5) }}">
-                        </div>
-
-                        <div class="col-6 col-md-3 col-lg-2">
-                            <label class="form-label small mb-1">Effective Start</label>
-                            <input type="date" name="effective_start" class="form-control form-control-sm"
-                                value="{{ $isMyOld ? old('effective_start') : optional($line->effective_start)->toDateString() }}">
-                        </div>
-
-                        <div class="col-6 col-md-3 col-lg-2">
-                            <label class="form-label small mb-1">Effective End</label>
-                            <input type="date" name="effective_end" class="form-control form-control-sm"
-                                value="{{ $isMyOld ? old('effective_end') : optional($line->effective_end)->toDateString() }}">
-                        </div>
-
-                        <div class="col-12 mt-9 col-lg-10">
-                            <label class="form-label small mb-1">Memo</label>
-                            <textarea name="handover_memo"
-                                class="form-control form-control-sm"
-                                rows="1"
-                                placeholder="Memo">{{ old('handover_memo', $line->handover_memo) }}</textarea>
-                        </div>
-
-                        <div class="col-12 col-lg-2 d-flex t gap-1">
-                            <button type="submit" class="btn btn-sm btn-success mt-3 mt-lg-0">保存</button>
-
-                            <button
-                                type="button"
-                                class="btn btn-sm btn-outline-danger mt-3 mt-lg-0 js-delete-line"
-                                data-delete-url="{{ route('schedule_lines.destroy', $line) }}"
-                                data-line-id="{{ $line->id }}">
-                                削除
-                            </button>
-
-                            <button
-                                type="button"
-                                class="btn btn-sm btn-outline-secondary mt-3 mt-lg-0 js-copy-line"
-                                data-copy-url="{{ route('schedule_lines.copy', $line) }}"
-                                data-line-id="{{ $line->id }}"
-                                data-current-user="{{ $line->user_id ?? '' }}"
-                                data-effective-end="{{ optional($line->effective_end)?->toDateString() ?? '' }}"
-                                data-handover-memo="{{ $line->handover_memo }}">
-                                複写
-                            </button>
-
-                            <a href="{{ route('schedule_details.edit', $line) }}"
-                                class="btn btn-sm btn-outline-info mt-3 mt-lg-0"
-                                target="_blank"
-                                rel="noopener noreferrer">
-                                詳細
-                            </a>
-
-                        </div>
-                    </div>
-                </div>
-            </form>
-
-            {{-- 閲覧専用：Schedule Details --}}
-            @include('schedule.detailsView', ['line' => $line, 'seriesByLine' => $seriesByLine])
-
-            <div class="card-footer d-flex justify-content-between align-items-center py-2">
-                <small class="text-muted">更新: {{ $line->updated_at?->format('Y-m-d H:i') }}</small>
-            </div>
-        </div>
-    </div>
-    @endforeach
+            @endforeach
+        </tbody>
+    </table>
 </div>
 @endif
 
@@ -328,9 +329,13 @@
                 });
                 const data = await res.json().catch(() => ({ ok: false, message: 'Unexpected response' }));
                 if (!res.ok || !data.ok) throw new Error(data?.message || '削除に失敗しました。');
-                let card = btn.closest('.card');
-                let col = card?.closest('.col-12') || card?.parentElement;
-                (col || card)?.remove();
+                // table 行対応: 該当 tr（および detailsView の隠し tr）を削除する
+                const tr = btn.closest('tr');
+                const detailsTr = tr?.nextElementSibling;
+                if (detailsTr?.getAttribute('data-details-for') === lineId) detailsTr.remove();
+                tr?.remove();
+                // 対応する hidden form も削除
+                document.getElementById(`line-form-${lineId}`)?.remove();
                 showFlash(data.message || `Line #${lineId} を削除しました。`, 'success');
             } catch (err) {
                 console.error(err);
@@ -516,14 +521,16 @@
                 try {
                     const id = f.querySelector('input[name="__line_id"]')?.value || null;
                     if (!id) return;
-                    const userId = f.querySelector('select[name="user_id"]')?.value || null;
-                    const dow = f.querySelector('select[name="dow"]')?.value ?? '';
-                    const school = f.querySelector('input[name="school_name"]')?.value ?? '';
-                    const st = f.querySelector('input[name="start_time"]')?.value ?? '';
-                    const et = f.querySelector('input[name="end_time"]')?.value ?? '';
-                    const es = f.querySelector('input[name="effective_start"]')?.value ?? '';
-                    const ee = f.querySelector('input[name="effective_end"]')?.value ?? '';
-                    const memo = f.querySelector('textarea[name="handover_memo"]')?.value ?? '';
+                    // f.elements は form 属性で関連付けられたテーブル内の入力要素も含む
+                    const els = f.elements;
+                    const userId = els.namedItem('user_id')?.value || null;
+                    const dow = els.namedItem('dow')?.value ?? '';
+                    const school = els.namedItem('school_name')?.value ?? '';
+                    const st = els.namedItem('start_time')?.value ?? '';
+                    const et = els.namedItem('end_time')?.value ?? '';
+                    const es = els.namedItem('effective_start')?.value ?? '';
+                    const ee = els.namedItem('effective_end')?.value ?? '';
+                    const memo = els.namedItem('handover_memo')?.value ?? '';
                     items.push({
                         id: Number(id),
                         user_id: userId === '' ? null : Number(userId),
