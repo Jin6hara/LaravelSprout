@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\UsersController;
+use App\Http\Controllers\EmploymentTermController;
 use App\Http\Controllers\ProfilePhotoController;
 use App\Http\Controllers\RoleChangeController;
 use App\Http\Controllers\ApprovalController;
@@ -120,6 +121,16 @@ Route::prefix('profile')->group(function () {
         Route::patch('/update-field/{user}', [UsersController::class, 'updateField'])->name('admin.user.updateField');
         Route::get('/admin/search', [AdminController::class, 'search'])->name('admin.search');
     });
+});
+
+// 雇用履歴・編集（admin/super_admin のみ）
+Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
+    Route::get('/users/{user}/employment-terms', [EmploymentTermController::class, 'details'])
+        ->name('employment_terms.details');
+    Route::get('/employment-terms/{employmentTerm}/edit', [EmploymentTermController::class, 'edit'])
+        ->name('employment_terms.edit');
+    Route::put('/employment-terms/{employmentTerm}', [EmploymentTermController::class, 'update'])
+        ->name('employment_terms.update');
 });
 
 // ロール変更申請

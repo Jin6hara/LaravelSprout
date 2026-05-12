@@ -31,6 +31,8 @@ class EmploymentTermsSeeder extends Seeder
             $user->employmentTerms()->create([
                 'start_date' => $start,
                 'end_date'   => $end,
+                'type_name'  => '正社員',
+                'type_code'  => 'full_time',
                 'note'       => null,
             ]);
         }

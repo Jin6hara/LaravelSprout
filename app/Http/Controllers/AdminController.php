@@ -62,14 +62,17 @@ class AdminController extends Controller
         // employee_code が 5桁固定ならそのままでOK。可変長なら数値順にキャストも可（下のコメント参照）
         $query->orderBy($sort, $dir);
 
-        $users = $query->paginate(10)->withQueryString();
+        $users = $query->with(['district', 'department', 'latestEmploymentTerm'])->paginate(10)->withQueryString();
 
         return view('admin.dashboard', compact('users', 'word', 'fields'));
     }
 
     public function showForm()
     {
-        return view('auth.register');
+        // 現在のスコープ（地区・部署）を登録フォームで確認表示するために渡す
+        // currentScope() が内部で district/department を with() 済みのため load() 不要
+        $scope = $this->scopeService->currentScope();
+        return view('auth.register', compact('scope'));
     }
 
     /**
@@ -83,21 +86,26 @@ class AdminController extends Controller
         DB::transaction(function () use ($data, &$user) {
 
             // user テーブルへの登録
+            // district_id / department_id は改ざん防止のためフォームではなくスコープから取得する
             $user = User::create([
                 'family_name'       => $data['family_name'],
-                'first_name' => $data['first_name'],
+                'first_name'        => $data['first_name'],
                 'name_in_kana'      => $data['name_in_kana'] ?? null,
                 'email'             => $data['email'],
                 'employee_code'     => $data['employee_code'],
                 'password'          => Hash::make($data['password']),
                 'gender'            => $data['gender'],
                 'profile_picture'   => null,
-                'note' => 'こんにちは、' . $data['first_name'] . 'です。',
+                'note'              => 'こんにちは、' . $data['first_name'] . 'です。',
+                'district_id'       => $this->scopeService->currentDistrictId(),
+                'department_id'     => $this->scopeService->currentDepartmentId(),
             ]);
             // employment_terms テーブルへの登録
             $user->employmentTerms()->create([
                 'start_date' => $data['start_date'],
                 'end_date'   => $data['end_date'] ?? null, // null なら在籍中
+                'type_name'  => $data['type_name'] ?? '正社員',
+                'type_code'  => $data['type_code'] ?? 'full_time',
                 'note'       => $data['note'] ?? null,
             ]);
             // model_has_roles テーブルへの登録
@@ -145,7 +153,7 @@ class AdminController extends Controller
 
         $query->orderBy($sort, $dir);
 
-        $users = $query->paginate(10)->withQueryString();
+        $users = $query->with(['district', 'department', 'latestEmploymentTerm'])->paginate(10)->withQueryString();
 
         return view('admin.dashboard', compact('users', 'word', 'fields'));
     }

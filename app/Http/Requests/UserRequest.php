@@ -32,9 +32,11 @@ class UserRequest extends FormRequest
             'phone_number'  => 'nullable|string|max:15',
             'address'       => 'nullable|string|max:255',
 
-            //下記はemployment_termsのためのフィールド            
+            //下記はemployment_termsのためのフィールド
             'start_date'    => ['required', 'date'],
             'end_date'      => ['nullable', 'date', 'after_or_equal:start_date'],
+            'type_name'     => ['nullable', 'string', 'max:100'],
+            'type_code'     => ['nullable', 'string', 'max:50'],
             'note'          => ['nullable', 'string', 'max:255'],
         ];
     }

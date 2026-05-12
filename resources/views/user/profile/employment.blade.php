@@ -26,6 +26,10 @@
                     @endforeach
                     @endif
                     <tr>
+                        <th>雇用形態</th>
+                        <td>{{ $employment?->type_name ?? '—' }}（{{ $employment?->type_code ?? '—' }}）</td>
+                    </tr>
+                    <tr>
                         <th>入社日</th>
                         <td>{{ $employment?->start_date?->format('Y/m/d') ?? '—' }}</td>
                     </tr>
@@ -40,7 +44,7 @@
                 </table>
                 @role('admin|super_admin')
                 <div class="mt-3">
-                    <a href="" class="btn btn-secondary btn-block">雇用情報を編集</a>
+                    <a href="{{ route('employment_terms.details', $user) }}" class="btn btn-secondary btn-block">雇用履歴・詳細</a>
                 </div>
                 @endrole
             </div>
