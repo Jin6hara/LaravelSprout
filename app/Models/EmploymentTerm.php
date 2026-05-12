@@ -10,7 +10,7 @@ class EmploymentTerm extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'start_date', 'end_date', 'note'];
+    protected $fillable = ['user_id', 'start_date', 'end_date', 'type_name', 'type_code', 'note'];
 
     // これで $employment->start_date が自動的に Carbon になり、Bladeで ->format('Y/m/d') が使えるようになる。
     protected $casts = [

@@ -98,6 +98,8 @@ class AdminController extends Controller
             $user->employmentTerms()->create([
                 'start_date' => $data['start_date'],
                 'end_date'   => $data['end_date'] ?? null, // null なら在籍中
+                'type_name'  => $data['type_name'] ?? '正社員',
+                'type_code'  => $data['type_code'] ?? 'full_time',
                 'note'       => $data['note'] ?? null,
             ]);
             // model_has_roles テーブルへの登録
