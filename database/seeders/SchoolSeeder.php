@@ -40,7 +40,7 @@ class SchoolSeeder extends Seeder
         $schools = [
             [
                 'school_code' => '180',
-                'school_name' => 'あびこ校',
+                'school_name' => 'Abiko',
                 'name_kana' => null,
                 'aliases' => ['Abiko', 'ECCあびこ校'],
                 'profile' => [
@@ -53,7 +53,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '132',
-                'school_name' => '明石校',
+                'school_name' => 'Akashi',
                 'name_kana' => null,
                 'aliases' => ['Akashi', 'ECC明石校'],
                 'profile' => [
@@ -67,7 +67,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '141',
-                'school_name' => '淡路校',
+                'school_name' => 'Awaji',
                 'name_kana' => null,
                 'aliases' => ['Awaji', 'ECC淡路校'],
                 'profile' => [
@@ -80,7 +80,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '167',
-                'school_name' => '藤井寺校',
+                'school_name' => 'Fujidera',
                 'name_kana' => null,
                 'aliases' => ['Fujidera', 'ECC藤井寺校'],
                 'profile' => [
@@ -93,7 +93,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '108',
-                'school_name' => '布施校',
+                'school_name' => 'Fuse',
                 'name_kana' => null,
                 'aliases' => ['Fuse', 'ECC布施校'],
                 'profile' => [
@@ -106,7 +106,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '1A5',
-                'school_name' => '五位堂校',
+                'school_name' => 'Goido',
                 'name_kana' => null,
                 'aliases' => ['Goido', 'ECC五位堂校'],
                 'profile' => [
@@ -119,7 +119,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '127',
-                'school_name' => '姫路校',
+                'school_name' => 'Himeji',
                 'name_kana' => null,
                 'aliases' => ['Himeji', 'ECC姫路校'],
                 'profile' => [
@@ -133,7 +133,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '118',
-                'school_name' => '枚方校',
+                'school_name' => 'Hirakata',
                 'name_kana' => null,
                 'aliases' => ['Hirakata', 'ECC枚方校'],
                 'profile' => [
@@ -146,7 +146,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '1A3',
-                'school_name' => 'オンラインハイパー',
+                'school_name' => 'Hyper Online',
                 'name_kana' => null,
                 'aliases' => ['Hyper Online'],
                 'profile' => [
@@ -157,7 +157,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '112',
-                'school_name' => '茨木校',
+                'school_name' => 'Ibaraki',
                 'name_kana' => null,
                 'aliases' => ['Ibaraki', 'ECC茨木校'],
                 'profile' => [
@@ -170,7 +170,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '168',
-                'school_name' => '生駒校',
+                'school_name' => 'Ikoma',
                 'name_kana' => null,
                 'aliases' => ['Ikoma', 'ECC生駒校'],
                 'profile' => [
@@ -183,7 +183,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '117',
-                'school_name' => '阪急伊丹校',
+                'school_name' => 'Itami',
                 'name_kana' => null,
                 'aliases' => ['Itami', 'ECC阪急伊丹校'],
                 'profile' => [
@@ -196,7 +196,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '1H6',
-                'school_name' => '和泉中央校',
+                'school_name' => 'Izumi Chuo',
                 'name_kana' => null,
                 'aliases' => ['Izumi Chuo', 'ECC和泉中央校'],
                 'profile' => [
@@ -209,7 +209,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '1A7',
-                'school_name' => 'JR堺校',
+                'school_name' => 'JR Sakai',
                 'name_kana' => null,
                 'aliases' => ['JR Sakai', 'ECCJR堺校'],
                 'profile' => [
@@ -222,7 +222,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '116',
-                'school_name' => '加古川校',
+                'school_name' => 'Kakogawa',
                 'name_kana' => null,
                 'aliases' => ['Kakogawa', 'ECC加古川校'],
                 'profile' => [
@@ -235,7 +235,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '145',
-                'school_name' => '桂校',
+                'school_name' => 'Katsura',
                 'name_kana' => null,
                 'aliases' => ['Katsura', 'ECC桂校'],
                 'profile' => [
@@ -248,7 +248,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '131',
-                'school_name' => '川西校',
+                'school_name' => 'Kawanishi',
                 'name_kana' => null,
                 'aliases' => ['Kawanishi', 'ECC川西校'],
                 'profile' => [
@@ -262,7 +262,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '1C0',
-                'school_name' => 'ECC KIDSなんば校',
+                'school_name' => 'Kids Namba',
                 'name_kana' => null,
                 'aliases' => ['Kids Namba', 'ECC KIDSなんば校'],
                 'profile' => [
@@ -277,7 +277,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '111',
-                'school_name' => 'ECC KIDS天王寺校',
+                'school_name' => 'Kids Tennoji',
                 'name_kana' => null,
                 'aliases' => ['Kids Tennoji', 'ECC KIDS天王寺校'],
                 'profile' => [
@@ -292,7 +292,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '115',
-                'school_name' => '岸和田校',
+                'school_name' => 'Kishiwada',
                 'name_kana' => null,
                 'aliases' => ['Kishiwada', 'ECC岸和田校'],
                 'profile' => [
@@ -305,7 +305,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '1H8',
-                'school_name' => '北千里校',
+                'school_name' => 'Kita Senri',
                 'name_kana' => null,
                 'aliases' => ['Kita Senri', 'ECC北千里校'],
                 'profile' => [
@@ -318,7 +318,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '1N1',
-                'school_name' => '光明池校',
+                'school_name' => 'Komyoike',
                 'name_kana' => null,
                 'aliases' => ['Komyoike', 'ECC光明池校'],
                 'profile' => [
@@ -331,7 +331,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '158',
-                'school_name' => '甲子園校',
+                'school_name' => 'Koshien',
                 'name_kana' => null,
                 'aliases' => ['Koshien', 'ECC甲子園校'],
                 'profile' => [
@@ -344,7 +344,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '103',
-                'school_name' => '草津エイスクエア校',
+                'school_name' => 'Kusatsu',
                 'name_kana' => null,
                 'aliases' => ['Kusatsu', 'ECC草津エイスクエア校'],
                 'profile' => [
@@ -357,7 +357,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '119',
-                'school_name' => 'くずは校',
+                'school_name' => 'Kuzuha',
                 'name_kana' => null,
                 'aliases' => ['Kuzuha', 'ECCくずは校'],
                 'profile' => [
@@ -370,7 +370,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '106',
-                'school_name' => '京橋校',
+                'school_name' => 'Kyobashi',
                 'name_kana' => null,
                 'aliases' => ['Kyobashi', 'ECC京橋校'],
                 'profile' => [
@@ -385,7 +385,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '135',
-                'school_name' => '京都駅前校',
+                'school_name' => 'Kyoto Ekimae',
                 'name_kana' => null,
                 'aliases' => ['Kyoto Ekimae', 'ECC京都駅前校'],
                 'profile' => [
@@ -400,7 +400,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '1N4',
-                'school_name' => '南草津校',
+                'school_name' => 'Minami Kusatsu',
                 'name_kana' => null,
                 'aliases' => ['Minami Kusatsu', 'ECC南草津校'],
                 'profile' => [
@@ -413,7 +413,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '412',
-                'school_name' => 'マークイズ福岡ももち校',
+                'school_name' => 'Momochi',
                 'name_kana' => null,
                 'aliases' => ['Momochi', 'ECCマークイズ福岡ももち校'],
                 'profile' => [
@@ -426,7 +426,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '1N7',
-                'school_name' => '名谷校',
+                'school_name' => 'Myodani',
                 'name_kana' => null,
                 'aliases' => ['Myodani', 'ECC名谷校'],
                 'profile' => [
@@ -439,7 +439,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '1A6',
-                'school_name' => '長岡天神校',
+                'school_name' => 'Nagaokatenjin',
                 'name_kana' => null,
                 'aliases' => ['Nagaokatenjin', 'ECC長岡天神校'],
                 'profile' => [
@@ -452,7 +452,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '146',
-                'school_name' => '中もず校',
+                'school_name' => 'Nakamozu',
                 'name_kana' => null,
                 'aliases' => ['Nakamozu', 'ECC中もず校'],
                 'profile' => [
@@ -466,7 +466,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '110',
-                'school_name' => '寝屋川校',
+                'school_name' => 'Neyagawa',
                 'name_kana' => null,
                 'aliases' => ['Neyagawa', 'ECC寝屋川校'],
                 'profile' => [
@@ -479,7 +479,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '113',
-                'school_name' => '西宮北口校',
+                'school_name' => 'Nishinomiya',
                 'name_kana' => null,
                 'aliases' => ['Nishinomiya', 'ECC西宮北口校'],
                 'profile' => [
@@ -492,7 +492,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '2Z1',
-                'school_name' => 'オンライン',
+                'school_name' => 'Online',
                 'name_kana' => null,
                 'aliases' => ['Online'],
                 'profile' => [
@@ -503,7 +503,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '407',
-                'school_name' => 'イオンモール岡山校',
+                'school_name' => 'Okayama',
                 'name_kana' => null,
                 'aliases' => ['Okayama', 'ECCイオンモール岡山校'],
                 'profile' => [
@@ -516,7 +516,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '120',
-                'school_name' => '西大寺校',
+                'school_name' => 'Saidaiji',
                 'name_kana' => null,
                 'aliases' => ['Saidaiji', 'ECC西大寺校'],
                 'profile' => [
@@ -529,7 +529,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '114',
-                'school_name' => '堺東校',
+                'school_name' => 'Sakai Higashi',
                 'name_kana' => null,
                 'aliases' => ['Sakai Higashi', 'ECC堺東校'],
                 'profile' => [
@@ -542,7 +542,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '1N2',
-                'school_name' => '三田駅前校',
+                'school_name' => 'Sanda Ekimae',
                 'name_kana' => null,
                 'aliases' => ['Sanda Ekimae', 'ECC三田駅前校'],
                 'profile' => [
@@ -555,7 +555,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '107',
-                'school_name' => '三宮校',
+                'school_name' => 'Sannomiya',
                 'name_kana' => null,
                 'aliases' => ['Sannomiya', 'ECC三宮校'],
                 'profile' => [
@@ -571,7 +571,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '1H0',
-                'school_name' => '千里中央校',
+                'school_name' => 'Senri Chuo',
                 'name_kana' => null,
                 'aliases' => ['Senri Chuo', 'ECC千里中央校'],
                 'profile' => [
@@ -585,7 +585,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '137',
-                'school_name' => '四条烏丸校',
+                'school_name' => 'Shijo',
                 'name_kana' => null,
                 'aliases' => ['Shijo', 'ECC四条烏丸校'],
                 'profile' => [
@@ -599,7 +599,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '1H5',
-                'school_name' => '新田辺校',
+                'school_name' => 'Shin Tanabe',
                 'name_kana' => null,
                 'aliases' => ['Shin Tanabe', 'ECC新田辺校'],
                 'profile' => [
@@ -612,7 +612,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '1N5',
-                'school_name' => '白庭台校',
+                'school_name' => 'Shiraniwadai',
                 'name_kana' => null,
                 'aliases' => ['Shiraniwadai', 'ECC白庭台校'],
                 'profile' => [
@@ -625,7 +625,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '1C1',
-                'school_name' => '心斎橋校',
+                'school_name' => 'Shinsaibashi',
                 'name_kana' => null,
                 'aliases' => ['Shinsaibashi', 'ECC心斎橋校'],
                 'profile' => [
@@ -639,7 +639,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '133',
-                'school_name' => '夙川校',
+                'school_name' => 'Shukugawa',
                 'name_kana' => null,
                 'aliases' => ['Shukugawa', 'ECC夙川校'],
                 'profile' => [
@@ -652,7 +652,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '130',
-                'school_name' => '神戸住吉校',
+                'school_name' => 'Sumiyoshi',
                 'name_kana' => null,
                 'aliases' => ['Sumiyoshi', 'ECC神戸住吉校'],
                 'profile' => [
@@ -665,7 +665,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '1N8',
-                'school_name' => 'イオンモール高の原校',
+                'school_name' => 'Takanohara',
                 'name_kana' => null,
                 'aliases' => ['Takanohara', 'ECCイオンモール高の原校'],
                 'profile' => [
@@ -678,7 +678,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '1N9',
-                'school_name' => 'ECC KIDS高槻校',
+                'school_name' => 'Takatsuki Kids',
                 'name_kana' => null,
                 'aliases' => ['Takatsuki Kids', 'ECC KIDS高槻校'],
                 'profile' => [
@@ -691,7 +691,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '122',
-                'school_name' => 'グリーンプラザ高槻校',
+                'school_name' => 'Takatsuki Green Plaza',
                 'name_kana' => null,
                 'aliases' => ['Takatsuki Green Plaza', 'ECCグリーンプラザ高槻校'],
                 'profile' => [
@@ -704,7 +704,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '1A4',
-                'school_name' => '垂水校',
+                'school_name' => 'Tarumi',
                 'name_kana' => null,
                 'aliases' => ['Tarumi', 'ECC垂水校'],
                 'profile' => [
@@ -718,7 +718,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '401',
-                'school_name' => '福岡天神ソラリアステージ校',
+                'school_name' => 'Teijin Solaria',
                 'name_kana' => null,
                 'aliases' => ['Teijin Solaria', 'Tenjin Solaria', 'ECC福岡天神ソラリアステージ校'],
                 'profile' => [
@@ -732,7 +732,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '109',
-                'school_name' => '天王寺ミオプラザ校',
+                'school_name' => 'Tennoji MP',
                 'name_kana' => null,
                 'aliases' => ['Tennoji MP', 'ECC天王寺ミオプラザ校'],
                 'profile' => [
@@ -747,7 +747,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '1N6',
-                'school_name' => 'イオンモール奈良登美ヶ丘校',
+                'school_name' => 'Tomigaoka',
                 'name_kana' => null,
                 'aliases' => ['Tomigaoka', 'ECCイオンモール奈良登美ヶ丘校'],
                 'profile' => [
@@ -760,7 +760,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '123',
-                'school_name' => '豊中校',
+                'school_name' => 'Toyonaka',
                 'name_kana' => null,
                 'aliases' => ['Toyonaka', 'ECC豊中校'],
                 'profile' => [
@@ -773,7 +773,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '136',
-                'school_name' => '阪急グランドビル梅田校',
+                'school_name' => 'Umeda GB',
                 'name_kana' => null,
                 'aliases' => ['Umeda GB', 'ECC阪急グランドビル梅田校'],
                 'profile' => [
@@ -789,7 +789,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '128',
-                'school_name' => '和歌山ミオ校',
+                'school_name' => 'Wakayama',
                 'name_kana' => null,
                 'aliases' => ['Wakayama', 'ECC和歌山ミオ校'],
                 'profile' => [
@@ -802,7 +802,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '164',
-                'school_name' => '八木校',
+                'school_name' => 'Yagi',
                 'name_kana' => null,
                 'aliases' => ['Yagi', 'ECC八木校'],
                 'profile' => [
@@ -815,7 +815,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '150',
-                'school_name' => '山科校',
+                'school_name' => 'Yamashina',
                 'name_kana' => null,
                 'aliases' => ['Yamashina', 'ECC山科校'],
                 'profile' => [
@@ -829,7 +829,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => '144',
-                'school_name' => '八尾校',
+                'school_name' => 'Yao',
                 'name_kana' => null,
                 'aliases' => ['Yao', 'ECC八尾校'],
                 'profile' => [
@@ -841,8 +841,8 @@ class SchoolSeeder extends Seeder
                 ],
             ],
             [
-                'school_code' => 'HQ',
-                'school_name' => '本社',
+                'school_code' => '181',
+                'school_name' => 'HQ',
                 'name_kana' => null,
                 'aliases' => ['HQ', 'ECC本社'],
                 'profile' => [
@@ -853,7 +853,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => 'NED',
-                'school_name' => '教務',
+                'school_name' => 'Education',
                 'name_kana' => null,
                 'aliases' => ['Education'],
                 'profile' => [
@@ -864,7 +864,7 @@ class SchoolSeeder extends Seeder
             ],
             [
                 'school_code' => 'NHR',
-                'school_name' => '人事',
+                'school_name' => 'Personal',
                 'name_kana' => null,
                 'aliases' => ['Personal'],
                 'profile' => [
