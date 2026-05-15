@@ -104,6 +104,7 @@
                 <th>End</th>
                 <th>Code</th>
                 <th>Note</th>
+                <th>Memo</th>
                 <th>Effective</th>
                 <th>Until</th>
                 <th>Actions</th>
@@ -144,6 +145,10 @@
                 <td>
                     <input type="text" class="form-control form-control-sm js-lesson-note"
                         value="{{ $d->lesson->note ?? '' }}" style="min-width: 8rem;">
+                </td>
+                <td>
+                    <input type="text" class="form-control form-control-sm js-detail-note"
+                        value="{{ $d->note ?? '' }}" style="min-width: 8rem;">
                 </td>
                 <td>
                     <input type="date" class="form-control form-control-sm js-eff-start" value="{{ $effStart }}">
@@ -265,6 +270,7 @@
                 const id = Number(card.dataset.id);
                 const code = card.querySelector('.js-lesson-code')?.value?.trim() || '';
                 const note = card.querySelector('.js-lesson-note')?.value ?? '';
+                const detailNote = card.querySelector('.js-detail-note')?.value ?? null;
                 const st = (card.querySelector('.js-start-time')?.value || '').trim();
                 const es = (card.querySelector('.js-eff-start')?.value || '').trim();
                 const ee = (card.querySelector('.js-eff-end')?.value || '').trim();
@@ -273,6 +279,7 @@
                     id,
                     lesson_code: code,
                     note,
+                    detail_note: detailNote,
                     start_time: st, // 'HH:MM'
                     effective_start: es || null, // 空は null
                     effective_end: ee || null, // 空は null

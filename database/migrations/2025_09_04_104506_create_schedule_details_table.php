@@ -20,6 +20,7 @@ return new class extends Migration
             // ▼ 有効期間
             $t->date('effective_start');              // 必須
             $t->date('effective_end')->nullable();    // NULL=オープンエンド
+            $t->text('note')->nullable();             // 備考
 
             $t->timestamps();
 

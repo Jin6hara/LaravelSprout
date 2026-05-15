@@ -33,3 +33,11 @@ if (inboxEl) {
     const props = inboxEl.dataset.props ? JSON.parse(inboxEl.dataset.props) : {};
     createApp(InboxBadge, props).mount(inboxEl);
 }
+
+import SchoolTimetable from './components/SchoolTimetable.vue';
+
+const stEl = document.getElementById('schoolTimetable');
+if (stEl) {
+    const props = stEl.dataset.props ? JSON.parse(stEl.dataset.props) : {};
+    createApp(SchoolTimetable, props).mount(stEl);
+}
