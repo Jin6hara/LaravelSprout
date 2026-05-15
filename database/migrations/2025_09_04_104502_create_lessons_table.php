@@ -13,10 +13,10 @@ return new class extends Migration
     public function up(): void {
         Schema::create('lessons', function (Blueprint $t) {
             $t->id();
-            $t->string('lesson_name');
-            $t->string('lesson_code')->index();
+            $t->string('lesson_name')->nullable();
+            $t->string('lesson_code')->nullable()->index();
             $t->string('note')->nullable();
-            $t->unsignedSmallInteger('lesson_minute'); // 30/40/45など
+            $t->unsignedSmallInteger('lesson_minute')->nullable(); // 30/40/45など
             $t->string('lesson_type')->nullable();
             $t->string('ps_unique_lesson_code')->nullable()->index(); // CSV import参照用
             $t->string('fm_lesson_code')->nullable()->index();        // CSV import参照用

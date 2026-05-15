@@ -378,6 +378,22 @@ Route::middleware('auth')->group(function () {
 });
 
 // ---------------------------------------------------------------------------------------------------------▼ CSV関連ルート
+use App\Http\Controllers\CsvController;
+use App\Http\Controllers\LessonCsvController;
+
+Route::get('/csv', [CsvController::class, 'index'])
+    ->name('csv.index');
+
+Route::get('/csv/lessons', [LessonCsvController::class, 'show'])
+    ->name('csv.lessons.show');
+
+Route::get('/csv/lessons/export', [LessonCsvController::class, 'export'])
+    ->name('csv.lessons.export');
+
+Route::post('/csv/lessons/import', [LessonCsvController::class, 'import'])
+    ->name('csv.lessons.import');
+
+
 use App\Http\Controllers\ScheduleLineCsvController;
 
 Route::get('/cvs/schedule_line', [ScheduleLineCsvController::class, 'form'])
