@@ -17,7 +17,9 @@ return new class extends Migration
             $t->string('lesson_code')->index();
             $t->string('note')->nullable();
             $t->unsignedSmallInteger('lesson_minute'); // 30/40/45など
-            $t->enum('lesson_type', ['kids','Adults','Break','other'])->default('other');
+            $t->string('lesson_type')->nullable();
+            $t->string('ps_unique_lesson_code')->nullable()->index(); // CSV import参照用
+            $t->string('fm_lesson_code')->nullable()->index();        // CSV import参照用
             $t->timestamps();
         });
 

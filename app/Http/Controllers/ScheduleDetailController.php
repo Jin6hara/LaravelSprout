@@ -194,7 +194,7 @@ class ScheduleDetailController extends Controller
                     'lesson_code'   => 'TEMP',
                     'note'          => null,
                     'lesson_minute' => 0,
-                    'lesson_type'   => 'other',
+                    'lesson_type'   => null,
                 ]);
             }
 
