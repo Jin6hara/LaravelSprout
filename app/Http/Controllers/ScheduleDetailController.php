@@ -102,6 +102,7 @@ class ScheduleDetailController extends Controller
                 $v = Validator::make($raw, [
                     'lesson_code'     => ['required', 'string', 'max:255'],
                     'note'            => ['nullable', 'string', 'max:2000'],
+                    'detail_note'     => ['nullable', 'string', 'max:2000'],
                     'start_time'      => ['required', 'date_format:H:i'],
                     'effective_start' => ['required', 'date'],
                     'effective_end'   => ['nullable', 'date', 'after_or_equal:effective_start'],
@@ -126,6 +127,10 @@ class ScheduleDetailController extends Controller
                 $detail->effective_end   = isset($data['effective_end']) && $data['effective_end'] !== ''
                     ? Carbon::parse($data['effective_end'])->toDateString()
                     : null;
+                // schedule_details 固有のメモ（detail_note がリクエストに含まれる場合のみ更新）
+                if (array_key_exists('detail_note', $data)) {
+                    $detail->note = $data['detail_note'] ?? null;
+                }
                 $detail->save();
 
                 // 3) lesson の note を更新（画面の「note」は lessons.note を指す）

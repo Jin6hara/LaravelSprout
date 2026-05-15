@@ -262,14 +262,16 @@ class ScheduleLineController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'user_id' => ['nullable', 'exists:users,id'],
+            'user_id'     => ['nullable', 'exists:users,id'],
+            'school_name' => ['nullable', 'string', 'max:255'],
+            'dow'         => ['nullable', 'integer', 'between:0,6'],
         ]);
 
         $line = new ScheduleLine();
         $line->user_id         = $data['user_id'] ?? null;
         $line->total_minutes   = 0;
-        $line->dow             = 0;
-        $line->school_name     = '';
+        $line->dow             = $data['dow'] ?? 0;
+        $line->school_name     = $data['school_name'] ?? '';
         $line->start_time      = '00:00:00';
         $line->end_time        = '00:00:00';
         $line->effective_start = now()->toDateString();

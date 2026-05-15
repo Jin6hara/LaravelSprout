@@ -19,6 +19,7 @@ class ScheduleDetail extends Model
         'lesson_id',
         'effective_start',
         'effective_end',
+        'note',
     ];
 
     protected $casts = [
