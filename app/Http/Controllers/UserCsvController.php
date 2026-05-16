@@ -152,6 +152,8 @@ class UserCsvController extends Controller
         $districtMap   = District::pluck('id', 'name')->all();
         $departmentMap = Department::pluck('id', 'name')->all();
         $roleMap       = Role::where('guard_name', 'web')->pluck('name', 'name')->all();
+        $existingEmails = User::pluck('id', 'email')->all();
+        $existingCodes  = User::pluck('id', 'employee_code')->all();
 
         foreach ($rows as ['row' => $rowNum, 'data' => $data]) {
             $v = Validator::make($data, [
@@ -204,20 +206,14 @@ class UserCsvController extends Controller
             }
 
             // email 重複チェック（別ユーザー）
-            $emailDup = User::where('email', $data['email']);
-            if ($id !== null) {
-                $emailDup->where('id', '!=', $id);
-            }
-            if ($emailDup->exists()) {
+            $emailOwner = $existingEmails[$data['email']] ?? null;
+            if ($emailOwner !== null && $emailOwner !== $id) {
                 $validationErrors[] = "{$rowNum}行目: email「{$data['email']}」は既に別のユーザーが使用しています。";
             }
 
             // employee_code 重複チェック（別ユーザー）
-            $codeDup = User::where('employee_code', $data['employee_code']);
-            if ($id !== null) {
-                $codeDup->where('id', '!=', $id);
-            }
-            if ($codeDup->exists()) {
+            $codeOwner = $existingCodes[$data['employee_code']] ?? null;
+            if ($codeOwner !== null && $codeOwner !== $id) {
                 $validationErrors[] = "{$rowNum}行目: employee_code「{$data['employee_code']}」は既に別のユーザーが使用しています。";
             }
         }
