@@ -2,11 +2,11 @@
   <div>
     <!-- 印刷ボタン (印刷時は非表示) -->
     <div class="print-toolbar">
-      <button class="print-btn" @click="print" :disabled="loading">
+      <button class="print-btn" @click="print" :disabled="loading || generating">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>
         </svg>
-        印刷 / PDF で保存
+        {{ generating ? 'PDF生成中...' : 'PDF ダウンロード' }}
       </button>
     </div>
 
@@ -135,6 +135,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
+import html2pdf from 'html2pdf.js';
 
 const props = defineProps({
   type:        { type: String, required: true },
@@ -162,8 +163,25 @@ function formatDateHeading(ymd) {
   return `${ymd} (${day})`;
 }
 
-function print() {
-  window.print();
+const generating = ref(false);
+
+async function print() {
+  if (!data.value) return;
+  generating.value = true;
+
+  const element  = document.querySelector('.pdf-page');
+  const filename = `${data.value.meta.title.replace(/\s+/g, '_')}_${today.value}.pdf`;
+
+  await html2pdf().set({
+    margin:     [10, 10, 10, 10],
+    filename,
+    image:      { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, logging: false },
+    jsPDF:      { unit: 'mm', format: 'a4', orientation: 'landscape' },
+    pagebreak:  { mode: 'avoid-all' },
+  }).from(element).save();
+
+  generating.value = false;
 }
 
 onMounted(async () => {
@@ -216,10 +234,12 @@ onMounted(async () => {
 /* ===== PDF 本体 ===== */
 .pdf-page {
   background: #fff;
-  width: 297mm;         /* A4 横 */
+  width: 100%;
+  max-width: 1060px;
   min-height: 210mm;
   margin: 20px auto;
   padding: 12mm;
+  box-sizing: border-box;
   box-shadow: 0 2px 16px rgba(0,0,0,0.12);
   font-family: 'Noto Sans JP', sans-serif;
   font-size: 9pt;
@@ -301,29 +321,5 @@ th {
 }
 .sub-label { font-weight: 600; color: #374151; }
 
-/* ===== 印刷メディア ===== */
-@page {
-  size: A4 landscape;
-  margin: 0;
-}
 
-@media print {
-  body {
-    margin: 0;
-    background: #fff !important;
-  }
-
-  .print-toolbar { display: none !important; }
-
-  .pdf-page {
-    width: auto;
-    min-height: auto;
-    margin: 0;
-    padding: 12mm;
-    box-shadow: none;
-  }
-
-  .date-group { page-break-inside: avoid; }
-  .date-heading { page-break-before: auto; }
-}
 </style>

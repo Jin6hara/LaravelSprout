@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
-use Barryvdh\DomPDF\Facade\Pdf;
+
 use App\Services\Calendar\Providers\SubCountProvider;
 
 class EventAssignController extends Controller
@@ -322,122 +322,6 @@ class EventAssignController extends Controller
             'results' => $results,
             'message' => $ngCount ? '一部保存に失敗しました' : 'すべて保存しました',
         ]);
-    }
-
-    /**
-     * PDFエクスポート
-     */
-    public function exportSubPdf(Request $request)
-    {
-        // mode 決定（未指定は tentative 扱い）
-        $mode = $request->string('mode')->lower()->value();
-        if (!in_array($mode, ['tentative', 'final', 'master'], true)) {
-            $mode = 'tentative';
-        }
-
-        // 除外する event_id 群（チェックボックスから）
-        $excludeEventIds = collect($request->input('exclude_event_ids', []))
-            ->filter(fn($v) => is_numeric($v))
-            ->map(fn($v) => (int)$v)
-            ->unique()
-            ->values()
-            ->all();
-
-        // 同条件 + 除外
-        $query = $this->baseEventQuery($request)
-            ->when(!empty($excludeEventIds), fn($q) => $q->whereNotIn('id', $excludeEventIds));
-
-        // PDFは全件取得
-        $events = $query->get();
-
-        // ★SubCountProvider から日別の Sub サマリを取得
-        $subSummaryByDate = [];
-        if ($events->isNotEmpty()) {
-            $minDate = Carbon::parse($events->min('event_date'))->startOfDay();
-            $maxDate = Carbon::parse($events->max('event_date'))->addDay()->startOfDay(); // 排他
-
-            /** @var SubCountProvider $provider */
-            $provider = app(SubCountProvider::class);
-            $subEvents = $provider->provide($request->user(), $minDate, $maxDate);
-
-            foreach ($subEvents as $ev) {
-                // CandidateEvent の仕様に合わせて start / extendedProps を取得
-                $day = Carbon::parse($ev->start)->toDateString();
-                $ext = $ev->extendedProps ?? [];
-
-                $subSummaryByDate[$day] = [
-                    'users'        => $ext['users']        ?? [],
-                    'absent_users' => $ext['absent_users'] ?? [],
-                ];
-            }
-        }
-
-        $meta = [
-            'range_from'  => $request->input('event_date'),
-            'range_to'    => $request->input('end_date'),
-            //'generated_at' => now('Asia/Tokyo')->format('Y-m-d H:i'),
-            'mode'        => $mode,
-        ];
-
-        $pdf = Pdf::loadView('pdf.events_sublist', [
-            'events'           => $events,
-            'meta'             => $meta,
-            'subSummaryByDate' => $subSummaryByDate, // ★追加
-        ])
-            ->setPaper('a4', 'landscape');
-
-        $filename = "sublist-{$mode}"
-            . ($meta['range_from'] ? "_{$meta['range_from']}" : '')
-            . ($meta['range_to']   ? "-{$meta['range_to']}"   : '')
-            . '.pdf';
-
-        return $pdf->download($filename);
-    }
-
-    public function exportConfirmationsPdf(Request $request)
-    {
-        // mode: alp | ot（不正なら alp）
-        $mode = $request->string('mode')->lower()->value();
-        if (!in_array($mode, ['alp', 'ot'], true)) {
-            $mode = 'alp';
-        }
-
-        // 除外する event_id（画面のチェックボックスから）
-        $excludeEventIds = collect($request->input('exclude_event_ids', []))
-            ->filter(fn($v) => is_numeric($v))
-            ->map(fn($v) => (int)$v)
-            ->unique()
-            ->values()
-            ->all();
-
-        // 既存の検索条件を流用 + 除外
-        $query = $this->baseEventQuery($request)
-            ->when(!empty($excludeEventIds), fn($q) => $q->whereNotIn('id', $excludeEventIds));
-
-        // 必要なら mode ごとの追加フィルタを入れられます（任意）
-        // 例: ALP は leave_type が有るものに限定…など
-        // if ($mode === 'alp') { $query->whereNotNull('Leave_type'); }
-
-        // PDFは全件取得
-        $events = $query->get();
-
-        $meta = [
-            'range_from'   => $request->input('event_date'),
-            'range_to'     => $request->input('end_date'),
-            'generated_at' => now('Asia/Tokyo')->format('Y-m-d H:i'),
-            'mode'         => $mode,
-            'title'        => $mode === 'alp' ? 'ALP Confirmation List' : 'OT Confirmation List',
-        ];
-
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.confirmations', compact('events', 'meta'))
-            ->setPaper('a4', 'portrait');
-
-        $filename = ($mode === 'alp' ? 'alp' : 'ot') . '-confirmation'
-            . ($meta['range_from'] ? "_{$meta['range_from']}" : '')
-            . ($meta['range_to']   ? "-{$meta['range_to']}"   : '')
-            . '.pdf';
-
-        return $pdf->download($filename);
     }
 
     // ---- Vue プレビュー用 ----

@@ -202,8 +202,6 @@ use App\Http\Controllers\LeaveController;
 Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
     Route::get('/shift_assigner', [EventAssignController::class, 'edit'])->name('calendar.edit');
     // PDF（モード: tentative|final|master）
-    Route::get('/calendar/edit/pdf', [EventAssignController::class, 'exportSubPdf'])->name('calendar.edit.pdf');
-    Route::get('/calendar/confirmations/pdf', [EventAssignController::class, 'exportConfirmationsPdf'])->name('calendar.confirmations.pdf');
     // Vue プレビュー画面
     Route::get('/calendar/edit/pdf-preview', [EventAssignController::class, 'sublistPreview'])->name('calendar.edit.pdf.preview');
     Route::get('/calendar/confirmations/pdf-preview', [EventAssignController::class, 'confirmationsPreview'])->name('calendar.confirmations.pdf.preview');
