@@ -302,21 +302,25 @@ th {
 .sub-label { font-weight: 600; color: #374151; }
 
 /* ===== 印刷メディア ===== */
+@page {
+  size: A4 landscape;
+  margin: 0;
+}
+
 @media print {
-  body { background: #fff !important; }
+  body {
+    margin: 0;
+    background: #fff !important;
+  }
 
   .print-toolbar { display: none !important; }
 
   .pdf-page {
-    width: 100%;
+    width: auto;
+    min-height: auto;
     margin: 0;
-    padding: 0;
+    padding: 12mm;
     box-shadow: none;
-  }
-
-  @page {
-    size: A4 landscape;
-    margin: 12mm;
   }
 
   .date-group { page-break-inside: avoid; }
