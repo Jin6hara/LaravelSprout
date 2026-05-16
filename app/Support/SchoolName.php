@@ -10,7 +10,7 @@ final class SchoolName
             return null;
         }
 
-        $trimmed = trim($value, " \t\n\r\0\x0B\xC2\xA0\xE3\x80\x80");
+        $trimmed = self::mbTrim($value);
         if ($trimmed === '') {
             return '';
         }
@@ -24,6 +24,17 @@ final class SchoolName
             return '';
         }
 
-        return mb_strtolower(trim($value, " \t\n\r\0\x0B\xC2\xA0\xE3\x80\x80"), 'UTF-8');
+        return mb_strtolower(self::mbTrim($value), 'UTF-8');
+    }
+
+    /**
+     * マルチバイト安全な trim。
+     * 半角スペース・タブ等に加え、NBSP (U+00A0) と全角スペース (U+3000) を除去する。
+     * PHP 標準の trim() にバイト列を渡すと UTF-8 マルチバイト文字を破壊するため、
+     * /u フラグ付き正規表現で文字単位で処理する。
+     */
+    private static function mbTrim(string $value): string
+    {
+        return preg_replace('/^[\s\x{00A0}\x{3000}]+|[\s\x{00A0}\x{3000}]+$/u', '', $value) ?? $value;
     }
 }

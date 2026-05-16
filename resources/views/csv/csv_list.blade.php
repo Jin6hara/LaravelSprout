@@ -23,6 +23,40 @@
         </div>
     </div>
 
+    {{-- User CSV --}}
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title">
+                    <i class="fas fa-users me-2 text-primary"></i>User CSV
+                </h5>
+                <p class="card-text text-muted flex-grow-1">
+                    users テーブルの全件を CSV でエクスポート、または CSV ファイルからインポートします。
+                </p>
+                <a href="{{ route('csv.users.show') }}" class="btn btn-outline-primary mt-2">
+                    Export / Import
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {{-- Schedule CSV --}}
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title">
+                    <i class="fas fa-calendar-alt me-2 text-primary"></i>Schedule CSV
+                </h5>
+                <p class="card-text text-muted flex-grow-1">
+                    FileMaker から出力した Schedule CSV を schedule_lines / schedule_details にインポート、またはエクスポートします。
+                </p>
+                <a href="{{ route('csv.schedules.show') }}" class="btn btn-outline-primary mt-2">
+                    Export / Import
+                </a>
+            </div>
+        </div>
+    </div>
+
     {{-- 今後ここに他テーブルの CSV カードを追加 --}}
 </div>
 @endsection
