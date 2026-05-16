@@ -40,6 +40,9 @@ RUN npm ci && npm run build
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 775 storage bootstrap/cache
 
+# PHP設定
+COPY docker/php/custom.ini /usr/local/etc/php/conf.d/custom.ini
+
 # nginx設定
 COPY docker/nginx/default.conf /etc/nginx/sites-available/default
 
