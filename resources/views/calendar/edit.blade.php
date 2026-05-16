@@ -468,6 +468,15 @@
     <button type="button" class="btn btn-sm btn-outline-secondary" data-mode="ot"  data-target="confirm">OT Confirmation PDF</button>
   </form>
 
+  {{-- ▼ Vue プレビュー版ボタン --}}
+  <div class="d-flex flex-wrap gap-2 mt-1">
+    <button type="button" class="btn btn-sm btn-outline-primary js-preview-btn" data-mode="tentative" data-target="sublist">Tentative Sublist Preview</button>
+    <button type="button" class="btn btn-sm btn-outline-primary js-preview-btn" data-mode="final"     data-target="sublist">Final Sublist Preview</button>
+    <button type="button" class="btn btn-sm btn-outline-primary js-preview-btn" data-mode="master"    data-target="sublist">Master Sublist Preview</button>
+    <button type="button" class="btn btn-sm btn-outline-primary js-preview-btn" data-mode="alp" data-target="confirm">ALP Confirmation Preview</button>
+    <button type="button" class="btn btn-sm btn-outline-primary js-preview-btn" data-mode="ot"  data-target="confirm">OT Confirmation Preview</button>
+  </div>
+
   <script>
   (function () {
     const form  = document.getElementById('pdfForm');
@@ -505,6 +514,29 @@
         });
 
         form.submit();
+      });
+    });
+
+    // ▼ プレビューボタン：検索条件 + exclude_event_ids を引き継いで新タブで開く
+    const SUBLIST_PREVIEW_URL = "{{ route('calendar.edit.pdf.preview') }}";
+    const CONFIRM_PREVIEW_URL = "{{ route('calendar.confirmations.pdf.preview') }}";
+
+    document.querySelectorAll('.js-preview-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mode   = btn.getAttribute('data-mode') || '';
+        const target = btn.getAttribute('data-target') || 'sublist';
+        const base   = (target === 'confirm') ? CONFIRM_PREVIEW_URL : SUBLIST_PREVIEW_URL;
+
+        const params = new URLSearchParams();
+        params.set('mode', mode);
+        form.querySelectorAll('input[type="hidden"]:not([name="mode"])').forEach(inp => {
+          if (inp.name && inp.value) params.set(inp.name, inp.value);
+        });
+        document.querySelectorAll('.js-exclude-event:checked').forEach(chk => {
+          params.append('exclude_event_ids[]', chk.value);
+        });
+
+        window.open(base + '?' + params.toString(), '_blank');
       });
     });
   })();

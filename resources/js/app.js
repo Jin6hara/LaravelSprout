@@ -41,3 +41,13 @@ if (stEl) {
     const props = stEl.dataset.props ? JSON.parse(stEl.dataset.props) : {};
     createApp(SchoolTimetable, props).mount(stEl);
 }
+
+import PdfPreview from './components/PdfPreview.vue';
+
+const pdfEl = document.getElementById('pdfPreview');
+if (pdfEl) {
+    createApp(PdfPreview, {
+        type:        pdfEl.dataset.type,
+        queryString: pdfEl.dataset.query,
+    }).mount(pdfEl);
+}

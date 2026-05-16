@@ -440,6 +440,172 @@ class EventAssignController extends Controller
         return $pdf->download($filename);
     }
 
+    // ---- Vue プレビュー用 ----
+
+    public function sublistPreview(Request $request)
+    {
+        return view('pdf.preview', [
+            'type'        => 'sublist',
+            'queryString' => $request->getQueryString() ?? '',
+        ]);
+    }
+
+    public function confirmationsPreview(Request $request)
+    {
+        return view('pdf.preview', [
+            'type'        => 'confirmations',
+            'queryString' => $request->getQueryString() ?? '',
+        ]);
+    }
+
+    public function exportSubPdfJson(Request $request)
+    {
+        $mode = $request->string('mode')->lower()->value();
+        if (!in_array($mode, ['tentative', 'final', 'master'], true)) {
+            $mode = 'tentative';
+        }
+
+        $excludeEventIds = collect($request->input('exclude_event_ids', []))
+            ->filter(fn($v) => is_numeric($v))
+            ->map(fn($v) => (int)$v)
+            ->unique()->values()->all();
+
+        $query  = $this->baseEventQuery($request)
+            ->when(!empty($excludeEventIds), fn($q) => $q->whereNotIn('id', $excludeEventIds));
+        $events = $query->get();
+
+        $subSummaryByDate = [];
+        if ($events->isNotEmpty()) {
+            $minDate  = Carbon::parse($events->min('event_date'))->startOfDay();
+            $maxDate  = Carbon::parse($events->max('event_date'))->addDay()->startOfDay();
+            $provider = app(SubCountProvider::class);
+            $subEvents = $provider->provide($request->user(), $minDate, $maxDate);
+
+            foreach ($subEvents as $ev) {
+                $day = Carbon::parse($ev->start)->toDateString();
+                $ext = $ev->extendedProps ?? [];
+                $subSummaryByDate[$day] = [
+                    'users'        => $ext['users']        ?? [],
+                    'absent_users' => $ext['absent_users'] ?? [],
+                ];
+            }
+        }
+
+        $fmtTime = fn($t) => $t ? (is_string($t) ? substr($t, 0, 5) : optional($t)->format('H:i')) : '';
+        $fmtDate = fn($d) => $d instanceof \DateTimeInterface ? $d->format('Y-m-d') : substr((string)$d, 0, 10);
+
+        $fmtSubText = function (array $buckets): string {
+            $parts = [];
+            foreach ($buckets as $items) {
+                foreach ($items as $u) {
+                    $label = $u['name'] ?? '';
+                    $start = $u['start_hm'] ?? null;
+                    $end   = $u['end_hm']   ?? null;
+                    if ($start || $end) {
+                        $label .= ' (' . trim(($start ?? '') . ' - ' . ($end ?? '')) . ')';
+                    }
+                    $parts[] = $label;
+                }
+            }
+            return $parts ? implode(', ', $parts) : 'None';
+        };
+
+        $fmtSubCount = fn(array $buckets): int => array_sum(array_map('count', $buckets));
+
+        $titleMap = ['tentative' => 'Tentative Sublist', 'final' => 'Final Sublist', 'master' => 'Master Sublist'];
+
+        $grouped = $events->groupBy(fn($e) => $fmtDate($e->event_date) ?: 'No Date');
+
+        $groups = $grouped->map(function ($rows, $date) use ($mode, $fmtTime, $subSummaryByDate, $fmtSubText, $fmtSubCount) {
+            $sub          = $subSummaryByDate[$date] ?? null;
+            $subSummary   = null;
+            if ($sub) {
+                $presentCount = $fmtSubCount($sub['users'] ?? []);
+                $absentCount  = $fmtSubCount($sub['absent_users'] ?? []);
+                $subSummary   = [
+                    'present_count' => $presentCount,
+                    'absent_count'  => $absentCount,
+                    'present_text'  => $fmtSubText($sub['users'] ?? []),
+                    'absent_text'   => $fmtSubText($sub['absent_users'] ?? []),
+                ];
+            }
+
+            return [
+                'date'        => $date,
+                'rows'        => $rows->map(fn($e) => [
+                    'title'          => $e->title,
+                    'school_name'    => $e->school_name,
+                    'original_user'  => optional($e->originalUser)->name,
+                    'assigned_user'  => optional($e->assignedUser)->name,
+                    'employee_code'  => optional($e->assignedUser)->employee_code,
+                    'start_time'     => $fmtTime($e->start_time),
+                    'end_time'       => $fmtTime($e->end_time),
+                    'lesson'         => $e->Lesson,
+                    'leave_type'     => $e->Leave_type,
+                    'type_label'     => $e->type_label,
+                    'status'         => $e->status,
+                    'notes'          => $e->notes,
+                ])->values(),
+                'sub_summary' => $subSummary,
+            ];
+        })->values();
+
+        return response()->json([
+            'meta'   => [
+                'mode'       => $mode,
+                'range_from' => $request->input('event_date'),
+                'range_to'   => $request->input('end_date'),
+                'title'      => $titleMap[$mode],
+            ],
+            'groups' => $groups,
+        ]);
+    }
+
+    public function exportConfirmationsPdfJson(Request $request)
+    {
+        $mode = $request->string('mode')->lower()->value();
+        if (!in_array($mode, ['alp', 'ot'], true)) {
+            $mode = 'alp';
+        }
+
+        $excludeEventIds = collect($request->input('exclude_event_ids', []))
+            ->filter(fn($v) => is_numeric($v))
+            ->map(fn($v) => (int)$v)
+            ->unique()->values()->all();
+
+        $query  = $this->baseEventQuery($request)
+            ->when(!empty($excludeEventIds), fn($q) => $q->whereNotIn('id', $excludeEventIds));
+        $events = $query->get();
+
+        $fmtTime = fn($t) => $t ? (is_string($t) ? substr($t, 0, 5) : optional($t)->format('H:i')) : '';
+        $fmtDate = fn($d) => $d instanceof \DateTimeInterface ? $d->format('Y-m-d') : substr((string)$d, 0, 10);
+
+        $grouped = $events->groupBy(fn($e) => $fmtDate($e->event_date) ?: 'No Date');
+
+        $groups = $grouped->map(fn($rows, $date) => [
+            'date' => $date,
+            'rows' => $rows->map(fn($e) => [
+                'school_name'   => $e->school_name,
+                'original_user' => optional($e->originalUser)->name,
+                'start_time'    => $fmtTime($e->start_time),
+                'end_time'      => $fmtTime($e->end_time),
+                'lesson'        => $e->Lesson,
+                'leave_type'    => $e->Leave_type,
+                'type_label'    => $e->type_label,
+            ])->values(),
+        ])->values();
+
+        return response()->json([
+            'meta'   => [
+                'mode'       => $mode,
+                'range_from' => $request->input('event_date'),
+                'range_to'   => $request->input('end_date'),
+                'title'      => $mode === 'ot' ? 'OT Confirmation List' : 'ALP Confirmation List',
+            ],
+            'groups' => $groups,
+        ]);
+    }
+
     // 共通のイベントクエリビルダ
     protected function baseEventQuery(Request $request)
     {

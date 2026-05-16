@@ -204,6 +204,12 @@ Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
     // PDF（モード: tentative|final|master）
     Route::get('/calendar/edit/pdf', [EventAssignController::class, 'exportSubPdf'])->name('calendar.edit.pdf');
     Route::get('/calendar/confirmations/pdf', [EventAssignController::class, 'exportConfirmationsPdf'])->name('calendar.confirmations.pdf');
+    // Vue プレビュー画面
+    Route::get('/calendar/edit/pdf-preview', [EventAssignController::class, 'sublistPreview'])->name('calendar.edit.pdf.preview');
+    Route::get('/calendar/confirmations/pdf-preview', [EventAssignController::class, 'confirmationsPreview'])->name('calendar.confirmations.pdf.preview');
+    // JSON データ API (Vue が axios で叩く)
+    Route::get('/calendar/edit/pdf-data', [EventAssignController::class, 'exportSubPdfJson'])->name('calendar.edit.pdf.data');
+    Route::get('/calendar/confirmations/pdf-data', [EventAssignController::class, 'exportConfirmationsPdfJson'])->name('calendar.confirmations.pdf.data');
     Route::post('/shift',        [EventAssignController::class, 'store'])->name('events.store');
     Route::post('/shift/blank', [EventAssignController::class, 'storeBlank'])->name('events.store.blank');
     Route::put('/shift/{event}', [EventAssignController::class, 'update'])->name('events.update');
