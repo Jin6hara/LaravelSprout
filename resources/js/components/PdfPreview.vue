@@ -172,15 +172,24 @@ async function print() {
   const element  = document.querySelector('.pdf-page');
   const filename = `${data.value.meta.title.replace(/\s+/g, '_')}_${today.value}.pdf`;
 
+  // A4横(297mm)を96dpiで換算した幅に一時変更してキャプチャ
+  // → CSSの padding:12mm がPDFでも正確に12mmになる
+  const prevWidth    = element.style.width;
+  const prevMaxWidth = element.style.maxWidth;
+  element.style.width    = '1122px';
+  element.style.maxWidth = '1122px';
+
   await html2pdf().set({
-    margin:     [10, 10, 10, 10],
+    margin:      0,
     filename,
-    image:      { type: 'jpeg', quality: 0.98 },
+    image:       { type: 'jpeg', quality: 0.98 },
     html2canvas: { scale: 2, useCORS: true, logging: false },
-    jsPDF:      { unit: 'mm', format: 'a4', orientation: 'landscape' },
-    pagebreak:  { mode: 'avoid-all' },
+    jsPDF:       { unit: 'mm', format: 'a4', orientation: 'landscape' },
+    pagebreak:   { mode: 'avoid-all' },
   }).from(element).save();
 
+  element.style.width    = prevWidth;
+  element.style.maxWidth = prevMaxWidth;
   generating.value = false;
 }
 
@@ -236,7 +245,6 @@ onMounted(async () => {
   background: #fff;
   width: 100%;
   max-width: 1060px;
-  min-height: 210mm;
   margin: 20px auto;
   padding: 12mm;
   box-sizing: border-box;
