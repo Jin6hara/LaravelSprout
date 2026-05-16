@@ -65,7 +65,7 @@
 </li>
 
 <li class="nav-item">
-    <a class="btn btn-sm btn-outline-secondary header-btn" href="{{ route('csv.user_schedule_line.form') }}">
+    <a class="btn btn-sm btn-outline-secondary header-btn" href="{{ route('csv.index') }}">
         CSV
     </a>
 </li>
