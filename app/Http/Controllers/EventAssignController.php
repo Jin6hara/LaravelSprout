@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
-use Barryvdh\DomPDF\Facade\Pdf;
+
 use App\Services\Calendar\Providers\SubCountProvider;
 
 class EventAssignController extends Controller
@@ -324,47 +324,50 @@ class EventAssignController extends Controller
         ]);
     }
 
-    /**
-     * PDFエクスポート
-     */
-    public function exportSubPdf(Request $request)
+    // ---- Vue プレビュー用 ----
+
+    public function sublistPreview(Request $request)
     {
-        // mode 決定（未指定は tentative 扱い）
+        return view('pdf.preview', [
+            'type'        => 'sublist',
+            'queryString' => $request->getQueryString() ?? '',
+        ]);
+    }
+
+    public function confirmationsPreview(Request $request)
+    {
+        return view('pdf.preview', [
+            'type'        => 'confirmations',
+            'queryString' => $request->getQueryString() ?? '',
+        ]);
+    }
+
+    public function exportSubPdfJson(Request $request)
+    {
         $mode = $request->string('mode')->lower()->value();
         if (!in_array($mode, ['tentative', 'final', 'master'], true)) {
             $mode = 'tentative';
         }
 
-        // 除外する event_id 群（チェックボックスから）
         $excludeEventIds = collect($request->input('exclude_event_ids', []))
             ->filter(fn($v) => is_numeric($v))
             ->map(fn($v) => (int)$v)
-            ->unique()
-            ->values()
-            ->all();
+            ->unique()->values()->all();
 
-        // 同条件 + 除外
-        $query = $this->baseEventQuery($request)
+        $query  = $this->baseEventQuery($request)
             ->when(!empty($excludeEventIds), fn($q) => $q->whereNotIn('id', $excludeEventIds));
-
-        // PDFは全件取得
         $events = $query->get();
 
-        // ★SubCountProvider から日別の Sub サマリを取得
         $subSummaryByDate = [];
         if ($events->isNotEmpty()) {
-            $minDate = Carbon::parse($events->min('event_date'))->startOfDay();
-            $maxDate = Carbon::parse($events->max('event_date'))->addDay()->startOfDay(); // 排他
-
-            /** @var SubCountProvider $provider */
+            $minDate  = Carbon::parse($events->min('event_date'))->startOfDay();
+            $maxDate  = Carbon::parse($events->max('event_date'))->addDay()->startOfDay();
             $provider = app(SubCountProvider::class);
             $subEvents = $provider->provide($request->user(), $minDate, $maxDate);
 
             foreach ($subEvents as $ev) {
-                // CandidateEvent の仕様に合わせて start / extendedProps を取得
                 $day = Carbon::parse($ev->start)->toDateString();
                 $ext = $ev->extendedProps ?? [];
-
                 $subSummaryByDate[$day] = [
                     'users'        => $ext['users']        ?? [],
                     'absent_users' => $ext['absent_users'] ?? [],
@@ -372,72 +375,119 @@ class EventAssignController extends Controller
             }
         }
 
-        $meta = [
-            'range_from'  => $request->input('event_date'),
-            'range_to'    => $request->input('end_date'),
-            //'generated_at' => now('Asia/Tokyo')->format('Y-m-d H:i'),
-            'mode'        => $mode,
-        ];
+        $fmtTime = fn($t) => $t ? (is_string($t) ? substr($t, 0, 5) : optional($t)->format('H:i')) : '';
+        $fmtDate = fn($d) => $d instanceof \DateTimeInterface ? $d->format('Y-m-d') : substr((string)$d, 0, 10);
 
-        $pdf = Pdf::loadView('pdf.events_sublist', [
-            'events'           => $events,
-            'meta'             => $meta,
-            'subSummaryByDate' => $subSummaryByDate, // ★追加
-        ])
-            ->setPaper('a4', 'landscape');
+        $fmtSubText = function (array $buckets): string {
+            $parts = [];
+            foreach ($buckets as $items) {
+                foreach ($items as $u) {
+                    $label = $u['name'] ?? '';
+                    $start = $u['start_hm'] ?? null;
+                    $end   = $u['end_hm']   ?? null;
+                    if ($start || $end) {
+                        $label .= ' (' . trim(($start ?? '') . ' - ' . ($end ?? '')) . ')';
+                    }
+                    $parts[] = $label;
+                }
+            }
+            return $parts ? implode(', ', $parts) : 'None';
+        };
 
-        $filename = "sublist-{$mode}"
-            . ($meta['range_from'] ? "_{$meta['range_from']}" : '')
-            . ($meta['range_to']   ? "-{$meta['range_to']}"   : '')
-            . '.pdf';
+        $fmtSubCount = fn(array $buckets): int => array_sum(array_map('count', $buckets));
 
-        return $pdf->download($filename);
+        $titleMap = ['tentative' => 'Tentative Sublist', 'final' => 'Final Sublist', 'master' => 'Master Sublist'];
+
+        $grouped = $events->groupBy(fn($e) => $fmtDate($e->event_date) ?: 'No Date');
+
+        $groups = $grouped->map(function ($rows, $date) use ($mode, $fmtTime, $subSummaryByDate, $fmtSubText, $fmtSubCount) {
+            $sub          = $subSummaryByDate[$date] ?? null;
+            $subSummary   = null;
+            if ($sub) {
+                $presentCount = $fmtSubCount($sub['users'] ?? []);
+                $absentCount  = $fmtSubCount($sub['absent_users'] ?? []);
+                $subSummary   = [
+                    'present_count' => $presentCount,
+                    'absent_count'  => $absentCount,
+                    'present_text'  => $fmtSubText($sub['users'] ?? []),
+                    'absent_text'   => $fmtSubText($sub['absent_users'] ?? []),
+                ];
+            }
+
+            return [
+                'date'        => $date,
+                'rows'        => $rows->map(fn($e) => [
+                    'title'          => $e->title,
+                    'school_name'    => $e->school_name,
+                    'original_user'  => optional($e->originalUser)->name,
+                    'assigned_user'  => optional($e->assignedUser)->name,
+                    'employee_code'  => optional($e->assignedUser)->employee_code,
+                    'start_time'     => $fmtTime($e->start_time),
+                    'end_time'       => $fmtTime($e->end_time),
+                    'lesson'         => $e->Lesson,
+                    'leave_type'     => $e->Leave_type,
+                    'type_label'     => $e->type_label,
+                    'status'         => $e->status,
+                    'notes'          => $e->notes,
+                ])->values(),
+                'sub_summary' => $subSummary,
+            ];
+        })->values();
+
+        return response()->json([
+            'meta'   => [
+                'mode'       => $mode,
+                'range_from' => $request->input('event_date'),
+                'range_to'   => $request->input('end_date'),
+                'title'      => $titleMap[$mode],
+            ],
+            'groups' => $groups,
+        ]);
     }
 
-    public function exportConfirmationsPdf(Request $request)
+    public function exportConfirmationsPdfJson(Request $request)
     {
-        // mode: alp | ot（不正なら alp）
         $mode = $request->string('mode')->lower()->value();
         if (!in_array($mode, ['alp', 'ot'], true)) {
             $mode = 'alp';
         }
 
-        // 除外する event_id（画面のチェックボックスから）
         $excludeEventIds = collect($request->input('exclude_event_ids', []))
             ->filter(fn($v) => is_numeric($v))
             ->map(fn($v) => (int)$v)
-            ->unique()
-            ->values()
-            ->all();
+            ->unique()->values()->all();
 
-        // 既存の検索条件を流用 + 除外
-        $query = $this->baseEventQuery($request)
+        $query  = $this->baseEventQuery($request)
             ->when(!empty($excludeEventIds), fn($q) => $q->whereNotIn('id', $excludeEventIds));
-
-        // 必要なら mode ごとの追加フィルタを入れられます（任意）
-        // 例: ALP は leave_type が有るものに限定…など
-        // if ($mode === 'alp') { $query->whereNotNull('Leave_type'); }
-
-        // PDFは全件取得
         $events = $query->get();
 
-        $meta = [
-            'range_from'   => $request->input('event_date'),
-            'range_to'     => $request->input('end_date'),
-            'generated_at' => now('Asia/Tokyo')->format('Y-m-d H:i'),
-            'mode'         => $mode,
-            'title'        => $mode === 'alp' ? 'ALP Confirmation List' : 'OT Confirmation List',
-        ];
+        $fmtTime = fn($t) => $t ? (is_string($t) ? substr($t, 0, 5) : optional($t)->format('H:i')) : '';
+        $fmtDate = fn($d) => $d instanceof \DateTimeInterface ? $d->format('Y-m-d') : substr((string)$d, 0, 10);
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.confirmations', compact('events', 'meta'))
-            ->setPaper('a4', 'portrait');
+        $grouped = $events->groupBy(fn($e) => $fmtDate($e->event_date) ?: 'No Date');
 
-        $filename = ($mode === 'alp' ? 'alp' : 'ot') . '-confirmation'
-            . ($meta['range_from'] ? "_{$meta['range_from']}" : '')
-            . ($meta['range_to']   ? "-{$meta['range_to']}"   : '')
-            . '.pdf';
+        $groups = $grouped->map(fn($rows, $date) => [
+            'date' => $date,
+            'rows' => $rows->map(fn($e) => [
+                'school_name'   => $e->school_name,
+                'original_user' => optional($e->originalUser)->name,
+                'start_time'    => $fmtTime($e->start_time),
+                'end_time'      => $fmtTime($e->end_time),
+                'lesson'        => $e->Lesson,
+                'leave_type'    => $e->Leave_type,
+                'type_label'    => $e->type_label,
+            ])->values(),
+        ])->values();
 
-        return $pdf->download($filename);
+        return response()->json([
+            'meta'   => [
+                'mode'       => $mode,
+                'range_from' => $request->input('event_date'),
+                'range_to'   => $request->input('end_date'),
+                'title'      => $mode === 'ot' ? 'OT Confirmation List' : 'ALP Confirmation List',
+            ],
+            'groups' => $groups,
+        ]);
     }
 
     // 共通のイベントクエリビルダ
