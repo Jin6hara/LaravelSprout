@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Department;
+use App\Models\Lesson;
 use App\Models\ScheduleLine;
 use App\Models\School;
 use App\Services\CurrentScopeService;
@@ -57,6 +58,7 @@ class SchoolTimetableController extends Controller
             'csrfToken'          => csrf_token(),
             'apiLinesUrl'        => route('school_timetable.lines'),
             'schoolsUrl'         => route('school_timetable.schools'),
+            'lessonsUrl'         => route('school_timetable.lessons'),
             'storeLinesUrl'      => route('schedule_lines.store'),
             'bulkUpdateLinesUrl' => route('schedule_lines.bulk_update'),
             'lessonByCodeUrl'    => url('/lessons/by-code'),
@@ -160,5 +162,15 @@ class SchoolTimetableController extends Controller
             ->get(['school_code', 'school_name']);
 
         return response()->json(['ok' => true, 'schools' => $schools]);
+    }
+
+    // API: lesson 一覧（datalist 用）
+    public function lessonList()
+    {
+        $lessons = Lesson::query()
+            ->orderBy('lesson_code')
+            ->get(['id', 'lesson_code', 'ps_unique_lesson_code']);
+
+        return response()->json(['ok' => true, 'lessons' => $lessons]);
     }
 }
