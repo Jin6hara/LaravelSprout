@@ -9,8 +9,8 @@ class LeaveSeeder extends Seeder
 {
     public function run(): void
     {
-        $kinki  = \App\Models\District::where('name', '近畿CK')->first();
-        $native = \App\Models\Department::where('name', 'Native HR')->first();
+        $kinki  = \App\Models\District::where('name', '西日本(阪)')->first();
+        $native = \App\Models\Department::where('name', 'Native')->first();
 
         // user_id=7 （Absence）
         Leave::create([

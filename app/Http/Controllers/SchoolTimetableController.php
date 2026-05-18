@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Department;
+use App\Models\Lesson;
 use App\Models\ScheduleLine;
 use App\Models\School;
 use App\Services\CurrentScopeService;
@@ -36,14 +38,27 @@ class SchoolTimetableController extends Controller
             0 => '日', 1 => '月', 2 => '火', 3 => '水', 4 => '木', 5 => '金', 6 => '土',
         ];
 
+        $districtId = $this->scopeService->currentDistrictId();
+        $usedDeptIds = ScheduleLine::where('district_id', $districtId)
+            ->distinct()
+            ->pluck('department_id')
+            ->filter()
+            ->values();
+        $departmentOptions = Department::whereIn('id', $usedDeptIds)
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->values();
+
         $props = [
             'initialSchool'      => $schoolName,
             'initialDow'         => $dow,
             'userOptions'        => $userOptions,
             'dowOptions'         => $dowOptions,
+            'departmentOptions'  => $departmentOptions,
             'csrfToken'          => csrf_token(),
             'apiLinesUrl'        => route('school_timetable.lines'),
             'schoolsUrl'         => route('school_timetable.schools'),
+            'lessonsUrl'         => route('school_timetable.lessons'),
             'storeLinesUrl'      => route('schedule_lines.store'),
             'bulkUpdateLinesUrl' => route('schedule_lines.bulk_update'),
             'lessonByCodeUrl'    => url('/lessons/by-code'),
@@ -81,7 +96,6 @@ class SchoolTimetableController extends Controller
                 },
             ])
             ->where('district_id', $this->scopeService->currentDistrictId())
-            ->where('department_id', $this->scopeService->currentDepartmentId())
             ->whereLikeInsensitive('school_name', $schoolName)
             ->orderBy('dow')
             ->orderBy('start_time');
@@ -108,6 +122,7 @@ class SchoolTimetableController extends Controller
             return [
                 'id'              => $line->id,
                 'school_name'     => $line->school_name,
+                'department_id'   => $line->department_id,
                 'user_id'         => $line->user_id,
                 'user_name'       => $userName,
                 'dow'             => $line->dow,
@@ -147,5 +162,15 @@ class SchoolTimetableController extends Controller
             ->get(['school_code', 'school_name']);
 
         return response()->json(['ok' => true, 'schools' => $schools]);
+    }
+
+    // API: lesson 一覧（datalist 用）
+    public function lessonList()
+    {
+        $lessons = Lesson::query()
+            ->orderBy('lesson_code')
+            ->get(['id', 'lesson_code', 'ps_unique_lesson_code']);
+
+        return response()->json(['ok' => true, 'lessons' => $lessons]);
     }
 }

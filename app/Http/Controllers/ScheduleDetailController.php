@@ -38,7 +38,7 @@ class ScheduleDetailController extends Controller
         // レッスン一覧（選択肢用）
         $lessonOptions = Lesson::query()
             ->orderBy('lesson_code')
-            ->get(['id', 'lesson_code', 'lesson_name']);
+            ->get(['id', 'lesson_code', 'lesson_name', 'ps_unique_lesson_code']);
 
         // ヘッダー表示用の値を用意
 
@@ -113,10 +113,15 @@ class ScheduleDetailController extends Controller
                 }
                 $data = $v->validated();
 
-                // 1) レッスンを lesson_code で取得（無ければエラー）
-                $lesson = Lesson::query()->where('lesson_code', $data['lesson_code'])->first();
+                // 1) lesson_code または ps_unique_lesson_code で取得（無ければエラー）
+                $lesson = Lesson::query()
+                    ->where(function ($q) use ($data) {
+                        $q->where('lesson_code', $data['lesson_code'])
+                          ->orWhere('ps_unique_lesson_code', $data['lesson_code']);
+                    })
+                    ->first();
                 if (!$lesson) {
-                    $errors[] = ['id' => $detailId, 'messages' => ['指定の lesson_code が見つかりません']];
+                    $errors[] = ['id' => $detailId, 'messages' => ['指定の lesson_code / ps_unique_lesson_code が見つかりません']];
                     continue;
                 }
 
@@ -165,16 +170,19 @@ class ScheduleDetailController extends Controller
         }
     }
 
-    // lesson_code → レッスン情報取得（AJAX）
+    // lesson_code または ps_unique_lesson_code → レッスン情報取得（AJAX）
     public function findLessonByCode(string $code)
     {
         $lesson = Lesson::query()
-            ->select(['id', 'lesson_name', 'lesson_code', 'note', 'lesson_minute'])
-            ->where('lesson_code', $code)
+            ->select(['id', 'lesson_name', 'lesson_code', 'ps_unique_lesson_code', 'note', 'lesson_minute'])
+            ->where(function ($q) use ($code) {
+                $q->where('lesson_code', $code)
+                  ->orWhere('ps_unique_lesson_code', $code);
+            })
             ->first();
 
         if (!$lesson) {
-            return response()->json(['ok' => false, 'message' => 'lesson_code が見つかりません'], 404);
+            return response()->json(['ok' => false, 'message' => 'lesson が見つかりません'], 404);
         }
         return response()->json([
             'ok' => true,

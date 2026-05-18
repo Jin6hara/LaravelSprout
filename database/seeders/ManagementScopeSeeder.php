@@ -19,16 +19,16 @@ class ManagementScopeSeeder extends Seeder
      * 処理:
      * 1. Users 1〜19 に district_id / department_id を割り当てる
      * 2. super_admin (id=6) に全 district × department の user_management_scopes を付与
-     * 3. admin (id=5) に 近畿CK の 2 件を付与
-     * 4. 全 School を 近畿CK に割り当てる（既存 SchoolSeeder データはすべて大阪・京都・神戸エリア）
+     * 3. admin (id=5) に 西日本(阪) の 2 件を付与
+     * 4. 全 School を 西日本(阪) に割り当てる（既存 SchoolSeeder データはすべて大阪・京都・神戸エリア）
      */
     public function run(): void
     {
-        $kanto     = District::where('name', '関東')->first();
-        $kinki     = District::where('name', '近畿CK')->first();
-        $chubu     = District::where('name', '中部')->first();
-        $native    = Department::where('name', 'Native HR')->first();
-        $bilingual = Department::where('name', 'Bilingual HR')->first();
+        $kanto     = District::where('name', '東日本')->first();
+        $kinki     = District::where('name', '西日本(阪)')->first();
+        $chubu     = District::where('name', '西日本(名)')->first();
+        $native    = Department::where('name', 'Native')->first();
+        $bilingual = Department::where('name', 'Bilingual')->first();
 
         // 1) ユーザーへの district / department 割り当て
         // id => [district, department]
@@ -76,7 +76,7 @@ class ManagementScopeSeeder extends Seeder
             }
         }
 
-        // 3) admin (id=5): 近畿CK の 2 件のみ
+        // 3) admin (id=5): 西日本(阪) の 2 件のみ
         $admin = User::find(5);
 
         foreach ($allDepartments as $dep) {
@@ -87,8 +87,8 @@ class ManagementScopeSeeder extends Seeder
             ]);
         }
 
-        // 4) 全 School を 近畿CK に割り当て
-        // SchoolSeeder のデータはすべて大阪・京都・神戸エリア（近畿CK）
+        // 4) 全 School を 西日本(阪) に割り当て
+        // SchoolSeeder のデータはすべて大阪・京都・神戸エリア（西日本(阪)）
         School::query()->update(['district_id' => $kinki->id]);
     }
 }

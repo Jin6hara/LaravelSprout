@@ -9,8 +9,8 @@ class ScheduleSeeder extends Seeder
 {
     public function run(): void
     {
-        $kinki  = \App\Models\District::where('name', '近畿CK')->first();
-        $native = \App\Models\Department::where('name', 'Native HR')->first();
+        $kinki  = \App\Models\District::where('name', '西日本(阪)')->first();
+        $native = \App\Models\Department::where('name', 'Native')->first();
 
         $s = '2026-04-01';
         $e = '2027-03-31';

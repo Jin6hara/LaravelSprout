@@ -132,15 +132,15 @@
                     <input type="time" class="form-control form-control-sm js-end-time" value="{{ $endCalc }}" readonly>
                 </td>
                 <td>
-                    <select class="form-select form-select-sm js-lesson-code" style="min-width: 12rem;">
-                        <option value="">— Select —</option>
-                        @foreach($lessonOptions as $opt)
-                        <option value="{{ $opt->lesson_code }}"
-                            @selected(($d->lesson->lesson_code ?? '') === $opt->lesson_code)>
-                            {{ $opt->lesson_code }} — {{ $opt->lesson_name }}
-                        </option>
-                        @endforeach
-                    </select>
+                    <input
+                        type="text"
+                        list="lesson-datalist"
+                        class="form-control form-control-sm js-lesson-code"
+                        style="min-width: 12rem;"
+                        value="{{ $d->lesson->lesson_code ?? '' }}"
+                        placeholder="lesson code"
+                        autocomplete="off"
+                    >
                 </td>
                 <td>
                     <input type="text" class="form-control form-control-sm js-lesson-note"
@@ -177,6 +177,13 @@
         </tbody>
     </table>
 </div>
+
+{{-- lesson 補完用 datalist（全行で共有） --}}
+<datalist id="lesson-datalist">
+    @foreach($lessonOptions as $opt)
+    <option value="{{ $opt->lesson_code }}">[{{ $opt->lesson_code }}] {{ $opt->ps_unique_lesson_code }}</option>
+    @endforeach
+</datalist>
 @endif
 @endsection
 
@@ -209,7 +216,10 @@
             if (!code) return;
 
             try {
-                const res = await fetch(`{{ route('lessons.by_code', ['code' => '___CODE___']) }}`.replace('___CODE___', encodeURIComponent(code)));
+                const res = await fetch(
+                    `{{ route('lessons.by_code', ['code' => '___CODE___']) }}`.replace('___CODE___', encodeURIComponent(code)),
+                    { headers: { 'Accept': 'application/json' } }
+                );
                 const data = await res.json();
                 if (!res.ok || !data.ok) throw new Error(data?.message || 'レッスン取得に失敗');
 

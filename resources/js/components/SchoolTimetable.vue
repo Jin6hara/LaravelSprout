@@ -36,6 +36,34 @@
       <button class="btn btn-success btn-sm" @click="addLine" :disabled="!searched">+ 新規 Line</button>
     </div>
 
+    <!-- ===== Department チェックボックスフィルター ===== -->
+    <div v-if="departmentOptions.length" class="st-dept-filter">
+      <span class="st-label">部署：</span>
+      <label
+        v-for="dept in departmentOptions"
+        :key="dept.id"
+        class="st-dept-check-label"
+      >
+        <input
+          type="checkbox"
+          :value="dept.id"
+          v-model="deptFilter"
+          class="st-dept-checkbox"
+        />
+        {{ dept.name }}
+      </label>
+      <button
+        v-if="deptFilter.length < departmentOptions.length"
+        class="btn btn-outline-secondary btn-sm st-dept-all-btn"
+        @click="deptFilter = departmentOptions.map(d => d.id)"
+      >全選択</button>
+      <button
+        v-if="deptFilter.length > 0"
+        class="btn btn-outline-secondary btn-sm st-dept-all-btn"
+        @click="deptFilter = []"
+      >全解除</button>
+    </div>
+
     <!-- ===== メッセージ ===== -->
     <div v-if="message" :class="['alert', 'alert-sm', 'py-1', 'px-2', 'mt-1', msgOk ? 'alert-success' : 'alert-danger']">
       {{ message }}
@@ -67,7 +95,7 @@
           </div>
         </div>
         <!-- 各 line 行 -->
-        <div v-for="line in lines" :key="line.id" class="st-grid-row">
+        <div v-for="line in filteredLines" :key="line.id" class="st-grid-row">
           <div class="st-row-label">
             <div class="st-label-dow">{{ dowLabel(line.dow) }}</div>
             <div class="st-label-user">{{ line.user_name || 'No User' }}</div>
@@ -111,7 +139,7 @@
       <!-- ===== 下ペイン: Lines Editor ===== -->
       <div class="st-pane-lines" :style="{ height: linesPaneHeight + 'px' }">
         <div class="st-section-title st-section-title--pane">Schedule Lines</div>
-      <div v-for="line in lines" :key="'ed-' + line.id" class="st-line-block">
+      <div v-for="line in filteredLines" :key="'ed-' + line.id" class="st-line-block">
 
         <!-- Line header -->
         <div class="st-line-header">
@@ -192,10 +220,13 @@
             <div class="st-detail-field st-detail-field--code">
               <label class="st-label">lesson_code</label>
               <input
-                v-model="d.lesson_code"
+                :value="d.lesson_code"
+                list="st-lesson-code-datalist"
                 class="form-control form-control-sm"
-                @blur="fetchLesson(d)"
-                @keyup.enter="fetchLesson(d)"
+                autocomplete="off"
+                @input="onLessonInput(d, $event)"
+                @change="fetchLessonFromEvent(d, $event)"
+                @keyup.enter="fetchLessonFromEvent(d, $event)"
               />
             </div>
             <div class="st-detail-field st-detail-field--name">
@@ -248,8 +279,20 @@
       </div>
     </div>
 
+    <!-- lesson 補完用 datalist（全 detail 行で共有） -->
+    <datalist id="st-lesson-code-datalist">
+      <option
+        v-for="opt in lessonList"
+        :key="opt.id"
+        :value="opt.lesson_code"
+      >[{{ opt.lesson_code }}] {{ opt.ps_unique_lesson_code }}</option>
+    </datalist>
+
     <div v-if="searched && !lines.length && !loading" class="text-muted mt-3">
       該当する Schedule Line が見つかりませんでした。
+    </div>
+    <div v-if="searched && lines.length && !filteredLines.length && !loading" class="text-muted mt-3">
+      選択中の部署に該当する Schedule Line がありません。
     </div>
   </div>
 </template>
@@ -284,9 +327,11 @@ export default {
     initialDow:          { default: null },
     userOptions:         { type: Array,  default: () => [] },
     dowOptions:          { type: Object, default: () => ({}) },
+    departmentOptions:   { type: Array,  default: () => [] },
     csrfToken:           { type: String, default: '' },
     apiLinesUrl:         { type: String, default: '' },
     schoolsUrl:          { type: String, default: '' },
+    lessonsUrl:          { type: String, default: '' },
     storeLinesUrl:       { type: String, default: '' },
     bulkUpdateLinesUrl:  { type: String, default: '' },
     lessonByCodeUrl:     { type: String, default: '' },
@@ -300,10 +345,13 @@ export default {
       activeOn:    new Date().toISOString().slice(0, 10),
       lines:       [],
       schoolList:  [],
+      lessonList:  [],
       loading:     false,
       searched:    !!this.initialSchool,
       message:       '',
       msgOk:         true,
+      // department チェックボックスフィルター（全選択が初期値）
+      deptFilter:  this.departmentOptions.map(d => d.id),
       // 各ペインの高さ（px）。リサイズハンドルで変更
       gridPaneHeight:  280,
       linesPaneHeight: 400,
@@ -327,13 +375,20 @@ export default {
       return marks;
     },
 
+    filteredLines() {
+      if (!this.departmentOptions.length) return this.lines;
+      if (!this.deptFilter.length) return [];
+      return this.lines.filter(l => this.deptFilter.includes(l.department_id));
+    },
+
     hasOutOfRange() {
-      return this.lines.some(l => l.details.some(d => this.isOutOfRange(d)));
+      return this.filteredLines.some(l => l.details.some(d => this.isOutOfRange(d)));
     },
   },
 
   mounted() {
     this.fetchSchools();
+    this.fetchLessons();
     if (this.schoolQuery) {
       this.searched = true;
       this.search();
@@ -378,6 +433,19 @@ export default {
         });
         const data = await res.json();
         if (data.ok) this.schoolList = data.schools;
+      } catch (e) {
+        // silent: datalist は補助機能なので失敗しても問題なし
+      }
+    },
+
+    async fetchLessons() {
+      if (!this.lessonsUrl) return;
+      try {
+        const res  = await fetch(this.lessonsUrl, {
+          headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
+        });
+        const data = await res.json();
+        if (data.ok) this.lessonList = data.lessons;
       } catch (e) {
         // silent: datalist は補助機能なので失敗しても問題なし
       }
@@ -599,6 +667,33 @@ export default {
         // silent
       }
     },
+
+    onLessonInput(d, event) {
+      const code = event.target.value;
+      d.lesson_code = code;
+      // datalist 選択時は options と完全一致する → 即時フェッチ
+      const matched = this.lessonList.some(opt => opt.lesson_code === code);
+      if (matched) this.fetchLessonFromEvent(d, event);
+    },
+
+    async fetchLessonFromEvent(d, event) {
+      const code = (event.target.value || '').trim();
+      d.lesson_code = code;
+      if (!code) return;
+      try {
+        const res  = await fetch(`${this.lessonByCodeUrl}/${encodeURIComponent(code)}`, {
+          headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
+        });
+        const data = await res.json();
+        if (data.ok && data.lesson) {
+          d.lesson_name   = data.lesson.lesson_name;
+          d.lesson_minute = data.lesson.lesson_minute;
+          d.note          = data.lesson.note || '';
+        }
+      } catch (e) {
+        // silent
+      }
+    },
   },
 };
 </script>
@@ -622,6 +717,35 @@ export default {
 .st-dow-select   { width: 100px; }
 .st-date-input   { width: 150px; }
 .st-label        { font-size: 0.78rem; white-space: nowrap; margin: 0; }
+
+/* ===== Department filter ===== */
+.st-dept-filter {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.75rem;
+  padding: 0.3rem 0.5rem;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  margin-bottom: 0.4rem;
+}
+.st-dept-check-label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+  margin: 0;
+}
+.st-dept-checkbox {
+  cursor: pointer;
+}
+.st-dept-all-btn {
+  font-size: 0.72rem;
+  padding: 1px 6px;
+}
 
 /* ===== Section title ===== */
 .st-section-title {

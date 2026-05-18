@@ -273,6 +273,7 @@ Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
     Route::get('/schedules/school-timetable', [SchoolTimetableController::class, 'index'])->name('schedules.school_timetable');
     Route::get('/api/school-timetable/lines', [SchoolTimetableController::class, 'lines'])->name('school_timetable.lines');
     Route::get('/api/school-timetable/schools', [SchoolTimetableController::class, 'schools'])->name('school_timetable.schools');
+    Route::get('/api/school-timetable/lessons', [SchoolTimetableController::class, 'lessonList'])->name('school_timetable.lessons');
 });
 
 use App\Http\Controllers\CommuterPassAdvisorController;

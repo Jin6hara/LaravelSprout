@@ -14,13 +14,13 @@ class DistrictDepartmentSeeder extends Seeder
     public function run(): void
     {
         // Districts
-        $districts = ['関東', '近畿CK', '中部'];
+        $districts = ['東日本', '西日本(阪)', '西日本(名)'];
         foreach ($districts as $name) {
             District::firstOrCreate(['name' => $name]);
         }
 
         // Departments
-        $departments = ['Native HR', 'Bilingual HR'];
+        $departments = ['Native', 'Bilingual'];
         foreach ($departments as $name) {
             Department::firstOrCreate(['name' => $name]);
         }
