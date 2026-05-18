@@ -144,6 +144,11 @@
     <div>
         <h2 class="mb-0">Schedule Lines</h2>
     </div>
+    <div>
+        <a href="{{ route('schedules.school_timetable') }}" class="btn btn-sm btn-outline-secondary">
+            School Timetable
+        </a>
+    </div>
 </div>
 
 {{-- 検索フォーム --}}

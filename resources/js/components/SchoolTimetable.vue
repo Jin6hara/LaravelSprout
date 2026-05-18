@@ -220,10 +220,13 @@
             <div class="st-detail-field st-detail-field--code">
               <label class="st-label">lesson_code</label>
               <input
-                v-model="d.lesson_code"
+                :value="d.lesson_code"
+                list="st-lesson-code-datalist"
                 class="form-control form-control-sm"
-                @blur="fetchLesson(d)"
-                @keyup.enter="fetchLesson(d)"
+                autocomplete="off"
+                @input="onLessonInput(d, $event)"
+                @change="fetchLessonFromEvent(d, $event)"
+                @keyup.enter="fetchLessonFromEvent(d, $event)"
               />
             </div>
             <div class="st-detail-field st-detail-field--name">
@@ -276,6 +279,15 @@
       </div>
     </div>
 
+    <!-- lesson 補完用 datalist（全 detail 行で共有） -->
+    <datalist id="st-lesson-code-datalist">
+      <option
+        v-for="opt in lessonList"
+        :key="opt.id"
+        :value="opt.lesson_code"
+      >[{{ opt.lesson_code }}] {{ opt.ps_unique_lesson_code }}</option>
+    </datalist>
+
     <div v-if="searched && !lines.length && !loading" class="text-muted mt-3">
       該当する Schedule Line が見つかりませんでした。
     </div>
@@ -319,6 +331,7 @@ export default {
     csrfToken:           { type: String, default: '' },
     apiLinesUrl:         { type: String, default: '' },
     schoolsUrl:          { type: String, default: '' },
+    lessonsUrl:          { type: String, default: '' },
     storeLinesUrl:       { type: String, default: '' },
     bulkUpdateLinesUrl:  { type: String, default: '' },
     lessonByCodeUrl:     { type: String, default: '' },
@@ -332,6 +345,7 @@ export default {
       activeOn:    new Date().toISOString().slice(0, 10),
       lines:       [],
       schoolList:  [],
+      lessonList:  [],
       loading:     false,
       searched:    !!this.initialSchool,
       message:       '',
@@ -374,6 +388,7 @@ export default {
 
   mounted() {
     this.fetchSchools();
+    this.fetchLessons();
     if (this.schoolQuery) {
       this.searched = true;
       this.search();
@@ -418,6 +433,19 @@ export default {
         });
         const data = await res.json();
         if (data.ok) this.schoolList = data.schools;
+      } catch (e) {
+        // silent: datalist は補助機能なので失敗しても問題なし
+      }
+    },
+
+    async fetchLessons() {
+      if (!this.lessonsUrl) return;
+      try {
+        const res  = await fetch(this.lessonsUrl, {
+          headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
+        });
+        const data = await res.json();
+        if (data.ok) this.lessonList = data.lessons;
       } catch (e) {
         // silent: datalist は補助機能なので失敗しても問題なし
       }
@@ -624,6 +652,33 @@ export default {
 
     async fetchLesson(d) {
       const code = (d.lesson_code || '').trim();
+      if (!code) return;
+      try {
+        const res  = await fetch(`${this.lessonByCodeUrl}/${encodeURIComponent(code)}`, {
+          headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
+        });
+        const data = await res.json();
+        if (data.ok && data.lesson) {
+          d.lesson_name   = data.lesson.lesson_name;
+          d.lesson_minute = data.lesson.lesson_minute;
+          d.note          = data.lesson.note || '';
+        }
+      } catch (e) {
+        // silent
+      }
+    },
+
+    onLessonInput(d, event) {
+      const code = event.target.value;
+      d.lesson_code = code;
+      // datalist 選択時は options と完全一致する → 即時フェッチ
+      const matched = this.lessonList.some(opt => opt.lesson_code === code);
+      if (matched) this.fetchLessonFromEvent(d, event);
+    },
+
+    async fetchLessonFromEvent(d, event) {
+      const code = (event.target.value || '').trim();
+      d.lesson_code = code;
       if (!code) return;
       try {
         const res  = await fetch(`${this.lessonByCodeUrl}/${encodeURIComponent(code)}`, {
