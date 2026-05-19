@@ -35,7 +35,7 @@ class SchoolTimetableController extends Controller
             ->values();
 
         $dowOptions = [
-            0 => '日', 1 => '月', 2 => '火', 3 => '水', 4 => '木', 5 => '金', 6 => '土',
+            0 => 'Sun', 1 => 'Mon', 2 => 'Tue', 3 => 'Wed', 4 => 'Thu', 5 => 'Fri', 6 => 'Sat',
         ];
 
         $districtId = $this->scopeService->currentDistrictId();

@@ -2,13 +2,12 @@
   <div class="st-root">
     <!-- ===== 検索フォーム ===== -->
     <div class="st-search-bar">
-      <label class="st-label">学校名</label>
-      <!-- datalist で school_code / school_name の候補を補助表示 -->
+      <label class="st-label">School</label>
       <input
         v-model="schoolQuery"
         list="stSchoolDatalist"
         class="form-control form-control-sm st-school-input"
-        placeholder="部分一致で検索"
+        placeholder="Partial match search"
         @keyup.enter="search"
       />
       <datalist id="stSchoolDatalist">
@@ -19,26 +18,25 @@
         >{{ s.school_code }} / {{ s.school_name }}</option>
       </datalist>
 
-      <label class="st-label">曜日</label>
-      <!-- 未選択（null）= 全曜日 -->
+      <label class="st-label">Day</label>
       <select v-model="dowFilter" class="form-select form-select-sm st-dow-select">
-        <option :value="null">全曜日</option>
+        <option :value="null">All days</option>
         <option v-for="(label, val) in dowOptions" :key="val" :value="Number(val)">{{ label }}</option>
       </select>
 
-      <label class="st-label">基準日</label>
+      <label class="st-label">Reference date</label>
       <input
         v-model="activeOn"
         type="date"
         class="form-control form-control-sm st-date-input"
       />
-      <button class="btn btn-primary btn-sm" @click="search">検索</button>
-      <button class="btn btn-success btn-sm" @click="openAddLineModal" :disabled="!searched">+ 新規 Line</button>
+      <button class="btn btn-primary btn-sm" @click="search">Search</button>
+      <button class="btn btn-success btn-sm" @click="openAddLineModal" :disabled="!searched">+ Add Line</button>
     </div>
 
     <!-- ===== Department チェックボックスフィルター ===== -->
     <div v-if="departmentOptions.length" class="st-dept-filter">
-      <span class="st-label">部署：</span>
+      <span class="st-label">Department:</span>
       <label
         v-for="dept in departmentOptions"
         :key="dept.id"
@@ -56,12 +54,12 @@
         v-if="deptFilter.length < departmentOptions.length"
         class="btn btn-outline-secondary btn-sm st-dept-all-btn"
         @click="deptFilter = departmentOptions.map(d => d.id)"
-      >全選択</button>
+      >Select all</button>
       <button
         v-if="deptFilter.length > 0"
         class="btn btn-outline-secondary btn-sm st-dept-all-btn"
         @click="deptFilter = []"
-      >全解除</button>
+      >Clear all</button>
     </div>
 
     <!-- ===== メッセージ ===== -->
@@ -74,7 +72,7 @@
 
       <!-- ===== 上ペイン: Timetable Grid ===== -->
       <div class="st-pane-grid" :style="{ height: gridPaneHeight + 'px' }">
-        <div class="st-section-title st-section-title--pane">Time Grid（9:30〜22:30）</div>
+        <div class="st-section-title st-section-title--pane">Time Grid (9:30–22:30)</div>
         <!-- st-grid-outer のみ overflow-x: auto。ラベル列は sticky で固定 -->
         <div class="st-grid-outer">
         <!-- ヘッダー行 -->
@@ -126,7 +124,7 @@
         </div>
         <!-- 範囲外 warning -->
         <div v-if="hasOutOfRange" class="st-oor-warning">
-          ⚠ 9:30〜22:30 の範囲外の Detail が存在します（グリッド外のため省略表示）
+          ⚠ Some details fall outside 9:30–22:30 and are hidden from the grid.
         </div>
         </div><!-- /st-grid-outer -->
       </div><!-- /st-pane-grid -->
@@ -149,48 +147,48 @@
           <span v-if="line.user_name" class="st-line-user">{{ line.user_name }}</span>
           <span class="st-line-meta">{{ dowLabel(line.dow) }} {{ line.start_time }}–{{ line.end_time }}</span>
           <div class="ms-auto d-flex gap-1">
-            <button class="btn btn-sm btn-primary" @click="saveLine(line)">Line 保存</button>
-            <button class="btn btn-sm btn-outline-danger" @click="deleteLine(line)">削除</button>
+            <button class="btn btn-sm btn-primary" @click="saveLine(line)">Save Line</button>
+            <button class="btn btn-sm btn-outline-danger" @click="deleteLine(line)">Delete Line</button>
           </div>
         </div>
 
         <!-- Line fields -->
         <div class="st-line-fields">
           <div class="st-field-group">
-            <label class="st-label">学校名</label>
+            <label class="st-label">School name</label>
             <input v-model="line.school_name" class="form-control form-control-sm" />
           </div>
           <div class="st-field-group">
-            <label class="st-label">担当者</label>
+            <label class="st-label">Instructor</label>
             <select v-model="line.user_id" class="form-select form-select-sm">
-              <option :value="null">（未割当）</option>
+              <option :value="null">(Unassigned)</option>
               <option v-for="u in userOptions" :key="u.id" :value="u.id">{{ u.label }}</option>
             </select>
           </div>
           <div class="st-field-group">
-            <label class="st-label">曜日</label>
+            <label class="st-label">Day</label>
             <select v-model="line.dow" class="form-select form-select-sm">
               <option v-for="(label, val) in dowOptions" :key="val" :value="Number(val)">{{ label }}</option>
             </select>
           </div>
           <div class="st-field-group">
-            <label class="st-label">開始</label>
+            <label class="st-label">Start</label>
             <input v-model="line.start_time" type="time" class="form-control form-control-sm" />
           </div>
           <div class="st-field-group">
-            <label class="st-label">終了</label>
+            <label class="st-label">End</label>
             <input v-model="line.end_time" type="time" class="form-control form-control-sm" />
           </div>
           <div class="st-field-group">
-            <label class="st-label">合計分</label>
+            <label class="st-label">Total min</label>
             <span class="form-control-sm d-block">{{ line.total_minutes }}</span>
           </div>
           <div class="st-field-group">
-            <label class="st-label">有効開始</label>
+            <label class="st-label">Effective from</label>
             <input v-model="line.effective_start" type="date" class="form-control form-control-sm" />
           </div>
           <div class="st-field-group">
-            <label class="st-label">有効終了</label>
+            <label class="st-label">Effective to</label>
             <input v-model="line.effective_end" type="date" class="form-control form-control-sm" />
           </div>
         </div>
@@ -200,10 +198,10 @@
           <div class="st-details-header">
             <span>Details</span>
             <button class="btn btn-sm btn-outline-secondary" @click="addDetail(line)">+ Add Detail</button>
-            <button class="btn btn-sm btn-primary" @click="saveDetails(line)">Details 一括保存</button>
+            <button class="btn btn-sm btn-primary" @click="saveDetails(line)">Save Details</button>
           </div>
 
-          <div v-if="!line.details.length" class="text-muted small px-2 py-1">詳細なし</div>
+          <div v-if="!line.details.length" class="text-muted small px-2 py-1">No details.</div>
 
           <!-- detail rows -->
           <div
@@ -213,11 +211,11 @@
             :class="{ 'st-detail-oor': isOutOfRange(d) }"
           >
             <div class="st-detail-field">
-              <label class="st-label">開始時刻</label>
+              <label class="st-label">Start time</label>
               <input v-model="d.start_time" type="time" class="form-control form-control-sm" />
             </div>
             <div class="st-detail-field">
-              <label class="st-label">終了(計算)</label>
+              <label class="st-label">End (calc)</label>
               <span class="form-control-sm d-block">{{ calcDetailEnd(d) }}</span>
             </div>
             <div class="st-detail-field st-detail-field--code">
@@ -237,25 +235,25 @@
               <input v-model="d.lesson_name" class="form-control form-control-sm" readonly />
             </div>
             <div class="st-detail-field">
-              <label class="st-label">分数</label>
+              <label class="st-label">Min</label>
               <input v-model.number="d.lesson_minute" type="number" class="form-control form-control-sm" readonly />
             </div>
             <div class="st-detail-field">
-              <label class="st-label">有効開始</label>
+              <label class="st-label">Effective from</label>
               <input v-model="d.effective_start" type="date" class="form-control form-control-sm" />
             </div>
             <div class="st-detail-field">
-              <label class="st-label">有効終了</label>
+              <label class="st-label">Effective to</label>
               <input v-model="d.effective_end" type="date" class="form-control form-control-sm" />
             </div>
             <div class="st-detail-field st-detail-field--dnote">
-              <label class="st-label">メモ</label>
+              <label class="st-label">Note</label>
               <input v-model="d.detail_note" class="form-control form-control-sm" />
             </div>
             <div class="st-detail-field st-detail-field--actions">
-              <button class="btn btn-sm btn-outline-danger" @click="deleteDetail(line, d)" title="削除">✕</button>
+              <button class="btn btn-sm btn-outline-danger" @click="deleteDetail(line, d)" title="Delete">✕</button>
             </div>
-            <div v-if="isOutOfRange(d)" class="st-oor-tag">範囲外</div>
+            <div v-if="isOutOfRange(d)" class="st-oor-tag">Out of range</div>
           </div><!-- /st-detail-row -->
         </div><!-- /st-details-area -->
       </div><!-- /st-line-block (v-for) -->
@@ -271,22 +269,22 @@
     <div v-if="showAddLineModal" class="st-popup-overlay" @click.self="showAddLineModal = false">
       <div class="st-popup st-add-line-popup">
         <button class="st-popup-close" @click="showAddLineModal = false">✕</button>
-        <div class="st-popup-title">新規 Line を追加</div>
+        <div class="st-popup-title">Add New Line</div>
         <div class="st-field-group st-add-line-field">
-          <label class="st-label">部署</label>
+          <label class="st-label">Department</label>
           <select v-model="newLineDeptId" class="form-select form-select-sm">
             <option v-for="dept in allDepartmentOptions" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
           </select>
         </div>
         <div class="d-flex gap-2 justify-content-end mt-3">
-          <button class="btn btn-secondary btn-sm" @click="showAddLineModal = false">キャンセル</button>
-          <button class="btn btn-success btn-sm" @click="confirmAddLine" :disabled="!newLineDeptId">追加</button>
+          <button class="btn btn-secondary btn-sm" @click="showAddLineModal = false">Cancel</button>
+          <button class="btn btn-success btn-sm" @click="confirmAddLine" :disabled="!newLineDeptId">Add</button>
         </div>
       </div>
     </div>
 
     <!-- ===== Toast 通知 ===== -->
-    <div v-if="toastMessage" class="st-toast">{{ toastMessage }}</div>
+    <div v-if="toastMessage" :class="['st-toast', toastOk ? 'st-toast--ok' : 'st-toast--err']">{{ toastMessage }}</div>
 
     <!-- ===== 削除確認モーダル ===== -->
     <div v-if="deleteModal.show" class="st-popup-overlay" @click.self="deleteModal.show = false">
@@ -295,8 +293,8 @@
         <div class="st-popup-title st-delete-title">{{ deleteModal.title }}</div>
         <div class="st-delete-body">{{ deleteModal.body }}</div>
         <div class="d-flex gap-2 justify-content-end mt-3">
-          <button class="btn btn-secondary btn-sm" @click="deleteModal.show = false">キャンセル</button>
-          <button class="btn btn-danger btn-sm" @click="confirmDelete">削除する</button>
+          <button class="btn btn-secondary btn-sm" @click="deleteModal.show = false">Cancel</button>
+          <button class="btn btn-danger btn-sm" @click="confirmDelete">Delete</button>
         </div>
       </div>
     </div>
@@ -306,13 +304,13 @@
       <div class="st-popup">
         <button class="st-popup-close" @click="activeDetail = null">✕</button>
         <div class="st-popup-title">{{ activeDetail.lesson_code }} — {{ activeDetail.lesson_name }}</div>
-        <div class="st-popup-row"><span>開始:</span> {{ activeDetail.start_time }}</div>
-        <div class="st-popup-row"><span>分数:</span> {{ activeDetail.lesson_minute || 5 }} min</div>
-        <div class="st-popup-row"><span>有効:</span> {{ activeDetail.effective_start }} 〜 {{ activeDetail.effective_end || '—' }}</div>
+        <div class="st-popup-row"><span>Start:</span> {{ activeDetail.start_time }}</div>
+        <div class="st-popup-row"><span>Duration:</span> {{ activeDetail.lesson_minute || 5 }} min</div>
+        <div class="st-popup-row"><span>Effective:</span> {{ activeDetail.effective_start }} – {{ activeDetail.effective_end || '—' }}</div>
         <div class="st-popup-row st-popup-note" v-if="activeDetail.detail_note">
-          <span>メモ:</span> {{ activeDetail.detail_note }}
+          <span>Note:</span> {{ activeDetail.detail_note }}
         </div>
-        <div v-else class="st-popup-row text-muted"><span>メモ:</span> No note</div>
+        <div v-else class="st-popup-row text-muted"><span>Note:</span> No note</div>
       </div>
     </div>
 
@@ -326,10 +324,10 @@
     </datalist>
 
     <div v-if="searched && !lines.length && !loading" class="text-muted mt-3">
-      該当する Schedule Line が見つかりませんでした。
+      No schedule lines found.
     </div>
     <div v-if="searched && lines.length && !filteredLines.length && !loading" class="text-muted mt-3">
-      選択中の部署に該当する Schedule Line がありません。
+      No schedule lines match the selected department(s).
     </div>
   </div>
 </template>
@@ -400,6 +398,7 @@ export default {
       newLineDeptId:    null,
       // トースト通知
       toastMessage: '',
+      toastOk:      true,
       toastTimer:   null,
       // 削除確認モーダル
       deleteModal: { show: false, title: '', body: '', onConfirm: null },
@@ -501,7 +500,7 @@ export default {
 
     async search() {
       if (!this.schoolQuery.trim()) {
-        this.showMsg(false, '学校名を入力してください。');
+        this.showMsg(false, 'Please enter a school name.');
         return;
       }
       this.loading  = true;
@@ -525,10 +524,10 @@ export default {
         if (data.ok) {
           this.lines = data.lines;
         } else {
-          this.showMsg(false, data.message || '取得に失敗しました。');
+          this.showMsg(false, data.message || 'Failed to load lines.');
         }
       } catch (e) {
-        this.showMsg(false, '通信エラーが発生しました。');
+        this.showMsg(false, 'Network error.');
       } finally {
         this.loading = false;
       }
@@ -589,8 +588,9 @@ export default {
       await this.addLine();
     },
 
-    showToast(msg) {
+    showToast(msg, ok = true) {
       this.toastMessage = msg;
+      this.toastOk      = ok;
       clearTimeout(this.toastTimer);
       this.toastTimer = setTimeout(() => { this.toastMessage = ''; }, 3500);
     },
@@ -612,10 +612,10 @@ export default {
           this.showToast(data.message);
           await this.search();
         } else {
-          this.showMsg(false, data.message || '作成に失敗しました。');
+          this.showToast(data.message || 'Failed to create line.', false);
         }
       } catch (e) {
-        this.showMsg(false, '通信エラーが発生しました。');
+        this.showToast('Network error.', false);
       }
     },
 
@@ -641,21 +641,21 @@ export default {
         });
         const data = await res.json();
         if (data.ok) {
-          this.showToast(data.message || `#${line.id} を保存しました`);
+          this.showToast(data.message || `Line #${line.id} saved.`);
           await this.search();
         } else {
-          this.showMsg(false, data.message || '保存に失敗しました。');
+          this.showToast(data.message || 'Failed to save line.', false);
         }
       } catch (e) {
-        this.showMsg(false, '通信エラーが発生しました。');
+        this.showToast('Network error.', false);
       }
     },
 
     deleteLine(line) {
       this.deleteModal = {
         show:      true,
-        title:     `Line #${line.id} を削除しますか？`,
-        body:      `「${line.school_name}」の Line #${line.id} および関連するすべての Detail が削除されます。この操作は取り消せません。`,
+        title:     `Delete Line #${line.id}?`,
+        body:      `"${line.school_name}" Line #${line.id} and all associated details will be permanently deleted. This cannot be undone.`,
         onConfirm: async () => {
           try {
             const res  = await fetch(`/schedule_lines/${line.id}`, {
@@ -664,13 +664,13 @@ export default {
             });
             const data = await res.json();
             if (data.ok) {
-              this.showToast(data.message || `#${line.id} を削除しました`);
+              this.showToast(data.message || `Line #${line.id} deleted.`);
               this.lines = this.lines.filter(l => l.id !== line.id);
             } else {
-              this.showMsg(false, data.message || '削除に失敗しました。');
+              this.showToast(data.message || 'Failed to delete line.', false);
             }
           } catch (e) {
-            this.showMsg(false, '通信エラーが発生しました。');
+            this.showToast('Network error.', false);
           }
         },
       };
@@ -686,21 +686,21 @@ export default {
         });
         const data = await res.json();
         if (data.ok) {
-          this.showToast(data.message || `#${line.id} に Detail を追加しました`);
+          this.showToast(data.message || `Detail added to Line #${line.id}.`);
           await this.search();
         } else {
-          this.showMsg(false, data.message || '追加に失敗しました。');
+          this.showToast(data.message || 'Failed to add detail.', false);
         }
       } catch (e) {
-        this.showMsg(false, '通信エラーが発生しました。');
+        this.showToast('Network error.', false);
       }
     },
 
     deleteDetail(line, d) {
       this.deleteModal = {
         show:      true,
-        title:     `Detail を削除しますか？`,
-        body:      `${d.lesson_code || '(未設定)'} ${d.start_time} を削除します。この操作は取り消せません。`,
+        title:     'Delete Detail?',
+        body:      `${d.lesson_code || '(no code)'} at ${d.start_time} will be permanently deleted. This cannot be undone.`,
         onConfirm: async () => {
           try {
             const res  = await fetch(`/schedule_details/${d.id}`, {
@@ -709,13 +709,13 @@ export default {
             });
             const data = await res.json();
             if (data.ok) {
-              this.showToast(data.message || 'Detail を削除しました');
+              this.showToast(data.message || 'Detail deleted.');
               line.details = line.details.filter(x => x.id !== d.id);
             } else {
-              this.showMsg(false, data.message || '削除に失敗しました。');
+              this.showToast(data.message || 'Failed to delete detail.', false);
             }
           } catch (e) {
-            this.showMsg(false, '通信エラーが発生しました。');
+            this.showToast('Network error.', false);
           }
         },
       };
@@ -744,13 +744,13 @@ export default {
         });
         const data = await res.json();
         if (data.ok) {
-          this.showToast(data.message || `#${line.id} の Details を保存しました`);
+          this.showToast(data.message || `Details for Line #${line.id} saved.`);
           await this.search();
         } else {
-          this.showMsg(false, data.message || '保存に失敗しました。');
+          this.showToast(data.message || 'Failed to save details.', false);
         }
       } catch (e) {
-        this.showMsg(false, '通信エラーが発生しました。');
+        this.showToast('Network error.', false);
       }
     },
 
@@ -1219,7 +1219,6 @@ export default {
   bottom: 1.5rem;
   right: 1.5rem;
   z-index: 2000;
-  background: #198754;
   color: #fff;
   padding: 0.55rem 1.1rem;
   border-radius: 6px;
@@ -1227,6 +1226,8 @@ export default {
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.22);
   animation: st-toast-in 0.2s ease;
 }
+.st-toast--ok  { background: #198754; }
+.st-toast--err { background: #dc3545; }
 @keyframes st-toast-in {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }

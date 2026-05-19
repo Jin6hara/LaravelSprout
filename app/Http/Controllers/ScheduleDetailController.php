@@ -74,7 +74,7 @@ class ScheduleDetailController extends Controller
     {
         $items = $request->input('items', []);
         if (!is_array($items) || empty($items)) {
-            return response()->json(['ok' => false, 'message' => '更新対象がありません。'], 422);
+            return response()->json(['ok' => false, 'message' => 'No items to update.'], 422);
         }
 
         $errors = [];
@@ -85,7 +85,7 @@ class ScheduleDetailController extends Controller
             foreach ($items as $raw) {
                 $detailId = $raw['id'] ?? null;
                 if (!$detailId) {
-                    $errors[] = ['id' => null, 'messages' => ['明細IDがありません']];
+                    $errors[] = ['id' => null, 'messages' => ['Detail ID is missing.']];
                     continue;
                 }
 
@@ -95,7 +95,7 @@ class ScheduleDetailController extends Controller
                     ->find($detailId);
 
                 if (!$detail) {
-                    $errors[] = ['id' => $detailId, 'messages' => ['対象の明細が見つかりません']];
+                    $errors[] = ['id' => $detailId, 'messages' => ['Detail not found.']];
                     continue;
                 }
 
@@ -121,7 +121,7 @@ class ScheduleDetailController extends Controller
                     })
                     ->first();
                 if (!$lesson) {
-                    $errors[] = ['id' => $detailId, 'messages' => ['指定の lesson_code / ps_unique_lesson_code が見つかりません']];
+                    $errors[] = ['id' => $detailId, 'messages' => ['lesson_code / ps_unique_lesson_code not found.']];
                     continue;
                 }
 
@@ -149,9 +149,8 @@ class ScheduleDetailController extends Controller
 
             DB::commit();
 
-            $msg = "詳細の一括保存が完了しました（{$updated} 件更新";
-            if (!empty($errors)) $msg .= "・エラー " . count($errors) . " 件";
-            $msg .= "）。";
+            $msg = "Saved {$updated} detail(s).";
+            if (!empty($errors)) $msg .= " " . count($errors) . " error(s) occurred.";
 
             return response()->json([
                 'ok'      => empty($errors),
@@ -164,7 +163,7 @@ class ScheduleDetailController extends Controller
             report($e);
             return response()->json([
                 'ok' => false,
-                'message' => '一括保存に失敗しました。',
+                'message' => 'Failed to save details.',
                 'error' => $e->getMessage(),
             ], 422);
         }
@@ -182,7 +181,7 @@ class ScheduleDetailController extends Controller
             ->first();
 
         if (!$lesson) {
-            return response()->json(['ok' => false, 'message' => 'lesson が見つかりません'], 404);
+            return response()->json(['ok' => false, 'message' => 'Lesson not found.'], 404);
         }
         return response()->json([
             'ok' => true,
@@ -217,7 +216,7 @@ class ScheduleDetailController extends Controller
             DB::commit();
             return response()->json([
                 'ok' => true,
-                'message' => sprintf("空白明細を追加しました（%s %s）。", '00:00', $lesson->lesson_code),
+                'message' => sprintf("Blank detail added (00:00, %s).", $lesson->lesson_code),
                 'new_id' => $detail->id,
             ]);
         } catch (\Throwable $e) {
@@ -225,7 +224,7 @@ class ScheduleDetailController extends Controller
             report($e);
             return response()->json([
                 'ok' => false,
-                'message' => '空白の追加に失敗しました。',
+                'message' => 'Failed to add blank detail.',
                 'error' => $e->getMessage(),
             ], 422);
         }
@@ -271,7 +270,7 @@ class ScheduleDetailController extends Controller
             $lessonCode   = optional($detail->lesson)->lesson_code ?? '-';
             return response()->json([
                 'ok' => true,
-                'message' => sprintf("明細を複写しました（%s %s）。", $startDisplay, $lessonCode),
+                'message' => sprintf("Detail copied (%s %s).", $startDisplay, $lessonCode),
                 'new_id' => $created->id,
             ]);
         } catch (\Throwable $e) {
@@ -279,7 +278,7 @@ class ScheduleDetailController extends Controller
             report($e);
             return response()->json([
                 'ok' => false,
-                'message' => '複写に失敗しました。',
+                'message' => 'Failed to copy detail.',
                 'error' => $e->getMessage(),
             ], 422);
         }
@@ -294,13 +293,13 @@ class ScheduleDetailController extends Controller
             $detail->delete();
             return response()->json([
                 'ok' => true,
-                'message' => sprintf("明細を削除しました（%s %s）。", $startDisplay, $lessonCode),
+                'message' => sprintf("Detail deleted (%s %s).", $startDisplay, $lessonCode),
             ]);
         } catch (\Throwable $e) {
             report($e);
             return response()->json([
                 'ok' => false,
-                'message' => '削除に失敗しました。',
+                'message' => 'Failed to delete detail.',
                 'error' => $e->getMessage(),
             ], 422);
         }
