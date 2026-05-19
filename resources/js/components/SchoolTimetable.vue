@@ -288,6 +288,19 @@
     <!-- ===== Toast 通知 ===== -->
     <div v-if="toastMessage" class="st-toast">{{ toastMessage }}</div>
 
+    <!-- ===== 削除確認モーダル ===== -->
+    <div v-if="deleteModal.show" class="st-popup-overlay" @click.self="deleteModal.show = false">
+      <div class="st-popup st-delete-popup">
+        <button class="st-popup-close" @click="deleteModal.show = false">✕</button>
+        <div class="st-popup-title st-delete-title">{{ deleteModal.title }}</div>
+        <div class="st-delete-body">{{ deleteModal.body }}</div>
+        <div class="d-flex gap-2 justify-content-end mt-3">
+          <button class="btn btn-secondary btn-sm" @click="deleteModal.show = false">キャンセル</button>
+          <button class="btn btn-danger btn-sm" @click="confirmDelete">削除する</button>
+        </div>
+      </div>
+    </div>
+
     <!-- ===== Detail ポップアップ ===== -->
     <div v-if="activeDetail" class="st-popup-overlay" @click.self="activeDetail = null">
       <div class="st-popup">
@@ -388,6 +401,8 @@ export default {
       // トースト通知
       toastMessage: '',
       toastTimer:   null,
+      // 削除確認モーダル
+      deleteModal: { show: false, title: '', body: '', onConfirm: null },
     };
   },
 
@@ -606,7 +621,6 @@ export default {
 
     async saveLine(line) {
       try {
-        const url = `/schedule_lines/bulk-update`;
         const payload = {
           items: [{
             id:              line.id,
@@ -620,32 +634,46 @@ export default {
             handover_memo:   line.handover_memo || null,
           }],
         };
-        const res  = await fetch(url, {
+        const res  = await fetch(`/schedule_lines/bulk-update`, {
           method: 'POST',
           headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json', 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
         const data = await res.json();
-        this.showMsg(data.ok, data.message || (data.ok ? '保存しました。' : '保存に失敗しました。'));
-        if (data.ok) await this.search();
+        if (data.ok) {
+          this.showToast(data.message || `#${line.id} を保存しました`);
+          await this.search();
+        } else {
+          this.showMsg(false, data.message || '保存に失敗しました。');
+        }
       } catch (e) {
         this.showMsg(false, '通信エラーが発生しました。');
       }
     },
 
-    async deleteLine(line) {
-      if (!confirm(`Line #${line.id} を削除しますか？（関連 detail も削除されます）`)) return;
-      try {
-        const res  = await fetch(`/schedule_lines/${line.id}`, {
-          method: 'DELETE',
-          headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
-        });
-        const data = await res.json();
-        this.showMsg(data.ok, data.message || (data.ok ? '削除しました。' : '削除に失敗しました。'));
-        if (data.ok) this.lines = this.lines.filter(l => l.id !== line.id);
-      } catch (e) {
-        this.showMsg(false, '通信エラーが発生しました。');
-      }
+    deleteLine(line) {
+      this.deleteModal = {
+        show:      true,
+        title:     `Line #${line.id} を削除しますか？`,
+        body:      `「${line.school_name}」の Line #${line.id} および関連するすべての Detail が削除されます。この操作は取り消せません。`,
+        onConfirm: async () => {
+          try {
+            const res  = await fetch(`/schedule_lines/${line.id}`, {
+              method:  'DELETE',
+              headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
+            });
+            const data = await res.json();
+            if (data.ok) {
+              this.showToast(data.message || `#${line.id} を削除しました`);
+              this.lines = this.lines.filter(l => l.id !== line.id);
+            } else {
+              this.showMsg(false, data.message || '削除に失敗しました。');
+            }
+          } catch (e) {
+            this.showMsg(false, '通信エラーが発生しました。');
+          }
+        },
+      };
     },
 
     // ---- Detail CRUD ----
@@ -653,30 +681,49 @@ export default {
     async addDetail(line) {
       try {
         const res  = await fetch(`/schedule_lines/${line.id}/details`, {
-          method: 'POST',
+          method:  'POST',
           headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
         });
         const data = await res.json();
-        this.showMsg(data.ok, data.message || (data.ok ? '追加しました。' : '追加に失敗しました。'));
-        if (data.ok) await this.search();
+        if (data.ok) {
+          this.showToast(data.message || `#${line.id} に Detail を追加しました`);
+          await this.search();
+        } else {
+          this.showMsg(false, data.message || '追加に失敗しました。');
+        }
       } catch (e) {
         this.showMsg(false, '通信エラーが発生しました。');
       }
     },
 
-    async deleteDetail(line, d) {
-      if (!confirm(`Detail #${d.id}（${d.lesson_code} ${d.start_time}）を削除しますか？`)) return;
-      try {
-        const res  = await fetch(`/schedule_details/${d.id}`, {
-          method: 'DELETE',
-          headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
-        });
-        const data = await res.json();
-        this.showMsg(data.ok, data.message || (data.ok ? '削除しました。' : '削除に失敗しました。'));
-        if (data.ok) line.details = line.details.filter(x => x.id !== d.id);
-      } catch (e) {
-        this.showMsg(false, '通信エラーが発生しました。');
-      }
+    deleteDetail(line, d) {
+      this.deleteModal = {
+        show:      true,
+        title:     `Detail を削除しますか？`,
+        body:      `${d.lesson_code || '(未設定)'} ${d.start_time} を削除します。この操作は取り消せません。`,
+        onConfirm: async () => {
+          try {
+            const res  = await fetch(`/schedule_details/${d.id}`, {
+              method:  'DELETE',
+              headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
+            });
+            const data = await res.json();
+            if (data.ok) {
+              this.showToast(data.message || 'Detail を削除しました');
+              line.details = line.details.filter(x => x.id !== d.id);
+            } else {
+              this.showMsg(false, data.message || '削除に失敗しました。');
+            }
+          } catch (e) {
+            this.showMsg(false, '通信エラーが発生しました。');
+          }
+        },
+      };
+    },
+
+    confirmDelete() {
+      this.deleteModal.show = false;
+      if (this.deleteModal.onConfirm) this.deleteModal.onConfirm();
     },
 
     async saveDetails(line) {
@@ -691,13 +738,17 @@ export default {
           effective_end:   d.effective_end || null,
         }));
         const res  = await fetch(`/schedule_lines/${line.id}/details/bulk-update`, {
-          method: 'POST',
+          method:  'POST',
           headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json', 'Content-Type': 'application/json' },
-          body: JSON.stringify({ items }),
+          body:    JSON.stringify({ items }),
         });
         const data = await res.json();
-        this.showMsg(data.ok, data.message || (data.ok ? '保存しました。' : '保存に失敗しました。'));
-        if (data.ok) await this.search();
+        if (data.ok) {
+          this.showToast(data.message || `#${line.id} の Details を保存しました`);
+          await this.search();
+        } else {
+          this.showMsg(false, data.message || '保存に失敗しました。');
+        }
       } catch (e) {
         this.showMsg(false, '通信エラーが発生しました。');
       }
@@ -1137,6 +1188,21 @@ export default {
   margin-top: 0.4rem;
   padding-top: 0.4rem;
   border-top: 1px solid #eee;
+}
+
+/* ===== 削除確認モーダル ===== */
+.st-delete-popup {
+  min-width: 320px;
+  max-width: 460px;
+}
+.st-delete-title {
+  color: #dc3545;
+}
+.st-delete-body {
+  font-size: 0.85rem;
+  color: #555;
+  line-height: 1.5;
+  margin-top: 0.25rem;
 }
 
 /* ===== 新規 Line 追加モーダル ===== */
