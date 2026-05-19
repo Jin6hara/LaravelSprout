@@ -44,6 +44,11 @@ class ScheduleLine extends Model
         return $q->whereDate('effective_start', '<=', $to)->whereDate('effective_end', '>=', $from);
     }
 
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
+    }
+
     public function details()
     {
         return $this->hasMany(ScheduleDetail::class);

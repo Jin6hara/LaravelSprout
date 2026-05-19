@@ -183,7 +183,7 @@ class ScheduleLineController extends Controller
     {
         $items = $request->input('items', []);
         if (!is_array($items) || empty($items)) {
-            return response()->json(['ok' => false, 'message' => '更新対象がありません。'], 422);
+            return response()->json(['ok' => false, 'message' => 'No items to update.'], 422);
         }
 
         $errors = [];
@@ -194,13 +194,13 @@ class ScheduleLineController extends Controller
             foreach ($items as $raw) {
                 $lineId = $raw['id'] ?? null;
                 if (!$lineId) {
-                    $errors[] = ['id' => null, 'messages' => ['行IDが指定されていません。']];
+                    $errors[] = ['id' => null, 'messages' => ['Row ID is missing.']];
                     continue;
                 }
 
                 $line = ScheduleLine::find($lineId);
                 if (!$line) {
-                    $errors[] = ['id' => $lineId, 'messages' => ['対象行が見つかりません。']];
+                    $errors[] = ['id' => $lineId, 'messages' => ['Line not found.']];
                     continue;
                 }
 
@@ -238,9 +238,8 @@ class ScheduleLineController extends Controller
 
             DB::commit();
 
-            $msg = "一括保存が完了しました（{$updated} 件更新";
-            if (!empty($errors)) $msg .= "・エラー " . count($errors) . " 件";
-            $msg .= "）。";
+            $msg = "Saved {$updated} line(s).";
+            if (!empty($errors)) $msg .= " " . count($errors) . " error(s) occurred.";
 
             return response()->json([
                 'ok'      => empty($errors),
@@ -253,7 +252,7 @@ class ScheduleLineController extends Controller
             report($e);
             return response()->json([
                 'ok'      => false,
-                'message' => '一括保存に失敗しました。',
+                'message' => 'Failed to save lines.',
                 'error'   => $e->getMessage(),
             ], 422);
         }
@@ -262,9 +261,10 @@ class ScheduleLineController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'user_id'     => ['nullable', 'exists:users,id'],
-            'school_name' => ['nullable', 'string', 'max:255'],
-            'dow'         => ['nullable', 'integer', 'between:0,6'],
+            'user_id'       => ['nullable', 'exists:users,id'],
+            'school_name'   => ['nullable', 'string', 'max:255'],
+            'dow'           => ['nullable', 'integer', 'between:0,6'],
+            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
         ]);
 
         $line = new ScheduleLine();
@@ -278,12 +278,12 @@ class ScheduleLineController extends Controller
         $line->effective_end   = now()->addMonths(1)->toDateString();
         $line->handover_memo   = null;
         $line->district_id     = $this->scopeService->currentDistrictId();
-        $line->department_id   = $this->scopeService->currentDepartmentId();
+        $line->department_id   = $data['department_id'] ?? $this->scopeService->currentDepartmentId();
         $line->save();
 
         return response()->json([
-            'ok' => true,
-            'message' => "新しい ScheduleLine (#{$line->id}) を追加しました。",
+            'ok'      => true,
+            'message' => "Line #{$line->id} added.",
             'line_id' => $line->id,
         ]);
     }
@@ -300,14 +300,14 @@ class ScheduleLineController extends Controller
 
             return response()->json([
                 'ok'      => true,
-                'message' => "Line #{$id} を削除しました。",
+                'message' => "Line #{$id} deleted.",
                 'id'      => $id,
             ]);
         } catch (\Throwable $e) {
             report($e);
             return response()->json([
                 'ok'      => false,
-                'message' => '削除に失敗しました。関連データや制約をご確認ください。',
+                'message' => 'Failed to delete. Please check related data or constraints.',
                 'error'   => $e->getMessage(),
             ], 422);
         }

@@ -35,7 +35,7 @@ class SchoolTimetableController extends Controller
             ->values();
 
         $dowOptions = [
-            0 => '日', 1 => '月', 2 => '火', 3 => '水', 4 => '木', 5 => '金', 6 => '土',
+            0 => 'Sun', 1 => 'Mon', 2 => 'Tue', 3 => 'Wed', 4 => 'Thu', 5 => 'Fri', 6 => 'Sat',
         ];
 
         $districtId = $this->scopeService->currentDistrictId();
@@ -49,19 +49,24 @@ class SchoolTimetableController extends Controller
             ->get(['id', 'name'])
             ->values();
 
+        $allDepartmentOptions = Department::orderBy('name')
+            ->get(['id', 'name'])
+            ->values();
+
         $props = [
-            'initialSchool'      => $schoolName,
-            'initialDow'         => $dow,
-            'userOptions'        => $userOptions,
-            'dowOptions'         => $dowOptions,
-            'departmentOptions'  => $departmentOptions,
-            'csrfToken'          => csrf_token(),
-            'apiLinesUrl'        => route('school_timetable.lines'),
-            'schoolsUrl'         => route('school_timetable.schools'),
-            'lessonsUrl'         => route('school_timetable.lessons'),
-            'storeLinesUrl'      => route('schedule_lines.store'),
-            'bulkUpdateLinesUrl' => route('schedule_lines.bulk_update'),
-            'lessonByCodeUrl'    => url('/lessons/by-code'),
+            'initialSchool'       => $schoolName,
+            'initialDow'          => $dow,
+            'userOptions'         => $userOptions,
+            'dowOptions'          => $dowOptions,
+            'departmentOptions'   => $departmentOptions,
+            'allDepartmentOptions' => $allDepartmentOptions,
+            'csrfToken'           => csrf_token(),
+            'apiLinesUrl'         => route('school_timetable.lines'),
+            'schoolsUrl'          => route('school_timetable.schools'),
+            'lessonsUrl'          => route('school_timetable.lessons'),
+            'storeLinesUrl'       => route('schedule_lines.store'),
+            'bulkUpdateLinesUrl'  => route('schedule_lines.bulk_update'),
+            'lessonByCodeUrl'     => url('/lessons/by-code'),
         ];
 
         return view('schedule.schoolTimetable', compact('props'));
@@ -85,6 +90,7 @@ class SchoolTimetableController extends Controller
         $query = ScheduleLine::query()
             ->with([
                 'user:id,first_name,family_name,employee_code',
+                'department:id,name',
                 'details' => function ($q) use ($activeDate) {
                     $q->with(['lesson:id,lesson_name,lesson_code,note,lesson_minute'])
                       ->whereDate('effective_start', '<=', $activeDate)
@@ -123,6 +129,7 @@ class SchoolTimetableController extends Controller
                 'id'              => $line->id,
                 'school_name'     => $line->school_name,
                 'department_id'   => $line->department_id,
+                'department_name' => optional($line->department)->name,
                 'user_id'         => $line->user_id,
                 'user_name'       => $userName,
                 'dow'             => $line->dow,
