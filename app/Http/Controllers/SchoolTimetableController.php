@@ -49,19 +49,24 @@ class SchoolTimetableController extends Controller
             ->get(['id', 'name'])
             ->values();
 
+        $allDepartmentOptions = Department::orderBy('name')
+            ->get(['id', 'name'])
+            ->values();
+
         $props = [
-            'initialSchool'      => $schoolName,
-            'initialDow'         => $dow,
-            'userOptions'        => $userOptions,
-            'dowOptions'         => $dowOptions,
-            'departmentOptions'  => $departmentOptions,
-            'csrfToken'          => csrf_token(),
-            'apiLinesUrl'        => route('school_timetable.lines'),
-            'schoolsUrl'         => route('school_timetable.schools'),
-            'lessonsUrl'         => route('school_timetable.lessons'),
-            'storeLinesUrl'      => route('schedule_lines.store'),
-            'bulkUpdateLinesUrl' => route('schedule_lines.bulk_update'),
-            'lessonByCodeUrl'    => url('/lessons/by-code'),
+            'initialSchool'       => $schoolName,
+            'initialDow'          => $dow,
+            'userOptions'         => $userOptions,
+            'dowOptions'          => $dowOptions,
+            'departmentOptions'   => $departmentOptions,
+            'allDepartmentOptions' => $allDepartmentOptions,
+            'csrfToken'           => csrf_token(),
+            'apiLinesUrl'         => route('school_timetable.lines'),
+            'schoolsUrl'          => route('school_timetable.schools'),
+            'lessonsUrl'          => route('school_timetable.lessons'),
+            'storeLinesUrl'       => route('schedule_lines.store'),
+            'bulkUpdateLinesUrl'  => route('schedule_lines.bulk_update'),
+            'lessonByCodeUrl'     => url('/lessons/by-code'),
         ];
 
         return view('schedule.schoolTimetable', compact('props'));

@@ -262,9 +262,10 @@ class ScheduleLineController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'user_id'     => ['nullable', 'exists:users,id'],
-            'school_name' => ['nullable', 'string', 'max:255'],
-            'dow'         => ['nullable', 'integer', 'between:0,6'],
+            'user_id'       => ['nullable', 'exists:users,id'],
+            'school_name'   => ['nullable', 'string', 'max:255'],
+            'dow'           => ['nullable', 'integer', 'between:0,6'],
+            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
         ]);
 
         $line = new ScheduleLine();
@@ -278,12 +279,12 @@ class ScheduleLineController extends Controller
         $line->effective_end   = now()->addMonths(1)->toDateString();
         $line->handover_memo   = null;
         $line->district_id     = $this->scopeService->currentDistrictId();
-        $line->department_id   = $this->scopeService->currentDepartmentId();
+        $line->department_id   = $data['department_id'] ?? $this->scopeService->currentDepartmentId();
         $line->save();
 
         return response()->json([
-            'ok' => true,
-            'message' => "新しい ScheduleLine (#{$line->id}) を追加しました。",
+            'ok'      => true,
+            'message' => "#{$line->id} でラインを追加しました",
             'line_id' => $line->id,
         ]);
     }

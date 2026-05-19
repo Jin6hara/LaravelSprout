@@ -33,7 +33,7 @@
         class="form-control form-control-sm st-date-input"
       />
       <button class="btn btn-primary btn-sm" @click="search">検索</button>
-      <button class="btn btn-success btn-sm" @click="addLine" :disabled="!searched">+ 新規 Line</button>
+      <button class="btn btn-success btn-sm" @click="openAddLineModal" :disabled="!searched">+ 新規 Line</button>
     </div>
 
     <!-- ===== Department チェックボックスフィルター ===== -->
@@ -264,6 +264,27 @@
       </div>
     </div><!-- /st-split -->
 
+    <!-- ===== 新規 Line 追加モーダル ===== -->
+    <div v-if="showAddLineModal" class="st-popup-overlay" @click.self="showAddLineModal = false">
+      <div class="st-popup st-add-line-popup">
+        <button class="st-popup-close" @click="showAddLineModal = false">✕</button>
+        <div class="st-popup-title">新規 Line を追加</div>
+        <div class="st-field-group st-add-line-field">
+          <label class="st-label">部署</label>
+          <select v-model="newLineDeptId" class="form-select form-select-sm">
+            <option v-for="dept in allDepartmentOptions" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
+          </select>
+        </div>
+        <div class="d-flex gap-2 justify-content-end mt-3">
+          <button class="btn btn-secondary btn-sm" @click="showAddLineModal = false">キャンセル</button>
+          <button class="btn btn-success btn-sm" @click="confirmAddLine" :disabled="!newLineDeptId">追加</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Toast 通知 ===== -->
+    <div v-if="toastMessage" class="st-toast">{{ toastMessage }}</div>
+
     <!-- ===== Detail ポップアップ ===== -->
     <div v-if="activeDetail" class="st-popup-overlay" @click.self="activeDetail = null">
       <div class="st-popup">
@@ -327,7 +348,8 @@ export default {
     initialDow:          { default: null },
     userOptions:         { type: Array,  default: () => [] },
     dowOptions:          { type: Object, default: () => ({}) },
-    departmentOptions:   { type: Array,  default: () => [] },
+    departmentOptions:    { type: Array,  default: () => [] },
+    allDepartmentOptions: { type: Array,  default: () => [] },
     csrfToken:           { type: String, default: '' },
     apiLinesUrl:         { type: String, default: '' },
     schoolsUrl:          { type: String, default: '' },
@@ -357,6 +379,12 @@ export default {
       linesPaneHeight: 400,
       // クリックされた detail（ポップアップ表示用）
       activeDetail: null,
+      // 新規 Line 追加モーダル
+      showAddLineModal: false,
+      newLineDeptId:    null,
+      // トースト通知
+      toastMessage: '',
+      toastTimer:   null,
     };
   },
 
@@ -528,20 +556,42 @@ export default {
 
     // ---- Line CRUD ----
 
+    openAddLineModal() {
+      if (!this.allDepartmentOptions.length) {
+        this.newLineDeptId = null;
+        this.addLine();
+        return;
+      }
+      this.newLineDeptId = this.allDepartmentOptions[0].id;
+      this.showAddLineModal = true;
+    },
+
+    async confirmAddLine() {
+      this.showAddLineModal = false;
+      await this.addLine();
+    },
+
+    showToast(msg) {
+      this.toastMessage = msg;
+      clearTimeout(this.toastTimer);
+      this.toastTimer = setTimeout(() => { this.toastMessage = ''; }, 3500);
+    },
+
     async addLine() {
       try {
         const res  = await fetch(this.storeLinesUrl, {
           method: 'POST',
           headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json', 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            user_id:     null,
-            school_name: this.schoolQuery.trim(),
-            dow:         this.dowFilter !== null ? this.dowFilter : 0,
+            user_id:       null,
+            school_name:   this.schoolQuery.trim(),
+            dow:           this.dowFilter !== null ? this.dowFilter : 0,
+            department_id: this.newLineDeptId,
           }),
         });
         const data = await res.json();
         if (data.ok) {
-          this.showMsg(true, data.message);
+          this.showToast(data.message);
           await this.search();
         } else {
           this.showMsg(false, data.message || '作成に失敗しました。');
@@ -1081,5 +1131,32 @@ export default {
   margin-top: 0.4rem;
   padding-top: 0.4rem;
   border-top: 1px solid #eee;
+}
+
+/* ===== 新規 Line 追加モーダル ===== */
+.st-add-line-popup {
+  min-width: 300px;
+}
+.st-add-line-field {
+  margin-top: 0.5rem;
+}
+
+/* ===== Toast 通知 ===== */
+.st-toast {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 2000;
+  background: #198754;
+  color: #fff;
+  padding: 0.55rem 1.1rem;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.22);
+  animation: st-toast-in 0.2s ease;
+}
+@keyframes st-toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 </style>
