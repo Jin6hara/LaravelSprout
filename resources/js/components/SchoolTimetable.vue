@@ -145,6 +145,9 @@
         <div class="st-line-header">
           <span class="st-line-id">#{{ line.id }}</span>
           <span class="st-line-school">{{ line.school_name }}</span>
+          <span v-if="line.department_name" class="st-line-dept">{{ line.department_name }}</span>
+          <span v-if="line.user_name" class="st-line-user">{{ line.user_name }}</span>
+          <span class="st-line-meta">{{ dowLabel(line.dow) }} {{ line.start_time }}–{{ line.end_time }}</span>
           <div class="ms-auto d-flex gap-1">
             <button class="btn btn-sm btn-primary" @click="saveLine(line)">Line 保存</button>
             <button class="btn btn-sm btn-outline-danger" @click="deleteLine(line)">削除</button>
@@ -442,7 +445,7 @@ export default {
     },
 
     dowLabel(dow) {
-      const map = { 0: '日', 1: '月', 2: '火', 3: '水', 4: '木', 5: '金', 6: '土' };
+      const map = { 0: 'Sun', 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat' };
       return map[dow] ?? '?';
     },
 
@@ -1000,6 +1003,9 @@ export default {
 }
 .st-line-id     { font-weight: 700; }
 .st-line-school { color: #adb5bd; }
+.st-line-dept   { color: #6ea8fe; font-size: 0.78rem; }
+.st-line-user   { color: #a8d8a8; font-size: 0.78rem; }
+.st-line-meta   { color: #ced4da; font-size: 0.78rem; }
 
 .st-line-fields {
   display: flex;

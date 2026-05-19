@@ -90,6 +90,7 @@ class SchoolTimetableController extends Controller
         $query = ScheduleLine::query()
             ->with([
                 'user:id,first_name,family_name,employee_code',
+                'department:id,name',
                 'details' => function ($q) use ($activeDate) {
                     $q->with(['lesson:id,lesson_name,lesson_code,note,lesson_minute'])
                       ->whereDate('effective_start', '<=', $activeDate)
@@ -128,6 +129,7 @@ class SchoolTimetableController extends Controller
                 'id'              => $line->id,
                 'school_name'     => $line->school_name,
                 'department_id'   => $line->department_id,
+                'department_name' => optional($line->department)->name,
                 'user_id'         => $line->user_id,
                 'user_name'       => $userName,
                 'dow'             => $line->dow,
