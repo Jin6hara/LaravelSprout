@@ -18,11 +18,11 @@ class LeaveAttachmentController extends Controller
             abort(404);
         }
 
-        // ② 認可（必要なら）
-        // $this->authorize('view', $leave);
+        // ② 認可
+        $this->authorize('view', $leave);
 
-        // ③ ファイルパス取得（public ディスク前提）
-        $disk = Storage::disk('public');
+        // ③ ファイルパス取得（local ディスク）
+        $disk = Storage::disk('local');
 
         if (! $disk->exists($attachment->path)) {
             abort(404);

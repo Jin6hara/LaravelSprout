@@ -388,37 +388,37 @@ use App\Http\Controllers\LessonCsvController;
 use App\Http\Controllers\ScheduleCsvController;
 use App\Http\Controllers\UserCsvController;
 
-Route::get('/csv', [CsvController::class, 'index'])
-    ->name('csv.index');
+Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
+    Route::get('/csv', [CsvController::class, 'index'])
+        ->name('csv.index');
 
-Route::get('/csv/users', [UserCsvController::class, 'show'])
-    ->name('csv.users.show');
+    Route::get('/csv/users', [UserCsvController::class, 'show'])
+        ->name('csv.users.show');
 
-Route::get('/csv/users/export', [UserCsvController::class, 'export'])
-    ->name('csv.users.export');
+    Route::get('/csv/users/export', [UserCsvController::class, 'export'])
+        ->name('csv.users.export');
 
-Route::post('/csv/users/import', [UserCsvController::class, 'import'])
-    ->name('csv.users.import');
+    Route::post('/csv/users/import', [UserCsvController::class, 'import'])
+        ->name('csv.users.import');
 
-Route::get('/csv/lessons', [LessonCsvController::class, 'show'])
-    ->name('csv.lessons.show');
+    Route::get('/csv/lessons', [LessonCsvController::class, 'show'])
+        ->name('csv.lessons.show');
 
-Route::get('/csv/lessons/export', [LessonCsvController::class, 'export'])
-    ->name('csv.lessons.export');
+    Route::get('/csv/lessons/export', [LessonCsvController::class, 'export'])
+        ->name('csv.lessons.export');
 
-Route::post('/csv/lessons/import', [LessonCsvController::class, 'import'])
-    ->name('csv.lessons.import');
+    Route::post('/csv/lessons/import', [LessonCsvController::class, 'import'])
+        ->name('csv.lessons.import');
 
+    Route::get('/csv/schedules', [ScheduleCsvController::class, 'show'])
+        ->name('csv.schedules.show');
 
-Route::get('/csv/schedules', [ScheduleCsvController::class, 'show'])
-    ->name('csv.schedules.show');
+    Route::get('/csv/schedules/export', [ScheduleCsvController::class, 'export'])
+        ->name('csv.schedules.export');
 
-Route::get('/csv/schedules/export', [ScheduleCsvController::class, 'export'])
-    ->name('csv.schedules.export');
-
-Route::post('/csv/schedules/import', [ScheduleCsvController::class, 'import'])
-    ->name('csv.schedules.import');
-
+    Route::post('/csv/schedules/import', [ScheduleCsvController::class, 'import'])
+        ->name('csv.schedules.import');
+});
 
 // ---------------------------------------------------------------------------------------------------------▲ CSV関連ルート
 

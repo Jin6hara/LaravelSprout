@@ -176,7 +176,13 @@ class LeaveController extends Controller
         $validated = $request->validate([
             'reason'      => ['required', 'string', 'max:1000'],
             'handle_type' => ['required', 'in:apply_alp,no_alp,clinic,sick_child,special_leave,menstrual_leave'],
-            'attachment'  => ['nullable', 'file', 'max:10240'], // ★attachment（10MBなど）
+            'attachment'  => [
+                'nullable',
+                'file',
+                'max:10240',
+                'mimes:pdf,jpg,jpeg,png',
+                'mimetypes:application/pdf,image/jpeg,image/png',
+            ],
         ]);
 
         $leave->update([
@@ -190,12 +196,12 @@ class LeaveController extends Controller
 
             // 既存の添付があれば削除したい場合（任意）
             if ($leave->attachment) {
-                Storage::disk('public')->delete($leave->attachment->path); // ★ ここだけ変更
+                Storage::disk('local')->delete($leave->attachment->path);
                 $leave->attachment->delete();
             }
 
-            // storage/app/public/attachments/YYYY/MM/... に保存
-            $path = $file->store('attachments/' . now()->format('Y/m'), 'public'); // ★ 第2引数 'public' 追加
+            // storage/app/attachments/YYYY/MM/... に保存（非公開）
+            $path = $file->store('attachments/' . now()->format('Y/m'), 'local');
 
             $leave->attachment()->create([
                 'path'          => $path,
@@ -338,7 +344,6 @@ class LeaveController extends Controller
 
         $downloadName = $attachment->original_name ?: 'attachment';
 
-        // ★ public ディスクからダウンロード
-        return Storage::disk('public')->download($attachment->path, $downloadName);
+        return Storage::disk('local')->download($attachment->path, $downloadName);
     }
 }

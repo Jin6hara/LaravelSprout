@@ -14,6 +14,9 @@ use Spatie\Permission\Traits\HasRoles;
 use App\Models\Pivots\PostViewer;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * @mixin \Spatie\Permission\Traits\HasRoles
+ */
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes, HasRoles;

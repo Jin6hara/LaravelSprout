@@ -22,8 +22,9 @@ class PostSendRequest extends FormRequest
             'attachments'  => ['sometimes', 'array', 'max:10'],            // 最大10ファイル
             'attachments.*'=> [
                 'file',
-                'max:10240', // 10MB/ファイル
-                'mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx,csv,txt,zip'
+                'max:10240',
+                'mimes:pdf,jpg,jpeg,png,docx,xlsx',
+                'mimetypes:application/pdf,image/jpeg,image/png,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             ],
             'expires_at'    => ['nullable', 'date', 'after:now'],          // 期限（任意）
             'allow_replies' => ['required', 'boolean'],                    // 返信可否
