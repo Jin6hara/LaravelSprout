@@ -176,7 +176,13 @@ class LeaveController extends Controller
         $validated = $request->validate([
             'reason'      => ['required', 'string', 'max:1000'],
             'handle_type' => ['required', 'in:apply_alp,no_alp,clinic,sick_child,special_leave,menstrual_leave'],
-            'attachment'  => ['nullable', 'file', 'max:10240'], // ★attachment（10MBなど）
+            'attachment'  => [
+                'nullable',
+                'file',
+                'max:10240',
+                'mimes:pdf,jpg,jpeg,png',
+                'mimetypes:application/pdf,image/jpeg,image/png',
+            ],
         ]);
 
         $leave->update([
