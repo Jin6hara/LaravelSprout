@@ -54,8 +54,7 @@ class PostController extends Controller
                 $folder = 'attachments/' . now()->format('Y/m');
 
                 foreach ($req->file('attachments') as $file) {
-                    // ★ disk を 'public' に固定
-                    $path = $file->store($folder, 'public');
+                    $path = $file->store($folder, 'local');
 
                     $post->attachments()->create([
                         'path'          => $path,
