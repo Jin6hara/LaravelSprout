@@ -122,6 +122,55 @@ class SubCountProvider implements CalendarEventProvider
             }
         }
 
+        // === (E) schedule_lines: schedule_detail.lesson_code = 'SUB' の担当者（欠席控除） ===
+        $detailSubRows = DB::table('schedule_lines as sl')
+            ->join('schedule_details as sd', 'sd.schedule_line_id', '=', 'sl.id')
+            ->join('lessons as l', 'l.id', '=', 'sd.lesson_id')
+            ->select(
+                'sl.user_id',
+                'sl.dow',
+                'sl.effective_start as line_eff_start',
+                'sl.effective_end   as line_eff_end',
+                'sd.effective_start as detail_eff_start',
+                'sd.effective_end   as detail_eff_end'
+            )
+            ->where('l.lesson_code', 'SUB')
+            ->whereIn('sl.user_id', $targetUserIds)
+            ->whereDate('sl.effective_start', '<=', $endDate)
+            ->whereDate('sl.effective_end',   '>=', $startDate)
+            ->whereDate('sd.effective_start', '<=', $endDate)
+            ->where(function ($q) use ($startDate) {
+                $q->whereNull('sd.effective_end')
+                  ->orWhereDate('sd.effective_end', '>=', $startDate);
+            })
+            ->get();
+
+        foreach ($detailSubRows as $ln) {
+            $lineS = Carbon::parse($ln->line_eff_start)->startOfDay();
+            $lineE = Carbon::parse($ln->line_eff_end)->startOfDay()->addDay();
+            $detS  = Carbon::parse($ln->detail_eff_start)->startOfDay();
+            $detE  = $ln->detail_eff_end
+                ? Carbon::parse($ln->detail_eff_end)->startOfDay()->addDay()
+                : $rangeE->copy(); // オープンエンドはクエリ範囲終端で丸める
+
+            // line・detail・クエリ範囲の共通期間
+            $effS = $lineS > $detS ? $lineS : $detS;
+            $effE = $lineE < $detE ? $lineE : $detE;
+            $segS = $effS > $rangeS ? $effS : $rangeS;
+            $segE = $effE < $rangeE ? $effE : $rangeE;
+            if ($segE <= $segS) continue;
+
+            $uid = (int)$ln->user_id;
+
+            for ($cur = $segS->copy(); $cur < $segE; $cur->addDay()) {
+                if ($dbDowOf($cur) !== (int)$ln->dow) continue;
+                $d = $cur->toDateString();
+
+                if (!empty($leaveUsersByDate[$d][$uid])) $lineUsersAbsent[$d][$uid]  = true;
+                else                                     $lineUsersCounted[$d][$uid] = true;
+            }
+        }
+
         // === (D) subs: 直接登録された代行（日付ベース、欠席控除） ===
         $subsRows = DB::table('subs')
             ->select('user_id', 'sub_date', 'start_time', 'end_time') // ← 時間も取得（モーダル用）
