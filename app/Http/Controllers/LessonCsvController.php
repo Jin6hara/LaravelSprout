@@ -98,7 +98,7 @@ class LessonCsvController extends Controller
         fclose($fp);
 
         if (!empty($parseErrors)) {
-            return back()->with('import_errors', $parseErrors);
+            return back()->with('toast_errors', $parseErrors);
         }
 
         if (empty($rows)) {
@@ -126,7 +126,7 @@ class LessonCsvController extends Controller
         }
 
         if (!empty($validationErrors)) {
-            return back()->with('import_errors', $validationErrors);
+            return back()->with('toast_errors', $validationErrors);
         }
 
         // DB保存（トランザクション）
@@ -165,7 +165,7 @@ class LessonCsvController extends Controller
             }
         });
 
-        return back()->with('import_success', "インポート完了：作成 {$created} 件、更新 {$updated} 件");
+        return back()->with('toast', "インポート完了：作成 {$created} 件、更新 {$updated} 件");
     }
 
     /**

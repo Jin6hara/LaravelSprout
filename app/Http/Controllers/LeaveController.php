@@ -68,7 +68,7 @@ class LeaveController extends Controller
             }
         });
 
-        return back()->with('success', '申請を取り消しました。');
+        return back()->with('toast', '申請を取り消しました。');
     }
 
     /**
@@ -167,10 +167,10 @@ class LeaveController extends Controller
         }
 
         if ($leave->kind !== 'absence') {
-            return back()->with('error', 'This leave is not target for absence self-report.');
+            return back()->with('toast_errors', ['This leave is not target for absence self-report.']);
         }
         if (!is_null($leave->handle_type)) {
-            return back()->with('error', 'Already submitted.');
+            return back()->with('toast_errors', ['Already submitted.']);
         }
 
         $validated = $request->validate([
@@ -210,7 +210,7 @@ class LeaveController extends Controller
             ]);
         }
 
-        return back()->with('status', 'Submitted.');
+        return back()->with('toast', 'Submitted.');
     }
 
     public function allReport(Request $request)

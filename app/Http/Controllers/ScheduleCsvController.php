@@ -32,11 +32,11 @@ class ScheduleCsvController extends Controller
         try {
             $result = $service->import($path);
         } catch (Throwable $e) {
-            return back()->with('import_errors', ['予期しないエラーが発生しました: ' . $e->getMessage()]);
+            return back()->with('toast_errors', ['予期しないエラーが発生しました: ' . $e->getMessage()]);
         }
 
         if (!empty($result['errors'])) {
-            return back()->with('import_errors', $result['errors']);
+            return back()->with('toast_errors', $result['errors']);
         }
 
         $msg = sprintf(
@@ -47,6 +47,6 @@ class ScheduleCsvController extends Controller
             $result['detail_updated'],
         );
 
-        return back()->with('import_success', $msg);
+        return back()->with('toast', $msg);
     }
 }

@@ -84,7 +84,7 @@ class RoleChangeController extends Controller
             $this->notifyApprovers($data['role'], $rc);
         });
 
-        return back()->with('status', '権限変更の申請を受け付けました。');
+        return back()->with('toast', '権限変更の申請を受け付けました。');
     }
 
     // 表示名に使う簡易マップ（Bladeの getRoleLabelAttribute に合わせる）
