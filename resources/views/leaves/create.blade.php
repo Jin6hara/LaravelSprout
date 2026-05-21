@@ -2,8 +2,6 @@
 @extends('layouts.app')
 @section('content')
 <div class="container max-w-xl mx-auto">
-    @if(session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
-
     <h1 class="text-lg font-bold mb-4">Leave 新規</h1>
     <form method="post" action="{{ route('leaves.store') }}">
         @csrf

@@ -67,6 +67,6 @@ class EmploymentTermController extends Controller
 
         return redirect()
             ->route('employment_terms.details', $employmentTerm->user)
-            ->with('status', '雇用情報を更新しました。');
+            ->with('toast', '雇用情報を更新しました。');
     }
 }

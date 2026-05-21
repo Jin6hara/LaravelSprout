@@ -45,8 +45,6 @@ class WorkProvider implements CalendarEventProvider
                 $lineEndHM   = substr($ln->end_time,   0, 5);
                 $lineStart   = Carbon::parse("$ymd $lineStartHM");
                 $lineEnd     = Carbon::parse("$ymd $lineEndHM");
-                $isSub       = strcasecmp($ln->school_name, 'Sub') === 0;
-
                 $lineStartMin = $toMinutes($lineStartHM);
                 $lineEndMin   = $toMinutes($lineEndHM);
 
@@ -73,6 +71,9 @@ class WorkProvider implements CalendarEventProvider
                             'lesson_type' => $d->lesson->lesson_type,
                         ];
                     })->all();
+
+                $isSub = strcasecmp($ln->school_name, 'Sub') === 0
+                    || collect($details)->contains(fn($d) => ($d['lesson_code'] ?? '') === 'SUB');
 
                 $events[] = new CandidateEvent([
                     'title'  => "{$ln->school_name} {$lineStart->format('H:i')}–{$lineEnd->format('H:i')}",

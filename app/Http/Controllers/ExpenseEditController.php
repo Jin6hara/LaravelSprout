@@ -190,8 +190,8 @@ class ExpenseEditController extends Controller
         $this->authorize('unsubmit', $report);
 
         // ここは「SUBMITTED のときだけ戻せる」などルールを入れてもOK
-        if ($report->status !== ExpenseReportStatus::SUBMITTED->value) {
-            return back()->with('error', 'Only submitted reports can be unsubmitted.');
+        if ($report->status !== ExpenseReportStatus::SUBMITTED) {
+            return back()->with('toast_errors', ['Only submitted reports can be unsubmitted.']);
         }
 
         $report->update([

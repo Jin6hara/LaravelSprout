@@ -118,7 +118,7 @@ class AdminController extends Controller
             $user->assignRole('general');
         });
 
-        return redirect()->route('admin.dashboard')->with("status", "登録成功");
+        return redirect()->route('admin.dashboard')->with("toast", "登録成功");
     }
 
     /**

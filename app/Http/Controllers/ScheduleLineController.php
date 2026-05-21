@@ -119,7 +119,7 @@ class ScheduleLineController extends Controller
             }
         }
 
-        $lines = $linesQuery->get();
+        $lines = $linesQuery->paginate(50);
 
         // ユーザー選択肢（スコープ内のユーザー一覧）
         $userOptions = $this->scopeService->targetUserQuery()
@@ -181,7 +181,7 @@ class ScheduleLineController extends Controller
 
         $line->fill($data)->save();
 
-        return back()->with('status', "Line #{$line->id} を更新しました。");
+        return back()->with('toast', "Line #{$line->id} を更新しました。");
     }
 
     public function bulkUpdate(Request $request): JsonResponse

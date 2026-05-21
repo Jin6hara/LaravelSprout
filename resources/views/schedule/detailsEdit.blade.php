@@ -91,8 +91,6 @@
     </div>
 </div>
 
-<div id="flash-area" class="mb-2"></div>
-
 @if($details->isEmpty())
 <div class="alert alert-secondary">このラインには明細がありません。</div>
 @else
@@ -194,18 +192,6 @@
             document.querySelector('meta[name="csrf-token"]')?.content ||
             document.querySelector('input[name="_token"]')?.value;
 
-        function showFlash(message, type = 'success') {
-            const area = document.getElementById('flash-area');
-            if (!area || !message) return;
-            const wrap = document.createElement('div');
-            wrap.innerHTML = `
-      <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>`;
-            area.prepend(wrap.firstElementChild);
-        }
-
         // lesson_code 変更 → レッスン取得して name / minute / note を反映し、End再計算
         document.addEventListener('change', async (e) => {
             const codeInput = e.target.closest('.js-lesson-code');
@@ -242,7 +228,7 @@
                 recalcEndTime(card);
             } catch (err) {
                 console.error(err);
-                showFlash(err.message || 'レッスン取得に失敗しました。', 'danger');
+                window.showToast(err.message || 'レッスン取得に失敗しました。', { variant: 'danger' });
             }
         });
 
@@ -274,7 +260,7 @@
         document.getElementById('details-bulk-save')?.addEventListener('click', async () => {
             // カードを対象に収集
             const rows = Array.from(document.querySelectorAll('.js-detail-row[data-id]'));
-            if (!rows.length) return showFlash('保存対象がありません。', 'danger');
+            if (!rows.length) return window.showToast('保存対象がありません。', { variant: 'danger' });
 
             const items = rows.map(card => {
                 const id = Number(card.dataset.id);
@@ -317,7 +303,7 @@
                 if (res.ok && (data.ok || data.updated > 0)) {
                     if (data.errors && data.errors.length) {
                         const list = data.errors.map(e => `#${e.id ?? '-'}: ${e.messages.join(' / ')}`).join('<br>');
-                        showFlash(`${data.message}<br>${list}`, 'warning');
+                        window.showToast(`${data.message} / ${list}`, { variant: 'warning' });
                     } else {
                         sessionStorage.setItem('flash', JSON.stringify({
                             message: data.message || '保存しました。',
@@ -332,7 +318,7 @@
                 }
             } catch (err) {
                 console.error(err);
-                showFlash(err.message || '一括保存に失敗しました。', 'danger');
+                window.showToast(err.message || '一括保存に失敗しました。', { variant: 'danger' });
             }
         });
 
@@ -363,7 +349,7 @@
                 window.location.href = u.toString();
             } catch (err) {
                 console.error(err);
-                showFlash(err.message || '追加に失敗しました。', 'danger');
+                window.showToast(err.message || '追加に失敗しました。', { variant: 'danger' });
             }
         });
 
@@ -397,7 +383,7 @@
                 window.location.href = u.toString();
             } catch (err) {
                 console.error(err);
-                showFlash(err.message || '複写に失敗しました。', 'danger');
+                window.showToast(err.message || '複写に失敗しました。', { variant: 'danger' });
             }
         });
 
@@ -434,23 +420,20 @@
                 window.location.href = u.toString();
             } catch (err) {
                 console.error(err);
-                showFlash(err.message || '削除に失敗しました。', 'danger');
+                window.showToast(err.message || '削除に失敗しました。', { variant: 'danger' });
             }
         });
 
         // リロード越しフラッシュ復元
-        (function restoreFlashOnce() {
+        document.addEventListener('DOMContentLoaded', function restoreFlashOnce() {
             try {
                 const raw = sessionStorage.getItem('flash');
                 if (!raw) return;
-                const {
-                    message,
-                    type
-                } = JSON.parse(raw);
-                showFlash(message, type || 'success');
+                const { message, type } = JSON.parse(raw);
+                if (message) window.showToast(message, { variant: type || 'success' });
                 sessionStorage.removeItem('flash');
             } catch (e) {}
-        })();
+        });
     })();
 </script>
 @endpush

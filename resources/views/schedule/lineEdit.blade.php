@@ -258,13 +258,9 @@
         <div class="schedule-line-grid">
             <div>
                 <label>User (Owner)</label>
-                <select name="user_id" class="form-select form-select-sm" form="line-form-{{ $line->id }}">
-                    <option value="">— None —</option>
-                    @foreach($userOptions as $opt)
-                    <option value="{{ $opt['id'] }}" @selected($line->user_id == $opt['id'])>
-                        {{ $opt['label'] }}
-                    </option>
-                    @endforeach
+                <select name="user_id" class="form-select form-select-sm js-user-select"
+                    form="line-form-{{ $line->id }}"
+                    data-selected="{{ $line->user_id ?? '' }}">
                 </select>
             </div>
             <div>
@@ -353,6 +349,10 @@
 </div>
 @endforeach
 
+<div class="d-flex justify-content-center mt-3">
+    {{ $lines->appends(request()->query())->links() }}
+</div>
+
 @endif
 
 {{-- 複写入力モーダル --}}
@@ -401,22 +401,25 @@
 </div>
 
 @push('scripts')
+<script type="application/json" id="user-options-data">{!! json_encode($userOptions) !!}</script>
+<script>
+    (function() {
+        const opts = JSON.parse(document.getElementById('user-options-data').textContent);
+        document.querySelectorAll('select.js-user-select').forEach(function(sel) {
+            const selectedId = String(sel.dataset.selected ?? '');
+            sel.appendChild(new Option('— None —', ''));
+            opts.forEach(function(opt) {
+                const o = new Option(opt.label, opt.id);
+                if (String(opt.id) === selectedId) o.selected = true;
+                sel.appendChild(o);
+            });
+        });
+    })();
+</script>
 <script>
     (function() {
         const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
             document.querySelector('input[name="_token"]')?.value;
-
-        function showFlash(message, type = 'success') {
-            const area = document.getElementById('flash-area');
-            if (!area) return;
-            const wrapper = document.createElement('div');
-            wrapper.innerHTML = `
-      <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>`;
-            area.prepend(wrapper.firstElementChild);
-        }
 
         async function handleDelete(btn) {
             const url = btn.getAttribute('data-delete-url');
@@ -439,10 +442,10 @@
                 // block 対応: 該当 .schedule-line-block と hidden form を削除する
                 btn.closest('.schedule-line-block')?.remove();
                 document.getElementById(`line-form-${lineId}`)?.remove();
-                showFlash(data.message || `Line #${lineId} を削除しました。`, 'success');
+                window.showToast(data.message || `Line #${lineId} を削除しました。`, { variant: 'success' });
             } catch (err) {
                 console.error(err);
-                showFlash(err.message || '削除に失敗しました。', 'danger');
+                window.showToast(err.message || '削除に失敗しました。', { variant: 'danger' });
                 btn.disabled = false;
             }
         }
@@ -460,18 +463,6 @@
             document.querySelector('meta[name="csrf-token"]')?.content ||
             document.querySelector('input[name="_token"]')?.value;
 
-        function showFlash(message, type = 'success') {
-            const area = document.getElementById('flash-area');
-            if (!area || !message) return;
-            const wrap = document.createElement('div');
-            wrap.innerHTML = `
-      <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>`;
-            area.prepend(wrap.firstElementChild);
-        }
-
         function persistFlash(message, type = 'success') {
             try { sessionStorage.setItem('flash', JSON.stringify({ message, type, t: Date.now() })); } catch (e) {}
         }
@@ -481,12 +472,12 @@
                 const raw = sessionStorage.getItem('flash');
                 if (!raw) return;
                 const { message, type } = JSON.parse(raw);
-                if (message) showFlash(message, type || 'success');
+                if (message) window.showToast(message, { variant: type || 'success' });
                 sessionStorage.removeItem('flash');
             } catch (e) {}
         }
 
-        restoreFlashOnce();
+        document.addEventListener('DOMContentLoaded', restoreFlashOnce);
 
         let copyCtx = { url: null, lineId: null, currentUser: '' };
 
@@ -521,8 +512,8 @@
             const memoInput = document.getElementById('copy-memo');
             const memo = memoInput?.value?.trim() || null;
 
-            if (!start || !end) { showFlash('開始日と終了日を入力してください。', 'danger'); return; }
-            if (start > end) { showFlash('終了日は開始日以降にしてください。', 'danger'); return; }
+            if (!start || !end) { window.showToast('開始日と終了日を入力してください。', { variant: 'danger' }); return; }
+            if (start > end) { window.showToast('終了日は開始日以降にしてください。', { variant: 'danger' }); return; }
             if (!copyCtx.url) return;
 
             try {
@@ -547,7 +538,7 @@
                 window.location.href = new URL(window.location.href).toString();
             } catch (err) {
                 console.error(err);
-                showFlash(err.message || '複写に失敗しました。', 'danger');
+                window.showToast(err.message || '複写に失敗しました。', { variant: 'danger' });
             } finally {
                 bootstrap.Modal.getOrCreateInstance(document.getElementById('copyLineModal')).hide();
             }
@@ -579,16 +570,7 @@
             window.location.href = new URL(window.location.href).toString();
         } catch (err) {
             console.error(err);
-            const area = document.getElementById('flash-area');
-            if (area) {
-                const wrap = document.createElement('div');
-                wrap.innerHTML = `
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-          ${err.message || '追加に失敗しました。'}
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>`;
-                area.prepend(wrap.firstElementChild);
-            }
+            window.showToast(err.message || '追加に失敗しました。', { variant: 'danger' });
         }
     });
 </script>
@@ -597,18 +579,6 @@
         const csrf =
             document.querySelector('meta[name="csrf-token"]')?.content ||
             document.querySelector('input[name="_token"]')?.value;
-
-        function showFlash(message, type = 'success') {
-            const area = document.getElementById('flash-area');
-            if (!area || !message) return;
-            const wrap = document.createElement('div');
-            wrap.innerHTML = `
-      <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>`;
-            area.prepend(wrap.firstElementChild);
-        }
 
         function persistFlash(message, type = 'success') {
             try { sessionStorage.setItem('flash', JSON.stringify({ message, type, t: Date.now() })); } catch (e) {}
@@ -648,7 +618,7 @@
                 } catch (e) { console.warn('collect error:', e); }
             });
 
-            if (!items.length) { showFlash('保存対象がありません。', 'danger'); return; }
+            if (!items.length) { window.showToast('保存対象がありません。', { variant: 'danger' }); return; }
 
             try {
                 const res = await fetch(`{{ route('schedule_lines.bulk_update') }}`, {
@@ -665,7 +635,7 @@
                 if (res.ok && (data.ok || data.updated > 0)) {
                     if (data.errors && data.errors.length) {
                         const list = data.errors.map(e => `#${e.id ?? '-'}: ${e.messages.join(' / ')}`).join('<br>');
-                        showFlash(`${data.message}<br>${list}`, 'warning');
+                        window.showToast(`${data.message} / ${list}`, { variant: 'warning' });
                     } else {
                         persistFlash(data.message || '一括保存が完了しました。', 'success');
                         window.location.href = new URL(window.location.href).toString();
@@ -676,7 +646,7 @@
                 }
             } catch (err) {
                 console.error(err);
-                showFlash(err.message || '一括保存に失敗しました。', 'danger');
+                window.showToast(err.message || '一括保存に失敗しました。', { variant: 'danger' });
             }
         });
     })();

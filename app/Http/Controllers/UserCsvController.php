@@ -144,7 +144,7 @@ class UserCsvController extends Controller
         fclose($fp);
 
         if (!empty($parseErrors)) {
-            return back()->with('import_errors', $parseErrors);
+            return back()->with('toast_errors', $parseErrors);
         }
 
         if (empty($rows)) {
@@ -225,7 +225,7 @@ class UserCsvController extends Controller
         }
 
         if (!empty($validationErrors)) {
-            return back()->with('import_errors', $validationErrors);
+            return back()->with('toast_errors', $validationErrors);
         }
 
         // ====== DB保存（トランザクション）======
@@ -294,7 +294,7 @@ class UserCsvController extends Controller
         });
 
         return back()->with(
-            'import_success',
+            'toast',
             "インポート完了：作成 {$created} 件、更新 {$updated} 件、雇用期間処理 {$employmentProcessed} 件"
         );
     }
