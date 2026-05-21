@@ -21,9 +21,10 @@ class RouteDeclarationController extends Controller
         $viewer = Auth::user();
 
         $targetUser = $viewer;
-        if ($viewer->hasRole(['admin', 'super_admin']) && $request->filled('user_id')) {
+        if ($viewer->can('viewAny', User::class) && $request->filled('user_id')) {
             $targetUser = $this->scopeService->targetUserQuery()->findOrFail($request->query('user_id'));
         }
+        $this->authorize('view', $targetUser);
 
         $declarations = $svc->allForUser($targetUser);
 
@@ -37,8 +38,7 @@ class RouteDeclarationController extends Controller
     public function showUser(User $user, RouteDeclarationService $svc)
     {
         $viewer = Auth::user();
-        if (!$viewer->hasRole(['admin', 'super_admin'])) abort(403);
-        if (!in_array($user->id, $this->scopeService->targetUserIds())) abort(404);
+        $this->authorize('view', $user);
 
         $declarations = $svc->allForUser($user);
 
@@ -61,14 +61,7 @@ class RouteDeclarationController extends Controller
         // admin 経由かどうか
         $isAdminMode = $user !== null;
         $target      = $user ?: $me;
-
-        if ($isAdminMode && !$me->hasAnyRole(['admin', 'super_admin'])) {
-            abort(403);
-        }
-
-        if ($isAdminMode && !in_array($target->id, $this->scopeService->targetUserIds())) {
-            abort(404);
-        }
+        $this->authorize('view', $target);
 
         return view('routes.create', [
             'target'      => $target,      // 申告対象ユーザー
@@ -86,14 +79,7 @@ class RouteDeclarationController extends Controller
         $me = $request->user();
         $isAdminMode = $user !== null;
         $target      = $user ?: $me;
-
-        if ($isAdminMode && !$me->hasAnyRole(['admin', 'super_admin'])) {
-            abort(403);
-        }
-
-        if ($isAdminMode && !in_array($target->id, $this->scopeService->targetUserIds())) {
-            abort(404);
-        }
+        $this->authorize('update', $target);
 
         $data = $this->validateRequest($request);
 
@@ -144,6 +130,8 @@ class RouteDeclarationController extends Controller
      */
     public function report(Request $request)
     {
+        $this->authorize('viewAny', User::class);
+
         // active_on 日付（デフォルト：今日）
         $activeOn = $request->date('active_on')
             ? $request->date('active_on')->format('Y-m-d')

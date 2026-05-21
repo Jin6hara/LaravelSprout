@@ -14,6 +14,8 @@ class ExpenseReportController extends Controller
 
     public function show(Request $request)
     {
+        $this->authorize('manage', ExpenseReport::class);
+
         // Asia/Tokyo 前提
         $today = Carbon::now('Asia/Tokyo');
 

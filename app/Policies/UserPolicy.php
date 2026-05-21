@@ -3,7 +3,7 @@
 namespace App\Policies;
 
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
+use App\Services\CurrentScopeService;
 
 class UserPolicy
 {
@@ -12,7 +12,7 @@ class UserPolicy
      */
     public function viewAny(User $user): bool
     {
-        //
+        return $user->isAdmin();
     }
 
     /**
@@ -20,15 +20,15 @@ class UserPolicy
      */
     public function view(User $currentUser, User $targetUser): bool
     {
-        // 自分自身 または 管理者であれば true
-        return $currentUser->is($targetUser) || $currentUser->isAdmin();
+        return $currentUser->is($targetUser)
+            || $this->isScopedAdminFor($currentUser, $targetUser);
     }
     /**
      * Determine whether the user can create models.
      */
     public function create(User $user): bool
     {
-        //
+        return $user->isAdmin();
     }
 
     /**
@@ -36,8 +36,8 @@ class UserPolicy
      */
     public function update(User $currentUser, User $targetUser): bool
     {
-        // 自分自身 または 管理者であれば true
-        return $currentUser->is($targetUser) || $currentUser->isAdmin();
+        return $currentUser->is($targetUser)
+            || $this->isScopedAdminFor($currentUser, $targetUser);
     }
 
     /**
@@ -66,8 +66,17 @@ class UserPolicy
 
     public function applyRoleChange(User $actor, User $target): bool
     {
-        // admin 以上なら申請可
-        if ($actor->hasRole(['admin', 'super_admin'])) return true;
-        return false;
+        return $this->isScopedAdminFor($actor, $target);
+    }
+
+    public function manage(User $actor, User $target): bool
+    {
+        return $this->isScopedAdminFor($actor, $target);
+    }
+
+    private function isScopedAdminFor(User $actor, User $target): bool
+    {
+        return $actor->isAdmin()
+            && in_array($target->id, app(CurrentScopeService::class)->targetUserIds(), true);
     }
 }

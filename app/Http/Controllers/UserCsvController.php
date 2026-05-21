@@ -30,11 +30,15 @@ class UserCsvController extends Controller
 
     public function show()
     {
+        $this->authorize('viewAny', User::class);
+
         return view('csv.user_csv');
     }
 
     public function export()
     {
+        $this->authorize('viewAny', User::class);
+
         $users = User::with([
             'district',
             'department',
@@ -83,6 +87,8 @@ class UserCsvController extends Controller
 
     public function import(Request $request)
     {
+        $this->authorize('viewAny', User::class);
+
         $request->validate([
             'csv_file' => ['required', 'file', 'mimes:csv,txt'],
         ]);

@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Lesson;
 use App\Models\ScheduleLine;
 use App\Models\ScheduleDetail;
-use App\Models\Lesson;
 use App\Services\CurrentScopeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +18,8 @@ class ScheduleDetailController extends Controller
     // 詳細編集画面
     public function edit(ScheduleLine $line)
     {
+        $this->authorize('view', $line);
+
         // スコープ検証：lineのdistrict/departmentが現在のスコープと一致しなければ一覧へ戻す
         $districtId   = $this->scopeService->currentDistrictId();
         $departmentId = $this->scopeService->currentDepartmentId();
@@ -72,6 +74,8 @@ class ScheduleDetailController extends Controller
     // 一括保存（表示されている明細のみ）
     public function bulkUpdate(Request $request, ScheduleLine $line)
     {
+        $this->authorize('update', $line);
+
         $items = $request->input('items', []);
         if (!is_array($items) || empty($items)) {
             return response()->json(['ok' => false, 'message' => 'No items to update.'], 422);
@@ -98,6 +102,7 @@ class ScheduleDetailController extends Controller
                     $errors[] = ['id' => $detailId, 'messages' => ['Detail not found.']];
                     continue;
                 }
+                $this->authorize('update', $detail);
 
                 $v = Validator::make($raw, [
                     'lesson_code'     => ['required', 'string', 'max:255'],
@@ -124,6 +129,7 @@ class ScheduleDetailController extends Controller
                     $errors[] = ['id' => $detailId, 'messages' => ['lesson_code / ps_unique_lesson_code not found.']];
                     continue;
                 }
+                $this->authorize('update', $lesson);
 
                 // 2) schedule_details を更新
                 $detail->lesson_id    = $lesson->id;
@@ -172,6 +178,8 @@ class ScheduleDetailController extends Controller
     // lesson_code または ps_unique_lesson_code → レッスン情報取得（AJAX）
     public function findLessonByCode(string $code)
     {
+        $this->authorize('viewAny', Lesson::class);
+
         $lesson = Lesson::query()
             ->select(['id', 'lesson_name', 'lesson_code', 'ps_unique_lesson_code', 'note', 'lesson_minute'])
             ->where(function ($q) use ($code) {
@@ -191,11 +199,14 @@ class ScheduleDetailController extends Controller
 
     public function storeBlank(ScheduleLine $line)
     {
+        $this->authorize('update', $line);
+
         DB::beginTransaction();
         try {
             // lesson: 既存の先頭 or プレースホルダ作成
             $lesson = Lesson::query()->orderBy('id')->first();
             if (!$lesson) {
+                $this->authorize('create', Lesson::class);
                 $lesson = Lesson::create([
                     'lesson_name'   => '未設定',
                     'lesson_code'   => 'TEMP',
@@ -233,6 +244,8 @@ class ScheduleDetailController extends Controller
 
     public function copy(ScheduleDetail $detail)
     {
+        $this->authorize('copy', $detail);
+
         DB::beginTransaction();
         try {
             $created = $detail->replicate(['id', 'created_at', 'updated_at']);
@@ -287,6 +300,8 @@ class ScheduleDetailController extends Controller
 
     public function destroy(ScheduleDetail $detail)
     {
+        $this->authorize('delete', $detail);
+
         try {
             $startDisplay = $detail->start_hm;
             $lessonCode   = optional($detail->lesson)->lesson_code ?? '-';

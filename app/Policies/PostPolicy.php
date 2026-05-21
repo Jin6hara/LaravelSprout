@@ -13,7 +13,7 @@ class PostPolicy
      */
     public function viewAny(User $user): bool
     {
-        //
+        return $user->isAdmin();
     }
 
     /**
@@ -31,7 +31,17 @@ class PostPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasAnyRole(['admin', 'super_admin']);
+        return $user->isAdmin();
+    }
+
+    public function comment(User $user, Post $post): bool
+    {
+        return $this->view($user, $post);
+    }
+
+    public function confirm(User $user, Post $post): bool
+    {
+        return $post->viewers()->where('users.id', $user->id)->exists();
     }
 
     /**

@@ -55,7 +55,7 @@ class LeaveApplyController extends Controller
         }
 
         return $this->applyCore(
-            (int) $request->input('user_id'),
+            (int) auth()->id(),
             (array) $request->input('dates', []),
             (string) $request->input('reason', ''),
             (int) auth()->id(),
@@ -70,7 +70,7 @@ class LeaveApplyController extends Controller
      */
     public function createForUser(User $user)
     {
-        $this->authorize('manage', $user); // 任意（Policyがあれば）
+        $this->authorize('manage', $user);
         return view('leaves.alpApply', [
             'action'     => route('leave.apply.storeForUser', $user),
             'targetUser' => $user,
@@ -82,7 +82,7 @@ class LeaveApplyController extends Controller
      */
     public function storeForUser(LeaveApplyRequest $request, User $user): RedirectResponse
     {
-        $this->authorize('manage', $user); // 任意
+        $this->authorize('manage', $user);
 
         // ★ 申請タイプ & 添付処理（管理者経由でも同じ）
         $type = (string) $request->input('type', 'paid'); // paid|special
@@ -101,7 +101,7 @@ class LeaveApplyController extends Controller
         }
 
         return $this->applyCore(
-            (int) $user->id,
+            $user->id,
             (array) $request->input('dates', []),
             (string) $request->input('reason', ''),
             (int) auth()->id(),

@@ -19,6 +19,8 @@ class ScheduleLineController extends Controller
 
     public function edit(Request $request)
     {
+        $this->authorize('viewAny', ScheduleLine::class);
+
         // フィルタ
         $activeOn = $request->has('active_on')
             ? $request->input('active_on') : now()->toDateString();
@@ -155,6 +157,8 @@ class ScheduleLineController extends Controller
 
     public function update(Request $request, ScheduleLine $line)
     {
+        $this->authorize('update', $line);
+
         $data = $request->validate([
             'user_id'         => ['nullable', 'exists:users,id'],
             'dow'             => ['required', 'integer', Rule::in([0, 1, 2, 3, 4, 5, 6])],
@@ -173,6 +177,7 @@ class ScheduleLineController extends Controller
             }],
             'handover_memo'   => ['nullable', 'string', 'max:2000'],
         ]);
+        $this->authorizeUserAssignment($data['user_id'] ?? null);
 
         $line->fill($data)->save();
 
@@ -181,6 +186,8 @@ class ScheduleLineController extends Controller
 
     public function bulkUpdate(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', ScheduleLine::class);
+
         $items = $request->input('items', []);
         if (!is_array($items) || empty($items)) {
             return response()->json(['ok' => false, 'message' => 'No items to update.'], 422);
@@ -203,6 +210,7 @@ class ScheduleLineController extends Controller
                     $errors[] = ['id' => $lineId, 'messages' => ['Line not found.']];
                     continue;
                 }
+                $this->authorize('update', $line);
 
                 $v = Validator::make($raw, [
                     'user_id'         => ['nullable', 'exists:users,id'],
@@ -229,6 +237,7 @@ class ScheduleLineController extends Controller
                 }
 
                 $data = $v->validated();
+                $this->authorizeUserAssignment($data['user_id'] ?? null);
                 $data['start_time'] = $data['start_time'] . ':00';
                 $data['end_time']   = $data['end_time']   . ':00';
 
@@ -260,12 +269,15 @@ class ScheduleLineController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorize('create', ScheduleLine::class);
+
         $data = $request->validate([
             'user_id'       => ['nullable', 'exists:users,id'],
             'school_name'   => ['nullable', 'string', 'max:255'],
             'dow'           => ['nullable', 'integer', 'between:0,6'],
             'department_id' => ['nullable', 'integer', 'exists:departments,id'],
         ]);
+        $this->authorizeUserAssignment($data['user_id'] ?? null);
 
         $line = new ScheduleLine();
         $line->user_id         = $data['user_id'] ?? null;
@@ -290,6 +302,8 @@ class ScheduleLineController extends Controller
 
     public function destroy(Request $request, ScheduleLine $line): JsonResponse
     {
+        $this->authorize('delete', $line);
+
         try {
             if (method_exists($line, 'details')) {
                 $line->details()->delete();
@@ -315,12 +329,15 @@ class ScheduleLineController extends Controller
 
     public function copy(Request $request, ScheduleLine $line): \Illuminate\Http\JsonResponse
     {
+        $this->authorize('copy', $line);
+
         $data = $request->validate([
             'effective_start' => ['required', 'date'],
             'effective_end'   => ['required', 'date', 'after_or_equal:effective_start'],
             'user_id'         => ['nullable', 'exists:users,id'],
             'handover_memo'   => ['nullable', 'string', 'max:2000'],
         ]);
+        $this->authorizeUserAssignment($data['user_id'] ?? null);
 
         $newStart = \Carbon\Carbon::parse($data['effective_start'])->startOfDay();
         $newEnd   = \Carbon\Carbon::parse($data['effective_end'])->startOfDay();
@@ -521,5 +538,15 @@ class ScheduleLineController extends Controller
         }
 
         return $segments;
+    }
+
+    private function authorizeUserAssignment(?int $userId): void
+    {
+        if ($userId === null) {
+            return;
+        }
+
+        $user = User::findOrFail($userId);
+        $this->authorize('view', $user);
     }
 }

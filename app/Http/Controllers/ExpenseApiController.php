@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Expense;
 use App\Models\ExpenseReport;
 use App\Models\CommuterPass;
-use App\Services\CurrentScopeService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Carbon\Carbon;
@@ -50,12 +49,7 @@ class ExpenseApiController extends Controller
         ]);
 
         $report = ExpenseReport::findOrFail($data['expense_report_id']);
-
-        // 権限（本人 or 管理者）: 必要に応じて置き換え
-        if (method_exists($req->user(), 'isAdmin') && !$req->user()->isAdmin()) {
-            abort_unless($req->user()->id === $report->user_id, 403);
-        }
-        abort_unless(in_array($report->user_id, app(CurrentScopeService::class)->targetUserIds()), 403);
+        $this->authorize('update', $report);
 
         $this->abortIfLocked($report);
 
@@ -89,10 +83,8 @@ class ExpenseApiController extends Controller
     public function update(Request $req, Expense $expense)
     {
         $report = $expense->report;
+        $this->authorize('update', $expense);
 
-        if (method_exists($req->user(), 'isAdmin') && !$req->user()->isAdmin()) {
-            abort_unless($req->user()->id === $report->user_id, 403);
-        }
         $this->abortIfLocked($report);
 
         $data = $req->validate([
@@ -120,10 +112,8 @@ class ExpenseApiController extends Controller
     public function destroy(Request $req, Expense $expense)
     {
         $report = $expense->report;
+        $this->authorize('delete', $expense);
 
-        if (method_exists($req->user(), 'isAdmin') && !$req->user()->isAdmin()) {
-            abort_unless($req->user()->id === $report->user_id, 403);
-        }
         $this->abortIfLocked($report);
 
         $expense->delete();

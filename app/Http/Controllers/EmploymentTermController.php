@@ -15,6 +15,8 @@ class EmploymentTermController extends Controller
      */
     public function details(User $user): View
     {
+        $this->authorize('view', $user);
+
         $employmentTerms = $user->employmentTerms()
             ->with('leavePeriods')
             ->orderByDesc('start_date')
@@ -29,6 +31,8 @@ class EmploymentTermController extends Controller
     public function edit(EmploymentTerm $employmentTerm): View
     {
         $user = $employmentTerm->user;
+        $this->authorize('update', $user);
+
         return view('user.profile.employment.edit', compact('employmentTerm', 'user'));
     }
 
@@ -37,6 +41,8 @@ class EmploymentTermController extends Controller
      */
     public function update(EmploymentTermRequest $request, EmploymentTerm $employmentTerm): RedirectResponse
     {
+        $this->authorize('update', $employmentTerm->user);
+
         $data = $request->validated();
 
         // 簡易重複チェック：同一ユーザーの他の employment_term と期間が重複しないか確認

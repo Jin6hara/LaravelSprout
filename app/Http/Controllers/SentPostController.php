@@ -11,7 +11,7 @@ class SentPostController extends Controller
     {
         $me = $request->user();
 
-        $isAdmin = $me->hasAnyRole(['admin', 'super_admin']); // spatie/permission想定
+        $isAdmin = $me->can('viewAny', Post::class);
 
         $posts = Post::query()
             ->with(['author:id,first_name,family_name,employee_code']) // authorリレーション前提（下に補足あり）

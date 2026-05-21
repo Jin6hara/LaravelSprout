@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\ExpenseReport;
 use App\Services\CommutingExpenses\RouteDeclarationService;
-use App\Services\CurrentScopeService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use App\Enums\ExpenseReportStatus;
@@ -23,11 +22,7 @@ class ExpenseEditController extends Controller
     // 管理者用 /expenses/{user}/edit
     public function adminEdit(User $user, Request $req)
     {
-        // ここは運用に合わせて調整: 例) isAdmin() 判定
-        if (!method_exists($req->user(), 'isAdmin') || !$req->user()->isAdmin()) {
-            abort(403);
-        }
-        abort_unless(in_array($user->id, app(CurrentScopeService::class)->targetUserIds()), 404);
+        $this->authorize('view', $user);
         return $this->renderFor($user, $req);
     }
 
@@ -167,10 +162,8 @@ class ExpenseEditController extends Controller
 
     public function submit(ExpenseReport $report, Request $request)
     {
-        // 認可：本人 or 管理者（Policy推奨）
+        $this->authorize('submit', $report);
         $user = $request->user();
-        $authorized = $user->id === $report->user_id || (method_exists($user, 'isAdmin') && $user->isAdmin());
-        abort_unless($authorized, 403);
 
         // 既に提出済みなら何もしない（冪等）
         if ($report->status !== ExpenseReportStatus::SUBMITTED->value) {
@@ -194,11 +187,10 @@ class ExpenseEditController extends Controller
 
     public function unsubmit(Request $request, ExpenseReport $report)
     {
-        // 後ほどポリシーの実装を行う
-        // $this->authorize('unsubmit', $report);
+        $this->authorize('unsubmit', $report);
 
         // ここは「SUBMITTED のときだけ戻せる」などルールを入れてもOK
-        if ($report->status !== ExpenseReportStatus::SUBMITTED) {
+        if ($report->status !== ExpenseReportStatus::SUBMITTED->value) {
             return back()->with('error', 'Only submitted reports can be unsubmitted.');
         }
 
@@ -216,6 +208,8 @@ class ExpenseEditController extends Controller
      */
     public function generateMonthly(Request $request)
     {
+        $this->authorize('manage', ExpenseReport::class);
+
         // 画面側から送ってくる year/month（なければ今月）
         $year  = (int) $request->input('year', now()->year);
         $month = (int) $request->input('month', now()->month);
@@ -238,6 +232,8 @@ class ExpenseEditController extends Controller
      */
     public function cleanupEmpty(Request $request)
     {
+        $this->authorize('manage', ExpenseReport::class);
+
         // 画面から year/month が送られてきたらそれを使う
         // 何も無ければ「今から2ヶ月前」を対象にする
         if ($request->filled('year') && $request->filled('month')) {

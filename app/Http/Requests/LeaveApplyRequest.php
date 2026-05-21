@@ -11,7 +11,7 @@ class LeaveApplyRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return auth()->check();
+        return $this->user() !== null;
     }
 
     /**
@@ -22,7 +22,7 @@ class LeaveApplyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id'    => ['required', 'exists:users,id'],
+            'user_id'    => ['nullable', 'exists:users,id'],
             'dates'      => ['required', 'array', 'min:1'],
             'dates.*'    => ['required', 'date'], // 必要なら after_or_equal:today 等を追加
             'reason'     => ['nullable', 'string'],

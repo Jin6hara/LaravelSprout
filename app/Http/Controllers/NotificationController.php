@@ -63,7 +63,7 @@ class NotificationController extends Controller
 
     public function markAsRead(Request $request, DatabaseNotification $notification)
     {
-        abort_unless($notification->notifiable_id === $request->user()->id, 403);
+        $this->authorize('view-notification', $notification);
         $notification->markAsRead();
         return back();
     }
@@ -77,8 +77,7 @@ class NotificationController extends Controller
     // 詳細へ進む中継（自動既読）
     public function go(Request $request, DatabaseNotification $notification)
     {
-        // 自分の通知だけ許可
-        abort_unless($notification->notifiable_id === $request->user()->id, 403);
+        $this->authorize('view-notification', $notification);
 
         // data['url'] に詳細ページのURLを入れてある前提
         $url = $notification->data['url'] ?? route('notifications.index');

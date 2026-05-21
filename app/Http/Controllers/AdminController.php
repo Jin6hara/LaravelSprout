@@ -24,6 +24,8 @@ class AdminController extends Controller
      */
     public function dashboard(Request $request): View
     {
+        $this->authorize('viewAny', User::class);
+
         // 検索対象フィールドのホワイトリスト
         $allowedFields = ['employee_code', 'name', 'phone_number'];
 
@@ -69,6 +71,8 @@ class AdminController extends Controller
 
     public function showForm()
     {
+        $this->authorize('create', User::class);
+
         // 現在のスコープ（地区・部署）を登録フォームで確認表示するために渡す
         // currentScope() が内部で district/department を with() 済みのため load() 不要
         $scope = $this->scopeService->currentScope();
@@ -81,6 +85,8 @@ class AdminController extends Controller
      */
     public function register(UserRequest $request): RedirectResponse
     {
+        $this->authorize('create', User::class);
+
         $data = $request->validated();
 
         DB::transaction(function () use ($data, &$user) {
@@ -121,6 +127,8 @@ class AdminController extends Controller
      */
     public function search(Request $request): View
     {
+        $this->authorize('viewAny', User::class);
+
         $allowedFields = ['employee_code', 'name', 'phone_number'];
 
         $word   = trim((string) $request->query('search_word', ''));

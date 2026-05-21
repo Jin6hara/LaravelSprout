@@ -17,14 +17,12 @@ class CalendarController extends Controller
     public function index(Request $request, ?User $user = null)
     {
         $viewer = Auth::user();
-        $isAdmin = $viewer->hasRole(['admin', 'super_admin']);
-        $viewUser = $user ?? ($isAdmin ? null : $viewer);
-        if (!$isAdmin && ($viewUser?->id !== $viewer->id)) {
-            abort(403);
-        }
+        $canViewAnyUser = $viewer->can('viewAny', User::class);
+        $viewUser = $user ?? ($canViewAnyUser ? null : $viewer);
+        $this->authorize('view', $user ?? $viewer);
 
         // スコープが切り替わった後に古いユーザーのURLが残っている場合はリセット
-        if ($isAdmin && $viewUser !== null) {
+        if ($canViewAnyUser && $viewUser !== null) {
             $currentDid = $this->scopeService->currentDistrictId();
             if ($currentDid !== null && $viewUser->district_id !== $currentDid) {
                 return redirect()->route('calendar.index');
@@ -32,7 +30,7 @@ class CalendarController extends Controller
         }
 
         // 管理者だけにセレクト用リストを渡す（district/department で直接絞り込み）
-        $userOptions = $viewer->hasRole(['admin', 'super_admin'])
+        $userOptions = $canViewAnyUser
             ? User::query()
                 ->when($this->scopeService->currentDistrictId(),
                     fn($q, $did) => $q->where('district_id', $did))
@@ -60,7 +58,7 @@ class CalendarController extends Controller
             $rawUserId = $request->query('user_id');
             $noUserSelected = $rawUserId === null || $rawUserId === '' || $rawUserId === 'null' || (int)$rawUserId <= 0;
 
-            if ($noUserSelected && $viewer->hasRole(['admin', 'super_admin'])) {
+            if ($noUserSelected && $viewer->can('viewAny', User::class)) {
                 $holidays = app(\App\Services\Calendar\Providers\HolidayProvider::class)->provide($viewer, $start, $end);
                 $closures = app(\App\Services\Calendar\Providers\ClosureProvider::class)->provide($viewer, $start, $end);
                 $holidayDates = array_flip(array_map(fn($e) => $e->dateKey, $holidays));
@@ -70,9 +68,8 @@ class CalendarController extends Controller
             }
 
             $targetUserId = (int) $request->query('user_id', $viewer->id);
-            if (!$viewer->hasRole(['admin', 'super_admin']) && $targetUserId !== $viewer->id) abort(403);
-
             $user = User::findOrFail($targetUserId);
+            $this->authorize('view', $user);
 
             $events = $resolver->build($user, $start, $end);
             return response()->json($events);

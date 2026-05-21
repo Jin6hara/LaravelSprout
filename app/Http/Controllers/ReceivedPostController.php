@@ -6,9 +6,7 @@ use App\Models\Post;
 use App\Models\User;
 use App\Services\CurrentScopeService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
 use App\Models\Comment;
-use Illuminate\Support\Facades\DB;
 use App\Models\Attachment;
 use Illuminate\Support\Facades\Storage;
 
@@ -20,10 +18,10 @@ class ReceivedPostController extends Controller
     private function resolveTarget(Request $r): User
     {
         $me = $r->user();
-        $isAdmin = $me->hasAnyRole(['admin', 'super_admin']);
+        $canViewAnyUser = $me->can('viewAny', User::class);
         $code = trim((string) $r->query('employee_code', ''));
 
-        if ($isAdmin && $code !== '') {
+        if ($canViewAnyUser && $code !== '') {
             $u = $this->scopeService->targetUserQuery()->where('employee_code', $code)->first();
             if ($u) return $u;
         }
@@ -33,6 +31,7 @@ class ReceivedPostController extends Controller
     public function index(Request $r)
     {
         $target = $this->resolveTarget($r);
+        $this->authorize('view', $target);
 
         // target宛の受信のみ
         $posts = Post::query()
@@ -60,22 +59,19 @@ class ReceivedPostController extends Controller
     public function show(Request $r, Post $post)
     {
         $me = $r->user();
+        $this->authorize('view', $post);
 
         // 代理切替はそのまま（閲覧権限の判定も現状通り）
         $target = $me;
         $isProxy = false;
-        if ($me->isAdmin() && $r->filled('employee_code')) {
+        if ($me->can('viewAny', User::class) && $r->filled('employee_code')) {
             $target = $this->scopeService->targetUserQuery()->where('employee_code', $r->query('employee_code'))->firstOrFail();
             if ($target->id !== $me->id) $isProxy = true;
         }
-
-        $isAuthor   = $post->user_id === $me->id;
-        $isViewerMe = $post->viewers()->where('users.id', $me->id)->exists();
-        abort_unless($isAuthor || $isViewerMe || $me->isAdmin(), 403);
-        $isAdmin = $me->isAdmin();
+        $isAdmin = $me->can('viewAny', User::class);
 
         // === 可視ロジック ===
-        if ($me->isAdmin()) {
+        if ($isAdmin) {
             // 管理者：全件（親だけrootにして全部ツリー表示）
             $comments = Comment::query()
                 ->where('post_id', $post->id)
@@ -123,11 +119,7 @@ class ReceivedPostController extends Controller
     public function storeComment(Request $r, Post $post)
     {
         $me = $r->user();
-
-        // 閲覧可能者のみコメント可（投稿者 / 宛先 / 管理者）
-        $isAuthor   = $post->user_id === $me->id;
-        $isViewerMe = $post->viewers()->where('users.id', $me->id)->exists();
-        abort_unless($isAuthor || $isViewerMe || $me->hasAnyRole(['admin', 'super_admin']), 403);
+        $this->authorize('comment', $post);
 
         // 返信許可（期限含む）
         if (method_exists($post, 'allowsReplies') && !$post->allowsReplies()) {
@@ -161,12 +153,10 @@ class ReceivedPostController extends Controller
     public function confirm(Request $r, Post $post)
     {
         $me = $r->user();
-
-        // 自分宛かチェック
-        $isRecipient = $post->viewers()->where('users.id', $me->id)->exists();
+        $this->authorize('confirm', $post);
 
         // 代理確認は不可。自分宛でない、または代理切替が行われている場合は弾く
-        if (!$isRecipient || $r->filled('employee_code')) {
+        if ($r->filled('employee_code')) {
             return back()->with('toast_errors', [
                 'You cannot confirm on behalf of others.'
             ]);
