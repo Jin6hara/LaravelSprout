@@ -117,7 +117,7 @@ class ScheduleLineController extends Controller
             }
         }
 
-        $lines = $linesQuery->get();
+        $lines = $linesQuery->paginate(50);
 
         // ユーザー選択肢（スコープ内のユーザー一覧）
         $userOptions = $this->scopeService->targetUserQuery()

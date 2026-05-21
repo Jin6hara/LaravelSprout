@@ -258,13 +258,9 @@
         <div class="schedule-line-grid">
             <div>
                 <label>User (Owner)</label>
-                <select name="user_id" class="form-select form-select-sm" form="line-form-{{ $line->id }}">
-                    <option value="">— None —</option>
-                    @foreach($userOptions as $opt)
-                    <option value="{{ $opt['id'] }}" @selected($line->user_id == $opt['id'])>
-                        {{ $opt['label'] }}
-                    </option>
-                    @endforeach
+                <select name="user_id" class="form-select form-select-sm js-user-select"
+                    form="line-form-{{ $line->id }}"
+                    data-selected="{{ $line->user_id ?? '' }}">
                 </select>
             </div>
             <div>
@@ -353,6 +349,10 @@
 </div>
 @endforeach
 
+<div class="d-flex justify-content-center mt-3">
+    {{ $lines->appends(request()->query())->links() }}
+</div>
+
 @endif
 
 {{-- 複写入力モーダル --}}
@@ -401,6 +401,21 @@
 </div>
 
 @push('scripts')
+<script type="application/json" id="user-options-data">{!! json_encode($userOptions) !!}</script>
+<script>
+    (function() {
+        const opts = JSON.parse(document.getElementById('user-options-data').textContent);
+        document.querySelectorAll('select.js-user-select').forEach(function(sel) {
+            const selectedId = String(sel.dataset.selected ?? '');
+            sel.appendChild(new Option('— None —', ''));
+            opts.forEach(function(opt) {
+                const o = new Option(opt.label, opt.id);
+                if (String(opt.id) === selectedId) o.selected = true;
+                sel.appendChild(o);
+            });
+        });
+    })();
+</script>
 <script>
     (function() {
         const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
