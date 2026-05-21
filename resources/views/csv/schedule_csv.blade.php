@@ -8,14 +8,6 @@
     <h2 class="mb-0">Schedule CSV</h2>
 </div>
 
-{{-- 成功メッセージ --}}
-@if (session('import_success'))
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <i class="fas fa-check-circle me-2"></i>{{ session('import_success') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
-
 {{-- バリデーション / パースエラー --}}
 @if ($errors->any())
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -23,18 +15,6 @@
         <ul class="mb-0 mt-1">
             @foreach ($errors->all() as $error)
                 <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
-
-@if (session('import_errors'))
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <i class="fas fa-exclamation-triangle me-2"></i><strong>インポートエラー（{{ count(session('import_errors')) }} 件）</strong>
-        <ul class="mb-0 mt-1" style="max-height:300px;overflow-y:auto;">
-            @foreach (session('import_errors') as $err)
-                <li>{{ $err }}</li>
             @endforeach
         </ul>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>

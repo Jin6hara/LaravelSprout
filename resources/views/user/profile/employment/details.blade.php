@@ -12,11 +12,6 @@
             <h4 class="mb-0">{{ $user->name }}さんの雇用履歴</h4>
         </div>
 
-        {{-- ステータスメッセージ --}}
-        @if(session('status'))
-        <div class="alert alert-success">{{ session('status') }}</div>
-        @endif
-
         {{-- 雇用期間ごとのカード --}}
         @forelse($employmentTerms as $term)
         <div class="card mb-3">

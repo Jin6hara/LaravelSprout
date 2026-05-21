@@ -176,7 +176,7 @@ class ScheduleLineController extends Controller
 
         $line->fill($data)->save();
 
-        return back()->with('status', "Line #{$line->id} を更新しました。");
+        return back()->with('toast', "Line #{$line->id} を更新しました。");
     }
 
     public function bulkUpdate(Request $request): JsonResponse
