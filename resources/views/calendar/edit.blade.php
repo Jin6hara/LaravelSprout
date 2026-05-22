@@ -198,7 +198,7 @@
   
   <div class="d-flex align-items-center gap-1 mb-2">
     {{-- 空白イベント追加 -------------------------------------------------------------------------------------------}}
-    <form method="POST" action="{{ route('events.store.blank') }}" class="m-0 p-0">
+    <form method="POST" action="{{ route('events.store') }}" class="m-0 p-0">
       @csrf
       <input type="hidden" name="event_date" value="{{ request('event_date', now()->toDateString()) }}">
       <button type="submit" class="btn btn-sm btn-success">
@@ -384,7 +384,7 @@
             <div class="card-footer bg-white d-flex justify-content-between align-items-center py-2 px-2 gap-1">             
               <button type="button"
                 class="btn btn-sm btn-outline-secondary js-duplicate"
-                data-store="{{ route('events.store') }}">
+                data-store="{{ route('events.copy') }}">
                 Copy
               </button>
               <button type="button"

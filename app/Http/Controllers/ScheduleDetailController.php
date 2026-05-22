@@ -71,6 +71,105 @@ class ScheduleDetailController extends Controller
         ]);
     }
 
+    public function store(ScheduleLine $line)
+    {
+        $this->authorize('update', $line);
+
+        DB::beginTransaction();
+        try {
+            // lesson: 既存の先頭 or プレースホルダ作成
+            $lesson = Lesson::query()->orderBy('id')->first();
+            if (!$lesson) {
+                $this->authorize('create', Lesson::class);
+                $lesson = Lesson::create([
+                    'lesson_name'   => '未設定',
+                    'lesson_code'   => 'TEMP',
+                    'note'          => null,
+                    'lesson_minute' => 0,
+                    'lesson_type'   => null,
+                ]);
+            }
+
+            $detail = ScheduleDetail::create([
+                'schedule_line_id' => $line->id,
+                'start_time'       => '00:00:00',
+                'lesson_id'        => $lesson->id,
+                'effective_start'  => Carbon::today()->toDateString(),
+                'effective_end'    => null,
+            ]);
+
+            DB::commit();
+            return response()->json([
+                'ok' => true,
+                'message' => sprintf("Blank detail added (00:00, %s).", $lesson->lesson_code),
+                'new_id' => $detail->id,
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            report($e);
+            return response()->json([
+                'ok' => false,
+                'message' => 'Failed to add blank detail.',
+                'error' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    public function copy(ScheduleDetail $detail)
+    {
+        $this->authorize('copy', $detail);
+
+        DB::beginTransaction();
+        try {
+            $created = $detail->replicate(['id', 'created_at', 'updated_at']);
+
+            // ユニーク制約を避けるために日付をずらす（必要なら）
+            $baseStart = Carbon::parse($detail->effective_start);
+            $baseEnd   = $detail->effective_end ? Carbon::parse($detail->effective_end) : null;
+
+            $delta = 0;
+            do {
+                $candidateStart = $baseStart->copy()->addDays($delta)->toDateString();
+                $exists = ScheduleDetail::query()
+                    ->where('schedule_line_id', $detail->schedule_line_id)
+                    ->where('start_time',       $detail->start_time)
+                    ->where('lesson_id',        $detail->lesson_id)
+                    ->whereDate('effective_start', $candidateStart)
+                    ->exists();
+
+                if (!$exists) {
+                    $created->effective_start = $candidateStart;
+                    $created->effective_end = $baseEnd ? $baseEnd->copy()->addDays($delta)->toDateString() : null;
+                    break;
+                }
+                $delta++;
+            } while ($delta < 3650);
+
+            if (!isset($created->effective_start)) {
+                throw new \RuntimeException('複写先の日付を確保できませんでした。');
+            }
+
+            $created->save();
+
+            DB::commit();
+            $startDisplay = $detail->start_hm;
+            $lessonCode   = optional($detail->lesson)->lesson_code ?? '-';
+            return response()->json([
+                'ok' => true,
+                'message' => sprintf("Detail copied (%s %s).", $startDisplay, $lessonCode),
+                'new_id' => $created->id,
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            report($e);
+            return response()->json([
+                'ok' => false,
+                'message' => 'Failed to copy detail.',
+                'error' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
     // 一括保存（表示されている明細のみ）
     public function bulkUpdate(Request $request, ScheduleLine $line)
     {
@@ -175,129 +274,6 @@ class ScheduleDetailController extends Controller
         }
     }
 
-    // lesson_code または ps_unique_lesson_code → レッスン情報取得（AJAX）
-    public function findLessonByCode(string $code)
-    {
-        $this->authorize('viewAny', Lesson::class);
-
-        $lesson = Lesson::query()
-            ->select(['id', 'lesson_name', 'lesson_code', 'ps_unique_lesson_code', 'note', 'lesson_minute'])
-            ->where(function ($q) use ($code) {
-                $q->where('lesson_code', $code)
-                  ->orWhere('ps_unique_lesson_code', $code);
-            })
-            ->first();
-
-        if (!$lesson) {
-            return response()->json(['ok' => false, 'message' => 'Lesson not found.'], 404);
-        }
-        return response()->json([
-            'ok' => true,
-            'lesson' => $lesson,
-        ]);
-    }
-
-    public function storeBlank(ScheduleLine $line)
-    {
-        $this->authorize('update', $line);
-
-        DB::beginTransaction();
-        try {
-            // lesson: 既存の先頭 or プレースホルダ作成
-            $lesson = Lesson::query()->orderBy('id')->first();
-            if (!$lesson) {
-                $this->authorize('create', Lesson::class);
-                $lesson = Lesson::create([
-                    'lesson_name'   => '未設定',
-                    'lesson_code'   => 'TEMP',
-                    'note'          => null,
-                    'lesson_minute' => 0,
-                    'lesson_type'   => null,
-                ]);
-            }
-
-            $detail = ScheduleDetail::create([
-                'schedule_line_id' => $line->id,
-                'start_time'       => '00:00:00',
-                'lesson_id'        => $lesson->id,
-                'effective_start'  => Carbon::today()->toDateString(),
-                'effective_end'    => null,
-            ]);
-
-            DB::commit();
-            return response()->json([
-                'ok' => true,
-                'message' => sprintf("Blank detail added (00:00, %s).", $lesson->lesson_code),
-                'new_id' => $detail->id,
-            ]);
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            report($e);
-            return response()->json([
-                'ok' => false,
-                'message' => 'Failed to add blank detail.',
-                'error' => $e->getMessage(),
-            ], 422);
-        }
-    }
-
-
-    public function copy(ScheduleDetail $detail)
-    {
-        $this->authorize('copy', $detail);
-
-        DB::beginTransaction();
-        try {
-            $created = $detail->replicate(['id', 'created_at', 'updated_at']);
-
-            // ユニーク制約を避けるために日付をずらす（必要なら）
-            $baseStart = Carbon::parse($detail->effective_start);
-            $baseEnd   = $detail->effective_end ? Carbon::parse($detail->effective_end) : null;
-
-            $delta = 0;
-            do {
-                $candidateStart = $baseStart->copy()->addDays($delta)->toDateString();
-                $exists = ScheduleDetail::query()
-                    ->where('schedule_line_id', $detail->schedule_line_id)
-                    ->where('start_time',       $detail->start_time)
-                    ->where('lesson_id',        $detail->lesson_id)
-                    ->whereDate('effective_start', $candidateStart)
-                    ->exists();
-
-                if (!$exists) {
-                    $created->effective_start = $candidateStart;
-                    $created->effective_end = $baseEnd ? $baseEnd->copy()->addDays($delta)->toDateString() : null;
-                    break;
-                }
-                $delta++;
-            } while ($delta < 3650);
-
-            if (!isset($created->effective_start)) {
-                throw new \RuntimeException('複写先の日付を確保できませんでした。');
-            }
-
-            $created->save();
-
-            DB::commit();
-            $startDisplay = $detail->start_hm;
-            $lessonCode   = optional($detail->lesson)->lesson_code ?? '-';
-            return response()->json([
-                'ok' => true,
-                'message' => sprintf("Detail copied (%s %s).", $startDisplay, $lessonCode),
-                'new_id' => $created->id,
-            ]);
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            report($e);
-            return response()->json([
-                'ok' => false,
-                'message' => 'Failed to copy detail.',
-                'error' => $e->getMessage(),
-            ], 422);
-        }
-    }
-
-
     public function destroy(ScheduleDetail $detail)
     {
         $this->authorize('delete', $detail);
@@ -318,5 +294,27 @@ class ScheduleDetailController extends Controller
                 'error' => $e->getMessage(),
             ], 422);
         }
+    }
+
+    // lesson_code または ps_unique_lesson_code → レッスン情報取得（AJAX）
+    public function findLessonByCode(string $code)
+    {
+        $this->authorize('viewAny', Lesson::class);
+
+        $lesson = Lesson::query()
+            ->select(['id', 'lesson_name', 'lesson_code', 'ps_unique_lesson_code', 'note', 'lesson_minute'])
+            ->where(function ($q) use ($code) {
+                $q->where('lesson_code', $code)
+                  ->orWhere('ps_unique_lesson_code', $code);
+            })
+            ->first();
+
+        if (!$lesson) {
+            return response()->json(['ok' => false, 'message' => 'Lesson not found.'], 404);
+        }
+        return response()->json([
+            'ok' => true,
+            'lesson' => $lesson,
+        ]);
     }
 }

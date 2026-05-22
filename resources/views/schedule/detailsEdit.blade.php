@@ -76,7 +76,7 @@
                         <button type="button"
                             id="details-add-blank"
                             class="btn btn-outline-success"
-                            data-create-url="{{ route('schedule_details.store_blank', $line) }}">
+                            data-create-url="{{ route('schedule_details.store', $line) }}">
                             Add Blank
                         </button>
                         <button type="button"

@@ -208,8 +208,8 @@ Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
     // JSON データ API (Vue が axios で叩く)
     Route::get('/calendar/edit/pdf-data', [EventAssignController::class, 'exportSubPdfJson'])->name('calendar.edit.pdf.data');
     Route::get('/calendar/confirmations/pdf-data', [EventAssignController::class, 'exportConfirmationsPdfJson'])->name('calendar.confirmations.pdf.data');
-    Route::post('/shift',        [EventAssignController::class, 'store'])->name('events.store');
-    Route::post('/shift/blank', [EventAssignController::class, 'storeBlank'])->name('events.store.blank');
+    Route::post('/shift',        [EventAssignController::class, 'copy'])->name('events.copy');
+    Route::post('/shift/blank', [EventAssignController::class, 'store'])->name('events.store');
     Route::put('/shift/{event}', [EventAssignController::class, 'update'])->name('events.update');
     // ★ 一括更新（このページに表示されている分だけ送る）
     Route::post('/shifts/bulk-update', [EventAssignController::class, 'bulkUpdate'])->name('events.bulk_update');
@@ -221,7 +221,7 @@ use App\Http\Controllers\LeaveManageController;
 
 Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
     Route::get('/leave_manager', [LeaveManageController::class, 'edit'])->name('leaves.edit');
-    Route::post('/leaves/blank', [LeaveManageController::class, 'storeBlank'])->name('leaves.store.blank');
+    Route::post('/leaves/blank', [LeaveManageController::class, 'store'])->name('leaves.manage.store');
     Route::put('/leaves/{leave}', [LeaveManageController::class, 'update'])->name('leaves.update');
     // ★ 一括更新（このページに表示されている分だけ送る）
     Route::post('/leaves/bulk-update', [LeaveManageController::class, 'bulkUpdate'])->name('leaves.bulk_update');
@@ -258,7 +258,7 @@ use App\Http\Controllers\ScheduleDetailController;
 Route::middleware(['auth'])->group(function () {
     Route::get('/schedule_lines/{line}/details', [ScheduleDetailController::class, 'edit'])->name('schedule_details.edit');
     Route::post('/schedule_lines/{line}/details/bulk-update', [ScheduleDetailController::class, 'bulkUpdate'])->name('schedule_details.bulk_update');
-    Route::post('/schedule_lines/{line}/details', [ScheduleDetailController::class, 'storeBlank'])->name('schedule_details.store_blank');
+    Route::post('/schedule_lines/{line}/details', [ScheduleDetailController::class, 'store'])->name('schedule_details.store');
     Route::post('/schedule_details/{detail}/copy', [ScheduleDetailController::class, 'copy'])->name('schedule_details.copy');
     Route::delete('/schedule_details/{detail}', [ScheduleDetailController::class, 'destroy'])->name('schedule_details.destroy');
 

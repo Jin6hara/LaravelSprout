@@ -155,6 +155,39 @@ class ScheduleLineController extends Controller
         ]);
     }
 
+    public function store(Request $request)
+    {
+        $this->authorize('create', ScheduleLine::class);
+
+        $data = $request->validate([
+            'user_id'       => ['nullable', 'exists:users,id'],
+            'school_name'   => ['nullable', 'string', 'max:255'],
+            'dow'           => ['nullable', 'integer', 'between:0,6'],
+            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
+        ]);
+        $this->authorizeUserAssignment($data['user_id'] ?? null);
+
+        $line = new ScheduleLine();
+        $line->user_id         = $data['user_id'] ?? null;
+        $line->total_minutes   = 0;
+        $line->dow             = $data['dow'] ?? 0;
+        $line->school_name     = $data['school_name'] ?? '';
+        $line->start_time      = '00:00:00';
+        $line->end_time        = '00:00:00';
+        $line->effective_start = now()->toDateString();
+        $line->effective_end   = now()->addMonths(1)->toDateString();
+        $line->handover_memo   = null;
+        $line->district_id     = $this->scopeService->currentDistrictId();
+        $line->department_id   = $data['department_id'] ?? $this->scopeService->currentDepartmentId();
+        $line->save();
+
+        return response()->json([
+            'ok'      => true,
+            'message' => "Line #{$line->id} added.",
+            'line_id' => $line->id,
+        ]);
+    }
+
     public function update(Request $request, ScheduleLine $line)
     {
         $this->authorize('update', $line);
@@ -267,66 +300,6 @@ class ScheduleLineController extends Controller
         }
     }
 
-    public function store(Request $request)
-    {
-        $this->authorize('create', ScheduleLine::class);
-
-        $data = $request->validate([
-            'user_id'       => ['nullable', 'exists:users,id'],
-            'school_name'   => ['nullable', 'string', 'max:255'],
-            'dow'           => ['nullable', 'integer', 'between:0,6'],
-            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
-        ]);
-        $this->authorizeUserAssignment($data['user_id'] ?? null);
-
-        $line = new ScheduleLine();
-        $line->user_id         = $data['user_id'] ?? null;
-        $line->total_minutes   = 0;
-        $line->dow             = $data['dow'] ?? 0;
-        $line->school_name     = $data['school_name'] ?? '';
-        $line->start_time      = '00:00:00';
-        $line->end_time        = '00:00:00';
-        $line->effective_start = now()->toDateString();
-        $line->effective_end   = now()->addMonths(1)->toDateString();
-        $line->handover_memo   = null;
-        $line->district_id     = $this->scopeService->currentDistrictId();
-        $line->department_id   = $data['department_id'] ?? $this->scopeService->currentDepartmentId();
-        $line->save();
-
-        return response()->json([
-            'ok'      => true,
-            'message' => "Line #{$line->id} added.",
-            'line_id' => $line->id,
-        ]);
-    }
-
-    public function destroy(Request $request, ScheduleLine $line): JsonResponse
-    {
-        $this->authorize('delete', $line);
-
-        try {
-            if (method_exists($line, 'details')) {
-                $line->details()->delete();
-            }
-
-            $id = $line->id;
-            $line->delete();
-
-            return response()->json([
-                'ok'      => true,
-                'message' => "Line #{$id} deleted.",
-                'id'      => $id,
-            ]);
-        } catch (\Throwable $e) {
-            report($e);
-            return response()->json([
-                'ok'      => false,
-                'message' => 'Failed to delete. Please check related data or constraints.',
-                'error'   => $e->getMessage(),
-            ], 422);
-        }
-    }
-
     public function copy(Request $request, ScheduleLine $line): \Illuminate\Http\JsonResponse
     {
         $this->authorize('copy', $line);
@@ -423,6 +396,33 @@ class ScheduleLineController extends Controller
                 'ok' => false,
                 'message' => '複写に失敗しました。入力期間や関連データをご確認ください。',
                 'error' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    public function destroy(Request $request, ScheduleLine $line): JsonResponse
+    {
+        $this->authorize('delete', $line);
+
+        try {
+            if (method_exists($line, 'details')) {
+                $line->details()->delete();
+            }
+
+            $id = $line->id;
+            $line->delete();
+
+            return response()->json([
+                'ok'      => true,
+                'message' => "Line #{$id} deleted.",
+                'id'      => $id,
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json([
+                'ok'      => false,
+                'message' => 'Failed to delete. Please check related data or constraints.',
+                'error'   => $e->getMessage(),
             ], 422);
         }
     }

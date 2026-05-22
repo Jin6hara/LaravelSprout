@@ -123,6 +123,35 @@ class LeaveManageController extends Controller
             'fmtTime'
         ));
     }
+
+    /** 新規作成 */
+    public function store(Request $request)
+    {
+        $this->authorize('manage', Leave::class);
+
+        $data = $request->validate([
+            'user_id'    => ['required', 'integer', 'exists:users,id'],
+            'start_date' => ['required', 'date'],
+        ]);
+
+        $leave = Leave::create([
+            'user_id'       => null,
+            'start_date'    => $data['start_date'],
+            'end_date'      => null,
+            'reason'        => null,
+            'kind'          => 'special',
+            'excused'       => 'excused',
+            'time_start'    => null,
+            'time_end'      => null,
+            'handle_type'   => null,
+            'status'        => 'approved',
+            'district_id'   => $this->scopeService->currentDistrictId(),
+            'department_id' => $this->scopeService->currentDepartmentId(),
+        ]);
+
+        return back()->with('toast', "Leave created at {$leave->start_date->format('Y-m-d')}.");
+    }
+
     /** 保存（更新） */
     public function update(Request $request, Leave $leave)
     {
@@ -231,36 +260,6 @@ class LeaveManageController extends Controller
             'failed'  => 0,
             'message' => '一括保存しました。',
         ]);
-    }
-
-    /** 空白Leave 追加 */
-    public function storeBlank(Request $request)
-    {
-        $this->authorize('manage', Leave::class);
-
-        // 必須: user_id, start_date
-        $data = $request->validate([
-            'user_id'    => ['required', 'integer', 'exists:users,id'],
-            'start_date' => ['required', 'date'],
-        ]);
-
-        // デフォルト値（必要ならここを調整）
-        $leave = Leave::create([
-            'user_id'       => null,
-            'start_date'    => $data['start_date'],
-            'end_date'      => null,
-            'reason'        => null,
-            'kind'          => 'special',
-            'excused'       => 'excused',
-            'time_start'    => null,
-            'time_end'      => null,
-            'handle_type'   => null,
-            'status'        => 'approved',
-            'district_id'   => $this->scopeService->currentDistrictId(),
-            'department_id' => $this->scopeService->currentDepartmentId(),
-        ]);
-
-        return back()->with('toast', "Leave created at {$leave->start_date->format('Y-m-d')}.");
     }
 
     /** 削除 */
