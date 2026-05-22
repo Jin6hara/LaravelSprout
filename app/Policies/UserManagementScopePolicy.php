@@ -1,0 +1,14 @@
+<?php
+
+namespace App\Policies;
+
+use App\Models\User;
+use App\Models\UserManagementScope;
+
+class UserManagementScopePolicy
+{
+    public function select(User $actor, UserManagementScope $scope): bool
+    {
+        return $actor->isAdmin() && $scope->user_id === $actor->id;
+    }
+}

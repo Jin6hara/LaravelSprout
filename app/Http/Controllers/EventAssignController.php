@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Models\User;
 use App\Services\CurrentScopeService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -17,6 +18,8 @@ class EventAssignController extends Controller
 
     public function edit(Request $request)
     {
+        $this->authorize('viewAny', Event::class);
+
         $userOptions = $this->scopeService->targetUserQuery()
             ->select('id', 'first_name', 'family_name', 'employee_code')
             ->orderBy('employee_code')
@@ -128,6 +131,8 @@ class EventAssignController extends Controller
 
     public function update(Request $request, Event $event)
     {
+        $this->authorize('update', $event);
+
         $validated = $request->validate([
             'event_date'        => ['required', 'date'],
             'original_user_id'  => ['nullable', 'exists:users,id'],
@@ -163,6 +168,7 @@ class EventAssignController extends Controller
 
         $validated['start_time'] = $normalizeTime($request->input('start_time', ''));
         $validated['end_time']   = $normalizeTime($request->input('end_time', ''));
+        $this->authorizeReferencedUsers($validated);
 
         // ⬇︎ total_duration 未入力で start/end がある場合は自動計算
         if (empty($validated['total_duration']) && $validated['start_time'] && $validated['end_time']) {
@@ -184,13 +190,15 @@ class EventAssignController extends Controller
 
     public function destroy(Request $request, Event $event)
     {
-        // 必要ならポリシー/権限チェックをここで
+        $this->authorize('delete', $event);
         $event->delete();
         return back()->with('toast', 'Deleted');
     }
 
     public function store(Request $request)
     {
+        $this->authorize('create', Event::class);
+
         $validated = $request->validate([
             'event_date'        => ['required', 'date'],
             'original_user_id'  => ['nullable', 'exists:users,id'],
@@ -227,6 +235,7 @@ class EventAssignController extends Controller
             $validated['total_duration'] = sprintf('%d:%02d', intdiv($mins, 60), $mins % 60);
         }
 
+        $this->authorizeReferencedUsers($validated);
         $validated['district_id']   = $this->scopeService->currentDistrictId();
         $validated['department_id'] = $this->scopeService->currentDepartmentId();
         Event::create($validated);
@@ -236,6 +245,8 @@ class EventAssignController extends Controller
 
     public function storeBlank(Request $request)
     {
+        $this->authorize('create', Event::class);
+
         // リクエストやURLクエリから event_date を取得（POSTでもGETでも対応）
         $date = $request->input('event_date', now()->toDateString());
 
@@ -253,6 +264,8 @@ class EventAssignController extends Controller
 
     public function bulkUpdate(Request $request)
     {
+        $this->authorize('viewAny', Event::class);
+
         $items = $request->input('items', []);
         if (!is_array($items) || empty($items)) {
             return response()->json(['ok' => false, 'message' => '対象がありません'], 422);
@@ -283,6 +296,13 @@ class EventAssignController extends Controller
                 continue;
             }
             $data = $v->validated();
+            $event = Event::find($data['id']);
+            if (! $event) {
+                $results[] = ['id' => $data['id'], 'ok' => false, 'errors' => ['Event not found.']];
+                continue;
+            }
+            $this->authorize('update', $event);
+            $this->authorizeReferencedUsers($data);
 
             // H:i → H:i:s に正規化
             foreach (['start_time', 'end_time'] as $k) {
@@ -302,7 +322,6 @@ class EventAssignController extends Controller
                 $data['total_duration'] = sprintf('%d:%02d', intdiv($mins, 60), $mins % 60);
             }
 
-            $event = Event::find($data['id']);
             $event->fill($data)->save(); // Observerがあれば最終整合を取ってくれます
 
             $results[] = ['id' => $event->id, 'ok' => true];
@@ -328,6 +347,8 @@ class EventAssignController extends Controller
 
     public function sublistPreview(Request $request)
     {
+        $this->authorize('viewAny', Event::class);
+
         return view('pdf.preview', [
             'type'        => 'sublist',
             'queryString' => $request->getQueryString() ?? '',
@@ -336,6 +357,8 @@ class EventAssignController extends Controller
 
     public function confirmationsPreview(Request $request)
     {
+        $this->authorize('viewAny', Event::class);
+
         return view('pdf.preview', [
             'type'        => 'confirmations',
             'queryString' => $request->getQueryString() ?? '',
@@ -344,6 +367,8 @@ class EventAssignController extends Controller
 
     public function exportSubPdfJson(Request $request)
     {
+        $this->authorize('viewAny', Event::class);
+
         $mode = $request->string('mode')->lower()->value();
         if (!in_array($mode, ['tentative', 'final', 'master'], true)) {
             $mode = 'tentative';
@@ -447,6 +472,8 @@ class EventAssignController extends Controller
 
     public function exportConfirmationsPdfJson(Request $request)
     {
+        $this->authorize('viewAny', Event::class);
+
         $mode = $request->string('mode')->lower()->value();
         if (!in_array($mode, ['alp', 'ot'], true)) {
             $mode = 'alp';
@@ -562,5 +589,18 @@ class EventAssignController extends Controller
             ->orderBy('school_name')
             ->orderBy('start_time')
             ->orderBy('assigned_user_id');
+    }
+
+    private function authorizeReferencedUsers(array $payload): void
+    {
+        foreach (['original_user_id', 'assigned_user_id'] as $key) {
+            $userId = $payload[$key] ?? null;
+            if ($userId === null || $userId === '') {
+                continue;
+            }
+
+            $targetUser = User::findOrFail((int) $userId);
+            $this->authorize('view', $targetUser);
+        }
     }
 }

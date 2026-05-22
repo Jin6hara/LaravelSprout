@@ -17,11 +17,15 @@ class LessonCsvController extends Controller
 
     public function show()
     {
+        $this->authorize('viewAny', Lesson::class);
+
         return view('csv.lesson_csv');
     }
 
     public function export()
     {
+        $this->authorize('viewAny', Lesson::class);
+
         $lessons  = Lesson::orderBy('id')->get();
         $filename = 'lessons_' . now()->format('Ymd_His') . '.csv';
 
@@ -48,6 +52,8 @@ class LessonCsvController extends Controller
 
     public function import(Request $request)
     {
+        $this->authorize('viewAny', Lesson::class);
+
         $request->validate([
             'csv_file' => ['required', 'file', 'mimes:csv,txt'],
         ]);

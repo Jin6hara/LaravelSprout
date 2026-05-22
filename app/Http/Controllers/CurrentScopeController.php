@@ -21,11 +21,8 @@ class CurrentScopeController extends Controller
             'scope_id' => ['required', 'integer'],
         ]);
 
-        $exists = UserManagementScope::where('id', $validated['scope_id'])
-            ->where('user_id', $request->user()->id)
-            ->exists();
-
-        abort_unless($exists, 403);
+        $scope = UserManagementScope::findOrFail($validated['scope_id']);
+        $this->authorize('select', $scope);
 
         $request->session()->put('selected_scope_id', $validated['scope_id']);
 

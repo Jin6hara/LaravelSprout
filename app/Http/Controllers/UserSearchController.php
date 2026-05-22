@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Services\CurrentScopeService;
 use Illuminate\Http\Request;
 
@@ -11,6 +12,8 @@ class UserSearchController extends Controller
 
     public function index(Request $r)
     {
+        $this->authorize('viewAny', User::class);
+
         // ▼ old('recipients') でIDしか復元できない場合に、Vueのチップ表示用にユーザー情報を取得する
         $ids = trim((string) $r->query('ids', ''));
         if ($ids !== '') {

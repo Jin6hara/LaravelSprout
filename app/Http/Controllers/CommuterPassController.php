@@ -19,10 +19,7 @@ class CommuterPassController extends Controller
 
         $isAdminMode = $user !== null;
         $target      = $user ?: $me;
-
-        if ($isAdminMode && !$me->hasAnyRole(['admin', 'super_admin'])) {
-            abort(403);
-        }
+        $this->authorize('view', $target);
 
         return view('routes.registerPass', [
             'target'      => $target,
@@ -40,10 +37,7 @@ class CommuterPassController extends Controller
         $me = $request->user();
         $isAdminMode = $user !== null;
         $target      = $user ?: $me;
-
-        if ($isAdminMode && !$me->hasAnyRole(['admin', 'super_admin'])) {
-            abort(403);
-        }
+        $this->authorize('update', $target);
 
         $data = $this->validateRequest($request);
 

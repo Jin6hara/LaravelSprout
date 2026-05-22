@@ -29,6 +29,9 @@ class LeaveController extends Controller
     {
         // 承認フローがある場合は pending から始めるなど調整してください
         $targetUser = \App\Models\User::find((int) $request->input('user_id'));
+        abort_if(! $targetUser, 404);
+        $this->authorize('manage', $targetUser);
+
         $leave = Leave::create([
             'user_id'       => (int)$request->input('user_id'),
             'start_date'    => $request->date('start_date'),
@@ -78,11 +81,7 @@ class LeaveController extends Controller
      */
     public function absence(Request $request, User $user)
     {
-        $viewer  = Auth::user();
-        $isAdmin = $viewer->hasRole(['admin', 'super_admin']);
-        if (!$isAdmin && $viewer->id !== $user->id) {
-            abort(403);
-        }
+        $this->authorize('view', $user);
 
         // 表示するレコード
         $leaves = Leave::query()
@@ -160,11 +159,7 @@ class LeaveController extends Controller
      */
     public function report(Request $request, Leave $leave)
     {
-        $viewer  = Auth::user();
-        $isAdmin = $viewer->hasRole(['admin', 'super_admin']);
-        if (!$isAdmin && $viewer->id !== $leave->user_id) {
-            abort(403);
-        }
+        $this->authorize('report', $leave);
 
         if ($leave->kind !== 'absence') {
             return back()->with('toast_errors', ['This leave is not target for absence self-report.']);
@@ -215,11 +210,8 @@ class LeaveController extends Controller
 
     public function allReport(Request $request)
     {
-        $viewer  = Auth::user();
-        $isAdmin = $viewer->hasRole(['admin', 'super_admin']);
-        if (!$isAdmin) {
-            abort(403);
-        }
+        $this->authorize('viewAny', Leave::class);
+        $viewer = Auth::user();
 
         // フィルタ値を取得（バリデーション）
         $validated = $request->validate([
@@ -331,11 +323,7 @@ class LeaveController extends Controller
 
     public function download(Leave $leave)
     {
-        $viewer  = Auth::user();
-        $isAdmin = $viewer->hasRole(['admin', 'super_admin']);
-        if (!$isAdmin && $viewer->id !== $leave->user_id) {
-            abort(403);
-        }
+        $this->authorize('download', $leave);
 
         $attachment = $leave->attachment;
         if (!$attachment) {

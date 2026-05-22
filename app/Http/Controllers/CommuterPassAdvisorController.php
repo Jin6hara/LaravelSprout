@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ScheduleLine;
 use App\Services\CurrentScopeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +14,8 @@ class CommuterPassAdvisorController extends Controller
 {
     public function index(Request $request)
     {
+        $this->authorize('viewAny', ScheduleLine::class);
+
         // --- 入力値（画面再表示用） ---
         $inFrom = $request->query('from');
         $inTo   = $request->query('to');

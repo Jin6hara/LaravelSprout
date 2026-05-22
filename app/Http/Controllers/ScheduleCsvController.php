@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ScheduleLine;
 use App\Services\ScheduleCsv\ScheduleCsvExportService;
 use App\Services\ScheduleCsv\ScheduleCsvImportService;
 use Illuminate\Http\Request;
@@ -12,17 +13,23 @@ class ScheduleCsvController extends Controller
 {
     public function show()
     {
+        $this->authorize('viewAny', ScheduleLine::class);
+
         return view('csv.schedule_csv');
     }
 
     public function export(ScheduleCsvExportService $service)
     {
+        $this->authorize('viewAny', ScheduleLine::class);
+
         $filename = 'schedules_' . now()->format('Ymd_His') . '.csv';
         return $service->streamCsv($filename);
     }
 
     public function import(Request $request, ScheduleCsvImportService $service)
     {
+        $this->authorize('viewAny', ScheduleLine::class);
+
         $request->validate([
             'csv_file' => ['required', 'file', 'mimes:csv,txt'],
         ]);

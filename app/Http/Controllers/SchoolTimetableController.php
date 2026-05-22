@@ -16,6 +16,8 @@ class SchoolTimetableController extends Controller
 
     public function index(Request $request)
     {
+        $this->authorize('viewAny', ScheduleLine::class);
+
         $schoolName = trim((string)$request->input('school', ''));
         $dow = $request->has('dow') && $request->input('dow') !== ''
             ? (int)$request->input('dow')
@@ -75,6 +77,8 @@ class SchoolTimetableController extends Controller
     // API: school_name（+ 任意で dow）で絞った schedule_lines + details を JSON で返す
     public function lines(Request $request)
     {
+        $this->authorize('viewAny', ScheduleLine::class);
+
         $schoolName = trim((string)$request->input('school', ''));
         $activeOn   = $request->input('active_on', now()->toDateString());
         $dow = $request->has('dow') && $request->input('dow') !== ''
@@ -163,6 +167,8 @@ class SchoolTimetableController extends Controller
     // API: school_code / school_name 一覧（datalist 用）
     public function schools()
     {
+        $this->authorize('viewAny', ScheduleLine::class);
+
         $schools = School::query()
             ->where('is_active', true)
             ->orderBy('school_name')
@@ -174,6 +180,8 @@ class SchoolTimetableController extends Controller
     // API: lesson 一覧（datalist 用）
     public function lessonList()
     {
+        $this->authorize('viewAny', Lesson::class);
+
         $lessons = Lesson::query()
             ->orderBy('lesson_code')
             ->get(['id', 'lesson_code', 'ps_unique_lesson_code']);

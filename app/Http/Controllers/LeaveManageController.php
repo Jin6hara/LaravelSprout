@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Leave;
 use App\Services\CurrentScopeService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Illuminate\Validation\Rule;
 
@@ -19,118 +18,119 @@ class LeaveManageController extends Controller
      * - 月/ユーザーで絞り込み
      * - イベントカード風スタイルで各行を編集UI化
      */
-public function edit(Request $request)
-{
-    // 1) ユーザー候補
-    $userOptions = $this->scopeService->targetUserQuery()
-        ->select('id', 'first_name', 'family_name', 'employee_code')
-        ->orderBy('employee_code')
-        ->limit(500)
-        ->get();
+    public function edit(Request $request)
+    {
+        $this->authorize('manage', Leave::class);
 
-    // 2) パラメータ取得
-    $leaveId     = $request->input('leave_id'); // ★個別編集用パラメータ
-    $userId      = $request->input('user_id');
-    $kind        = $request->input('kind');
-    $excused     = $request->input('excused');
-    $status      = $request->input('status');
-    $specialType = $request->input('special_type');
-    $handleType  = $request->input('handle_type');
-    $reason      = $request->input('reason');
+        // 1) ユーザー候補
+        $userOptions = $this->scopeService->targetUserQuery()
+            ->select('id', 'first_name', 'family_name', 'employee_code')
+            ->orderBy('employee_code')
+            ->limit(500)
+            ->get();
 
-    $startDate   = $request->input('start_date');
-    $endDate     = $request->input('end_date');
+        // 2) パラメータ取得
+        $leaveId     = $request->input('leave_id'); // ★個別編集用パラメータ
+        $userId      = $request->input('user_id');
+        $kind        = $request->input('kind');
+        $excused     = $request->input('excused');
+        $status      = $request->input('status');
+        $specialType = $request->input('special_type');
+        $handleType  = $request->input('handle_type');
+        $reason      = $request->input('reason');
 
-    // 3) 日付ルール
-    // end のみ → エラー
-    if ($endDate && !$startDate) {
-        return back()
-            ->withErrors(['start_date' => '開始日を指定してください。'])
-            ->withInput();
+        $startDate   = $request->input('start_date');
+        $endDate     = $request->input('end_date');
+
+        // 3) 日付ルール
+        // end のみ → エラー
+        if ($endDate && !$startDate) {
+            return back()
+                ->withErrors(['start_date' => '開始日を指定してください。'])
+                ->withInput();
+        }
+
+        // start > end → エラー
+        if ($startDate && $endDate && $startDate > $endDate) {
+            return back()
+                ->withErrors(['start_date' => '開始日は終了日より前に設定してください。'])
+                ->withInput();
+        }
+
+        // 日付フォーマット関数
+        $fmtDate = fn($v) => $v ? Carbon::parse($v)->format('Y-m-d') : '';
+        $fmtTime = fn($v) => $v ? Carbon::parse($v)->format('H:i')   : '';
+
+        // 4) クエリ（Event版と同順序・構成）
+        $leaves = Leave::query()
+            ->with(['user:id,first_name,family_name,employee_code'])
+            ->where('district_id', $this->scopeService->currentDistrictId())
+            ->where('department_id', $this->scopeService->currentDepartmentId())
+            ->when($leaveId,     fn($q) => $q->where('id', $leaveId)) // ★個別編集用パラメータ: leave_id があれば最優先で一意絞り込み
+            ->when($userId,      fn($q) => $q->where('user_id', $userId))
+            ->when($kind,        fn($q) => $q->where('kind', $kind))
+            ->when($excused,     fn($q) => $q->where('excused', $excused))
+            ->when($status,      fn($q) => $q->where('status', $status))
+            ->when($specialType, fn($q) => $q->whereLikeInsensitive('special_type', $specialType))
+            ->when($handleType,  fn($q) => $q->whereLikeInsensitive('handle_type', $handleType))
+            ->when($reason,      fn($q) => $q->whereLikeInsensitive('reason', $reason))
+            // ⬇︎ 日付フィルタ（単日= start_date、期間= start_date..end_date）
+            //   → end_effective = COALESCE(end_date, start_date) として区間重なりを一本化
+            ->when($startDate && $endDate, function ($q) use ($startDate, $endDate) {
+                $q->whereDate('start_date', '<=', $endDate)
+                  ->whereRaw('DATE(COALESCE(end_date, start_date)) >= ?', [$startDate]);
+            })
+            ->when($startDate && !$endDate, function ($q) use ($startDate) {
+                $q->whereDate('start_date', '<=', $startDate)
+                  ->whereRaw('DATE(COALESCE(end_date, start_date)) >= ?', [$startDate]);
+            })
+            ->orderByDesc('start_date')
+            ->orderBy('time_start')
+            ->orderBy('user_id')
+            ->paginate(24)
+            ->withQueryString();
+
+        // 5) オプション
+        $statusOptions = [
+            'approved' => 'Approved',
+            'pending'  => 'Pending',
+            'rejected' => 'Rejected',
+            'cancelled'    => 'Cancelled',
+        ];
+        $kindOptions = [
+            'paid'            => 'ALP',
+            'absence_to_paid' => 'MT to ALP',
+            'special'         => 'Special',
+            'absence'         => 'MT',
+            'adjustment'      => 'Adjustment',
+            'left_early'      => 'Left Early',
+            'late'            => 'Late',
+            'other'           => 'Other',
+        ];
+        $excusedOptions = [
+            'excused'   => 'Excused',
+            'unexcused' => 'Unexcused',
+        ];
+
+        // 6) 表示
+        return view('calendar.leaveEdit', compact(
+            'leaves',
+            'userOptions',
+            'statusOptions',
+            'kindOptions',
+            'excusedOptions',
+            'fmtDate',
+            'fmtTime'
+        ));
     }
-
-    // start > end → エラー
-    if ($startDate && $endDate && $startDate > $endDate) {
-        return back()
-            ->withErrors(['start_date' => '開始日は終了日より前に設定してください。'])
-            ->withInput();
-    }
-
-    // 日付フォーマット関数
-    $fmtDate = fn($v) => $v ? Carbon::parse($v)->format('Y-m-d') : '';
-    $fmtTime = fn($v) => $v ? Carbon::parse($v)->format('H:i')   : '';
-
-    // 4) クエリ（Event版と同順序・構成）
-    $leaves = Leave::query()
-        ->with(['user:id,first_name,family_name,employee_code'])
-        ->where('district_id', $this->scopeService->currentDistrictId())
-        ->where('department_id', $this->scopeService->currentDepartmentId())
-        ->when($leaveId,     fn($q) => $q->where('id', $leaveId)) // ★個別編集用パラメータ: leave_id があれば最優先で一意絞り込み
-        ->when($userId,      fn($q) => $q->where('user_id', $userId))
-        ->when($kind,        fn($q) => $q->where('kind', $kind))
-        ->when($excused,     fn($q) => $q->where('excused', $excused))
-        ->when($status,      fn($q) => $q->where('status', $status))
-        ->when($specialType, fn($q) => $q->whereLikeInsensitive('special_type', $specialType))
-        ->when($handleType,  fn($q) => $q->whereLikeInsensitive('handle_type', $handleType))
-        ->when($reason,      fn($q) => $q->whereLikeInsensitive('reason', $reason))
-        // ⬇︎ 日付フィルタ（単日= start_date、期間= start_date..end_date）
-        //   → end_effective = COALESCE(end_date, start_date) として区間重なりを一本化
-        ->when($startDate && $endDate, function ($q) use ($startDate, $endDate) {
-            $q->whereDate('start_date', '<=', $endDate)
-              ->whereRaw('DATE(COALESCE(end_date, start_date)) >= ?', [$startDate]);
-        })
-        ->when($startDate && !$endDate, function ($q) use ($startDate) {
-            $q->whereDate('start_date', '<=', $startDate)
-              ->whereRaw('DATE(COALESCE(end_date, start_date)) >= ?', [$startDate]);
-        })
-        ->orderByDesc('start_date')
-        ->orderBy('time_start')
-        ->orderBy('user_id')
-        ->paginate(24)
-        ->withQueryString();
-
-    // 5) オプション
-    $statusOptions = [
-        'approved' => 'Approved',
-        'pending'  => 'Pending',
-        'rejected' => 'Rejected',
-        'cancelled'    => 'Cancelled',
-    ];
-    $kindOptions = [
-        'paid'            => 'ALP',
-        'absence_to_paid' => 'MT to ALP',
-        'special'         => 'Special',
-        'absence'         => 'MT',
-        'adjustment'      => 'Adjustment',
-        'left_early'      => 'Left Early',
-        'late'            => 'Late',
-        'other'           => 'Other',
-    ];
-    $excusedOptions = [
-        'excused'   => 'Excused',
-        'unexcused' => 'Unexcused',
-    ];
-
-    // 6) 表示
-    return view('calendar.leaveEdit', compact(
-        'leaves',
-        'userOptions',
-        'statusOptions',
-        'kindOptions',
-        'excusedOptions',
-        'fmtDate',
-        'fmtTime'
-    ));
-}
     /** 保存（更新） */
     public function update(Request $request, Leave $leave)
     {
-        // 権限（念のため。ルートにもmiddlewareあり）
-        if (!Auth::user()->hasRole(['admin', 'super_admin'])) {
-            abort(403);
-        }
+        $this->authorize('update', $leave);
 
         $data = $this->validateLeave($request);
+        $targetUser = \App\Models\User::findOrFail((int) $data['user_id']);
+        $this->authorize('manage', $targetUser);
 
         // ビジネスルール（時間の一貫性：片方のみ指定 → バリデーションで弾く）
         // 追加チェック（任意）：time_start < time_end
@@ -153,9 +153,7 @@ public function edit(Request $request)
     /** 削除 */
     public function destroy(Request $request, Leave $leave)
     {
-        if (!Auth::user()->hasRole(['admin', 'super_admin'])) {
-            abort(403);
-        }
+        $this->authorize('delete', $leave);
 
         $leave->delete();
 
@@ -200,9 +198,7 @@ public function edit(Request $request)
     /** 空白Leave 追加 */
     public function storeBlank(Request $request)
     {
-        if (!auth()->user()->hasRole(['admin', 'super_admin'])) {
-            abort(403);
-        }
+        $this->authorize('manage', Leave::class);
 
         // 必須: user_id, start_date
         $data = $request->validate([
@@ -232,9 +228,7 @@ public function edit(Request $request)
     /** 一括更新 */
     public function bulkUpdate(Request $request)
     {
-        if (!auth()->user()->hasRole(['admin', 'super_admin'])) {
-            abort(403);
-        }
+        $this->authorize('manage', Leave::class);
 
         $items = $request->input('items', []);
         if (!is_array($items) || empty($items)) {
@@ -279,7 +273,12 @@ public function edit(Request $request)
 
         // 一括反映
         foreach ($validated['items'] as $it) {
-            $leave = Leave::find($it['id']);
+            $leave = Leave::findOrFail($it['id']);
+            $this->authorize('update', $leave);
+
+            $targetUser = \App\Models\User::findOrFail((int) $it['user_id']);
+            $this->authorize('manage', $targetUser);
+
             $leave->fill([
                 'user_id'     => $it['user_id'],
                 'start_date'  => $it['start_date'],
