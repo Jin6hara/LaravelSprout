@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ReceivedPost\StoreCommentRequest;
+use App\Models\Attachment;
+use App\Models\Comment;
 use App\Models\Post;
 use App\Models\User;
 use App\Services\CurrentScopeService;
 use Illuminate\Http\Request;
-use App\Models\Comment;
-use App\Models\Attachment;
 use Illuminate\Support\Facades\Storage;
 
 class ReceivedPostController extends Controller
@@ -116,7 +117,7 @@ class ReceivedPostController extends Controller
         ]);
     }
 
-    public function storeComment(Request $r, Post $post)
+    public function storeComment(StoreCommentRequest $r, Post $post)
     {
         $me = $r->user();
         $this->authorize('comment', $post);
@@ -126,10 +127,7 @@ class ReceivedPostController extends Controller
             return back()->with('toast_errors', ['Reply is not allowed for this post.']);
         }
 
-        $data = $r->validate([
-            'body'      => ['required', 'string'],
-            'parent_id' => ['nullable', 'integer', 'exists:comments,id'],
-        ]);
+        $data = $r->validated();
 
         // parent_id があるときは同一 post に属することを保証
         if (!empty($data['parent_id'])) {

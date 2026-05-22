@@ -5,14 +5,14 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 //use Illuminate\Validation\ValidationException;(try catch 用)
-use App\Http\Requests\UpdateUserFieldRequest;
+use App\Http\Requests\Users\UpdateUserFieldRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 
 
 class UsersController extends Controller
 {
-    public function showProfile(?User $user = null): View
+    public function show(?User $user = null): View
     {
         // userがnull → 自分のプロフィール（一般ユーザー）
         $targetUser = $user ?? Auth::user();;

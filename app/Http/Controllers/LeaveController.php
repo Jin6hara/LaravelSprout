@@ -2,15 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreLeaveRequest;
+use App\Http\Requests\Leave\AllReportRequest;
+use App\Http\Requests\Leave\ReportLeaveRequest;
+use App\Http\Requests\Leave\StoreLeaveRequest;
 use App\Models\Leave;
 use App\Models\User;
 use App\Services\CurrentScopeService;
 use App\Services\LeaveBalanceService;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
 
 class LeaveController extends Controller
@@ -79,7 +79,7 @@ class LeaveController extends Controller
      * - 一般ユーザー：自分のみ
      * - 管理者(admin|super_admin)：誰のページでも閲覧可能（そのユーザーのデータのみ表示）
      */
-    public function absence(Request $request, User $user)
+    public function absence(User $user)
     {
         $this->authorize('view', $user);
 
@@ -157,7 +157,7 @@ class LeaveController extends Controller
      * - 対象：kind=absence かつ reason/handle_type が両方 null のもの
      * - 送信後は編集不可（＝両方値が入ったらSubmittedとみなす）
      */
-    public function report(Request $request, Leave $leave)
+    public function report(ReportLeaveRequest $request, Leave $leave)
     {
         $this->authorize('report', $leave);
 
@@ -168,17 +168,7 @@ class LeaveController extends Controller
             return back()->with('toast_errors', ['Already submitted.']);
         }
 
-        $validated = $request->validate([
-            'reason'      => ['required', 'string', 'max:1000'],
-            'handle_type' => ['required', 'in:apply_alp,no_alp,clinic,sick_child,special_leave,menstrual_leave'],
-            'attachment'  => [
-                'nullable',
-                'file',
-                'max:10240',
-                'mimes:pdf,jpg,jpeg,png',
-                'mimetypes:application/pdf,image/jpeg,image/png',
-            ],
-        ]);
+        $validated = $request->validated();
 
         $leave->update([
             'reason'      => $validated['reason'],
@@ -208,19 +198,12 @@ class LeaveController extends Controller
         return back()->with('toast', 'Submitted.');
     }
 
-    public function allReport(Request $request)
+    public function allReport(AllReportRequest $request)
     {
         $this->authorize('viewAny', Leave::class);
         $viewer = Auth::user();
 
-        // フィルタ値を取得（バリデーション）
-        $validated = $request->validate([
-            'status'  => ['nullable', Rule::in(['required', 'submitted', 'all'])],
-            'kind'    => ['nullable', Rule::in(['absence', 'absence_to_paid', 'other', 'all'])],
-            'from'    => ['nullable', 'date'],
-            'to'      => ['nullable', 'date', 'after_or_equal:from'],
-            'user_id' => ['nullable', 'integer', 'exists:users,id'],
-        ]);
+        $validated = $request->validated();
 
         $status  = $validated['status'] ?? 'all';
         $kind    = $validated['kind']   ?? 'absence'; // 既定は absence のみ
