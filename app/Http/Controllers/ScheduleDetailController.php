@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ScheduleDetail\BulkUpdateScheduleDetailRequest;
 use App\Models\Lesson;
 use App\Models\ScheduleLine;
 use App\Models\ScheduleDetail;
@@ -171,14 +172,11 @@ class ScheduleDetailController extends Controller
     }
 
     // 一括保存（表示されている明細のみ）
-    public function bulkUpdate(Request $request, ScheduleLine $line)
+    public function bulkUpdate(BulkUpdateScheduleDetailRequest $request, ScheduleLine $line)
     {
         $this->authorize('update', $line);
 
         $items = $request->input('items', []);
-        if (!is_array($items) || empty($items)) {
-            return response()->json(['ok' => false, 'message' => 'No items to update.'], 422);
-        }
 
         $errors = [];
         $updated = 0;
@@ -203,14 +201,7 @@ class ScheduleDetailController extends Controller
                 }
                 $this->authorize('update', $detail);
 
-                $v = Validator::make($raw, [
-                    'lesson_code'     => ['required', 'string', 'max:255'],
-                    'note'            => ['nullable', 'string', 'max:2000'],
-                    'detail_note'     => ['nullable', 'string', 'max:2000'],
-                    'start_time'      => ['required', 'date_format:H:i'],
-                    'effective_start' => ['required', 'date'],
-                    'effective_end'   => ['nullable', 'date', 'after_or_equal:effective_start'],
-                ]);
+                $v = Validator::make($raw, BulkUpdateScheduleDetailRequest::itemRules());
                 if ($v->fails()) {
                     $errors[] = ['id' => $detailId, 'messages' => $v->errors()->all()];
                     continue;

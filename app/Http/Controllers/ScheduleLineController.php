@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ScheduleLine\BulkUpdateScheduleLineRequest;
+use App\Http\Requests\ScheduleLine\CopyScheduleLineRequest;
+use App\Http\Requests\ScheduleLine\StoreScheduleLineRequest;
+use App\Http\Requests\ScheduleLine\UpdateScheduleLineRequest;
 use App\Models\ScheduleLine;
 use App\Models\User;
 use App\Services\CurrentScopeService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -155,16 +158,11 @@ class ScheduleLineController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreScheduleLineRequest $request)
     {
         $this->authorize('create', ScheduleLine::class);
 
-        $data = $request->validate([
-            'user_id'       => ['nullable', 'exists:users,id'],
-            'school_name'   => ['nullable', 'string', 'max:255'],
-            'dow'           => ['nullable', 'integer', 'between:0,6'],
-            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
-        ]);
+        $data = $request->validated();
         $this->authorizeUserAssignment($data['user_id'] ?? null);
 
         $line = new ScheduleLine();
@@ -178,7 +176,7 @@ class ScheduleLineController extends Controller
         $line->effective_end   = now()->addMonths(1)->toDateString();
         $line->handover_memo   = null;
         $line->district_id     = $this->scopeService->currentDistrictId();
-        $line->department_id   = $data['department_id'] ?? $this->scopeService->currentDepartmentId();
+        $line->department_id   = $this->scopeService->currentDepartmentId();
         $line->save();
 
         return response()->json([
@@ -188,28 +186,11 @@ class ScheduleLineController extends Controller
         ]);
     }
 
-    public function update(Request $request, ScheduleLine $line)
+    public function update(UpdateScheduleLineRequest $request, ScheduleLine $line)
     {
         $this->authorize('update', $line);
 
-        $data = $request->validate([
-            'user_id'         => ['nullable', 'exists:users,id'],
-            'dow'             => ['required', 'integer', Rule::in([0, 1, 2, 3, 4, 5, 6])],
-            'school_name'     => ['required', 'string', 'max:255'],
-            'start_time'      => ['required', 'date_format:H:i'],
-            'end_time'        => ['required', 'date_format:H:i', function ($attr, $val, $fail) use ($request) {
-                if ($request->input('start_time') && $val <= $request->input('start_time')) {
-                    $fail('end_time は start_time より後である必要があります。');
-                }
-            }],
-            'effective_start' => ['required', 'date'],
-            'effective_end'   => ['required', 'date', function ($attr, $val, $fail) use ($request) {
-                if ($request->input('effective_start') && $val < $request->input('effective_start')) {
-                    $fail('effective_end は effective_start 以降である必要があります。');
-                }
-            }],
-            'handover_memo'   => ['nullable', 'string', 'max:2000'],
-        ]);
+        $data = $request->validated();
         $this->authorizeUserAssignment($data['user_id'] ?? null);
 
         $line->fill($data)->save();
@@ -217,14 +198,11 @@ class ScheduleLineController extends Controller
         return back()->with('toast', "Line #{$line->id} を更新しました。");
     }
 
-    public function bulkUpdate(Request $request): JsonResponse
+    public function bulkUpdate(BulkUpdateScheduleLineRequest $request): JsonResponse
     {
         $this->authorize('viewAny', ScheduleLine::class);
 
         $items = $request->input('items', []);
-        if (!is_array($items) || empty($items)) {
-            return response()->json(['ok' => false, 'message' => 'No items to update.'], 422);
-        }
 
         $errors = [];
         $updated = 0;
@@ -245,24 +223,7 @@ class ScheduleLineController extends Controller
                 }
                 $this->authorize('update', $line);
 
-                $v = Validator::make($raw, [
-                    'user_id'         => ['nullable', 'exists:users,id'],
-                    'dow'             => ['required', 'integer', Rule::in([0, 1, 2, 3, 4, 5, 6])],
-                    'school_name'     => ['required', 'string', 'max:255'],
-                    'start_time'      => ['required', 'date_format:H:i'],
-                    'end_time'        => ['required', 'date_format:H:i', function ($attr, $val, $fail) use ($raw) {
-                        if (!empty($raw['start_time']) && $val <= $raw['start_time']) {
-                            $fail('end_time は start_time より後である必要があります。');
-                        }
-                    }],
-                    'effective_start' => ['required', 'date'],
-                    'effective_end'   => ['required', 'date', function ($attr, $val, $fail) use ($raw) {
-                        if (!empty($raw['effective_start']) && $val < $raw['effective_start']) {
-                            $fail('effective_end は effective_start 以降である必要があります。');
-                        }
-                    }],
-                    'handover_memo'   => ['nullable', 'string', 'max:2000'],
-                ]);
+                $v = Validator::make($raw, BulkUpdateScheduleLineRequest::itemRules($raw));
 
                 if ($v->fails()) {
                     $errors[] = ['id' => $lineId, 'messages' => $v->errors()->all()];
@@ -300,16 +261,11 @@ class ScheduleLineController extends Controller
         }
     }
 
-    public function copy(Request $request, ScheduleLine $line): \Illuminate\Http\JsonResponse
+    public function copy(CopyScheduleLineRequest $request, ScheduleLine $line): \Illuminate\Http\JsonResponse
     {
         $this->authorize('copy', $line);
 
-        $data = $request->validate([
-            'effective_start' => ['required', 'date'],
-            'effective_end'   => ['required', 'date', 'after_or_equal:effective_start'],
-            'user_id'         => ['nullable', 'exists:users,id'],
-            'handover_memo'   => ['nullable', 'string', 'max:2000'],
-        ]);
+        $data = $request->validated();
         $this->authorizeUserAssignment($data['user_id'] ?? null);
 
         $newStart = \Carbon\Carbon::parse($data['effective_start'])->startOfDay();

@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\EventAssign\BulkUpdateEventRequest;
+use App\Http\Requests\EventAssign\CopyEventRequest;
+use App\Http\Requests\EventAssign\UpdateEventRequest;
 use App\Models\Event;
 use App\Models\User;
 use App\Services\CurrentScopeService;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
 
@@ -129,26 +131,11 @@ class EventAssignController extends Controller
         return view('calendar.edit', compact('events', 'userOptions', 'statusOptions', 'typeOptions', 'schoolNames'));
     }
 
-    public function copy(Request $request)
+    public function copy(CopyEventRequest $request)
     {
         $this->authorize('create', Event::class);
 
-        $validated = $request->validate([
-            'event_date'        => ['required', 'date'],
-            'original_user_id'  => ['nullable', 'exists:users,id'],
-            'Leave_type'        => ['nullable', 'string'],
-            'title'             => ['nullable', 'string', 'max:255'],
-            'school_name'       => ['nullable', 'string', 'max:255'],
-            // 既存：H:i 固定（update と違い、ここは仕様そのまま）
-            'start_time'        => ['nullable', 'date_format:H:i'],
-            'end_time'          => ['nullable', 'date_format:H:i'],
-            'total_duration'    => ['nullable', 'regex:/^\d{1,2}:\d{2}$/'], // H:MM
-            'Lesson'            => ['nullable', 'string'],
-            'assigned_user_id'  => ['nullable', 'exists:users,id'],
-            'status'            => ['required', Rule::in(['pending', 'fixed', 'filled', 'in_process'])],
-            'type'              => ['required', Rule::in(['regular_time', 'none_required', 'overtime', 'schedule_change', 'rostered_working_day', 'special'])],
-            'notes'             => ['nullable', 'string'],
-        ]);
+        $validated = $request->validated();
 
 
         // ⬇︎ H:i → H:i:s に正規化（nullはそのまま）
@@ -196,28 +183,11 @@ class EventAssignController extends Controller
         return back()->with('toast', "Created shift at {$date}.");
     }
 
-    public function update(Request $request, Event $event)
+    public function update(UpdateEventRequest $request, Event $event)
     {
         $this->authorize('update', $event);
 
-        $validated = $request->validate([
-            'event_date'        => ['required', 'date'],
-            'original_user_id'  => ['nullable', 'exists:users,id'],
-            'Leave_type'        => ['nullable', 'string'],
-            'title'             => ['nullable', 'string', 'max:255'],
-            'school_name'       => ['nullable', 'string', 'max:255'],
-
-            // ⬇︎ ここを date_format から regex に変える（HH:mm または HH:mm:ss）
-            'start_time'        => ['nullable', 'regex:/^\d{2}:\d{2}(:\d{2})?$/'],
-            'end_time'          => ['nullable', 'regex:/^\d{2}:\d{2}(:\d{2})?$/'],
-
-            'total_duration'    => ['nullable', 'regex:/^\d{1,2}:\d{2}$/'], // H:MM
-            'Lesson'            => ['nullable', 'string'],
-            'assigned_user_id'  => ['nullable', 'exists:users,id'],
-            'status'            => ['required', Rule::in(['pending', 'fixed', 'filled', 'in_process'])],
-            'type'              => ['required', Rule::in(['regular_time', 'none_required', 'overtime', 'schedule_change', 'rostered_working_day', 'special'])],
-            'notes'             => ['nullable', 'string'],
-        ]);
+        $validated = $request->validated();
 
         // ⬇︎ H:i または H:i:s を安全に H:i:s へ正規化（例外を出さない）
         $normalizeTime = function ($val) {
@@ -255,35 +225,15 @@ class EventAssignController extends Controller
         return back()->with('toast', 'Updated.');
     }
 
-    public function bulkUpdate(Request $request)
+    public function bulkUpdate(BulkUpdateEventRequest $request)
     {
         $this->authorize('viewAny', Event::class);
 
         $items = $request->input('items', []);
-        if (!is_array($items) || empty($items)) {
-            return response()->json(['ok' => false, 'message' => '対象がありません'], 422);
-        }
-
-        $rules = [
-            'id'                => ['required', 'integer', 'exists:events,id'],
-            'event_date'        => ['required', 'date'],
-            'original_user_id'  => ['nullable', 'exists:users,id'],
-            'Leave_type'        => ['nullable', 'string'],
-            'title'             => ['nullable', 'string', 'max:255'],
-            'school_name'       => ['nullable', 'string', 'max:255'],
-            'start_time'        => ['nullable', 'date_format:H:i'],
-            'end_time'          => ['nullable', 'date_format:H:i'],
-            'total_duration'    => ['nullable', 'regex:/^\d{1,2}:\d{2}$/'], // H:MM
-            'Lesson'            => ['nullable', 'string'],
-            'assigned_user_id'  => ['nullable', 'exists:users,id'],
-            'status'            => ['required', Rule::in(['pending', 'fixed', 'filled', 'in_process'])],
-            'type'              => ['required', Rule::in(['regular_time', 'none_required', 'overtime', 'schedule_change', 'rostered_working_day', 'special'])],
-            'notes'             => ['nullable', 'string'],
-        ];
 
         $results = [];
         foreach ($items as $row) {
-            $v = Validator::make($row, $rules);
+            $v = Validator::make($row, BulkUpdateEventRequest::itemRules());
             if ($v->fails()) {
                 $results[] = ['id' => $row['id'] ?? null, 'ok' => false, 'errors' => $v->errors()->toArray()];
                 continue;

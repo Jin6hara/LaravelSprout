@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\LeaveManage\BulkUpdateLeaveManageRequest;
+use App\Http\Requests\LeaveManage\StoreLeaveManageRequest;
+use App\Http\Requests\LeaveManage\UpdateLeaveManageRequest;
 use App\Models\Leave;
 use App\Services\CurrentScopeService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
-use Illuminate\Validation\Rule;
 
 
 class LeaveManageController extends Controller
@@ -125,14 +127,11 @@ class LeaveManageController extends Controller
     }
 
     /** 新規作成 */
-    public function store(Request $request)
+    public function store(StoreLeaveManageRequest $request)
     {
         $this->authorize('manage', Leave::class);
 
-        $data = $request->validate([
-            'user_id'    => ['required', 'integer', 'exists:users,id'],
-            'start_date' => ['required', 'date'],
-        ]);
+        $data = $request->validated();
 
         $leave = Leave::create([
             'user_id'       => null,
@@ -153,25 +152,13 @@ class LeaveManageController extends Controller
     }
 
     /** 保存（更新） */
-    public function update(Request $request, Leave $leave)
+    public function update(UpdateLeaveManageRequest $request, Leave $leave)
     {
         $this->authorize('update', $leave);
 
-        $data = $this->validateLeave($request);
+        $data = $request->validated();
         $targetUser = \App\Models\User::findOrFail((int) $data['user_id']);
         $this->authorize('manage', $targetUser);
-
-        // ビジネスルール（時間の一貫性：片方のみ指定 → バリデーションで弾く）
-        // 追加チェック（任意）：time_start < time_end
-        if (!empty($data['time_start']) && !empty($data['time_end'])) {
-            $ts = Carbon::createFromFormat('H:i', $data['time_start']);
-            $te = Carbon::createFromFormat('H:i', $data['time_end']);
-            if ($te->lessThanOrEqualTo($ts)) {
-                return $this->respondValidationError($request, [
-                    'time_end' => ['End time must be after Start time.'],
-                ]);
-            }
-        }
 
         $leave->fill($data);
         $leave->save();
@@ -180,50 +167,11 @@ class LeaveManageController extends Controller
     }
 
     /** 一括更新 */
-    public function bulkUpdate(Request $request)
+    public function bulkUpdate(BulkUpdateLeaveManageRequest $request)
     {
         $this->authorize('manage', Leave::class);
 
-        $items = $request->input('items', []);
-        if (!is_array($items) || empty($items)) {
-            return response()->json(['ok' => false, 'message' => '対象がありません'], 422);
-        }
-
-        // 許容値
-        $kindValues    = ['paid', 'absence_to_paid', 'special', 'absence', 'adjustment', 'left_early', 'late', 'other'];
-        $excusedValues = ['excused', 'unexcused'];
-        $statusValues  = ['approved', 'pending', 'rejected', 'draft', 'cancelled', 'archived'];
-
-        // items.* で配列バリデーション
-        $validated = $request->validate([
-            'items'                          => ['required', 'array', 'min:1'],
-            'items.*.id'                     => ['required', 'integer', 'exists:leaves,id'],
-            'items.*.user_id'                => ['required', 'integer', 'exists:users,id'],
-            'items.*.start_date'             => ['required', 'date'],
-            'items.*.end_date'               => ['nullable', 'date', 'after_or_equal:items.*.start_date'],
-            'items.*.reason'                 => ['nullable', 'string'],
-            'items.*.kind'                   => ['required', Rule::in($kindValues)],
-            'items.*.excused'                => ['required', Rule::in($excusedValues)],
-            'items.*.special_type'           => ['nullable', 'string', 'max:100'],
-            'items.*.time_start'             => ['nullable', 'date_format:H:i', 'required_with:items.*.time_end'],
-            'items.*.time_end'               => ['nullable', 'date_format:H:i', 'required_with:items.*.time_start'],
-            'items.*.handle_type'            => ['nullable', 'string'],
-            'items.*.status'                 => ['required', Rule::in($statusValues)],
-        ]);
-
-        // 追加の論理チェック（start < end）
-        foreach ($validated['items'] as $it) {
-            if (!empty($it['time_start']) && !empty($it['time_end'])) {
-                $ts = Carbon::createFromFormat('H:i', $it['time_start']);
-                $te = Carbon::createFromFormat('H:i', $it['time_end']);
-                if ($te->lessThanOrEqualTo($ts)) {
-                    return response()->json([
-                        'ok' => false,
-                        'message' => "ID {$it['id']}: End time must be after Start time."
-                    ], 422);
-                }
-            }
-        }
+        $validated = $request->validated();
 
         // 一括反映
         foreach ($validated['items'] as $it) {
@@ -270,41 +218,6 @@ class LeaveManageController extends Controller
         $leave->delete();
 
         return back()->with('toast', 'Leave deleted.');
-    }
-
-    /** 共通バリデーション */
-    private function validateLeave(Request $request): array
-    {
-        $kindValues   = ['paid', 'absence_to_paid', 'special', 'absence', 'adjustment', 'left_early', 'late', 'other'];
-        $excusedValues = ['excused', 'unexcused'];
-        $statusValues = ['approved', 'pending', 'rejected', 'draft', 'cancelled', 'archived'];
-
-        return $request->validate([
-            'user_id'      => ['required', 'integer', 'exists:users,id'],
-            'start_date'   => ['required', 'date'],
-            'end_date'     => ['nullable', 'date', 'after_or_equal:start_date'],
-            'reason'       => ['nullable', 'string'],
-            'kind'         => ['required', Rule::in($kindValues)],
-            'excused'      => ['required', Rule::in($excusedValues)],
-            'special_type' => ['nullable', 'string', 'max:100'],
-            'time_start'   => ['nullable', 'date_format:H:i', 'required_with:time_end'],
-            'time_end'     => ['nullable', 'date_format:H:i', 'required_with:time_start'],
-            'handle_type'  => ['nullable', 'string'],
-            'status'       => ['required', Rule::in($statusValues)],
-        ]);
-    }
-
-    /** JSON/HTML 両対応のバリデーションエラー返却 */
-    private function respondValidationError(Request $request, array $errors)
-    {
-        if ($request->wantsJson()) {
-            return response()->json([
-                'ok' => false,
-                'message' => 'Validation error.',
-                'errors' => $errors,
-            ], 422);
-        }
-        return back()->withErrors($errors)->withInput();
     }
 
 }
