@@ -97,7 +97,7 @@ class ExpenseApiController extends Controller
      * 経費明細を1行削除
      * DELETE /api/expenses/{expense} — ロック済みレポートへの削除は 423 を返す
      */
-    public function destroy(Request $req, Expense $expense)
+    public function destroy(Expense $expense)
     {
         $report = $expense->report;
         $this->authorize('delete', $expense);
