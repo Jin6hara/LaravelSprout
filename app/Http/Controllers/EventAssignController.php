@@ -188,80 +188,6 @@ class EventAssignController extends Controller
         return back()->with('toast', 'Updated.');
     }
 
-    public function destroy(Request $request, Event $event)
-    {
-        $this->authorize('delete', $event);
-        $event->delete();
-        return back()->with('toast', 'Deleted');
-    }
-
-    public function store(Request $request)
-    {
-        $this->authorize('create', Event::class);
-
-        $validated = $request->validate([
-            'event_date'        => ['required', 'date'],
-            'original_user_id'  => ['nullable', 'exists:users,id'],
-            'Leave_type'        => ['nullable', 'string'],
-            'title'             => ['nullable', 'string', 'max:255'],
-            'school_name'       => ['nullable', 'string', 'max:255'],
-            // 既存：H:i 固定（update と違い、ここは仕様そのまま）
-            'start_time'        => ['nullable', 'date_format:H:i'],
-            'end_time'          => ['nullable', 'date_format:H:i'],
-            'total_duration'    => ['nullable', 'regex:/^\d{1,2}:\d{2}$/'], // H:MM
-            'Lesson'            => ['nullable', 'string'],
-            'assigned_user_id'  => ['nullable', 'exists:users,id'],
-            'status'            => ['required', Rule::in(['pending', 'fixed', 'filled', 'in_process'])],
-            'type'              => ['required', Rule::in(['regular_time', 'none_required', 'overtime', 'schedule_change', 'rostered_working_day', 'special'])],
-            'notes'             => ['nullable', 'string'],
-        ]);
-
-
-        // ⬇︎ H:i → H:i:s に正規化（nullはそのまま）
-        foreach (['start_time', 'end_time'] as $k) {
-            if ($request->filled($k)) {
-                $validated[$k] = Carbon::createFromFormat('H:i', $request->input($k))->format('H:i:s');
-            } else {
-                $validated[$k] = null;
-            }
-        }
-
-        // ⬇︎ total_duration 未入力なら自動計算（Observer があれば最終整合はそちらでも取れます）
-        if (!$request->filled('total_duration') && $validated['start_time'] && $validated['end_time']) {
-            $start = Carbon::createFromFormat('H:i:s', $validated['start_time']);
-            $end   = Carbon::createFromFormat('H:i:s', $validated['end_time']);
-            if ($end->lt($start)) $end->addDay(); // 日跨ぎ
-            $mins = $start->diffInMinutes($end);
-            $validated['total_duration'] = sprintf('%d:%02d', intdiv($mins, 60), $mins % 60);
-        }
-
-        $this->authorizeReferencedUsers($validated);
-        $validated['district_id']   = $this->scopeService->currentDistrictId();
-        $validated['department_id'] = $this->scopeService->currentDepartmentId();
-        Event::create($validated);
-
-        return back()->with('toast', 'Shift copied.');
-    }
-
-    public function storeBlank(Request $request)
-    {
-        $this->authorize('create', Event::class);
-
-        // リクエストやURLクエリから event_date を取得（POSTでもGETでも対応）
-        $date = $request->input('event_date', now()->toDateString());
-
-        // 空白イベントを作成
-        $event = Event::create([
-            'event_date'    => $date,
-            'status'        => 'pending',
-            'type'          => 'regular_time',
-            'district_id'   => $this->scopeService->currentDistrictId(),
-            'department_id' => $this->scopeService->currentDepartmentId(),
-        ]);
-
-        return back()->with('toast', "Created shift at {$date}.");
-    }
-
     public function bulkUpdate(Request $request)
     {
         $this->authorize('viewAny', Event::class);
@@ -341,6 +267,80 @@ class EventAssignController extends Controller
             'results' => $results,
             'message' => $ngCount ? '一部保存に失敗しました' : 'すべて保存しました',
         ]);
+    }
+
+    public function store(Request $request)
+    {
+        $this->authorize('create', Event::class);
+
+        $validated = $request->validate([
+            'event_date'        => ['required', 'date'],
+            'original_user_id'  => ['nullable', 'exists:users,id'],
+            'Leave_type'        => ['nullable', 'string'],
+            'title'             => ['nullable', 'string', 'max:255'],
+            'school_name'       => ['nullable', 'string', 'max:255'],
+            // 既存：H:i 固定（update と違い、ここは仕様そのまま）
+            'start_time'        => ['nullable', 'date_format:H:i'],
+            'end_time'          => ['nullable', 'date_format:H:i'],
+            'total_duration'    => ['nullable', 'regex:/^\d{1,2}:\d{2}$/'], // H:MM
+            'Lesson'            => ['nullable', 'string'],
+            'assigned_user_id'  => ['nullable', 'exists:users,id'],
+            'status'            => ['required', Rule::in(['pending', 'fixed', 'filled', 'in_process'])],
+            'type'              => ['required', Rule::in(['regular_time', 'none_required', 'overtime', 'schedule_change', 'rostered_working_day', 'special'])],
+            'notes'             => ['nullable', 'string'],
+        ]);
+
+
+        // ⬇︎ H:i → H:i:s に正規化（nullはそのまま）
+        foreach (['start_time', 'end_time'] as $k) {
+            if ($request->filled($k)) {
+                $validated[$k] = Carbon::createFromFormat('H:i', $request->input($k))->format('H:i:s');
+            } else {
+                $validated[$k] = null;
+            }
+        }
+
+        // ⬇︎ total_duration 未入力なら自動計算（Observer があれば最終整合はそちらでも取れます）
+        if (!$request->filled('total_duration') && $validated['start_time'] && $validated['end_time']) {
+            $start = Carbon::createFromFormat('H:i:s', $validated['start_time']);
+            $end   = Carbon::createFromFormat('H:i:s', $validated['end_time']);
+            if ($end->lt($start)) $end->addDay(); // 日跨ぎ
+            $mins = $start->diffInMinutes($end);
+            $validated['total_duration'] = sprintf('%d:%02d', intdiv($mins, 60), $mins % 60);
+        }
+
+        $this->authorizeReferencedUsers($validated);
+        $validated['district_id']   = $this->scopeService->currentDistrictId();
+        $validated['department_id'] = $this->scopeService->currentDepartmentId();
+        Event::create($validated);
+
+        return back()->with('toast', 'Shift copied.');
+    }
+
+    public function storeBlank(Request $request)
+    {
+        $this->authorize('create', Event::class);
+
+        // リクエストやURLクエリから event_date を取得（POSTでもGETでも対応）
+        $date = $request->input('event_date', now()->toDateString());
+
+        // 空白イベントを作成
+        $event = Event::create([
+            'event_date'    => $date,
+            'status'        => 'pending',
+            'type'          => 'regular_time',
+            'district_id'   => $this->scopeService->currentDistrictId(),
+            'department_id' => $this->scopeService->currentDepartmentId(),
+        ]);
+
+        return back()->with('toast', "Created shift at {$date}.");
+    }
+
+    public function destroy(Request $request, Event $event)
+    {
+        $this->authorize('delete', $event);
+        $event->delete();
+        return back()->with('toast', 'Deleted');
     }
 
     // ---- Vue プレビュー用 ----

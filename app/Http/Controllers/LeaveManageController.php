@@ -150,81 +150,6 @@ class LeaveManageController extends Controller
         return back()->with('toast', 'Leave updated.');
     }
 
-    /** 削除 */
-    public function destroy(Request $request, Leave $leave)
-    {
-        $this->authorize('delete', $leave);
-
-        $leave->delete();
-
-        return back()->with('toast', 'Leave deleted.');
-    }
-
-    /** 共通バリデーション */
-    private function validateLeave(Request $request): array
-    {
-        $kindValues   = ['paid', 'absence_to_paid', 'special', 'absence', 'adjustment', 'left_early', 'late', 'other'];
-        $excusedValues = ['excused', 'unexcused'];
-        $statusValues = ['approved', 'pending', 'rejected', 'draft', 'cancelled', 'archived'];
-
-        return $request->validate([
-            'user_id'      => ['required', 'integer', 'exists:users,id'],
-            'start_date'   => ['required', 'date'],
-            'end_date'     => ['nullable', 'date', 'after_or_equal:start_date'],
-            'reason'       => ['nullable', 'string'],
-            'kind'         => ['required', Rule::in($kindValues)],
-            'excused'      => ['required', Rule::in($excusedValues)],
-            'special_type' => ['nullable', 'string', 'max:100'],
-            'time_start'   => ['nullable', 'date_format:H:i', 'required_with:time_end'],
-            'time_end'     => ['nullable', 'date_format:H:i', 'required_with:time_start'],
-            'handle_type'  => ['nullable', 'string'],
-            'status'       => ['required', Rule::in($statusValues)],
-        ]);
-    }
-
-    /** JSON/HTML 両対応のバリデーションエラー返却 */
-    private function respondValidationError(Request $request, array $errors)
-    {
-        if ($request->wantsJson()) {
-            return response()->json([
-                'ok' => false,
-                'message' => 'Validation error.',
-                'errors' => $errors,
-            ], 422);
-        }
-        return back()->withErrors($errors)->withInput();
-    }
-
-    /** 空白Leave 追加 */
-    public function storeBlank(Request $request)
-    {
-        $this->authorize('manage', Leave::class);
-
-        // 必須: user_id, start_date
-        $data = $request->validate([
-            'user_id'    => ['required', 'integer', 'exists:users,id'],
-            'start_date' => ['required', 'date'],
-        ]);
-
-        // デフォルト値（必要ならここを調整）
-        $leave = Leave::create([
-            'user_id'       => null,
-            'start_date'    => $data['start_date'],
-            'end_date'      => null,
-            'reason'        => null,
-            'kind'          => 'special',
-            'excused'       => 'excused',
-            'time_start'    => null,
-            'time_end'      => null,
-            'handle_type'   => null,
-            'status'        => 'approved',
-            'district_id'   => $this->scopeService->currentDistrictId(),
-            'department_id' => $this->scopeService->currentDepartmentId(),
-        ]);
-
-        return back()->with('toast', "Leave created at {$leave->start_date->format('Y-m-d')}.");
-    }
-
     /** 一括更新 */
     public function bulkUpdate(Request $request)
     {
@@ -307,4 +232,80 @@ class LeaveManageController extends Controller
             'message' => '一括保存しました。',
         ]);
     }
+
+    /** 空白Leave 追加 */
+    public function storeBlank(Request $request)
+    {
+        $this->authorize('manage', Leave::class);
+
+        // 必須: user_id, start_date
+        $data = $request->validate([
+            'user_id'    => ['required', 'integer', 'exists:users,id'],
+            'start_date' => ['required', 'date'],
+        ]);
+
+        // デフォルト値（必要ならここを調整）
+        $leave = Leave::create([
+            'user_id'       => null,
+            'start_date'    => $data['start_date'],
+            'end_date'      => null,
+            'reason'        => null,
+            'kind'          => 'special',
+            'excused'       => 'excused',
+            'time_start'    => null,
+            'time_end'      => null,
+            'handle_type'   => null,
+            'status'        => 'approved',
+            'district_id'   => $this->scopeService->currentDistrictId(),
+            'department_id' => $this->scopeService->currentDepartmentId(),
+        ]);
+
+        return back()->with('toast', "Leave created at {$leave->start_date->format('Y-m-d')}.");
+    }
+
+    /** 削除 */
+    public function destroy(Request $request, Leave $leave)
+    {
+        $this->authorize('delete', $leave);
+
+        $leave->delete();
+
+        return back()->with('toast', 'Leave deleted.');
+    }
+
+    /** 共通バリデーション */
+    private function validateLeave(Request $request): array
+    {
+        $kindValues   = ['paid', 'absence_to_paid', 'special', 'absence', 'adjustment', 'left_early', 'late', 'other'];
+        $excusedValues = ['excused', 'unexcused'];
+        $statusValues = ['approved', 'pending', 'rejected', 'draft', 'cancelled', 'archived'];
+
+        return $request->validate([
+            'user_id'      => ['required', 'integer', 'exists:users,id'],
+            'start_date'   => ['required', 'date'],
+            'end_date'     => ['nullable', 'date', 'after_or_equal:start_date'],
+            'reason'       => ['nullable', 'string'],
+            'kind'         => ['required', Rule::in($kindValues)],
+            'excused'      => ['required', Rule::in($excusedValues)],
+            'special_type' => ['nullable', 'string', 'max:100'],
+            'time_start'   => ['nullable', 'date_format:H:i', 'required_with:time_end'],
+            'time_end'     => ['nullable', 'date_format:H:i', 'required_with:time_start'],
+            'handle_type'  => ['nullable', 'string'],
+            'status'       => ['required', Rule::in($statusValues)],
+        ]);
+    }
+
+    /** JSON/HTML 両対応のバリデーションエラー返却 */
+    private function respondValidationError(Request $request, array $errors)
+    {
+        if ($request->wantsJson()) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Validation error.',
+                'errors' => $errors,
+            ], 422);
+        }
+        return back()->withErrors($errors)->withInput();
+    }
+
 }
