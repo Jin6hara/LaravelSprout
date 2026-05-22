@@ -9,6 +9,7 @@ use App\Http\Requests\ScheduleLine\UpdateScheduleLineRequest;
 use App\Models\ScheduleLine;
 use App\Models\User;
 use App\Services\CurrentScopeService;
+use App\Services\ScheduleLine\ScheduleLineCopyService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Collection;
@@ -18,7 +19,10 @@ use Carbon\Carbon;
 
 class ScheduleLineController extends Controller
 {
-    public function __construct(private CurrentScopeService $scopeService) {}
+    public function __construct(
+        private CurrentScopeService $scopeService,
+        private ScheduleLineCopyService $copyService,
+    ) {}
 
     public function edit(Request $request)
     {
@@ -261,97 +265,32 @@ class ScheduleLineController extends Controller
         }
     }
 
-    public function copy(CopyScheduleLineRequest $request, ScheduleLine $line): \Illuminate\Http\JsonResponse
+    public function copy(CopyScheduleLineRequest $request, ScheduleLine $line): JsonResponse
     {
         $this->authorize('copy', $line);
 
         $data = $request->validated();
         $this->authorizeUserAssignment($data['user_id'] ?? null);
 
-        $newStart = \Carbon\Carbon::parse($data['effective_start'])->startOfDay();
-        $newEnd   = \Carbon\Carbon::parse($data['effective_end'])->startOfDay();
-        $targetUserId = $data['user_id'] ?? null;
-
-        DB::beginTransaction();
         try {
-            // 1) 元行クローズ
-            $lineStart = \Carbon\Carbon::parse($line->effective_start)->startOfDay();
-            $lineEnd   = $line->effective_end ? \Carbon\Carbon::parse($line->effective_end)->startOfDay() : null;
-
-            if ($newStart->gt($lineStart) && (!$lineEnd || $lineEnd->gte($newStart))) {
-                $line->effective_end = $newStart->copy()->subDay()->toDateString();
-                $line->save();
-            }
-
-            // 2) 重複チェック
-            $sameAttrs = \App\Models\ScheduleLine::query()
-                ->when(
-                    is_null($targetUserId),
-                    fn($q) => $q->whereNull('user_id'),
-                    fn($q) => $q->where('user_id', $targetUserId)
-                )
-                ->where('dow', $line->dow)
-                ->whereEqualsInsensitive('school_name', $line->school_name)
-                ->where('start_time', $line->start_time)
-                ->where('end_time', $line->end_time)
-                ->where(function ($q) use ($newStart, $newEnd) {
-                    $q->whereDate('effective_start', '<=', $newEnd)
-                        ->where(function ($qq) use ($newStart) {
-                            $qq->whereDate('effective_end', '>=', $newStart)
-                                ->orWhereNull('effective_end');
-                        });
-                })
-                ->exists();
-
-            if ($sameAttrs) {
-                DB::rollBack();
-                return response()->json([
-                    'ok' => false,
-                    'message' => '同一内容の行が指定期間に既に存在します（重複回避ルール）。'
-                ], 422);
-            }
-
-            // 3) 新規作成
-            $created = $line->replicate(['effective_start', 'effective_end', 'created_at', 'updated_at', 'id']);
-            $created->user_id         = $targetUserId;
-            $created->effective_start = $newStart->toDateString();
-            $created->effective_end   = $newEnd->toDateString();
-            $created->parent_line_id  = $line->id;
-            $created->handover_memo   = $data['handover_memo'] ?? null;
-            $created->save();
-
-            // 4) details クリップ複写
-            $line->loadMissing(['details']);
-            foreach ($line->details as $d) {
-                $dStart = \Carbon\Carbon::parse($d->effective_start)->startOfDay();
-                $dEnd   = $d->effective_end ? \Carbon\Carbon::parse($d->effective_end)->startOfDay() : null;
-
-                $overlapStart = $dStart->max($newStart);
-                $overlapEnd   = $dEnd ? $dEnd->min($newEnd) : $newEnd;
-
-                if ($overlapStart->gt($overlapEnd)) continue;
-
-                $newDetail = $d->replicate(['id', 'created_at', 'updated_at']);
-                $newDetail->schedule_line_id = $created->id;
-                $newDetail->effective_start  = $overlapStart->toDateString();
-                $newDetail->effective_end    = $overlapEnd ? $overlapEnd->toDateString() : null;
-                $newDetail->save();
-            }
-
-            DB::commit();
+            $created = $this->copyService->copy($line, $data);
 
             return response()->json([
-                'ok' => true,
-                'message' => "Line #{$line->id} を複写して新規 Line #{$created->id} を作成しました（user: " . ($targetUserId ?? 'NULL') . "）。",
-                'new_id' => $created->id,
+                'ok'      => true,
+                'message' => "Line #{$line->id} を複写して新規 Line #{$created->id} を作成しました（user: " . ($data['user_id'] ?? 'NULL') . "）。",
+                'new_id'  => $created->id,
             ]);
+        } catch (\RuntimeException $e) {
+            return response()->json([
+                'ok'      => false,
+                'message' => $e->getMessage(),
+            ], 422);
         } catch (\Throwable $e) {
-            DB::rollBack();
             report($e);
             return response()->json([
-                'ok' => false,
+                'ok'      => false,
                 'message' => '複写に失敗しました。入力期間や関連データをご確認ください。',
-                'error' => $e->getMessage(),
+                'error'   => $e->getMessage(),
             ], 422);
         }
     }
