@@ -12,12 +12,20 @@ class PostController extends Controller
 {
     public function __construct(private PostSendService $postSendService) {}
 
+    /**
+     * 投稿作成フォーム表示（admin用）
+     * GET /posts/create
+     */
     public function create(Request $r)
     {
         $this->authorize('create', Post::class);
         return view('posts.adminCreate');
     }
 
+    /**
+     * 投稿送信（宛先・添付ファイルを含む）
+     * POST /posts/send
+     */
     public function send(PostSendRequest $req)
     {
         $user = $req->user();

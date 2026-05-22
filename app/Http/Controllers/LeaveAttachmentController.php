@@ -8,6 +8,10 @@ use Illuminate\Support\Facades\Storage;
 
 class LeaveAttachmentController extends Controller
 {
+    /**
+     * 休暇申請の添付ファイルをインライン表示
+     * GET /leaves/{leave}/attachments/{attachment} — polymorphic 整合性を検証してローカルストレージから表示
+     */
     public function show(Leave $leave, Attachment $attachment)
     {
         // ① ちゃんとこの Leave の添付かチェック（polymorphic 保護）

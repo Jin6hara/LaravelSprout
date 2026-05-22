@@ -17,6 +17,10 @@ class LeaveController extends Controller
 {
     public function __construct(private CurrentScopeService $scopeService) {}
 
+    /**
+     * 休暇登録フォーム表示（管理者用）
+     * GET /leaves/create
+     */
     public function create()
     {
         $user = auth()->user();
@@ -25,6 +29,10 @@ class LeaveController extends Controller
         ]);
     }
 
+    /**
+     * 休暇を直接登録（承認フローなし・管理者用）
+     * POST /leaves — 登録後は対象日のカレンダー画面へリダイレクト
+     */
     public function store(StoreLeaveRequest $request)
     {
         // 承認フローがある場合は pending から始めるなど調整してください
@@ -57,6 +65,10 @@ class LeaveController extends Controller
     }
 
 
+    /**
+     * 休暇申請の取消
+     * 承認済みの場合は LeaveBalanceService で有給残を返戻する
+     */
     public function cancel(Leave $leave)
     {
         $this->authorize('cancel', $leave);
@@ -198,6 +210,10 @@ class LeaveController extends Controller
         return back()->with('toast', 'Submitted.');
     }
 
+    /**
+     * 欠席報告一覧（管理者用）
+     * GET /leaves/all-report — status/kind/from/to/user_id でフィルタ、20件ページネーション
+     */
     public function allReport(AllReportRequest $request)
     {
         $this->authorize('viewAny', Leave::class);
@@ -304,6 +320,10 @@ class LeaveController extends Controller
         ]);
     }
 
+    /**
+     * 休暇添付ファイルのダウンロード
+     * GET /leaves/{leave}/download — 非公開ストレージから元ファイル名でダウンロード
+     */
     public function download(Leave $leave)
     {
         $this->authorize('download', $leave);

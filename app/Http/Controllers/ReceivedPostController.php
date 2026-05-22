@@ -29,6 +29,10 @@ class ReceivedPostController extends Controller
         return $me;
     }
 
+    /**
+     * 受信投稿一覧
+     * GET /posts/received — employee_code クエリで admin による代理閲覧も可
+     */
     public function index(Request $r)
     {
         $target = $this->resolveTarget($r);
@@ -57,6 +61,10 @@ class ReceivedPostController extends Controller
         ]);
     }
 
+    /**
+     * 受信投稿詳細（コメントツリー付き）
+     * 管理者は全コメントを表示、一般ユーザーは自分が投稿した親コメントのみ表示
+     */
     public function show(Request $r, Post $post)
     {
         $me = $r->user();
@@ -117,6 +125,10 @@ class ReceivedPostController extends Controller
         ]);
     }
 
+    /**
+     * コメント投稿（返信対応）
+     * 返信不可の投稿・スコープ外の parent_id は拒否
+     */
     public function storeComment(StoreCommentRequest $r, Post $post)
     {
         $me = $r->user();

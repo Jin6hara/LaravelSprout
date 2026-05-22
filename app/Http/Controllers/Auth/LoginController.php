@@ -9,6 +9,10 @@ use Illuminate\Http\Request;
 
 class LoginController extends Controller
 {
+    /**
+     * ログインフォーム表示
+     * GET /login — 未ログインユーザー向けのログイン画面を返す
+     */
     public function showForm()
     {
         //ログイン済みの場合はログイン画面表示させない設計
@@ -19,6 +23,10 @@ class LoginController extends Controller
         return view('auth.login');
     }
 
+    /**
+     * ログイン処理
+     * POST /login — レートリミット（5回/120秒）を検証した上で認証し、ロールに応じてリダイレクト
+     */
     public function login(Request $request)
     {
         $credentials = $request->validate([
@@ -68,11 +76,19 @@ class LoginController extends Controller
         ])->onlyInput('email');
     }
 
+    /**
+     * レートリミット用のキーを生成
+     * メールアドレス（小文字）と IP アドレスの組み合わせをハッシュ化して返す
+     */
     private function throttleKey(Request $request): string
     {
         return hash('sha256', strtolower($request->input('email', '')) . '|' . $request->ip());
     }
 
+    /**
+     * ログアウト処理
+     * POST /logout — セッションを無効化・トークン再生成した上でログイン画面へリダイレクト
+     */
     public function logout(Request $request)
     {
         Auth::logout();

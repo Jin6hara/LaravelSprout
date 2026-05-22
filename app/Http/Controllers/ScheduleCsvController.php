@@ -11,6 +11,10 @@ use Throwable;
 
 class ScheduleCsvController extends Controller
 {
+    /**
+     * スケジュール CSV 管理画面
+     * GET /csv/schedule — インポート・エクスポートフォームを表示
+     */
     public function show()
     {
         $this->authorize('viewAny', ScheduleLine::class);
@@ -18,6 +22,10 @@ class ScheduleCsvController extends Controller
         return view('csv.schedule_csv');
     }
 
+    /**
+     * スケジュールデータを CSV でエクスポート
+     * GET /csv/schedule/export — ScheduleCsvExportService でストリームダウンロード形式に出力
+     */
     public function export(ScheduleCsvExportService $service)
     {
         $this->authorize('viewAny', ScheduleLine::class);
@@ -26,6 +34,10 @@ class ScheduleCsvController extends Controller
         return $service->streamCsv($filename);
     }
 
+    /**
+     * CSV からスケジュールデータをインポート
+     * POST /csv/schedule/import — ScheduleCsvImportService でパース・検証・保存を行い、作成・更新件数をトースト表示
+     */
     public function import(Request $request, ScheduleCsvImportService $service)
     {
         $this->authorize('viewAny', ScheduleLine::class);

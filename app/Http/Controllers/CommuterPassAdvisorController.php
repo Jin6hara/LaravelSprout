@@ -12,6 +12,10 @@ use App\Support\TimeString;
 
 class CommuterPassAdvisorController extends Controller
 {
+    /**
+     * 通勤定期券アドバイザー画面
+     * GET /expenses/pass-advisor — 指定期間に一定回数以上同一学校へ訪問しているユーザーと定期券の取得状況を一覧表示
+     */
     public function index(Request $request)
     {
         $this->authorize('viewAny', ScheduleLine::class);

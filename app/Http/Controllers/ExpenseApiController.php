@@ -31,6 +31,10 @@ class ExpenseApiController extends Controller
         }
     }
 
+    /**
+     * 経費明細を1行追加
+     * POST /api/expenses — ロック済みレポートへの追加は 423 を返す
+     */
     public function store(StoreExpenseRequest $req)
     {
         $data = $req->validated();
@@ -66,6 +70,10 @@ class ExpenseApiController extends Controller
         return response()->json($exp->fresh(), 201);
     }
 
+    /**
+     * 経費明細を1行更新
+     * PATCH /api/expenses/{expense} — ロック済みレポートへの変更は 423 を返す
+     */
     public function update(UpdateExpenseRequest $req, Expense $expense)
     {
         $report = $expense->report;
@@ -85,7 +93,10 @@ class ExpenseApiController extends Controller
         return response()->json($expense->fresh());
     }
 
-    // 削除
+    /**
+     * 経費明細を1行削除
+     * DELETE /api/expenses/{expense} — ロック済みレポートへの削除は 423 を返す
+     */
     public function destroy(Request $req, Expense $expense)
     {
         $report = $expense->report;

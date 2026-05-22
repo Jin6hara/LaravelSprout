@@ -126,7 +126,10 @@ class LeaveManageController extends Controller
         ));
     }
 
-    /** 新規作成 */
+    /**
+     * Leave を新規作成
+     * POST /calendar/leaves — 指定日付に空の Leave レコードを生成（kind=special/status=approved で初期化）
+     */
     public function store(StoreLeaveManageRequest $request)
     {
         $this->authorize('manage', Leave::class);
@@ -151,7 +154,10 @@ class LeaveManageController extends Controller
         return back()->with('toast', "Leave created at {$leave->start_date->format('Y-m-d')}.");
     }
 
-    /** 保存（更新） */
+    /**
+     * Leave を1件更新
+     * PATCH /calendar/leaves/{leave} — バリデーション済みデータで上書き保存。対象ユーザーへの manage 権限も確認
+     */
     public function update(UpdateLeaveManageRequest $request, Leave $leave)
     {
         $this->authorize('update', $leave);
@@ -166,7 +172,10 @@ class LeaveManageController extends Controller
         return back()->with('toast', 'Leave updated.');
     }
 
-    /** 一括更新 */
+    /**
+     * Leave を一括更新（JSON API）
+     * POST /calendar/leaves/bulk-update — items 配列を1件ずつ検証・保存し、更新件数を JSON で返す
+     */
     public function bulkUpdate(BulkUpdateLeaveManageRequest $request)
     {
         $this->authorize('manage', Leave::class);
@@ -210,7 +219,10 @@ class LeaveManageController extends Controller
         ]);
     }
 
-    /** 削除 */
+    /**
+     * Leave を削除
+     * DELETE /calendar/leaves/{leave} — 1件の Leave レコードを削除して一覧へ戻す
+     */
     public function destroy(Request $request, Leave $leave)
     {
         $this->authorize('delete', $leave);

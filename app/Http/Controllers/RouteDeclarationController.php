@@ -16,6 +16,10 @@ class RouteDeclarationController extends Controller
 {
     public function __construct(private CurrentScopeService $scopeService) {}
 
+    /**
+     * ルート申告一覧（本人または管理者による代理閲覧）
+     * GET /routes — 管理者は user_id クエリで対象ユーザーを切替可、一般は自分のみ
+     */
     public function index(Request $request, RouteDeclarationService $svc)
     {
         $viewer = Auth::user();
@@ -35,6 +39,10 @@ class RouteDeclarationController extends Controller
         ]);
     }
 
+    /**
+     * 特定ユーザーのルート申告一覧（管理者用）
+     * GET /routes/users/{user} — URL で指定したユーザーの申告履歴を表示
+     */
     public function showUser(User $user, RouteDeclarationService $svc)
     {
         $viewer = Auth::user();
@@ -102,6 +110,10 @@ class RouteDeclarationController extends Controller
             ->with('toast', 'Route declaration has been saved.');
     }
 
+    /**
+     * ルート申告フォームのバリデーション処理
+     * closest_station・train_line・effective_date・details 配列を検証して返す
+     */
     protected function validateRequest(Request $request): array
     {
         return $request->validate([

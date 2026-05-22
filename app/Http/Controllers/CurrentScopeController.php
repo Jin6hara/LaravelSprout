@@ -7,6 +7,10 @@ use App\Models\UserManagementScope;
 
 class CurrentScopeController extends Controller
 {
+    /**
+     * 選択スコープをセッションに保存
+     * POST /current-scope — ログインユーザーに紐づく scope_id のみ許可
+     */
     public function store(StoreCurrentScopeRequest $request)
     {
         $scopeId = $request->validated()['scope_id'];

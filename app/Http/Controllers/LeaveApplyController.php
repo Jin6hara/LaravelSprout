@@ -13,6 +13,10 @@ class LeaveApplyController extends Controller
 {
     public function __construct(private LeaveApplicationService $leaveApplicationService) {}
 
+    /**
+     * 本人用 ALP 申請フォーム表示
+     * GET /leave/apply/create
+     */
     public function create()
     {
         $user   = auth()->user();
@@ -85,6 +89,10 @@ class LeaveApplyController extends Controller
         return redirect()->route('leave.apply.create')->with('toast', $this->buildToast($result));
     }
 
+    /**
+     * 特別休暇の添付ファイルを storage に保存してメタ情報を返す
+     * 特別休暇以外、またはファイルなしの場合は null を返す
+     */
     private function handleAttachment(string $type, LeaveApplyRequest $request): ?array
     {
         if ($type !== 'special' || !$request->hasFile('attachment')) {
@@ -101,6 +109,10 @@ class LeaveApplyController extends Controller
         ];
     }
 
+    /**
+     * 申請結果をトーストメッセージ文字列に整形
+     * created/skipped 件数とスキップ理由を含む
+     */
     private function buildToast(array $result): string
     {
         $created = $result['created'];

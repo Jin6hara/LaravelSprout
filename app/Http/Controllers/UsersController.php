@@ -12,6 +12,10 @@ use Illuminate\View\View;
 
 class UsersController extends Controller
 {
+    /**
+     * プロフィール表示
+     * user 未指定時は自分、指定時は管理者による他ユーザー閲覧
+     */
     public function show(?User $user = null): View
     {
         // userがnull → 自分のプロフィール（一般ユーザー）
@@ -44,9 +48,8 @@ class UsersController extends Controller
     }
 
     /**
-     * @property int $id
-     * @property string $name
-     * @method bool save()
+     * プロフィールフィールドを1項目更新（JSON API）
+     * PATCH /profile/update-field — email/phone_number/address/note のみ許可
      */
     public function updateField(UpdateUserFieldRequest $request, ?User $user = null): JsonResponse
     {

@@ -11,6 +11,10 @@ class ExpenseReportController extends Controller
 {
     public function __construct(private CurrentScopeService $scopeService) {}
 
+    /**
+     * 月別経費申請一覧（管理者用）
+     * GET /expenses/report?year=YYYY&month=MM — 未指定時は当月を表示
+     */
     public function show(ShowExpenseReportRequest $request)
     {
         $this->authorize('manage', ExpenseReport::class);

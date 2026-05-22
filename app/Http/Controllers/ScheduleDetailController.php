@@ -16,7 +16,10 @@ class ScheduleDetailController extends Controller
 {
     public function __construct(private CurrentScopeService $scopeService) {}
 
-    // 詳細編集画面
+    /**
+     * スケジュール詳細編集画面
+     * GET /schedule/{line}/details — ScheduleLine に紐づく ScheduleDetail を一覧表示し編集・削除できる
+     */
     public function edit(ScheduleLine $line)
     {
         $this->authorize('view', $line);
@@ -72,6 +75,10 @@ class ScheduleDetailController extends Controller
         ]);
     }
 
+    /**
+     * 空の新規 ScheduleDetail を追加（JSON API）
+     * POST /schedule/{line}/details — 既存の最初の Lesson を使って 00:00 の空明細を生成
+     */
     public function store(ScheduleLine $line)
     {
         $this->authorize('update', $line);
@@ -116,6 +123,10 @@ class ScheduleDetailController extends Controller
         }
     }
 
+    /**
+     * ScheduleDetail を複製（JSON API）
+     * POST /schedule/details/{detail}/copy — ユニーク制約に抵触しないよう effective_start をずらして複写
+     */
     public function copy(ScheduleDetail $detail)
     {
         $this->authorize('copy', $detail);
@@ -171,7 +182,10 @@ class ScheduleDetailController extends Controller
         }
     }
 
-    // 一括保存（表示されている明細のみ）
+    /**
+     * ScheduleDetail を一括保存（JSON API）
+     * POST /schedule/{line}/details/bulk-update — lesson_code で Lesson を解決し、明細の時刻・期間・メモを更新
+     */
     public function bulkUpdate(BulkUpdateScheduleDetailRequest $request, ScheduleLine $line)
     {
         $this->authorize('update', $line);
@@ -265,6 +279,10 @@ class ScheduleDetailController extends Controller
         }
     }
 
+    /**
+     * ScheduleDetail を削除（JSON API）
+     * DELETE /schedule/details/{detail} — 1件の明細を削除し、削除した時刻・コードを含むメッセージを返す
+     */
     public function destroy(ScheduleDetail $detail)
     {
         $this->authorize('delete', $detail);
@@ -287,7 +305,10 @@ class ScheduleDetailController extends Controller
         }
     }
 
-    // lesson_code または ps_unique_lesson_code → レッスン情報取得（AJAX）
+    /**
+     * lesson_code または ps_unique_lesson_code でレッスン情報を取得（JSON API）
+     * GET /schedule/lessons/{code} — 入力補完・自動補填に使用
+     */
     public function findLessonByCode(string $code)
     {
         $this->authorize('viewAny', Lesson::class);

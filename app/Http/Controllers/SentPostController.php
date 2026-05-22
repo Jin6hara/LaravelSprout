@@ -7,6 +7,10 @@ use Illuminate\Http\Request;
 
 class SentPostController extends Controller
 {
+    /**
+     * 送信済み投稿一覧
+     * GET /posts/sent — 管理者は admin/super_admin が送信した全投稿、一般ユーザーは自分の投稿のみを表示
+     */
     public function index(Request $request)
     {
         $me = $request->user();

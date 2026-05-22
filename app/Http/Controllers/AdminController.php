@@ -30,6 +30,10 @@ class AdminController extends Controller
         return view('admin.dashboard', compact('users', 'word', 'fields'));
     }
 
+    /**
+     * ユーザー登録フォーム表示（現在のスコープ情報を表示）
+     * GET /admin/register
+     */
     public function showForm(): View
     {
         $this->authorize('create', User::class);
@@ -70,6 +74,10 @@ class AdminController extends Controller
         return view('admin.dashboard', compact('users', 'word', 'fields'));
     }
 
+    /**
+     * ダッシュボード・検索共通のユーザークエリ構築
+     * 検索ワード・対象フィールド・ソート順を受け取り [users, word, fields] を返す
+     */
     private function buildUserQuery(Request $request): array
     {
         $allowedFields = ['employee_code', 'name', 'phone_number'];

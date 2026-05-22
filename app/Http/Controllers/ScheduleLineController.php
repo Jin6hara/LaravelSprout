@@ -24,6 +24,10 @@ class ScheduleLineController extends Controller
         private ScheduleLineCopyService $copyService,
     ) {}
 
+    /**
+     * スケジュールライン管理画面（検索・一覧）
+     * GET /schedule_manager — 有効期間・ユーザー・曜日・学校名でフィルタし 50 件ずつページネーション表示
+     */
     public function edit(Request $request)
     {
         $this->authorize('viewAny', ScheduleLine::class);
@@ -162,6 +166,10 @@ class ScheduleLineController extends Controller
         ]);
     }
 
+    /**
+     * 新規 ScheduleLine を作成（JSON API）
+     * POST /schedule_lines — 初期値（00:00〜00:00、当日〜翌月）で空の行を生成
+     */
     public function store(StoreScheduleLineRequest $request)
     {
         $this->authorize('create', ScheduleLine::class);
@@ -190,6 +198,10 @@ class ScheduleLineController extends Controller
         ]);
     }
 
+    /**
+     * ScheduleLine を1件更新
+     * PATCH /schedule_lines/{line} — バリデーション済みデータで行を上書き保存
+     */
     public function update(UpdateScheduleLineRequest $request, ScheduleLine $line)
     {
         $this->authorize('update', $line);
@@ -202,6 +214,10 @@ class ScheduleLineController extends Controller
         return back()->with('toast', "Line #{$line->id} を更新しました。");
     }
 
+    /**
+     * ScheduleLine を一括更新（JSON API）
+     * POST /schedule_lines/bulk-update — items 配列を1件ずつバリデーション・保存し、成功/失敗件数を JSON で返す
+     */
     public function bulkUpdate(BulkUpdateScheduleLineRequest $request): JsonResponse
     {
         $this->authorize('viewAny', ScheduleLine::class);
@@ -265,6 +281,10 @@ class ScheduleLineController extends Controller
         }
     }
 
+    /**
+     * ScheduleLine を複製（JSON API）
+     * POST /schedule_lines/{line}/copy — ScheduleLineCopyService で明細ごと複写し、新規行の ID を返す
+     */
     public function copy(CopyScheduleLineRequest $request, ScheduleLine $line): JsonResponse
     {
         $this->authorize('copy', $line);
@@ -295,6 +315,10 @@ class ScheduleLineController extends Controller
         }
     }
 
+    /**
+     * ScheduleLine を削除（JSON API）
+     * DELETE /schedule_lines/{line} — 紐づく ScheduleDetail も先に削除してから行を削除
+     */
     public function destroy(Request $request, ScheduleLine $line): JsonResponse
     {
         $this->authorize('delete', $line);
@@ -322,6 +346,10 @@ class ScheduleLineController extends Controller
         }
     }
 
+    /**
+     * ScheduleDetail のコレクションを「期間の変化点」で区切った時系列セグメントに整形
+     * 各セグメントは start/end/items を持ち、Blade でのタイムライン表示に使用
+     */
     private function buildTimeSeries(Collection $details): array
     {
         if ($details->isEmpty()) {
@@ -435,6 +463,10 @@ class ScheduleLineController extends Controller
         return $segments;
     }
 
+    /**
+     * ScheduleLine に割り当てるユーザーの閲覧権限を検証
+     * userId が null の場合は未割当として通過させる
+     */
     private function authorizeUserAssignment(?int $userId): void
     {
         if ($userId === null) {

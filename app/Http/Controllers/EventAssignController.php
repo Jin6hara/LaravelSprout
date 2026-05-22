@@ -18,6 +18,10 @@ class EventAssignController extends Controller
 {
     public function __construct(private CurrentScopeService $scopeService) {}
 
+    /**
+     * イベント管理画面（検索・一覧）
+     * GET /calendar/edit — 日付・ユーザー・学校名などの条件でイベントを検索し 24 件ずつページネーション表示
+     */
     public function edit(Request $request)
     {
         $this->authorize('viewAny', Event::class);
@@ -131,6 +135,10 @@ class EventAssignController extends Controller
         return view('calendar.edit', compact('events', 'userOptions', 'statusOptions', 'typeOptions', 'schoolNames'));
     }
 
+    /**
+     * イベントを複製して新規作成
+     * POST /calendar/events/copy — バリデーション済みデータを元に時刻を正規化し、同スコープで新規 Event を作成
+     */
     public function copy(CopyEventRequest $request)
     {
         $this->authorize('create', Event::class);
@@ -164,6 +172,10 @@ class EventAssignController extends Controller
         return back()->with('toast', 'Shift copied.');
     }
 
+    /**
+     * 空の新規イベントを作成
+     * POST /calendar/events — 指定日に pending・regular_time の空白イベントを生成して管理画面へ戻す
+     */
     public function store(Request $request)
     {
         $this->authorize('create', Event::class);
@@ -183,6 +195,10 @@ class EventAssignController extends Controller
         return back()->with('toast', "Created shift at {$date}.");
     }
 
+    /**
+     * イベントを1件更新
+     * PATCH /calendar/events/{event} — 時刻を H:i:s 形式へ正規化し、total_duration を自動計算して保存
+     */
     public function update(UpdateEventRequest $request, Event $event)
     {
         $this->authorize('update', $event);
@@ -225,6 +241,10 @@ class EventAssignController extends Controller
         return back()->with('toast', 'Updated.');
     }
 
+    /**
+     * イベントを一括更新（JSON API）
+     * POST /calendar/events/bulk-update — items 配列を1件ずつバリデーション・保存し、成功/失敗件数を JSON で返す
+     */
     public function bulkUpdate(BulkUpdateEventRequest $request)
     {
         $this->authorize('viewAny', Event::class);
@@ -286,6 +306,10 @@ class EventAssignController extends Controller
         ]);
     }
 
+    /**
+     * イベントを削除
+     * DELETE /calendar/events/{event} — 1件のイベントを削除してカレンダー管理画面へ戻す
+     */
     public function destroy(Request $request, Event $event)
     {
         $this->authorize('delete', $event);
@@ -295,6 +319,10 @@ class EventAssignController extends Controller
 
     // ---- Vue プレビュー用 ----
 
+    /**
+     * サブリスト PDF プレビュー画面
+     * GET /calendar/pdf/sublist/preview — Vue コンポーネントが PDF を描画するためのプレビュー用 Blade を返す
+     */
     public function sublistPreview(Request $request)
     {
         $this->authorize('viewAny', Event::class);
@@ -305,6 +333,10 @@ class EventAssignController extends Controller
         ]);
     }
 
+    /**
+     * 確認書 PDF プレビュー画面
+     * GET /calendar/pdf/confirmations/preview — Vue コンポーネントが ALP/OT 確認書 PDF を描画するためのプレビュー用 Blade を返す
+     */
     public function confirmationsPreview(Request $request)
     {
         $this->authorize('viewAny', Event::class);
@@ -315,6 +347,10 @@ class EventAssignController extends Controller
         ]);
     }
 
+    /**
+     * サブリスト PDF 用データを JSON で返す
+     * GET /calendar/pdf/sublist/json — モード(tentative/final/master)・除外ID・検索条件に基づきイベントと代講者情報を整形して返す
+     */
     public function exportSubPdfJson(Request $request)
     {
         $this->authorize('viewAny', Event::class);
@@ -420,6 +456,10 @@ class EventAssignController extends Controller
         ]);
     }
 
+    /**
+     * 確認書 PDF 用データを JSON で返す
+     * GET /calendar/pdf/confirmations/json — モード(alp/ot)・除外IDで絞り込んだイベントを日付ごとにグループ化して返す
+     */
     public function exportConfirmationsPdfJson(Request $request)
     {
         $this->authorize('viewAny', Event::class);
@@ -467,7 +507,10 @@ class EventAssignController extends Controller
         ]);
     }
 
-    // 共通のイベントクエリビルダ
+    /**
+     * 共通イベントクエリビルダ
+     * edit()・exportSubPdfJson()・exportConfirmationsPdfJson() で共有するフィルタ条件を組み立てて返す
+     */
     protected function baseEventQuery(Request $request)
     {
         $eventId        = $request->input('event_id');
@@ -541,6 +584,10 @@ class EventAssignController extends Controller
             ->orderBy('assigned_user_id');
     }
 
+    /**
+     * イベントに設定する original_user_id / assigned_user_id の閲覧権限を検証
+     * スコープ外のユーザーを不正に割り当てることを防ぐ
+     */
     private function authorizeReferencedUsers(array $payload): void
     {
         foreach (['original_user_id', 'assigned_user_id'] as $key) {

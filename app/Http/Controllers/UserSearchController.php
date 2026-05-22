@@ -10,6 +10,10 @@ class UserSearchController extends Controller
 {
     public function __construct(private CurrentScopeService $scopeService) {}
 
+    /**
+     * ユーザー検索 API（AJAX 用）
+     * GET /users/search — ids クエリで ID 複数指定するとチップ復元用データを返す。q クエリで名前・社員コード・メールを部分一致検索
+     */
     public function index(Request $r)
     {
         $this->authorize('viewAny', User::class);

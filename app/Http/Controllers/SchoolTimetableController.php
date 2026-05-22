@@ -14,6 +14,10 @@ class SchoolTimetableController extends Controller
 {
     public function __construct(private CurrentScopeService $scopeService) {}
 
+    /**
+     * 学校別時間割管理画面
+     * GET /school_timetable — 学校名・曜日で絞り込んだスケジュールラインを Vue コンポーネントで表示・編集
+     */
     public function index(Request $request)
     {
         $this->authorize('viewAny', ScheduleLine::class);
@@ -74,7 +78,10 @@ class SchoolTimetableController extends Controller
         return view('schedule.schoolTimetable', compact('props'));
     }
 
-    // API: school_name（+ 任意で dow）で絞った schedule_lines + details を JSON で返す
+    /**
+     * スケジュールライン + 明細を JSON で返す（API）
+     * GET /school_timetable/lines — school_name・dow・active_on で絞り込んだ有効中の ScheduleLine と ScheduleDetail を返す
+     */
     public function lines(Request $request)
     {
         $this->authorize('viewAny', ScheduleLine::class);
@@ -164,7 +171,10 @@ class SchoolTimetableController extends Controller
         return response()->json(['ok' => true, 'lines' => $lines]);
     }
 
-    // API: school_code / school_name 一覧（datalist 用）
+    /**
+     * 学校名一覧を JSON で返す（API・datalist 用）
+     * GET /school_timetable/schools — アクティブな School の school_code と school_name を返す
+     */
     public function schools()
     {
         $this->authorize('viewAny', ScheduleLine::class);
@@ -177,7 +187,10 @@ class SchoolTimetableController extends Controller
         return response()->json(['ok' => true, 'schools' => $schools]);
     }
 
-    // API: lesson 一覧（datalist 用）
+    /**
+     * レッスン一覧を JSON で返す（API・datalist 用）
+     * GET /school_timetable/lessons — lesson_code・ps_unique_lesson_code を返す
+     */
     public function lessonList()
     {
         $this->authorize('viewAny', Lesson::class);

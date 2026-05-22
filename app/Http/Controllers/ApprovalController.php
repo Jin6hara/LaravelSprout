@@ -11,6 +11,11 @@ use Illuminate\Support\Facades\Auth;
 class ApprovalController extends Controller
 {
     public function __construct(private ApprovalService $approvalService) {}
+
+    /**
+     * 承認リクエスト詳細表示
+     * Leave の場合は種別（paid/special）に応じた日付サマリを生成してビューに渡す
+     */
     public function show(ApprovalRequest $approvalRequest)
     {
         $this->authorize('view', $approvalRequest);
@@ -66,6 +71,10 @@ class ApprovalController extends Controller
         ]);
     }
 
+    /**
+     * 承認処理
+     * Leave はバッチIDに紐づく全リクエストを一括承認、その他は単体承認
+     */
     public function approve(Request $request, ApprovalRequest $approvalRequest)
     {
         $this->authorize('act', $approvalRequest);
@@ -75,6 +84,10 @@ class ApprovalController extends Controller
         return back()->with('toast', '承認しました。');
     }
 
+    /**
+     * 却下処理
+     * Leave はバッチIDに紐づく全リクエストを一括却下、その他は単体却下
+     */
     public function deny(Request $request, ApprovalRequest $approvalRequest)
     {
         $this->authorize('act', $approvalRequest);

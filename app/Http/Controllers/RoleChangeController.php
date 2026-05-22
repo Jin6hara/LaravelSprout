@@ -12,6 +12,10 @@ class RoleChangeController extends Controller
 {
     public function __construct(private RoleChangeApplicationService $roleChangeService) {}
 
+    /**
+     * ロール変更申請フォーム表示
+     * GET /{user}/role-change
+     */
     public function show(User $user): View
     {
         $currentRole    = $user->getRoleNames()->first();
@@ -20,6 +24,10 @@ class RoleChangeController extends Controller
         return view('user.roleChange', compact('user', 'currentRole', 'availableRoles'));
     }
 
+    /**
+     * 権限変更申請の送信
+     * POST /users/{user}/role-change/apply
+     */
     public function apply(ApplyRoleChangeRequest $request, User $user)
     {
         $this->authorize('applyRoleChange', $user);
