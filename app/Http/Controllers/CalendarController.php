@@ -14,6 +14,10 @@ class CalendarController extends Controller
 {
     public function __construct(private CurrentScopeService $scopeService) {}
 
+    /**
+     * カレンダートップ画面
+     * GET /calendar — 管理者はユーザー選択リスト付き、一般ユーザーは自分のカレンダーを表示
+     */
     public function index(Request $request, ?User $user = null)
     {
         $viewer = Auth::user();
@@ -48,6 +52,10 @@ class CalendarController extends Controller
         ]);
     }
 
+    /**
+     * カレンダーイベントを JSON で返す（FullCalendar 用）
+     * GET /calendar/events — user_id 未指定かつ管理者の場合は祝日・会社休業日のみ返す
+     */
     public function events(Request $request, \App\Services\Calendar\CalendarResolver $resolver)
     {
         try {
@@ -79,6 +87,10 @@ class CalendarController extends Controller
         }
     }
 
+    /**
+     * 先行予定カレンダー画面
+     * GET /calendar/forecast — 自分の将来のシフト・休暇予定を一覧表示する
+     */
     public function forecast()
     {
         // index.blade.php と同じレイアウト・構成を流用
@@ -87,6 +99,10 @@ class CalendarController extends Controller
         return view('calendar.forecast', compact('viewUser'));
     }
 
+    /**
+     * 先行予定カレンダーのイベントを JSON で返す（FullCalendar 用）
+     * GET /calendar/forecast/events — ForecastResolver でシフト・休暇の将来予定を取得して返す
+     */
     public function forecastEvents(
         \Illuminate\Http\Request $request,
         \App\Services\Calendar\ForecastResolver $resolver
@@ -99,6 +115,10 @@ class CalendarController extends Controller
         return response()->json($events);
     }
 
+    /**
+     * 休暇カレンダー画面
+     * GET /calendar/leave — 自分の休暇取得状況をカレンダー形式で表示する
+     */
     public function leave()
     {
         // index.blade.php と同じレイアウト・構成を流用
@@ -107,6 +127,10 @@ class CalendarController extends Controller
         return view('calendar.leave', compact('viewUser'));
     }
 
+    /**
+     * 休暇カレンダーのイベントを JSON で返す（FullCalendar 用）
+     * GET /calendar/leave/events — LeaveResolver で休暇イベントを取得して返す
+     */
     public function leaveEvents(
         \Illuminate\Http\Request $request,
         \App\Services\Calendar\LeaveResolver $resolver

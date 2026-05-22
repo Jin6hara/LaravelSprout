@@ -1,0 +1,46 @@
+<?php
+
+namespace App\Http\Requests\LeaveManage;
+
+use Carbon\Carbon;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+class UpdateLeaveManageRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return $this->user() !== null;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'user_id'      => ['required', 'integer', 'exists:users,id'],
+            'start_date'   => ['required', 'date'],
+            'end_date'     => ['nullable', 'date', 'after_or_equal:start_date'],
+            'reason'       => ['nullable', 'string'],
+            'kind'         => ['required', Rule::in(['paid', 'absence_to_paid', 'special', 'absence', 'adjustment', 'left_early', 'late', 'other'])],
+            'excused'      => ['required', Rule::in(['excused', 'unexcused'])],
+            'special_type' => ['nullable', 'string', 'max:100'],
+            'time_start'   => ['nullable', 'date_format:H:i', 'required_with:time_end'],
+            'time_end'     => ['nullable', 'date_format:H:i', 'required_with:time_start'],
+            'handle_type'  => ['nullable', 'string'],
+            'status'       => ['required', Rule::in(['approved', 'pending', 'rejected', 'draft', 'cancelled', 'archived'])],
+        ];
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($v) {
+            $data = $v->getData();
+            if (!empty($data['time_start']) && !empty($data['time_end'])) {
+                $ts = Carbon::createFromFormat('H:i', $data['time_start']);
+                $te = Carbon::createFromFormat('H:i', $data['time_end']);
+                if ($te->lessThanOrEqualTo($ts)) {
+                    $v->errors()->add('time_end', 'End time must be after Start time.');
+                }
+            }
+        });
+    }
+}

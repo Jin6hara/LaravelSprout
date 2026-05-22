@@ -2,22 +2,21 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\UserRequest;
-use App\Http\Requests\AdminUpdateUserFieldRequest;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Http\Request;
+use App\Http\Requests\Admin\UserRequest;
 use App\Models\User;
+use App\Services\Admin\UserRegistrationService;
 use App\Services\CurrentScopeService;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\View\View;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class AdminController extends Controller
 {
-    public function __construct(private CurrentScopeService $scopeService) {}
+    public function __construct(
+        private CurrentScopeService $scopeService,
+        private UserRegistrationService $registrationService
+    ) {}
 
     /**
      * ダッシュボード（初期表示：全件→検索UIも表示）
@@ -26,50 +25,16 @@ class AdminController extends Controller
     {
         $this->authorize('viewAny', User::class);
 
-        // 検索対象フィールドのホワイトリスト
-        $allowedFields = ['employee_code', 'name', 'phone_number'];
-
-        // 入力取得
-        $word   = trim((string) $request->query('search_word', ''));
-        $fields = collect((array) $request->query('fields', $allowedFields))
-            ->intersect($allowedFields)
-            ->take(3);
-
-        // 万が一 0 件になったら全項目にフォールバック（?fields[]= などの変形入力対策）
-        if ($fields->isEmpty()) {
-            $fields = collect($allowedFields);
-        }
-
-        // 検索クエリ
-        $query = $this->scopeService->targetUserQuery()
-            ->when(filled($word), function (Builder $q) use ($word, $fields) {
-                $q->where(function (Builder $w) use ($word, $fields) {
-                    $fields->values()->each(function ($field, $i) use ($w, $word) {
-                        $method = $i === 0 ? 'whereLikeInsensitive' : 'orWhereLikeInsensitive';
-                        $w->{$method}($field, $word);
-                    });
-                });
-            });
-
-        // 並び替え（既定: updated_at desc）
-        $sort = $request->query('sort', 'updated_at');
-        $dir  = strtolower($request->query('dir', 'desc'));
-
-        $allowedSorts = ['updated_at', 'employee_code', 'name'];
-        $allowedDirs  = ['asc', 'desc'];
-
-        if (!in_array($sort, $allowedSorts, true)) $sort = 'updated_at';
-        if (!in_array($dir,  $allowedDirs,  true)) $dir  = 'desc';
-
-        // employee_code が 5桁固定ならそのままでOK。可変長なら数値順にキャストも可（下のコメント参照）
-        $query->orderBy($sort, $dir);
-
-        $users = $query->with(['district', 'department', 'latestEmploymentTerm'])->paginate(10)->withQueryString();
+        [$users, $word, $fields] = $this->buildUserQuery($request);
 
         return view('admin.dashboard', compact('users', 'word', 'fields'));
     }
 
-    public function showForm()
+    /**
+     * ユーザー登録フォーム表示（現在のスコープ情報を表示）
+     * GET /admin/register
+     */
+    public function showForm(): View
     {
         $this->authorize('create', User::class);
 
@@ -87,38 +52,13 @@ class AdminController extends Controller
     {
         $this->authorize('create', User::class);
 
-        $data = $request->validated();
+        $this->registrationService->register(
+            $request->validated(),
+            $this->scopeService->currentDistrictId(),
+            $this->scopeService->currentDepartmentId()
+        );
 
-        DB::transaction(function () use ($data, &$user) {
-
-            // user テーブルへの登録
-            // district_id / department_id は改ざん防止のためフォームではなくスコープから取得する
-            $user = User::create([
-                'family_name'       => $data['family_name'],
-                'first_name'        => $data['first_name'],
-                'name_in_kana'      => $data['name_in_kana'] ?? null,
-                'email'             => $data['email'],
-                'employee_code'     => $data['employee_code'],
-                'password'          => Hash::make($data['password']),
-                'gender'            => $data['gender'],
-                'profile_picture'   => null,
-                'note'              => 'こんにちは、' . $data['first_name'] . 'です。',
-                'district_id'       => $this->scopeService->currentDistrictId(),
-                'department_id'     => $this->scopeService->currentDepartmentId(),
-            ]);
-            // employment_terms テーブルへの登録
-            $user->employmentTerms()->create([
-                'start_date' => $data['start_date'],
-                'end_date'   => $data['end_date'] ?? null, // null なら在籍中
-                'type_name'  => $data['type_name'] ?? '正社員',
-                'type_code'  => $data['type_code'] ?? 'full_time',
-                'note'       => $data['note'] ?? null,
-            ]);
-            // model_has_roles テーブルへの登録
-            $user->assignRole('general');
-        });
-
-        return redirect()->route('admin.dashboard')->with("toast", "登録成功");
+        return redirect()->route('admin.dashboard')->with('toast', '登録成功');
     }
 
     /**
@@ -129,6 +69,17 @@ class AdminController extends Controller
     {
         $this->authorize('viewAny', User::class);
 
+        [$users, $word, $fields] = $this->buildUserQuery($request);
+
+        return view('admin.dashboard', compact('users', 'word', 'fields'));
+    }
+
+    /**
+     * ダッシュボード・検索共通のユーザークエリ構築
+     * 検索ワード・対象フィールド・ソート順を受け取り [users, word, fields] を返す
+     */
+    private function buildUserQuery(Request $request): array
+    {
         $allowedFields = ['employee_code', 'name', 'phone_number'];
 
         $word   = trim((string) $request->query('search_word', ''));
@@ -140,7 +91,16 @@ class AdminController extends Controller
             $fields = collect($allowedFields);
         }
 
-        $query = $this->scopeService->targetUserQuery()
+        $allowedSorts = ['updated_at', 'employee_code', 'name'];
+        $allowedDirs  = ['asc', 'desc'];
+
+        $sort = $request->query('sort', 'updated_at');
+        $dir  = strtolower($request->query('dir', 'desc'));
+
+        if (!in_array($sort, $allowedSorts, true)) $sort = 'updated_at';
+        if (!in_array($dir,  $allowedDirs,  true)) $dir  = 'desc';
+
+        $users = $this->scopeService->targetUserQuery()
             ->when(filled($word), function (Builder $q) use ($word, $fields) {
                 $q->where(function (Builder $w) use ($word, $fields) {
                     $fields->values()->each(function ($field, $i) use ($w, $word) {
@@ -148,22 +108,13 @@ class AdminController extends Controller
                         $w->{$method}($field, $word);
                     });
                 });
-            });
+            })
+            ->orderBy($sort, $dir)
+            ->with(['district', 'department', 'latestEmploymentTerm'])
+            ->paginate(10)
+            ->withQueryString();
 
-        $sort = $request->query('sort', 'updated_at');
-        $dir  = strtolower($request->query('dir', 'desc'));
-
-        $allowedSorts = ['updated_at', 'employee_code', 'name'];
-        $allowedDirs  = ['asc', 'desc'];
-
-        if (!in_array($sort, $allowedSorts, true)) $sort = 'updated_at';
-        if (!in_array($dir,  $allowedDirs,  true)) $dir  = 'desc';
-
-        $query->orderBy($sort, $dir);
-
-        $users = $query->with(['district', 'department', 'latestEmploymentTerm'])->paginate(10)->withQueryString();
-
-        return view('admin.dashboard', compact('users', 'word', 'fields'));
+        return [$users, $word, $fields];
     }
 
 }

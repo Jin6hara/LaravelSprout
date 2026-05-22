@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\EmploymentTerm;
 use App\Models\User;
-use App\Http\Requests\EmploymentTermRequest;
+use App\Http\Requests\EmploymentTerm\EmploymentTermRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -13,7 +13,7 @@ class EmploymentTermController extends Controller
     /**
      * 対象ユーザーの雇用履歴一覧を表示（N+1 を避けるため leavePeriods を eager load）
      */
-    public function details(User $user): View
+    public function index(User $user): View
     {
         $this->authorize('view', $user);
 

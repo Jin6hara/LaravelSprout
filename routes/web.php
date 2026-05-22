@@ -110,14 +110,14 @@ Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
 Route::prefix('profile')->group(function () {
     // general: 自分のプロフィール
     Route::middleware(['auth'])->group(function () {
-        Route::get('/', [UsersController::class, 'showProfile'])->name('user.profile');
+        Route::get('/', [UsersController::class, 'show'])->name('user.profile');
         Route::patch('/update-field', [UsersController::class, 'updateField'])->name('user.updateField');
         Route::patch('/profile/photo/{user}', [ProfilePhotoController::class, 'apply'])->name('profile.photo.apply');
     });
 
     // admin: 他人のプロフィール
     Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
-        Route::get('{user}', [UsersController::class, 'showProfile'])->name('admin.user.profile');
+        Route::get('{user}', [UsersController::class, 'show'])->name('admin.user.profile');
         Route::patch('/update-field/{user}', [UsersController::class, 'updateField'])->name('admin.user.updateField');
         Route::get('/admin/search', [AdminController::class, 'search'])->name('admin.search');
     });
@@ -125,7 +125,7 @@ Route::prefix('profile')->group(function () {
 
 // 雇用履歴・編集（admin/super_admin のみ）
 Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
-    Route::get('/users/{user}/employment-terms', [EmploymentTermController::class, 'details'])
+    Route::get('/users/{user}/employment-terms', [EmploymentTermController::class, 'index'])
         ->name('employment_terms.details');
     Route::get('/employment-terms/{employmentTerm}/edit', [EmploymentTermController::class, 'edit'])
         ->name('employment_terms.edit');
@@ -135,7 +135,7 @@ Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
 
 // ロール変更申請
 Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
-    Route::get('{user}/role-change', [RoleChangeController::class, 'showRoleChange'])->name('admin.user.roleChange');
+    Route::get('{user}/role-change', [RoleChangeController::class, 'show'])->name('admin.user.roleChange');
     Route::post('/users/{user}/role-change/apply', [RoleChangeController::class, 'apply'])->name('roleChange.apply');
 });
 
@@ -208,8 +208,8 @@ Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
     // JSON データ API (Vue が axios で叩く)
     Route::get('/calendar/edit/pdf-data', [EventAssignController::class, 'exportSubPdfJson'])->name('calendar.edit.pdf.data');
     Route::get('/calendar/confirmations/pdf-data', [EventAssignController::class, 'exportConfirmationsPdfJson'])->name('calendar.confirmations.pdf.data');
-    Route::post('/shift',        [EventAssignController::class, 'store'])->name('events.store');
-    Route::post('/shift/blank', [EventAssignController::class, 'storeBlank'])->name('events.store.blank');
+    Route::post('/shift',        [EventAssignController::class, 'copy'])->name('events.copy');
+    Route::post('/shift/blank', [EventAssignController::class, 'store'])->name('events.store');
     Route::put('/shift/{event}', [EventAssignController::class, 'update'])->name('events.update');
     // ★ 一括更新（このページに表示されている分だけ送る）
     Route::post('/shifts/bulk-update', [EventAssignController::class, 'bulkUpdate'])->name('events.bulk_update');
@@ -221,7 +221,7 @@ use App\Http\Controllers\LeaveManageController;
 
 Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
     Route::get('/leave_manager', [LeaveManageController::class, 'edit'])->name('leaves.edit');
-    Route::post('/leaves/blank', [LeaveManageController::class, 'storeBlank'])->name('leaves.store.blank');
+    Route::post('/leaves/blank', [LeaveManageController::class, 'store'])->name('leaves.manage.store');
     Route::put('/leaves/{leave}', [LeaveManageController::class, 'update'])->name('leaves.update');
     // ★ 一括更新（このページに表示されている分だけ送る）
     Route::post('/leaves/bulk-update', [LeaveManageController::class, 'bulkUpdate'])->name('leaves.bulk_update');
@@ -258,7 +258,7 @@ use App\Http\Controllers\ScheduleDetailController;
 Route::middleware(['auth'])->group(function () {
     Route::get('/schedule_lines/{line}/details', [ScheduleDetailController::class, 'edit'])->name('schedule_details.edit');
     Route::post('/schedule_lines/{line}/details/bulk-update', [ScheduleDetailController::class, 'bulkUpdate'])->name('schedule_details.bulk_update');
-    Route::post('/schedule_lines/{line}/details', [ScheduleDetailController::class, 'storeBlank'])->name('schedule_details.store_blank');
+    Route::post('/schedule_lines/{line}/details', [ScheduleDetailController::class, 'store'])->name('schedule_details.store');
     Route::post('/schedule_details/{detail}/copy', [ScheduleDetailController::class, 'copy'])->name('schedule_details.copy');
     Route::delete('/schedule_details/{detail}', [ScheduleDetailController::class, 'destroy'])->name('schedule_details.destroy');
 

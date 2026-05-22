@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ExpenseApi\StoreExpenseRequest;
+use App\Http\Requests\ExpenseApi\UpdateExpenseRequest;
+use App\Models\CommuterPass;
 use App\Models\Expense;
 use App\Models\ExpenseReport;
-use App\Models\CommuterPass;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use Carbon\Carbon;
 use App\Enums\ExpenseReportStatus;
+use Carbon\Carbon;
 
 class ExpenseApiController extends Controller
 {
@@ -32,21 +32,13 @@ class ExpenseApiController extends Controller
         }
     }
 
-    // 追加
-    public function store(Request $req)
+    /**
+     * 経費明細を1行追加
+     * POST /api/expenses — ロック済みレポートへの追加は 423 を返す
+     */
+    public function store(StoreExpenseRequest $req)
     {
-        $data = $req->validate([
-            'expense_report_id' => ['required', 'exists:expense_reports,id'],
-            'expense_date'      => ['required', 'date'],
-            'seq'               => ['required', 'integer', 'min:0'],
-            'station_from'      => ['nullable', 'string', 'max:255'],
-            'station_to'        => ['nullable', 'string', 'max:255'],
-            'note'              => ['nullable', 'string'],
-            'cost'              => ['nullable', 'integer', 'min:0'],
-            'trip_type'         => ['required', Rule::in(['round_trip', 'one_way'])],
-            'category'          => ['required', Rule::in(['regular', 'irregular'])],
-            'commuter_pass_id'  => ['nullable', 'exists:commuter_passes,id'],
-        ]);
+        $data = $req->validated();
 
         $report = ExpenseReport::findOrFail($data['expense_report_id']);
         $this->authorize('update', $report);
@@ -79,24 +71,18 @@ class ExpenseApiController extends Controller
         return response()->json($exp->fresh(), 201);
     }
 
-    // 更新（保存ボタン用／1行ずつ）
-    public function update(Request $req, Expense $expense)
+    /**
+     * 経費明細を1行更新
+     * PATCH /api/expenses/{expense} — ロック済みレポートへの変更は 423 を返す
+     */
+    public function update(UpdateExpenseRequest $req, Expense $expense)
     {
         $report = $expense->report;
         $this->authorize('update', $expense);
 
         $this->abortIfLocked($report);
 
-        $data = $req->validate([
-            'station_from'      => ['nullable', 'string', 'max:255'],
-            'station_to'        => ['nullable', 'string', 'max:255'],
-            'note'              => ['nullable', 'string'],
-            'cost'              => ['nullable', 'integer', 'min:0'],
-            'trip_type'         => ['nullable', Rule::in(['round_trip', 'one_way'])],
-            'category'          => ['nullable', Rule::in(['regular', 'irregular'])],
-            'commuter_pass_id'  => ['nullable', 'exists:commuter_passes,id'],
-            'seq'               => ['nullable', 'integer', 'min:0'],
-        ]);
+        $data = $req->validated();
 
         if (!empty($data['commuter_pass_id'])) {
             $ok = CommuterPass::where('id', $data['commuter_pass_id'])->where('user_id', $report->user_id)->exists();
@@ -108,8 +94,11 @@ class ExpenseApiController extends Controller
         return response()->json($expense->fresh());
     }
 
-    // 削除
-    public function destroy(Request $req, Expense $expense)
+    /**
+     * 経費明細を1行削除
+     * DELETE /api/expenses/{expense} — ロック済みレポートへの削除は 423 を返す
+     */
+    public function destroy(Expense $expense)
     {
         $report = $expense->report;
         $this->authorize('delete', $expense);

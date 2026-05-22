@@ -15,6 +15,10 @@ class LessonCsvController extends Controller
         'created_at', 'updated_at',
     ];
 
+    /**
+     * レッスン CSV 管理画面
+     * GET /csv/lesson — インポート・エクスポートフォームを表示
+     */
     public function show()
     {
         $this->authorize('viewAny', Lesson::class);
@@ -22,6 +26,10 @@ class LessonCsvController extends Controller
         return view('csv.lesson_csv');
     }
 
+    /**
+     * レッスンデータを CSV でエクスポート
+     * GET /csv/lesson/export — 全レッスンをストリームダウンロード形式で出力
+     */
     public function export()
     {
         $this->authorize('viewAny', Lesson::class);
@@ -50,6 +58,10 @@ class LessonCsvController extends Controller
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
+    /**
+     * CSV からレッスンデータをインポート
+     * POST /csv/lesson/import — BOM除去・必須カラム検証・全行バリデーションを行い、id 一致で更新・なければ新規作成
+     */
     public function import(Request $request)
     {
         $this->authorize('viewAny', Lesson::class);

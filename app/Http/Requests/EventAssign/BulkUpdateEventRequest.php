@@ -1,0 +1,41 @@
+<?php
+
+namespace App\Http\Requests\EventAssign;
+
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+class BulkUpdateEventRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return $this->user() !== null;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'items' => ['required', 'array', 'min:1'],
+        ];
+    }
+
+    public static function itemRules(): array
+    {
+        return [
+            'id'               => ['required', 'integer', 'exists:events,id'],
+            'event_date'       => ['required', 'date'],
+            'original_user_id' => ['nullable', 'exists:users,id'],
+            'Leave_type'       => ['nullable', 'string'],
+            'title'            => ['nullable', 'string', 'max:255'],
+            'school_name'      => ['nullable', 'string', 'max:255'],
+            'start_time'       => ['nullable', 'date_format:H:i'],
+            'end_time'         => ['nullable', 'date_format:H:i'],
+            'total_duration'   => ['nullable', 'regex:/^\d{1,2}:\d{2}$/'],
+            'Lesson'           => ['nullable', 'string'],
+            'assigned_user_id' => ['nullable', 'exists:users,id'],
+            'status'           => ['required', Rule::in(['pending', 'fixed', 'filled', 'in_process'])],
+            'type'             => ['required', Rule::in(['regular_time', 'none_required', 'overtime', 'schedule_change', 'rostered_working_day', 'special'])],
+            'notes'            => ['nullable', 'string'],
+        ];
+    }
+}

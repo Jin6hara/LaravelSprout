@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\EventAssign\BulkUpdateEventRequest;
+use App\Http\Requests\EventAssign\CopyEventRequest;
+use App\Http\Requests\EventAssign\UpdateEventRequest;
 use App\Models\Event;
 use App\Models\User;
 use App\Services\CurrentScopeService;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
 
@@ -16,6 +18,10 @@ class EventAssignController extends Controller
 {
     public function __construct(private CurrentScopeService $scopeService) {}
 
+    /**
+     * イベント管理画面（検索・一覧）
+     * GET /calendar/edit — 日付・ユーザー・学校名などの条件でイベントを検索し 24 件ずつページネーション表示
+     */
     public function edit(Request $request)
     {
         $this->authorize('viewAny', Event::class);
@@ -129,28 +135,75 @@ class EventAssignController extends Controller
         return view('calendar.edit', compact('events', 'userOptions', 'statusOptions', 'typeOptions', 'schoolNames'));
     }
 
-    public function update(Request $request, Event $event)
+    /**
+     * イベントを複製して新規作成
+     * POST /calendar/events/copy — バリデーション済みデータを元に時刻を正規化し、同スコープで新規 Event を作成
+     */
+    public function copy(CopyEventRequest $request)
+    {
+        $this->authorize('create', Event::class);
+
+        $validated = $request->validated();
+
+
+        // ⬇︎ H:i → H:i:s に正規化（nullはそのまま）
+        foreach (['start_time', 'end_time'] as $k) {
+            if ($request->filled($k)) {
+                $validated[$k] = Carbon::createFromFormat('H:i', $request->input($k))->format('H:i:s');
+            } else {
+                $validated[$k] = null;
+            }
+        }
+
+        // ⬇︎ total_duration 未入力なら自動計算（Observer があれば最終整合はそちらでも取れます）
+        if (!$request->filled('total_duration') && $validated['start_time'] && $validated['end_time']) {
+            $start = Carbon::createFromFormat('H:i:s', $validated['start_time']);
+            $end   = Carbon::createFromFormat('H:i:s', $validated['end_time']);
+            if ($end->lt($start)) $end->addDay(); // 日跨ぎ
+            $mins = $start->diffInMinutes($end);
+            $validated['total_duration'] = sprintf('%d:%02d', intdiv($mins, 60), $mins % 60);
+        }
+
+        $this->authorizeReferencedUsers($validated);
+        $validated['district_id']   = $this->scopeService->currentDistrictId();
+        $validated['department_id'] = $this->scopeService->currentDepartmentId();
+        Event::create($validated);
+
+        return back()->with('toast', 'Shift copied.');
+    }
+
+    /**
+     * 空の新規イベントを作成
+     * POST /calendar/events — 指定日に pending・regular_time の空白イベントを生成して管理画面へ戻す
+     */
+    public function store(Request $request)
+    {
+        $this->authorize('create', Event::class);
+
+        // リクエストやURLクエリから event_date を取得（POSTでもGETでも対応）
+        $date = $request->input('event_date', now()->toDateString());
+
+        // 空白イベントを作成
+        $event = Event::create([
+            'event_date'    => $date,
+            'status'        => 'pending',
+            'type'          => 'regular_time',
+            'district_id'   => $this->scopeService->currentDistrictId(),
+            'department_id' => $this->scopeService->currentDepartmentId(),
+        ]);
+
+        return back()->with('toast', "Created shift at {$date}.");
+    }
+
+    /**
+     * イベントを1件更新
+     * PATCH /calendar/events/{event} — 時刻を H:i:s 形式へ正規化し、total_duration を自動計算して保存
+     */
+    public function update(UpdateEventRequest $request, Event $event)
     {
         $this->authorize('update', $event);
 
-        $validated = $request->validate([
-            'event_date'        => ['required', 'date'],
-            'original_user_id'  => ['nullable', 'exists:users,id'],
-            'Leave_type'        => ['nullable', 'string'],
-            'title'             => ['nullable', 'string', 'max:255'],
-            'school_name'       => ['nullable', 'string', 'max:255'],
-
-            // ⬇︎ ここを date_format から regex に変える（HH:mm または HH:mm:ss）
-            'start_time'        => ['nullable', 'regex:/^\d{2}:\d{2}(:\d{2})?$/'],
-            'end_time'          => ['nullable', 'regex:/^\d{2}:\d{2}(:\d{2})?$/'],
-
-            'total_duration'    => ['nullable', 'regex:/^\d{1,2}:\d{2}$/'], // H:MM
-            'Lesson'            => ['nullable', 'string'],
-            'assigned_user_id'  => ['nullable', 'exists:users,id'],
-            'status'            => ['required', Rule::in(['pending', 'fixed', 'filled', 'in_process'])],
-            'type'              => ['required', Rule::in(['regular_time', 'none_required', 'overtime', 'schedule_change', 'rostered_working_day', 'special'])],
-            'notes'             => ['nullable', 'string'],
-        ]);
+        $validated = $request->validated();
 
         // ⬇︎ H:i または H:i:s を安全に H:i:s へ正規化（例外を出さない）
         $normalizeTime = function ($val) {
@@ -188,109 +241,19 @@ class EventAssignController extends Controller
         return back()->with('toast', 'Updated.');
     }
 
-    public function destroy(Request $request, Event $event)
-    {
-        $this->authorize('delete', $event);
-        $event->delete();
-        return back()->with('toast', 'Deleted');
-    }
-
-    public function store(Request $request)
-    {
-        $this->authorize('create', Event::class);
-
-        $validated = $request->validate([
-            'event_date'        => ['required', 'date'],
-            'original_user_id'  => ['nullable', 'exists:users,id'],
-            'Leave_type'        => ['nullable', 'string'],
-            'title'             => ['nullable', 'string', 'max:255'],
-            'school_name'       => ['nullable', 'string', 'max:255'],
-            // 既存：H:i 固定（update と違い、ここは仕様そのまま）
-            'start_time'        => ['nullable', 'date_format:H:i'],
-            'end_time'          => ['nullable', 'date_format:H:i'],
-            'total_duration'    => ['nullable', 'regex:/^\d{1,2}:\d{2}$/'], // H:MM
-            'Lesson'            => ['nullable', 'string'],
-            'assigned_user_id'  => ['nullable', 'exists:users,id'],
-            'status'            => ['required', Rule::in(['pending', 'fixed', 'filled', 'in_process'])],
-            'type'              => ['required', Rule::in(['regular_time', 'none_required', 'overtime', 'schedule_change', 'rostered_working_day', 'special'])],
-            'notes'             => ['nullable', 'string'],
-        ]);
-
-
-        // ⬇︎ H:i → H:i:s に正規化（nullはそのまま）
-        foreach (['start_time', 'end_time'] as $k) {
-            if ($request->filled($k)) {
-                $validated[$k] = Carbon::createFromFormat('H:i', $request->input($k))->format('H:i:s');
-            } else {
-                $validated[$k] = null;
-            }
-        }
-
-        // ⬇︎ total_duration 未入力なら自動計算（Observer があれば最終整合はそちらでも取れます）
-        if (!$request->filled('total_duration') && $validated['start_time'] && $validated['end_time']) {
-            $start = Carbon::createFromFormat('H:i:s', $validated['start_time']);
-            $end   = Carbon::createFromFormat('H:i:s', $validated['end_time']);
-            if ($end->lt($start)) $end->addDay(); // 日跨ぎ
-            $mins = $start->diffInMinutes($end);
-            $validated['total_duration'] = sprintf('%d:%02d', intdiv($mins, 60), $mins % 60);
-        }
-
-        $this->authorizeReferencedUsers($validated);
-        $validated['district_id']   = $this->scopeService->currentDistrictId();
-        $validated['department_id'] = $this->scopeService->currentDepartmentId();
-        Event::create($validated);
-
-        return back()->with('toast', 'Shift copied.');
-    }
-
-    public function storeBlank(Request $request)
-    {
-        $this->authorize('create', Event::class);
-
-        // リクエストやURLクエリから event_date を取得（POSTでもGETでも対応）
-        $date = $request->input('event_date', now()->toDateString());
-
-        // 空白イベントを作成
-        $event = Event::create([
-            'event_date'    => $date,
-            'status'        => 'pending',
-            'type'          => 'regular_time',
-            'district_id'   => $this->scopeService->currentDistrictId(),
-            'department_id' => $this->scopeService->currentDepartmentId(),
-        ]);
-
-        return back()->with('toast', "Created shift at {$date}.");
-    }
-
-    public function bulkUpdate(Request $request)
+    /**
+     * イベントを一括更新（JSON API）
+     * POST /calendar/events/bulk-update — items 配列を1件ずつバリデーション・保存し、成功/失敗件数を JSON で返す
+     */
+    public function bulkUpdate(BulkUpdateEventRequest $request)
     {
         $this->authorize('viewAny', Event::class);
 
         $items = $request->input('items', []);
-        if (!is_array($items) || empty($items)) {
-            return response()->json(['ok' => false, 'message' => '対象がありません'], 422);
-        }
-
-        $rules = [
-            'id'                => ['required', 'integer', 'exists:events,id'],
-            'event_date'        => ['required', 'date'],
-            'original_user_id'  => ['nullable', 'exists:users,id'],
-            'Leave_type'        => ['nullable', 'string'],
-            'title'             => ['nullable', 'string', 'max:255'],
-            'school_name'       => ['nullable', 'string', 'max:255'],
-            'start_time'        => ['nullable', 'date_format:H:i'],
-            'end_time'          => ['nullable', 'date_format:H:i'],
-            'total_duration'    => ['nullable', 'regex:/^\d{1,2}:\d{2}$/'], // H:MM
-            'Lesson'            => ['nullable', 'string'],
-            'assigned_user_id'  => ['nullable', 'exists:users,id'],
-            'status'            => ['required', Rule::in(['pending', 'fixed', 'filled', 'in_process'])],
-            'type'              => ['required', Rule::in(['regular_time', 'none_required', 'overtime', 'schedule_change', 'rostered_working_day', 'special'])],
-            'notes'             => ['nullable', 'string'],
-        ];
 
         $results = [];
         foreach ($items as $row) {
-            $v = Validator::make($row, $rules);
+            $v = Validator::make($row, BulkUpdateEventRequest::itemRules());
             if ($v->fails()) {
                 $results[] = ['id' => $row['id'] ?? null, 'ok' => false, 'errors' => $v->errors()->toArray()];
                 continue;
@@ -343,8 +306,23 @@ class EventAssignController extends Controller
         ]);
     }
 
+    /**
+     * イベントを削除
+     * DELETE /calendar/events/{event} — 1件のイベントを削除してカレンダー管理画面へ戻す
+     */
+    public function destroy(Request $request, Event $event)
+    {
+        $this->authorize('delete', $event);
+        $event->delete();
+        return back()->with('toast', 'Deleted');
+    }
+
     // ---- Vue プレビュー用 ----
 
+    /**
+     * サブリスト PDF プレビュー画面
+     * GET /calendar/pdf/sublist/preview — Vue コンポーネントが PDF を描画するためのプレビュー用 Blade を返す
+     */
     public function sublistPreview(Request $request)
     {
         $this->authorize('viewAny', Event::class);
@@ -355,6 +333,10 @@ class EventAssignController extends Controller
         ]);
     }
 
+    /**
+     * 確認書 PDF プレビュー画面
+     * GET /calendar/pdf/confirmations/preview — Vue コンポーネントが ALP/OT 確認書 PDF を描画するためのプレビュー用 Blade を返す
+     */
     public function confirmationsPreview(Request $request)
     {
         $this->authorize('viewAny', Event::class);
@@ -365,6 +347,10 @@ class EventAssignController extends Controller
         ]);
     }
 
+    /**
+     * サブリスト PDF 用データを JSON で返す
+     * GET /calendar/pdf/sublist/json — モード(tentative/final/master)・除外ID・検索条件に基づきイベントと代講者情報を整形して返す
+     */
     public function exportSubPdfJson(Request $request)
     {
         $this->authorize('viewAny', Event::class);
@@ -470,6 +456,10 @@ class EventAssignController extends Controller
         ]);
     }
 
+    /**
+     * 確認書 PDF 用データを JSON で返す
+     * GET /calendar/pdf/confirmations/json — モード(alp/ot)・除外IDで絞り込んだイベントを日付ごとにグループ化して返す
+     */
     public function exportConfirmationsPdfJson(Request $request)
     {
         $this->authorize('viewAny', Event::class);
@@ -517,7 +507,10 @@ class EventAssignController extends Controller
         ]);
     }
 
-    // 共通のイベントクエリビルダ
+    /**
+     * 共通イベントクエリビルダ
+     * edit()・exportSubPdfJson()・exportConfirmationsPdfJson() で共有するフィルタ条件を組み立てて返す
+     */
     protected function baseEventQuery(Request $request)
     {
         $eventId        = $request->input('event_id');
@@ -591,6 +584,10 @@ class EventAssignController extends Controller
             ->orderBy('assigned_user_id');
     }
 
+    /**
+     * イベントに設定する original_user_id / assigned_user_id の閲覧権限を検証
+     * スコープ外のユーザーを不正に割り当てることを防ぐ
+     */
     private function authorizeReferencedUsers(array $payload): void
     {
         foreach (['original_user_id', 'assigned_user_id'] as $key) {

@@ -28,6 +28,10 @@ class UserCsvController extends Controller
         'district_name', 'department_name', 'role',
     ];
 
+    /**
+     * ユーザー CSV 管理画面
+     * GET /csv/users — インポート・エクスポートフォームを表示
+     */
     public function show()
     {
         $this->authorize('viewAny', User::class);
@@ -35,6 +39,10 @@ class UserCsvController extends Controller
         return view('csv.user_csv');
     }
 
+    /**
+     * ユーザーデータを CSV でエクスポート
+     * GET /csv/users/export — district・department・role・雇用期間を含む全ユーザーをストリームダウンロード
+     */
     public function export()
     {
         $this->authorize('viewAny', User::class);
@@ -85,6 +93,10 @@ class UserCsvController extends Controller
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
+    /**
+     * CSV からユーザーデータをインポート
+     * POST /csv/users/import — BOM除去・必須カラム検証・全行バリデーションの後、id 一致で更新・なければ新規作成。雇用期間も同時処理
+     */
     public function import(Request $request)
     {
         $this->authorize('viewAny', User::class);

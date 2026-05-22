@@ -2,17 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ExpenseReport\ShowExpenseReportRequest;
 use App\Models\ExpenseReport;
 use App\Services\CurrentScopeService;
-use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Validation\ValidationException;
 
 class ExpenseReportController extends Controller
 {
     public function __construct(private CurrentScopeService $scopeService) {}
 
-    public function show(Request $request)
+    /**
+     * 月別経費申請一覧（管理者用）
+     * GET /expenses/report?year=YYYY&month=MM — 未指定時は当月を表示
+     */
+    public function show(ShowExpenseReportRequest $request)
     {
         $this->authorize('manage', ExpenseReport::class);
 
@@ -22,12 +25,6 @@ class ExpenseReportController extends Controller
         // year, month をクエリから取得（なければ当月）
         $y = (int)($request->query('year', $today->year));
         $m = (int)($request->query('month', $today->month));
-
-        // ゆるくバリデーション（範囲外は422）
-        $this->validate($request, [
-            'year'  => ['nullable', 'integer', 'between:2000,2100'],
-            'month' => ['nullable', 'integer', 'between:1,12'],
-        ]);
 
         // レコード取得（社員名はスナップショット列を優先利用）
         $reports = ExpenseReport::query()

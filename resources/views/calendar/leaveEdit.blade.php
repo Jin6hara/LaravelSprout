@@ -96,7 +96,7 @@
 
   <div class="d-flex align-items-center gap-1 mb-2">
     {{-- 空白Leave追加 --}}
-    <form method="POST" action="{{ route('leaves.store.blank') }}" class="m-0 p-0">
+    <form method="POST" action="{{ route('leaves.manage.store') }}" class="m-0 p-0">
       @csrf
       {{-- 現在のフィルタを保持（なければ今日/ログインユーザーにフォールバック） --}}
       <input type="hidden" name="start_date" value="{{ request('start_date', request('month', now()->toDateString())) }}">

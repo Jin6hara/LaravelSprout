@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ScheduleLine\BulkUpdateScheduleLineRequest;
+use App\Http\Requests\ScheduleLine\CopyScheduleLineRequest;
+use App\Http\Requests\ScheduleLine\StoreScheduleLineRequest;
+use App\Http\Requests\ScheduleLine\UpdateScheduleLineRequest;
 use App\Models\ScheduleLine;
 use App\Models\User;
 use App\Services\CurrentScopeService;
+use App\Services\ScheduleLine\ScheduleLineCopyService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -15,8 +19,15 @@ use Carbon\Carbon;
 
 class ScheduleLineController extends Controller
 {
-    public function __construct(private CurrentScopeService $scopeService) {}
+    public function __construct(
+        private CurrentScopeService $scopeService,
+        private ScheduleLineCopyService $copyService,
+    ) {}
 
+    /**
+     * スケジュールライン管理画面（検索・一覧）
+     * GET /schedule_manager — 有効期間・ユーザー・曜日・学校名でフィルタし 50 件ずつページネーション表示
+     */
     public function edit(Request $request)
     {
         $this->authorize('viewAny', ScheduleLine::class);
@@ -155,28 +166,47 @@ class ScheduleLineController extends Controller
         ]);
     }
 
-    public function update(Request $request, ScheduleLine $line)
+    /**
+     * 新規 ScheduleLine を作成（JSON API）
+     * POST /schedule_lines — 初期値（00:00〜00:00、当日〜翌月）で空の行を生成
+     */
+    public function store(StoreScheduleLineRequest $request)
+    {
+        $this->authorize('create', ScheduleLine::class);
+
+        $data = $request->validated();
+        $this->authorizeUserAssignment($data['user_id'] ?? null);
+
+        $line = new ScheduleLine();
+        $line->user_id         = $data['user_id'] ?? null;
+        $line->total_minutes   = 0;
+        $line->dow             = $data['dow'] ?? 0;
+        $line->school_name     = $data['school_name'] ?? '';
+        $line->start_time      = '00:00:00';
+        $line->end_time        = '00:00:00';
+        $line->effective_start = now()->toDateString();
+        $line->effective_end   = now()->addMonths(1)->toDateString();
+        $line->handover_memo   = null;
+        $line->district_id     = $this->scopeService->currentDistrictId();
+        $line->department_id   = $this->scopeService->currentDepartmentId();
+        $line->save();
+
+        return response()->json([
+            'ok'      => true,
+            'message' => "Line #{$line->id} added.",
+            'line_id' => $line->id,
+        ]);
+    }
+
+    /**
+     * ScheduleLine を1件更新
+     * PATCH /schedule_lines/{line} — バリデーション済みデータで行を上書き保存
+     */
+    public function update(UpdateScheduleLineRequest $request, ScheduleLine $line)
     {
         $this->authorize('update', $line);
 
-        $data = $request->validate([
-            'user_id'         => ['nullable', 'exists:users,id'],
-            'dow'             => ['required', 'integer', Rule::in([0, 1, 2, 3, 4, 5, 6])],
-            'school_name'     => ['required', 'string', 'max:255'],
-            'start_time'      => ['required', 'date_format:H:i'],
-            'end_time'        => ['required', 'date_format:H:i', function ($attr, $val, $fail) use ($request) {
-                if ($request->input('start_time') && $val <= $request->input('start_time')) {
-                    $fail('end_time は start_time より後である必要があります。');
-                }
-            }],
-            'effective_start' => ['required', 'date'],
-            'effective_end'   => ['required', 'date', function ($attr, $val, $fail) use ($request) {
-                if ($request->input('effective_start') && $val < $request->input('effective_start')) {
-                    $fail('effective_end は effective_start 以降である必要があります。');
-                }
-            }],
-            'handover_memo'   => ['nullable', 'string', 'max:2000'],
-        ]);
+        $data = $request->validated();
         $this->authorizeUserAssignment($data['user_id'] ?? null);
 
         $line->fill($data)->save();
@@ -184,14 +214,15 @@ class ScheduleLineController extends Controller
         return back()->with('toast', "Line #{$line->id} を更新しました。");
     }
 
-    public function bulkUpdate(Request $request): JsonResponse
+    /**
+     * ScheduleLine を一括更新（JSON API）
+     * POST /schedule_lines/bulk-update — items 配列を1件ずつバリデーション・保存し、成功/失敗件数を JSON で返す
+     */
+    public function bulkUpdate(BulkUpdateScheduleLineRequest $request): JsonResponse
     {
         $this->authorize('viewAny', ScheduleLine::class);
 
         $items = $request->input('items', []);
-        if (!is_array($items) || empty($items)) {
-            return response()->json(['ok' => false, 'message' => 'No items to update.'], 422);
-        }
 
         $errors = [];
         $updated = 0;
@@ -212,24 +243,7 @@ class ScheduleLineController extends Controller
                 }
                 $this->authorize('update', $line);
 
-                $v = Validator::make($raw, [
-                    'user_id'         => ['nullable', 'exists:users,id'],
-                    'dow'             => ['required', 'integer', Rule::in([0, 1, 2, 3, 4, 5, 6])],
-                    'school_name'     => ['required', 'string', 'max:255'],
-                    'start_time'      => ['required', 'date_format:H:i'],
-                    'end_time'        => ['required', 'date_format:H:i', function ($attr, $val, $fail) use ($raw) {
-                        if (!empty($raw['start_time']) && $val <= $raw['start_time']) {
-                            $fail('end_time は start_time より後である必要があります。');
-                        }
-                    }],
-                    'effective_start' => ['required', 'date'],
-                    'effective_end'   => ['required', 'date', function ($attr, $val, $fail) use ($raw) {
-                        if (!empty($raw['effective_start']) && $val < $raw['effective_start']) {
-                            $fail('effective_end は effective_start 以降である必要があります。');
-                        }
-                    }],
-                    'handover_memo'   => ['nullable', 'string', 'max:2000'],
-                ]);
+                $v = Validator::make($raw, BulkUpdateScheduleLineRequest::itemRules($raw));
 
                 if ($v->fails()) {
                     $errors[] = ['id' => $lineId, 'messages' => $v->errors()->all()];
@@ -267,39 +281,44 @@ class ScheduleLineController extends Controller
         }
     }
 
-    public function store(Request $request)
+    /**
+     * ScheduleLine を複製（JSON API）
+     * POST /schedule_lines/{line}/copy — ScheduleLineCopyService で明細ごと複写し、新規行の ID を返す
+     */
+    public function copy(CopyScheduleLineRequest $request, ScheduleLine $line): JsonResponse
     {
-        $this->authorize('create', ScheduleLine::class);
+        $this->authorize('copy', $line);
 
-        $data = $request->validate([
-            'user_id'       => ['nullable', 'exists:users,id'],
-            'school_name'   => ['nullable', 'string', 'max:255'],
-            'dow'           => ['nullable', 'integer', 'between:0,6'],
-            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
-        ]);
+        $data = $request->validated();
         $this->authorizeUserAssignment($data['user_id'] ?? null);
 
-        $line = new ScheduleLine();
-        $line->user_id         = $data['user_id'] ?? null;
-        $line->total_minutes   = 0;
-        $line->dow             = $data['dow'] ?? 0;
-        $line->school_name     = $data['school_name'] ?? '';
-        $line->start_time      = '00:00:00';
-        $line->end_time        = '00:00:00';
-        $line->effective_start = now()->toDateString();
-        $line->effective_end   = now()->addMonths(1)->toDateString();
-        $line->handover_memo   = null;
-        $line->district_id     = $this->scopeService->currentDistrictId();
-        $line->department_id   = $data['department_id'] ?? $this->scopeService->currentDepartmentId();
-        $line->save();
+        try {
+            $created = $this->copyService->copy($line, $data);
 
-        return response()->json([
-            'ok'      => true,
-            'message' => "Line #{$line->id} added.",
-            'line_id' => $line->id,
-        ]);
+            return response()->json([
+                'ok'      => true,
+                'message' => "Line #{$line->id} を複写して新規 Line #{$created->id} を作成しました（user: " . ($data['user_id'] ?? 'NULL') . "）。",
+                'new_id'  => $created->id,
+            ]);
+        } catch (\RuntimeException $e) {
+            return response()->json([
+                'ok'      => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json([
+                'ok'      => false,
+                'message' => '複写に失敗しました。入力期間や関連データをご確認ください。',
+                'error'   => $e->getMessage(),
+            ], 422);
+        }
     }
 
+    /**
+     * ScheduleLine を削除（JSON API）
+     * DELETE /schedule_lines/{line} — 紐づく ScheduleDetail も先に削除してから行を削除
+     */
     public function destroy(Request $request, ScheduleLine $line): JsonResponse
     {
         $this->authorize('delete', $line);
@@ -327,106 +346,10 @@ class ScheduleLineController extends Controller
         }
     }
 
-    public function copy(Request $request, ScheduleLine $line): \Illuminate\Http\JsonResponse
-    {
-        $this->authorize('copy', $line);
-
-        $data = $request->validate([
-            'effective_start' => ['required', 'date'],
-            'effective_end'   => ['required', 'date', 'after_or_equal:effective_start'],
-            'user_id'         => ['nullable', 'exists:users,id'],
-            'handover_memo'   => ['nullable', 'string', 'max:2000'],
-        ]);
-        $this->authorizeUserAssignment($data['user_id'] ?? null);
-
-        $newStart = \Carbon\Carbon::parse($data['effective_start'])->startOfDay();
-        $newEnd   = \Carbon\Carbon::parse($data['effective_end'])->startOfDay();
-        $targetUserId = $data['user_id'] ?? null;
-
-        DB::beginTransaction();
-        try {
-            // 1) 元行クローズ
-            $lineStart = \Carbon\Carbon::parse($line->effective_start)->startOfDay();
-            $lineEnd   = $line->effective_end ? \Carbon\Carbon::parse($line->effective_end)->startOfDay() : null;
-
-            if ($newStart->gt($lineStart) && (!$lineEnd || $lineEnd->gte($newStart))) {
-                $line->effective_end = $newStart->copy()->subDay()->toDateString();
-                $line->save();
-            }
-
-            // 2) 重複チェック
-            $sameAttrs = \App\Models\ScheduleLine::query()
-                ->when(
-                    is_null($targetUserId),
-                    fn($q) => $q->whereNull('user_id'),
-                    fn($q) => $q->where('user_id', $targetUserId)
-                )
-                ->where('dow', $line->dow)
-                ->whereEqualsInsensitive('school_name', $line->school_name)
-                ->where('start_time', $line->start_time)
-                ->where('end_time', $line->end_time)
-                ->where(function ($q) use ($newStart, $newEnd) {
-                    $q->whereDate('effective_start', '<=', $newEnd)
-                        ->where(function ($qq) use ($newStart) {
-                            $qq->whereDate('effective_end', '>=', $newStart)
-                                ->orWhereNull('effective_end');
-                        });
-                })
-                ->exists();
-
-            if ($sameAttrs) {
-                DB::rollBack();
-                return response()->json([
-                    'ok' => false,
-                    'message' => '同一内容の行が指定期間に既に存在します（重複回避ルール）。'
-                ], 422);
-            }
-
-            // 3) 新規作成
-            $created = $line->replicate(['effective_start', 'effective_end', 'created_at', 'updated_at', 'id']);
-            $created->user_id         = $targetUserId;
-            $created->effective_start = $newStart->toDateString();
-            $created->effective_end   = $newEnd->toDateString();
-            $created->parent_line_id  = $line->id;
-            $created->handover_memo   = $data['handover_memo'] ?? null;
-            $created->save();
-
-            // 4) details クリップ複写
-            $line->loadMissing(['details']);
-            foreach ($line->details as $d) {
-                $dStart = \Carbon\Carbon::parse($d->effective_start)->startOfDay();
-                $dEnd   = $d->effective_end ? \Carbon\Carbon::parse($d->effective_end)->startOfDay() : null;
-
-                $overlapStart = $dStart->max($newStart);
-                $overlapEnd   = $dEnd ? $dEnd->min($newEnd) : $newEnd;
-
-                if ($overlapStart->gt($overlapEnd)) continue;
-
-                $newDetail = $d->replicate(['id', 'created_at', 'updated_at']);
-                $newDetail->schedule_line_id = $created->id;
-                $newDetail->effective_start  = $overlapStart->toDateString();
-                $newDetail->effective_end    = $overlapEnd ? $overlapEnd->toDateString() : null;
-                $newDetail->save();
-            }
-
-            DB::commit();
-
-            return response()->json([
-                'ok' => true,
-                'message' => "Line #{$line->id} を複写して新規 Line #{$created->id} を作成しました（user: " . ($targetUserId ?? 'NULL') . "）。",
-                'new_id' => $created->id,
-            ]);
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            report($e);
-            return response()->json([
-                'ok' => false,
-                'message' => '複写に失敗しました。入力期間や関連データをご確認ください。',
-                'error' => $e->getMessage(),
-            ], 422);
-        }
-    }
-
+    /**
+     * ScheduleDetail のコレクションを「期間の変化点」で区切った時系列セグメントに整形
+     * 各セグメントは start/end/items を持ち、Blade でのタイムライン表示に使用
+     */
     private function buildTimeSeries(Collection $details): array
     {
         if ($details->isEmpty()) {
@@ -540,6 +463,10 @@ class ScheduleLineController extends Controller
         return $segments;
     }
 
+    /**
+     * ScheduleLine に割り当てるユーザーの閲覧権限を検証
+     * userId が null の場合は未割当として通過させる
+     */
     private function authorizeUserAssignment(?int $userId): void
     {
         if ($userId === null) {

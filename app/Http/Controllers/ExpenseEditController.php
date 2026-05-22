@@ -12,20 +12,30 @@ use Illuminate\Support\Facades\Artisan;
 
 class ExpenseEditController extends Controller
 {
-    // 本人用 /expenses/edit
+    /**
+     * 経費編集画面（本人用）
+     * GET /expenses/edit — ログインユーザー自身の指定年月の経費明細・定期券・カレンダー情報を表示
+     */
     public function selfEdit(Request $req)
     {
         $user = $req->user();
         return $this->renderFor($user, $req);
     }
 
-    // 管理者用 /expenses/{user}/edit
+    /**
+     * 経費編集画面（管理者用・他ユーザー代理閲覧）
+     * GET /expenses/{user}/edit — 指定ユーザーの権限を確認した上で renderFor() を呼び出す
+     */
     public function adminEdit(User $user, Request $req)
     {
         $this->authorize('view', $user);
         return $this->renderFor($user, $req);
     }
 
+    /**
+     * 経費編集画面の共通レンダリング処理
+     * 指定年月の明細・定期券・カレンダーON/OFF情報・ルート宣言を収集してビューへ渡す
+     */
     private function renderFor(User $user, Request $req)
     {
         $y = (int)($req->query('year')  ?? now()->year);
@@ -160,6 +170,10 @@ class ExpenseEditController extends Controller
         ]);
     }
 
+    /**
+     * 経費レポートを提出（ステータスを SUBMITTED に変更）
+     * POST /expenses/{report}/submit — 冪等に処理し、本人は自分の編集画面へ、管理者は対象ユーザーの画面へリダイレクト
+     */
     public function submit(ExpenseReport $report, Request $request)
     {
         $this->authorize('submit', $report);
@@ -185,6 +199,10 @@ class ExpenseEditController extends Controller
         }
     }
 
+    /**
+     * 経費レポートを差し戻し（SUBMITTED → DRAFT）
+     * POST /expenses/{report}/unsubmit — SUBMITTED 状態のレポートのみ操作可。submitted_at を null に戻す
+     */
     public function unsubmit(Request $request, ExpenseReport $report)
     {
         $this->authorize('unsubmit', $report);

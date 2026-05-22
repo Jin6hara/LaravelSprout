@@ -2,12 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Str;
+use App\Http\Requests\ProfilePhoto\ApplyProfilePhotoRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 
 class ProfilePhotoController extends Controller
 {
@@ -18,15 +17,8 @@ class ProfilePhotoController extends Controller
      * - photo: file|null（仮アップロードの確定）
      * - delete: '1' or '0'（今の写真を削除してNULLにする）
      */
-    public function apply(Request $request, User $user) : JsonResponse
+    public function apply(ApplyProfilePhotoRequest $request, User $user): JsonResponse
     {
-        // ファイルがあるときだけ画像バリデーション。無ければスキップ可（nullable）。
-        $request->validate([
-            'photo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp,gif', 'max:2048'],
-            'delete' => ['nullable']
-        ]);
-
-        // POST + _method=PATCH で来る想定。安全ガード。
         $hasFile = $request->hasFile('photo');
         $wantDelete = filter_var($request->input('delete'), FILTER_VALIDATE_BOOLEAN);
 
