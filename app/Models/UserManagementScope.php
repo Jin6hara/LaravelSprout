@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class UserManagementScope extends Model
 {
+    use HasFactory;
+
     protected $fillable = ['user_id', 'district_id', 'department_id'];
 
     public function user()
