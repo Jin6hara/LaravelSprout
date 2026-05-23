@@ -12,6 +12,14 @@ class EventObserver
 {
     public function saving(Event $event): void
     {
+        // $event->total_duration はアクセサ経由で total_minutes を参照するため、
+        // DB カラムの値は getAttributes() で取得する
+        $rawDuration = $event->getAttributes()['total_duration'] ?? null;
+
+        if (!empty($rawDuration) && (empty($event->start_time) || empty($event->end_time))) {
+            return;
+        }
+
         // どちらか欠けていれば合計はクリアして終了
         if (empty($event->start_time) || empty($event->end_time)) {
             $event->total_duration = null;

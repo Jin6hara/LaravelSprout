@@ -21,11 +21,11 @@ use Tests\TestCase;
  *   1. 未認証アクセスはログインページへリダイレクト
  *
  * [権限: general ユーザー]
- *   2. shift_assigner (edit) を表示しようとすると 403
- *   3. store (新規作成) しようとすると 403
- *   4. update (更新) しようとすると 403
- *   5. destroy (削除) しようとすると 403
- *   6. copy (複製) しようとすると 403
+ *   2. shift_assigner (edit) を表示しようとすると welcome へリダイレクト
+ *   3. store (新規作成) しようとすると welcome へリダイレクト
+ *   4. update (更新) しようとすると welcome へリダイレクト
+ *   5. destroy (削除) しようとすると welcome へリダイレクト
+ *   6. copy (複製) しようとすると welcome へリダイレクト
  *
  * [権限: admin ユーザー（正常系）]
  *   7. shift_assigner (edit) を表示できる → 200
@@ -35,8 +35,8 @@ use Tests\TestCase;
  *  11. copy で Event を複製できる → DB確認・district/department が引き継がれる
  *
  * [スコープ分離]
- *  12. 別スコープの Event は update できない → 403
- *  13. 別スコープの Event は destroy できない → 403
+ *  12. 別スコープの Event は update できない → welcome へリダイレクト
+ *  13. 別スコープの Event は destroy できない → welcome へリダイレクト
  *
  * ─────────────────────────────────────────────────────────────────────────────
  * テストのセットアップ方針
@@ -51,6 +51,13 @@ use Tests\TestCase;
 class EventAssignControllerTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->withoutVite();
+    }
 
     // =========================================================================
     // ヘルパー
@@ -114,11 +121,11 @@ class EventAssignControllerTest extends TestCase
     }
 
     // =========================================================================
-    // 2〜6. general ユーザー（全アクション 403）
+    // 2〜6. general ユーザー（全アクション welcome へリダイレクト）
     // =========================================================================
 
     /**
-     * シナリオ 2: general ユーザーは shift_assigner を表示できない
+     * シナリオ 2: general ユーザーは shift_assigner を表示できず welcome へリダイレクト
      */
     public function test_general_user_cannot_view_shift_assigner(): void
     {
@@ -126,11 +133,11 @@ class EventAssignControllerTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('calendar.edit'))
-            ->assertForbidden();
+            ->assertRedirect(route('welcome'));
     }
 
     /**
-     * シナリオ 3: general ユーザーは Event を新規作成できない
+     * シナリオ 3: general ユーザーは Event を新規作成できず welcome へリダイレクト
      */
     public function test_general_user_cannot_store_event(): void
     {
@@ -138,11 +145,11 @@ class EventAssignControllerTest extends TestCase
 
         $this->actingAs($user)
             ->post(route('events.store'), ['event_date' => now()->toDateString()])
-            ->assertForbidden();
+            ->assertRedirect(route('welcome'));
     }
 
     /**
-     * シナリオ 4: general ユーザーは Event を更新できない
+     * シナリオ 4: general ユーザーは Event を更新できず welcome へリダイレクト
      */
     public function test_general_user_cannot_update_event(): void
     {
@@ -159,11 +166,11 @@ class EventAssignControllerTest extends TestCase
                 'status'     => 'fixed',
                 'type'       => 'regular_time',
             ])
-            ->assertForbidden();
+            ->assertRedirect(route('welcome'));
     }
 
     /**
-     * シナリオ 5: general ユーザーは Event を削除できない
+     * シナリオ 5: general ユーザーは Event を削除できず welcome へリダイレクト
      */
     public function test_general_user_cannot_delete_event(): void
     {
@@ -176,11 +183,11 @@ class EventAssignControllerTest extends TestCase
 
         $this->actingAs($user)
             ->delete(route('events.destroy', $event))
-            ->assertForbidden();
+            ->assertRedirect(route('welcome'));
     }
 
     /**
-     * シナリオ 6: general ユーザーは Event を複製できない
+     * シナリオ 6: general ユーザーは Event を複製できず welcome へリダイレクト
      */
     public function test_general_user_cannot_copy_event(): void
     {
@@ -192,7 +199,7 @@ class EventAssignControllerTest extends TestCase
                 'status'     => 'pending',
                 'type'       => 'regular_time',
             ])
-            ->assertForbidden();
+            ->assertRedirect(route('welcome'));
     }
 
     // =========================================================================
@@ -420,7 +427,7 @@ class EventAssignControllerTest extends TestCase
     /**
      * シナリオ 12: admin は別スコープの Event を更新できない
      *
-     * - EventPolicy::canManage が district_id / department_id の不一致を検出して 403
+     * - EventPolicy::canManage が district_id / department_id の不一致を検出して welcome へリダイレクト
      */
     public function test_admin_cannot_update_event_outside_scope(): void
     {
@@ -435,7 +442,7 @@ class EventAssignControllerTest extends TestCase
                 'status'     => 'fixed',
                 'type'       => 'regular_time',
             ])
-            ->assertForbidden();
+            ->assertRedirect(route('welcome'));
 
         // DB が更新されていないこと
         $this->assertDatabaseHas('events', [
@@ -447,7 +454,7 @@ class EventAssignControllerTest extends TestCase
     /**
      * シナリオ 13: admin は別スコープの Event を削除できない
      *
-     * - EventPolicy::canManage が district_id / department_id の不一致を検出して 403
+     * - EventPolicy::canManage が district_id / department_id の不一致を検出して welcome へリダイレクト
      */
     public function test_admin_cannot_delete_event_outside_scope(): void
     {
@@ -458,7 +465,7 @@ class EventAssignControllerTest extends TestCase
         $this->actingAs($admin)
             ->withSession(['selected_scope_id' => $scope->id])
             ->delete(route('events.destroy', $otherEvent))
-            ->assertForbidden();
+            ->assertRedirect(route('welcome'));
 
         // DB にレコードが残っていること
         $this->assertDatabaseHas('events', ['id' => $otherEvent->id]);
