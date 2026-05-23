@@ -229,7 +229,8 @@ class EventAssignControllerTest extends TestCase
     /**
      * シナリオ 8: admin は Event を新規作成できる
      *
-     * - district_id / department_id が CurrentScopeService のスコープから自動セットされること
+     * - district_id / department_id はリクエストでは受け付けず、CurrentScopeService が強制セットする
+     *   → リクエストに含めなくても正しいスコープ値で保存されることを確認
      * - status=pending / type=regular_time で作成されること
      */
     public function test_admin_can_store_event(): void

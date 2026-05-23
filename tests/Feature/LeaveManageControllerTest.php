@@ -269,7 +269,8 @@ class LeaveManageControllerTest extends TestCase
      * シナリオ 8: admin は Leave を新規作成できる
      *
      * - store は user_id = null / kind = special / status = approved で固定作成
-     * - district_id / department_id はスコープから自動セット
+     * - district_id / department_id はリクエストでは受け付けず、CurrentScopeService が強制セットする
+     *   → リクエストに含めなくても正しいスコープ値で保存されることを確認
      */
     public function test_admin_can_store_leave(): void
     {

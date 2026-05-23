@@ -243,7 +243,8 @@ class ScheduleLineControllerTest extends TestCase
      * シナリオ 9: admin は ScheduleLine を新規作成できる
      *
      * - JSON レスポンスで ok=true / line_id が返ること
-     * - district_id / department_id がスコープから自動セットされること
+     * - district_id / department_id はリクエストでは受け付けず、CurrentScopeService が強制セットする
+     *   → リクエストに含めなくても正しいスコープ値で保存されることを確認
      * - 初期値（start_time/end_time=00:00:00）で作成されること
      */
     public function test_admin_can_store_schedule_line(): void
