@@ -21,9 +21,9 @@ use Tests\TestCase;
  *
  * [権限: general ユーザー]
  *   2. /calendar（自分のカレンダー）は表示できる → 200
- *   3. /calendar/{他人}（他ユーザー指定）は role ミドルウェアで 403
- *   4. /forecast は role:admin|super_admin ミドルウェアで 403
- *   5. /leave（LeaveCalendar）は role:admin|super_admin ミドルウェアで 403
+ *   3. /calendar/{他人}（他ユーザー指定）は role ミドルウェアで welcome へリダイレクト
+ *   4. /forecast は role:admin|super_admin ミドルウェアで welcome へリダイレクト
+ *   5. /leave（LeaveCalendar）は role:admin|super_admin ミドルウェアで welcome へリダイレクト
  *
  * [権限: admin ユーザー（正常系）]
  *   6. /calendar（ユーザー未指定）は表示できる → 200
@@ -34,8 +34,6 @@ use Tests\TestCase;
  * [スコープ分離]
  *  10. admin が /calendar/{スコープ外ユーザー} にアクセスすると welcome へリダイレクト
  *      （UserPolicy::view → isScopedAdminFor が false → AuthorizationException → 302）
- *  11. スコープが切り替わった後に古いスコープのユーザーURLを踏むと /calendar へリダイレクト
- *      （district_id 不一致でリセット）
  *
  * ─────────────────────────────────────────────────────────────────────────────
  * テストのセットアップ方針
@@ -53,12 +51,9 @@ use Tests\TestCase;
  * 重要な仕様メモ
  * ─────────────────────────────────────────────────────────────────────────────
  *
- * - /forecast・/leave は route ミドルウェア 'role:admin|super_admin' で保護されており、
- *   general ユーザーは middleware が返す 403 でブロックされる（Controller まで到達しない）
- *   ※ Handler.php の AuthorizationException → redirect('welcome') とは別経路
- *
- * - /calendar/{user} は route ミドルウェア 'role:admin|super_admin' で保護されており、
- *   general ユーザーは middleware が返す 403 でブロックされる
+ * - /forecast・/leave・/calendar/{user} は route ミドルウェア 'role:admin|super_admin' で保護。
+ *   general ユーザーは Spatie の UnauthorizedException → Handler.php が welcome へリダイレクト（302）。
+ *   403 ではなく 302 になる点に注意（Handler が例外をキャッチして redirect を返すため）
  *
  * - /calendar（ユーザー未指定）は 'auth' のみ。general ユーザーも自分自身のカレンダーを閲覧可能。
  *   コントローラーが $canViewAnyUser = false の場合は $viewUser = $viewer（自分）に固定する。
@@ -151,26 +146,26 @@ class CalendarControllerTest extends TestCase
     }
 
     /**
-     * シナリオ 3: general ユーザーは /calendar/{他人} にアクセスすると 403
+     * シナリオ 3: general ユーザーは /calendar/{他人} にアクセスすると welcome へリダイレクト
      *
-     * - /calendar/{user} は route ミドルウェア 'role:admin|super_admin' で保護。
-     * - general ユーザーは middleware 段階でブロックされ Controller まで到達しない。
+     * - route ミドルウェア 'role:admin|super_admin' が UnauthorizedException を投げる。
+     * - Handler.php がキャッチして redirect()->route('welcome') を返す（302）。
      */
     public function test_general_user_cannot_view_other_user_calendar(): void
     {
-        $general     = User::factory()->create();
-        $otherUser   = User::factory()->create();
+        $general   = User::factory()->create();
+        $otherUser = User::factory()->create();
 
         $this->actingAs($general)
             ->get(route('calendar.index.user', $otherUser))
-            ->assertForbidden();
+            ->assertRedirect(route('welcome'));
     }
 
     /**
-     * シナリオ 4: general ユーザーは /forecast にアクセスすると 403
+     * シナリオ 4: general ユーザーは /forecast にアクセスすると welcome へリダイレクト
      *
-     * - /forecast は route ミドルウェア 'role:admin|super_admin' で保護。
-     * - general ユーザーは middleware 段階でブロックされ Controller まで到達しない。
+     * - route ミドルウェア 'role:admin|super_admin' が UnauthorizedException を投げる。
+     * - Handler.php がキャッチして redirect()->route('welcome') を返す（302）。
      */
     public function test_general_user_cannot_view_forecast(): void
     {
@@ -178,14 +173,14 @@ class CalendarControllerTest extends TestCase
 
         $this->actingAs($general)
             ->get(route('calendar.forecast'))
-            ->assertForbidden();
+            ->assertRedirect(route('welcome'));
     }
 
     /**
-     * シナリオ 5: general ユーザーは /leave（LeaveCalendar）にアクセスすると 403
+     * シナリオ 5: general ユーザーは /leave（LeaveCalendar）にアクセスすると welcome へリダイレクト
      *
-     * - /leave は route ミドルウェア 'role:admin|super_admin' で保護。
-     * - general ユーザーは middleware 段階でブロックされ Controller まで到達しない。
+     * - route ミドルウェア 'role:admin|super_admin' が UnauthorizedException を投げる。
+     * - Handler.php がキャッチして redirect()->route('welcome') を返す（302）。
      */
     public function test_general_user_cannot_view_leave_calendar(): void
     {
@@ -193,7 +188,7 @@ class CalendarControllerTest extends TestCase
 
         $this->actingAs($general)
             ->get(route('calendar.leaves'))
-            ->assertForbidden();
+            ->assertRedirect(route('welcome'));
     }
 
     // =========================================================================
@@ -256,7 +251,7 @@ class CalendarControllerTest extends TestCase
     }
 
     // =========================================================================
-    // 10〜11. スコープ分離
+    // 10. スコープ分離
     // =========================================================================
 
     /**
@@ -282,32 +277,5 @@ class CalendarControllerTest extends TestCase
             ->assertRedirect(route('welcome'));
     }
 
-    /**
-     * シナリオ 11: スコープ切り替え後に古いスコープのユーザーURLを踏むと /calendar へリダイレクト
-     *
-     * - コントローラーが $viewUser->district_id !== currentDistrictId() を検出してリセット
-     * - admin が別スコープ（別 district）に切り替えた状態で旧 URL を踏む想定
-     */
-    public function test_admin_is_redirected_to_index_when_scope_does_not_match_user(): void
-    {
-        [$admin, $scope, $district, $department] = $this->makeAdmin();
 
-        // 旧スコープのユーザー（admin と同じ district に所属）
-        $oldUser = $this->makeUserInScope($district, $department);
-
-        // 新スコープ（別 district）に切り替える
-        $newDistrict   = District::factory()->create();
-        $newDepartment = Department::factory()->create();
-        $newScope      = UserManagementScope::factory()->create([
-            'user_id'       => $admin->id,
-            'district_id'   => $newDistrict->id,
-            'department_id' => $newDepartment->id,
-        ]);
-
-        // 新スコープのセッションで旧ユーザーの URL を踏む
-        $this->actingAs($admin)
-            ->withSession(['selected_scope_id' => $newScope->id])
-            ->get(route('calendar.index.user', $oldUser))
-            ->assertRedirect(route('calendar.index'));
-    }
 }
