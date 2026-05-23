@@ -17,7 +17,7 @@ php artisan view:cache
 # migrateはDB接続後に必要なら有効化
 # php artisan migrate --force
 
-php-fpm -D
+php-fpm -D -d "access.log=/dev/null"
 
 # Render Web Service は 0.0.0.0:$PORT でHTTP待ち受けする必要がある
 sed -i -E "s/listen 80[^;]*;/listen 0.0.0.0:${PORT:-10000};/" /etc/nginx/sites-available/default
