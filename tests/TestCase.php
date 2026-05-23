@@ -4,7 +4,6 @@ namespace Tests;
 
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
-use Illuminate\Support\Facades\Vite;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -15,7 +14,7 @@ abstract class TestCase extends BaseTestCase
         parent::setUp();
 
         // Vite マニフェストが存在しないテスト環境での例外を回避
-        Vite::fake();
+        $this->withoutVite();
 
         // Spatie Permission のキャッシュをリセット（RefreshDatabase 後に必須）
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
