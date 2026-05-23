@@ -44,7 +44,7 @@ class EventObserver
             $end->addDay();
         }
 
-        $minutes = $end->diffInMinutes($start);
+        $minutes = $start->diffInMinutes($end);
         $event->total_duration = self::formatHM($minutes); // "H:MM"
     }
 

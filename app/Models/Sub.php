@@ -56,7 +56,7 @@ class Sub extends Model
                 // Carbonで差分を分単位で算出
                 $start = \Carbon\Carbon::parse($sub->start_time);
                 $end   = \Carbon\Carbon::parse($sub->end_time);
-                $sub->total_duration = $end->diffInMinutes($start);
+                $sub->total_duration = $start->diffInMinutes($end);
             }
         });
     }
