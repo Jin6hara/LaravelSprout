@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use App\Services\Calendar\CalendarEventService;
+use App\Models\RestPattern;
 use App\Services\CurrentScopeService;
 
 class CalendarController extends Controller
@@ -49,6 +50,7 @@ class CalendarController extends Controller
         return view('calendar.index', [
             'viewUser'    => $viewUser,
             'userOptions' => $userOptions, // ← 常に渡す（一般は空）
+            'patterns'    => $viewUser ? RestPattern::orderBy('name')->get(['id', 'name', 'code']) : collect(),
         ]);
     }
 

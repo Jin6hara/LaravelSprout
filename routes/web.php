@@ -11,6 +11,7 @@ use App\Http\Controllers\RoleChangeController;
 use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\CalendarPatternController;
 use App\Http\Controllers\LeaveApplyController;
 use App\Http\Controllers\LeaveAttachmentController;
 use App\Http\Controllers\CurrentScopeController;
@@ -382,6 +383,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/post/sent', [SentPostController::class, 'index'])
         ->name('post.sent');
 });
+
+// ---------------------------------------------------------------------------------------------------------▼ Calendar Pattern API
+Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
+    Route::get('/api/calendar/pattern/{user}', [CalendarPatternController::class, 'apiHistory'])->name('api.calendar.pattern.history');
+    Route::post('/api/calendar/pattern/{user}', [CalendarPatternController::class, 'store'])->name('api.calendar.pattern.store');
+    Route::put('/api/calendar/pattern/{user}/{assignment}', [CalendarPatternController::class, 'update'])->name('api.calendar.pattern.update');
+    Route::delete('/api/calendar/pattern/{user}/{assignment}', [CalendarPatternController::class, 'destroy'])->name('api.calendar.pattern.destroy');
+});
+// ---------------------------------------------------------------------------------------------------------▲ Calendar Pattern API
 
 // ---------------------------------------------------------------------------------------------------------▼ Data関連ルート
 Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
