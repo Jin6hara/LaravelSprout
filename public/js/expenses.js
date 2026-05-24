@@ -293,42 +293,40 @@
 
         saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
         try {
-          const updates = rows.filter(r => r.id && initialIdSet.has(String(r.id)));
-          for (const u of updates) {
-            const resp = await fetch(`/api/expenses/${u.id}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
-              body: JSON.stringify({
-                station_from: u.from || null,
-                station_to: u.to || null,
-                note: u.note || null,
-                cost: u.cost,
-                trip_type: u.trip,
-                seq: u.seq,
-              }),
-            });
-            if (!resp.ok) throw new Error(`Update failed (ID:${u.id}): ${resp.status} ${await resp.text()}`);
-          }
+          const updates = rows
+            .filter(r => r.id && initialIdSet.has(String(r.id)))
+            .map(u => ({
+              id:           u.id,
+              station_from: u.from || null,
+              station_to:   u.to   || null,
+              note:         u.note || null,
+              cost:         u.cost,
+              trip_type:    u.trip,
+              seq:          u.seq,
+            }));
 
-          const creates = rows.filter(r => !r.id);
-          for (const c of creates) {
-            const seq = Number.isFinite(c.seq) ? c.seq : 100;
-            const resp = await fetch('/api/expenses', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
-              body: JSON.stringify({
-                expense_report_id: reportId,
-                expense_date: c.date,
-                seq: seq,
-                station_from: c.from || null,
-                station_to: c.to || null,
-                note: c.note || null,
-                cost: c.cost,
-                trip_type: c.trip,
-                category: 'regular',
-              }),
-            });
-            if (!resp.ok) throw new Error(`Creation failed (Date:${c.date}): ${resp.status} ${await resp.text()}`);
+          const creates = rows
+            .filter(r => !r.id)
+            .map(c => ({
+              expense_date: c.date,
+              seq:          Number.isFinite(c.seq) ? c.seq : 100,
+              station_from: c.from || null,
+              station_to:   c.to   || null,
+              note:         c.note || null,
+              cost:         c.cost,
+              trip_type:    c.trip,
+              category:     'regular',
+            }));
+
+          const resp = await fetch('/api/expenses/batch', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+            body: JSON.stringify({ report_id: reportId, updates, creates }),
+          });
+          if (!resp.ok) {
+            let msg = '';
+            try { msg = (await resp.json())?.message || ''; } catch (_) { msg = await resp.text(); }
+            throw new Error(`Save failed: ${resp.status} ${msg}`);
           }
 
           showToast('Saved successfully.', 'success');
