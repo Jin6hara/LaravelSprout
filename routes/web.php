@@ -185,9 +185,10 @@ Route::middleware(['auth'])->group(function () {
 use App\Http\Controllers\ExpenseApiController;
 
 Route::middleware(['auth'])->group(function () {
-    Route::post('/api/expenses',        [ExpenseApiController::class, 'store'])->name('api.expenses.store');
-    Route::put('/api/expenses/{expense}', [ExpenseApiController::class, 'update'])->name('api.expenses.update');
-    Route::delete('/api/expenses/{expense}', [ExpenseApiController::class, 'destroy'])->name('api.expenses.destroy');
+    Route::post('/api/expenses',              [ExpenseApiController::class, 'store'])->name('api.expenses.store');
+    Route::put('/api/expenses/batch',         [ExpenseApiController::class, 'batchSave'])->name('api.expenses.batch');
+    Route::put('/api/expenses/{expense}',     [ExpenseApiController::class, 'update'])->name('api.expenses.update');
+    Route::delete('/api/expenses/{expense}',  [ExpenseApiController::class, 'destroy'])->name('api.expenses.destroy');
 });
 
 use App\Http\Controllers\ExpenseReportController;

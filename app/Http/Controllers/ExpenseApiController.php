@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ExpenseApi\BatchSaveExpenseRequest;
 use App\Http\Requests\ExpenseApi\StoreExpenseRequest;
 use App\Http\Requests\ExpenseApi\UpdateExpenseRequest;
 use App\Models\CommuterPass;
@@ -9,6 +10,7 @@ use App\Models\Expense;
 use App\Models\ExpenseReport;
 use App\Enums\ExpenseReportStatus;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class ExpenseApiController extends Controller
 {
@@ -30,6 +32,72 @@ class ExpenseApiController extends Controller
         if (in_array($statusValue, $lockedStatuses, true)) {
             abort(423, 'This expense report is locked (submitted).');
         }
+    }
+
+    /**
+     * 経費明細を一括保存（更新＋新規作成）
+     * PUT /api/expenses/batch — 1リクエストでトランザクション処理
+     */
+    public function batchSave(BatchSaveExpenseRequest $req)
+    {
+        $data   = $req->validated();
+        $report = ExpenseReport::findOrFail($data['report_id']);
+        $this->authorize('update', $report);
+        $this->abortIfLocked($report);
+
+        // updates の全 ID が このレポートに属することを確認
+        $updateIds = collect($data['updates'])->pluck('id');
+        if ($updateIds->isNotEmpty()) {
+            $belongCount = Expense::whereIn('id', $updateIds)
+                ->where('expense_report_id', $report->id)
+                ->count();
+            abort_if($belongCount !== $updateIds->count(), 403, 'Some expense IDs do not belong to this report.');
+        }
+
+        // creates の日付が全てこのレポートの月内であることを確認
+        foreach ($data['creates'] as $c) {
+            $d = Carbon::parse($c['expense_date']);
+            abort_unless(
+                $d->year === $report->year && $d->month === $report->month,
+                422,
+                "Date out of report month: {$c['expense_date']}"
+            );
+        }
+
+        $result = DB::transaction(function () use ($data, $report) {
+            $updated = [];
+            foreach ($data['updates'] as $u) {
+                $exp = Expense::find($u['id']);
+                $exp->fill([
+                    'station_from' => $u['station_from'] ?? null,
+                    'station_to'   => $u['station_to'] ?? null,
+                    'note'         => $u['note'] ?? null,
+                    'cost'         => $u['cost'] ?? 0,
+                    'trip_type'    => $u['trip_type'] ?? $exp->trip_type,
+                    'seq'          => $u['seq'] ?? $exp->seq,
+                ])->save();
+                $updated[] = $exp->fresh();
+            }
+
+            $created = [];
+            foreach ($data['creates'] as $c) {
+                $created[] = Expense::create([
+                    'expense_report_id' => $report->id,
+                    'expense_date'      => $c['expense_date'],
+                    'seq'               => $c['seq'],
+                    'station_from'      => $c['station_from'] ?? null,
+                    'station_to'        => $c['station_to'] ?? null,
+                    'note'              => $c['note'] ?? null,
+                    'cost'              => $c['cost'] ?? 0,
+                    'trip_type'         => $c['trip_type'],
+                    'category'          => $c['category'],
+                ]);
+            }
+
+            return ['updated' => $updated, 'created' => $created];
+        });
+
+        return response()->json($result, 200);
     }
 
     /**
