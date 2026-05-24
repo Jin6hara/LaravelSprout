@@ -383,6 +383,14 @@ Route::middleware('auth')->group(function () {
         ->name('post.sent');
 });
 
+// ---------------------------------------------------------------------------------------------------------▼ Data関連ルート
+Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
+    Route::get('/data', function () {
+        return view('data.data_list');
+    })->name('data.list');
+});
+// ---------------------------------------------------------------------------------------------------------▲ Data関連ルート
+
 // ---------------------------------------------------------------------------------------------------------▼ CSV関連ルート
 use App\Http\Controllers\CsvController;
 use App\Http\Controllers\LessonCsvController;
