@@ -167,15 +167,11 @@ class LessonCsvController extends Controller
                     'fm_lesson_code'        => $data['fm_lesson_code'] ?? null,
                 ];
 
-                if ($id !== null) {
-                    $lesson = Lesson::find($id);
-                    if ($lesson) {
-                        $lesson->update($payload);
-                        $updated++;
-                    } else {
-                        Lesson::create($payload);
-                        $created++;
-                    }
+                $lesson = $this->findLessonForImport($id, $data);
+
+                if ($lesson) {
+                    $lesson->update($payload);
+                    $updated++;
                 } else {
                     Lesson::create($payload);
                     $created++;
@@ -196,5 +192,32 @@ class LessonCsvController extends Controller
         }
         $trimmed = trim($value);
         return $trimmed === '' ? null : $trimmed;
+    }
+
+    /**
+     * id が合わない CSV でも、同一レッスンと判断できるコードがあれば更新対象にする。
+     */
+    private function findLessonForImport(?int $id, array $data): ?Lesson
+    {
+        if ($id !== null) {
+            $lesson = Lesson::find($id);
+            if ($lesson) {
+                return $lesson;
+            }
+        }
+
+        foreach (['ps_unique_lesson_code', 'fm_lesson_code', 'lesson_code'] as $column) {
+            $value = $data[$column] ?? null;
+            if ($value === null) {
+                continue;
+            }
+
+            $lesson = Lesson::where($column, $value)->first();
+            if ($lesson) {
+                return $lesson;
+            }
+        }
+
+        return null;
     }
 }

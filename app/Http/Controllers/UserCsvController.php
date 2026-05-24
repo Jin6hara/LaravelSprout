@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class UserCsvController extends Controller
 {
@@ -169,9 +170,11 @@ class UserCsvController extends Controller
         // マスターデータをキャッシュ（N+1防止）
         $districtMap   = District::pluck('id', 'name')->all();
         $departmentMap = Department::pluck('id', 'name')->all();
-        $roleMap       = Role::where('guard_name', 'web')->pluck('name', 'name')->all();
-        $existingEmails = User::pluck('id', 'email')->all();
-        $existingCodes  = User::pluck('id', 'employee_code')->all();
+        $roleMap = Role::where('guard_name', 'web')->pluck('id', 'name')->all();
+        $targetUsers = $this->loadImportTargetUsers($rows);
+        $existingEmails = array_map(fn(User $user) => $user->id, $targetUsers['email']);
+        $existingCodes = array_map(fn(User $user) => $user->id, $targetUsers['employee_code']);
+        $existingIds = array_map(fn(User $user) => $user->id, $targetUsers['id']);
 
         foreach ($rows as ['row' => $rowNum, 'data' => $data]) {
             $v = Validator::make($data, [
@@ -223,15 +226,17 @@ class UserCsvController extends Controller
                 $validationErrors[] = "{$rowNum}行目: role「{$roleName}」が roles テーブルに存在しません。";
             }
 
+            $targetId = $this->resolveExistingUserId($id, $data, $existingIds, $existingEmails, $existingCodes);
+
             // email 重複チェック（別ユーザー）
             $emailOwner = $existingEmails[$data['email']] ?? null;
-            if ($emailOwner !== null && $emailOwner !== $id) {
+            if ($emailOwner !== null && $emailOwner !== $targetId) {
                 $validationErrors[] = "{$rowNum}行目: email「{$data['email']}」は既に別のユーザーが使用しています。";
             }
 
             // employee_code 重複チェック（別ユーザー）
             $codeOwner = $existingCodes[$data['employee_code']] ?? null;
-            if ($codeOwner !== null && $codeOwner !== $id) {
+            if ($codeOwner !== null && $codeOwner !== $targetId) {
                 $validationErrors[] = "{$rowNum}行目: employee_code「{$data['employee_code']}」は既に別のユーザーが使用しています。";
             }
         }
@@ -246,9 +251,12 @@ class UserCsvController extends Controller
         $employmentProcessed = 0;
 
         DB::transaction(function () use (
-            $rows, $districtMap, $departmentMap,
+            $rows, $districtMap, $departmentMap, $roleMap, &$targetUsers,
             &$created, &$updated, &$employmentProcessed
         ) {
+            $roleRows = [];
+            $employmentRows = [];
+
             foreach ($rows as ['data' => $data]) {
                 $id = (isset($data['id']) && is_numeric($data['id'])) ? (int) $data['id'] : null;
 
@@ -273,7 +281,7 @@ class UserCsvController extends Controller
                     'department_id' => $departmentMap[$data['department_name']],
                 ];
 
-                $user = $id !== null ? User::find($id) : null;
+                $user = $this->findUserForImport($id, $data, $targetUsers);
 
                 if ($user) {
                     $user->update($payload);
@@ -285,24 +293,44 @@ class UserCsvController extends Controller
                     $created++;
                 }
 
-                // role 付与（既存を置き換え）
-                $user->syncRoles([$roleName]);
+                $targetUsers['id'][$user->id] = $user;
+                $targetUsers['email'][$user->email] = $user;
+                $targetUsers['employee_code'][$user->employee_code] = $user;
+
+                $roleRows[$user->id] = [
+                    'role_id' => $roleMap[$roleName],
+                    'model_type' => User::class,
+                    'model_id' => $user->id,
+                ];
 
                 // employment_terms: start_date があれば作成/更新
                 $startDate = $data['employment_start_date'] ?? null;
                 if ($startDate !== null) {
-                    $term = EmploymentTerm::firstOrNew([
+                    $employmentRows[] = [
                         'user_id'    => $user->id,
                         'start_date' => $startDate,
-                    ]);
-                    $term->end_date  = $data['employment_end_date'] ?? null;
-                    $term->type_name = $data['employment_type_name'] ?? null;
-                    $term->type_code = $data['employment_type_code'] ?? null;
-                    $term->note      = $data['employment_note'] ?? null;
-                    $term->save();
+                        'end_date'   => $data['employment_end_date'] ?? null,
+                        'type_name'  => $data['employment_type_name'] ?? null,
+                        'type_code'  => $data['employment_type_code'] ?? null,
+                        'note'       => $data['employment_note'] ?? null,
+                        'updated_at' => now(),
+                    ];
                     $employmentProcessed++;
                 }
             }
+
+            $userIds = array_keys($roleRows);
+            if (!empty($userIds)) {
+                DB::table(config('permission.table_names.model_has_roles'))
+                    ->where('model_type', User::class)
+                    ->whereIn(config('permission.column_names.model_morph_key'), $userIds)
+                    ->delete();
+
+                DB::table(config('permission.table_names.model_has_roles'))->insert(array_values($roleRows));
+                app(PermissionRegistrar::class)->forgetCachedPermissions();
+            }
+
+            $this->saveEmploymentTerms($employmentRows);
         });
 
         return back()->with(
@@ -321,5 +349,104 @@ class UserCsvController extends Controller
         }
         $trimmed = trim($value);
         return $trimmed === '' ? null : $trimmed;
+    }
+
+    private function resolveExistingUserId(?int $id, array $data, array $ids, array $emails, array $codes): ?int
+    {
+        if ($id !== null && isset($ids[$id])) {
+            return $id;
+        }
+
+        return $codes[$data['employee_code']] ?? $emails[$data['email']] ?? null;
+    }
+
+    private function loadImportTargetUsers(array $rows): array
+    {
+        [$ids, $emails, $codes] = $this->collectImportKeys($rows);
+
+        $users = User::query()
+            ->whereIn('id', array_unique($ids))
+            ->orWhereIn('email', array_unique($emails))
+            ->orWhereIn('employee_code', array_unique($codes))
+            ->get();
+
+        return [
+            'id' => $users->keyBy('id')->all(),
+            'email' => $users->keyBy('email')->all(),
+            'employee_code' => $users->keyBy('employee_code')->all(),
+        ];
+    }
+
+    private function collectImportKeys(array $rows): array
+    {
+        $ids = [];
+        $emails = [];
+        $codes = [];
+
+        foreach ($rows as ['data' => $data]) {
+            if (isset($data['id']) && is_numeric($data['id'])) {
+                $ids[] = (int) $data['id'];
+            }
+            if (!empty($data['email'])) {
+                $emails[] = $data['email'];
+            }
+            if (!empty($data['employee_code'])) {
+                $codes[] = $data['employee_code'];
+            }
+        }
+
+        return [
+            array_values(array_unique($ids)),
+            array_values(array_unique($emails)),
+            array_values(array_unique($codes)),
+        ];
+    }
+
+    private function findUserForImport(?int $id, array $data, array $users): ?User
+    {
+        if ($id !== null && isset($users['id'][$id])) {
+            return $users['id'][$id];
+        }
+
+        return $users['employee_code'][$data['employee_code']]
+            ?? $users['email'][$data['email']]
+            ?? null;
+    }
+
+    private function saveEmploymentTerms(array $rows): void
+    {
+        if (empty($rows)) {
+            return;
+        }
+
+        $now = now();
+        $existing = EmploymentTerm::query()
+            ->whereIn('user_id', array_unique(array_column($rows, 'user_id')))
+            ->whereIn('start_date', array_unique(array_column($rows, 'start_date')))
+            ->get()
+            ->keyBy(fn(EmploymentTerm $term) => $term->user_id . '|' . $term->start_date->toDateString());
+
+        $inserts = [];
+        foreach ($rows as $row) {
+            $key = $row['user_id'] . '|' . $row['start_date'];
+            $term = $existing[$key] ?? null;
+
+            if ($term) {
+                $term->update([
+                    'end_date' => $row['end_date'],
+                    'type_name' => $row['type_name'],
+                    'type_code' => $row['type_code'],
+                    'note' => $row['note'],
+                ]);
+                continue;
+            }
+
+            $row['created_at'] = $now;
+            $inserts[] = $row;
+        }
+
+        foreach (array_chunk($inserts, 500) as $chunk) {
+            EmploymentTerm::insert($chunk);
+        }
     }
 }

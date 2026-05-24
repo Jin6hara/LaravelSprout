@@ -46,7 +46,9 @@
     <div class="card-body">
         <p class="text-muted mb-3">
             CSV ファイルをアップロードして users テーブルに登録・更新します。<br>
-            <strong>id</strong> が入力されていてDBに存在する場合は更新、空またはDBに存在しない場合は新規作成です。<br>
+            <strong>id</strong> が一致するレコードを更新します。id が空、または一致しない場合は
+            <code>employee_code</code>、<code>email</code> の順で既存レコードを探し、
+            見つかれば更新、見つからなければ新規作成します。<br>
             <span class="text-danger"><i class="fas fa-lock me-1"></i>password はインポート対象外です。新規作成時は安全な初期パスワードが自動設定されます。</span>
         </p>
 
@@ -64,7 +66,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr><td><code>id</code></td>                      <td>任意</td><td>整数</td>                    <td>空なら新規作成。DBに存在すれば更新</td></tr>
+                        <tr><td><code>id</code></td>                      <td>任意</td><td>整数</td>                    <td>一致すれば更新。未一致の場合は employee_code / email で update 判定</td></tr>
                         <tr><td><code>family_name</code></td>              <td><span class="badge bg-danger">必須</span></td><td>文字列 max:255</td>    <td></td></tr>
                         <tr><td><code>first_name</code></td>               <td><span class="badge bg-danger">必須</span></td><td>文字列 max:255</td>    <td></td></tr>
                         <tr><td><code>middle_name</code></td>              <td>任意</td><td>文字列 max:255</td>    <td>空白は null 保存</td></tr>
