@@ -11,6 +11,7 @@ use App\Http\Controllers\RoleChangeController;
 use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\CalendarPatternController;
 use App\Http\Controllers\LeaveApplyController;
 use App\Http\Controllers\LeaveAttachmentController;
 use App\Http\Controllers\CurrentScopeController;
@@ -382,6 +383,53 @@ Route::middleware('auth')->group(function () {
     Route::get('/post/sent', [SentPostController::class, 'index'])
         ->name('post.sent');
 });
+
+// ---------------------------------------------------------------------------------------------------------▼ Calendar Pattern API
+Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
+    Route::get('/api/calendar/pattern/{user}', [CalendarPatternController::class, 'apiHistory'])->name('api.calendar.pattern.history');
+    Route::post('/api/calendar/pattern/{user}', [CalendarPatternController::class, 'store'])->name('api.calendar.pattern.store');
+    Route::put('/api/calendar/pattern/{user}/{assignment}', [CalendarPatternController::class, 'update'])->name('api.calendar.pattern.update');
+    Route::delete('/api/calendar/pattern/{user}/{assignment}', [CalendarPatternController::class, 'destroy'])->name('api.calendar.pattern.destroy');
+});
+// ---------------------------------------------------------------------------------------------------------▲ Calendar Pattern API
+
+// ---------------------------------------------------------------------------------------------------------▼ Data関連ルート
+use App\Http\Controllers\CalendarPatternEditorController;
+
+Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
+    Route::get('/data', function () {
+        return view('data.data_list');
+    })->name('data.list');
+
+    // Calendar Pattern Editor page
+    Route::get('/data/calendar-pattern', [CalendarPatternEditorController::class, 'index'])->name('data.calendar_pattern');
+
+    // Events API (mini-calendar)
+    Route::get('/api/calendar-pattern/events', [CalendarPatternEditorController::class, 'events'])->name('api.cpe.events');
+
+    // PatternRule API (LRD/ORD weekday rules)
+    Route::get('/api/calendar-pattern/pattern-rules', [CalendarPatternEditorController::class, 'patternRuleIndex'])->name('api.cpe.pattern_rule.index');
+    Route::put('/api/calendar-pattern/pattern-rules', [CalendarPatternEditorController::class, 'patternRuleBulkUpdate'])->name('api.cpe.pattern_rule.update');
+
+    // Holiday API
+    Route::get('/api/calendar-pattern/holiday',              [CalendarPatternEditorController::class, 'holidayIndex'])->name('api.cpe.holiday.index');
+    Route::post('/api/calendar-pattern/holiday',             [CalendarPatternEditorController::class, 'holidayStore'])->name('api.cpe.holiday.store');
+    Route::put('/api/calendar-pattern/holiday/{holiday}',    [CalendarPatternEditorController::class, 'holidayUpdate'])->name('api.cpe.holiday.update');
+    Route::delete('/api/calendar-pattern/holiday/{holiday}', [CalendarPatternEditorController::class, 'holidayDestroy'])->name('api.cpe.holiday.destroy');
+
+    // Adjusting API
+    Route::get('/api/calendar-pattern/adjusting',                       [CalendarPatternEditorController::class, 'adjustingIndex'])->name('api.cpe.adjusting.index');
+    Route::post('/api/calendar-pattern/adjusting',                      [CalendarPatternEditorController::class, 'adjustingStore'])->name('api.cpe.adjusting.store');
+    Route::put('/api/calendar-pattern/adjusting/{adjustment}',          [CalendarPatternEditorController::class, 'adjustingUpdate'])->name('api.cpe.adjusting.update');
+    Route::delete('/api/calendar-pattern/adjusting/{adjustment}',       [CalendarPatternEditorController::class, 'adjustingDestroy'])->name('api.cpe.adjusting.destroy');
+
+    // Closure API
+    Route::get('/api/calendar-pattern/closure',              [CalendarPatternEditorController::class, 'closureIndex'])->name('api.cpe.closure.index');
+    Route::post('/api/calendar-pattern/closure',             [CalendarPatternEditorController::class, 'closureStore'])->name('api.cpe.closure.store');
+    Route::put('/api/calendar-pattern/closure/{closure}',    [CalendarPatternEditorController::class, 'closureUpdate'])->name('api.cpe.closure.update');
+    Route::delete('/api/calendar-pattern/closure/{closure}', [CalendarPatternEditorController::class, 'closureDestroy'])->name('api.cpe.closure.destroy');
+});
+// ---------------------------------------------------------------------------------------------------------▲ Data関連ルート
 
 // ---------------------------------------------------------------------------------------------------------▼ CSV関連ルート
 use App\Http\Controllers\CsvController;

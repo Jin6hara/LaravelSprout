@@ -2,7 +2,12 @@
 
 @section('content')
 <div class="container">
-    <h1 class="mb-3 text-center">管理者ダッシュボード</h1>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="mb-0">管理者ダッシュボード</h1>
+        <a href="{{ route('register.showForm') }}" class="btn btn-sm btn-outline-secondary">
+            Register
+        </a>
+    </div>
     <p class="text-center text-muted mb-4">ここでは管理者向けの情報を表示します。</p>
 
     {{-- 検索フォーム --}}

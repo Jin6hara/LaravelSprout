@@ -3,7 +3,12 @@
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="mb-0">Absence Calendar</h2>
-    <span class="badge text-bg-info">Admin View</span>
+    <div class="d-flex align-items-center gap-2">
+        <span class="badge text-bg-info">Admin View</span>
+        <a href="{{ route('absense.all') }}" class="btn btn-sm btn-outline-secondary">
+            Absence Report
+        </a>
+    </div>
 </div>
 
 {{-- ▼▼ 月選択フォーム（GET） ▼▼ --}}

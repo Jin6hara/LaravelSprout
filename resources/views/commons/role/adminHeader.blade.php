@@ -49,24 +49,8 @@
     </a>
 </li>
 <li class="nav-item">
-    <a class="btn btn-sm btn-outline-secondary header-btn" href="{{ route('register.showForm') }}">
-        Register
-    </a>
-</li>
-<li class="nav-item">
     <a class="btn btn-sm btn-outline-secondary header-btn" href="{{ route('expenses.admin.report') }}">
         CER
-    </a>
-</li>
-<li class="nav-item">
-    <a class="btn btn-sm btn-outline-secondary header-btn" href="{{ route('absense.all') }}">
-        Absence<br>Report
-    </a>
-</li>
-
-<li class="nav-item">
-    <a class="btn btn-sm btn-outline-secondary header-btn" href="{{ route('csv.index') }}">
-        CSV
     </a>
 </li>
 
@@ -80,6 +64,12 @@
             {{ $unread }}
         </span>
         @endif
+    </a>
+</li>
+
+<li class="nav-item">
+    <a class="btn btn-sm btn-outline-secondary header-btn" href="{{ route('data.list') }}">
+        Data
     </a>
 </li>
 

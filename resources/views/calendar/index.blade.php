@@ -3,12 +3,27 @@
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h2 class="mb-0">Schedule</h2>
-  {{-- 役割ヒント --}}
-  @role('admin|super_admin')
-  <span class="badge text-bg-primary">Admin View: {{ $viewUser ? ($viewUser->name ?? 'ID:'.$viewUser->id) : '（未選択）' }}</span>
-  @else
-  <span class="badge text-bg-secondary">Schedule</span>
-  @endrole
+  {{-- 右上エリア --}}
+  <div class="d-flex align-items-center gap-2">
+    @role('admin|super_admin')
+    <span class="badge text-bg-primary">
+      Admin View: {{ $viewUser ? ($viewUser->first_name.' '.$viewUser->family_name) : '（未選択）' }}
+    </span>
+    @if($viewUser)
+    <button type="button" class="btn btn-sm btn-outline-secondary"
+            data-bs-toggle="modal" data-bs-target="#calendarPatternModal">
+      Calendar Pattern
+    </button>
+    @else
+    <button type="button" class="btn btn-sm btn-outline-secondary" disabled
+            title="Teacher を選択してください">
+      Calendar Pattern
+    </button>
+    @endif
+    @else
+    <span class="badge text-bg-secondary">Schedule</span>
+    @endrole
+  </div>
 </div>
 
 {{-- ▼▼ 月選択フォーム（GET） ▼▼ --}}
@@ -64,6 +79,35 @@
     </div>
   </div>
 </div>
+{{-- Calendar Pattern モーダル（admin + viewUser 選択済み時のみ描画） --}}
+@role('admin|super_admin')
+@if($viewUser)
+@php
+$cpeProps = [
+    'baseApiUrl' => route('api.calendar.pattern.history', $viewUser),
+    'patterns'   => $patterns,
+];
+@endphp
+<div class="modal fade" id="calendarPatternModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          Calendar Pattern —
+          {{ $viewUser->first_name }} {{ $viewUser->family_name }}
+          <span class="badge text-bg-secondary ms-1">{{ $viewUser->employee_code }}</span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="calendarPatternEditor" data-props='@json($cpeProps)'></div>
+      </div>
+    </div>
+  </div>
+</div>
+@endif
+@endrole
+
 @endsection
 
 @push('styles')

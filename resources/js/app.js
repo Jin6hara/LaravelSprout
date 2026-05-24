@@ -51,3 +51,19 @@ if (pdfEl) {
         queryString: pdfEl.dataset.query,
     }).mount(pdfEl);
 }
+
+import CalendarPatternEditor from './components/CalendarPatternEditor.vue';
+
+const cpeEl = document.getElementById('calendarPatternEditor');
+if (cpeEl) {
+    const props = cpeEl.dataset.props ? JSON.parse(cpeEl.dataset.props) : {};
+    createApp(CalendarPatternEditor, props).mount(cpeEl);
+}
+
+import CalendarPatternEditorPage from './components/CalendarPatternEditorPage.vue';
+
+const cpepEl = document.getElementById('calendarPatternEditorPage');
+if (cpepEl) {
+    const props = cpepEl.dataset.props ? JSON.parse(cpepEl.dataset.props) : {};
+    createApp(CalendarPatternEditorPage, props).mount(cpepEl);
+}

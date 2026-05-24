@@ -11,7 +11,7 @@ class UserRestPattern extends Model
 {
     use HasFactory;
     protected $fillable = ['user_id', 'rest_pattern_id', 'start_date', 'end_date'];
-    protected $casts = ['start_date' => 'date', 'end_date' => 'date'];
+    protected $casts = ['start_date' => 'date:Y-m-d', 'end_date' => 'date:Y-m-d']; // 形式を指定/フロント表示に関わる
 
     public function user(): BelongsTo
     {
@@ -23,9 +23,9 @@ class UserRestPattern extends Model
     }
 
     // 指定期間に有効な割当を取得
-    public function scopeActiveBetween(Builder $q, $start, $end): Builder
+    public function scopeActiveBetween(Builder $q, string|\Carbon\Carbon $start, string|\Carbon\Carbon $end): Builder
     {
-        return $q->where(function ($qq) use ($start, $end) {
+        return $q->where(function ($qq) use ($start) {
             $qq->whereNull('end_date')->orWhere('end_date', '>=', $start);
         })->where('start_date', '<=', $end);
     }
