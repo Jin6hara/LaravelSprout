@@ -79,8 +79,9 @@
             <span class="fw-semibold small">編集対象</span>
             <select v-model="editTarget" class="form-select form-select-sm" style="width:auto">
               <option value="adjustment">Adjustment</option>
-              <option value="lrd_ord">LRD / ORD</option>
               <option value="closure">Company Closure</option>
+              <option value="holiday">Holidays</option>
+              <option value="lrd_ord">LRD / ORD</option>
             </select>
           </div>
           <div class="card-body p-2" style="overflow-y:auto;max-height:80vh">
@@ -97,16 +98,6 @@
               />
             </template>
 
-            <!-- LRD / ORD フォーム -->
-            <template v-else-if="editTarget === 'lrd_ord'">
-              <RestPatternRulePanel
-                :rest-pattern-id="selectedPatternId"
-                :base-url="patternRuleUrl"
-                @saved="refreshCalendar"
-                @flash="showFlash"
-              />
-            </template>
-
             <!-- Company Closure フォーム -->
             <template v-else-if="editTarget === 'closure'">
               <ClosurePanel
@@ -114,6 +105,27 @@
                 :base-url="closureUrl"
                 @saved="refreshCalendar"
                 @deleted="refreshCalendar"
+                @flash="showFlash"
+              />
+            </template>
+
+            <!-- Holidays フォーム -->
+            <template v-else-if="editTarget === 'holiday'">
+              <HolidayPanel
+                :fiscal-year="fiscalYear"
+                :base-url="holidayUrl"
+                @saved="refreshCalendar"
+                @deleted="refreshCalendar"
+                @flash="showFlash"
+              />
+            </template>
+
+            <!-- LRD / ORD フォーム -->
+            <template v-else-if="editTarget === 'lrd_ord'">
+              <RestPatternRulePanel
+                :rest-pattern-id="selectedPatternId"
+                :base-url="patternRuleUrl"
+                @saved="refreshCalendar"
                 @flash="showFlash"
               />
             </template>
@@ -154,6 +166,7 @@ import { ref, computed, watch, onMounted } from 'vue';
 import axios from 'axios';
 import AdjustingPanel      from './cpe/AdjustingPanel.vue';
 import ClosurePanel        from './cpe/ClosurePanel.vue';
+import HolidayPanel        from './cpe/HolidayPanel.vue';
 import RestPatternRulePanel from './cpe/RestPatternRulePanel.vue';
 import MiniCalendar        from './cpe/MiniCalendar.vue';
 
