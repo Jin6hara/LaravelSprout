@@ -14,9 +14,9 @@
         <span class="list-group-item text-muted">
             Lesson
         </span>
-        <span class="list-group-item text-muted">
+        <a href="{{ route('data.calendar_pattern') }}" class="list-group-item list-group-item-action">
             Calendar Pattern
-        </span>
+        </a>
         <span class="list-group-item text-muted">
             District &amp; Department
         </span>

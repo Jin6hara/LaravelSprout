@@ -19,11 +19,11 @@ class CompanyClosureSeeder extends Seeder
         );
         CompanyClosure::updateOrCreate(
             ['code' => 'WB', 'start_date' => '2026-12-24'],
-            ['name' => 'Winter Break', 'end_date' => '2026-01-04', 'is_active' => true]
+            ['name' => 'Winter Break', 'end_date' => '2027-01-04', 'is_active' => true]
         );
-        CompanyClosure::updateOrCreate(
-            ['code' => 'CP', 'start_date' => '2026-12-07'],
-            ['name' => 'Christmas Party', 'end_date' => '2026-12-07', 'is_active' => true]
-        );
+        //CompanyClosure::updateOrCreate(
+        //    ['code' => 'CP', 'start_date' => '2026-12-07'],
+        //    ['name' => 'Christmas Party', 'end_date' => '2026-12-07', 'is_active' => true]
+        //);
     }
 }
