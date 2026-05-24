@@ -275,9 +275,11 @@ class ExpenseApiControllerBatchSaveTest extends TestCase
     // =========================================================================
 
     /**
-     * シナリオ 6: 他人が所有するレポートへのアクセスは 403
+     * シナリオ 6: 他人が所有するレポートへのアクセスは welcome へリダイレクト（302）
      *
      * - report.user_id と actingAs が一致しない場合
+     * - このアプリの例外ハンドラは AuthorizationException を
+     *   JSON リクエストでも常に welcome へリダイレクトする
      */
     public function test_cannot_batch_save_other_users_report(): void
     {
@@ -288,7 +290,7 @@ class ExpenseApiControllerBatchSaveTest extends TestCase
             'report_id' => $report->id,
             'updates'   => [],
             'creates'   => [],
-        ])->assertForbidden();
+        ])->assertRedirect(route('welcome'));
     }
 
     /**
