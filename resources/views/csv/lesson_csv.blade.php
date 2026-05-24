@@ -45,7 +45,9 @@
     <div class="card-body">
         <p class="text-muted mb-3">
             CSV ファイルをアップロードして lessons テーブルに登録・更新します。<br>
-            <strong>id</strong> が入力されていればその id のレコードを更新（存在しなければ新規作成）、空の場合は新規作成です。
+            <strong>id</strong> が一致するレコードを更新します。id が空、または一致しない場合は
+            <code>ps_unique_lesson_code</code>、<code>fm_lesson_code</code>、<code>lesson_code</code> の順で既存レコードを探し、
+            見つかれば更新、見つからなければ新規作成します。
         </p>
 
         {{-- カラム仕様 --}}
@@ -62,7 +64,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr><td><code>id</code></td>              <td>任意</td><td>整数</td>          <td>空なら新規作成。指定した場合は update 判定に使用</td></tr>
+                        <tr><td><code>id</code></td>              <td>任意</td><td>整数</td>          <td>一致すれば更新。未一致の場合は各コードで update 判定</td></tr>
                         <tr><td><code>lesson_name</code></td>      <td>任意</td><td>文字列 max:255</td><td>空白は null 保存</td></tr>
                         <tr><td><code>lesson_code</code></td>      <td>任意</td><td>文字列 max:255</td><td>空白は null 保存</td></tr>
                         <tr><td><code>lesson_minute</code></td>    <td>任意</td><td>整数 min:0</td>   <td>30 / 40 / 45 など。空白は null 保存</td></tr>
