@@ -32,8 +32,7 @@ use Tests\TestCase;
  *   9. /leave は表示できる → 200
  *
  * [スコープ分離]
- *  10. admin が /calendar/{スコープ外ユーザー} にアクセスすると welcome へリダイレクト
- *      （UserPolicy::view → isScopedAdminFor が false → AuthorizationException → 302）
+ *  10. admin が /calendar/{スコープ外ユーザー} にアクセスするとユーザー指定なしの /calendar へリダイレクト
  *
  * ─────────────────────────────────────────────────────────────────────────────
  * テストのセットアップ方針
@@ -58,9 +57,8 @@ use Tests\TestCase;
  * - /calendar（ユーザー未指定）は 'auth' のみ。general ユーザーも自分自身のカレンダーを閲覧可能。
  *   コントローラーが $canViewAnyUser = false の場合は $viewUser = $viewer（自分）に固定する。
  *
- * - admin が /calendar/{スコープ外ユーザー} にアクセスすると
- *   UserPolicy::view → isScopedAdminFor が false → AuthorizationException
- *   → Handler.php が redirect()->route('welcome') を返す（302）
+ * - admin が /calendar/{スコープ外ユーザー} にアクセスすると、スコープ切替後の古いURLとして扱い
+ *   ユーザー指定をクリアした /calendar へリダイレクトする。
  */
 class CalendarControllerTest extends TestCase
 {
@@ -255,10 +253,10 @@ class CalendarControllerTest extends TestCase
     // =========================================================================
 
     /**
-     * シナリオ 10: admin がスコープ外ユーザーの /calendar/{user} にアクセスすると welcome へリダイレクト
+     * シナリオ 10: admin がスコープ外ユーザーの /calendar/{user} にアクセスすると /calendar へリダイレクト
      *
      * - UserPolicy::view → isScopedAdminFor が false（別 district のユーザーは targetUserIds に含まれない）
-     * - AuthorizationException → Handler.php が redirect()->route('welcome') を返す（302）
+     * - スコープ切替後の古いURLとして扱い、ユーザー選択をクリアする
      */
     public function test_admin_cannot_view_calendar_for_user_outside_scope(): void
     {
@@ -273,8 +271,8 @@ class CalendarControllerTest extends TestCase
 
         $this->actingAs($admin)
             ->withSession(['selected_scope_id' => $scope->id])
-            ->get(route('calendar.index.user', $outsideUser))
-            ->assertRedirect(route('welcome'));
+            ->get(route('calendar.index.user', ['user' => $outsideUser, 'month' => '2026-05']))
+            ->assertRedirect(route('calendar.index', ['month' => '2026-05']));
     }
 
 
