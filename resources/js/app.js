@@ -67,3 +67,11 @@ if (cpepEl) {
     const props = cpepEl.dataset.props ? JSON.parse(cpepEl.dataset.props) : {};
     createApp(CalendarPatternEditorPage, props).mount(cpepEl);
 }
+
+import DistrictDepartmentEditor from './components/DistrictDepartmentEditor.vue';
+
+const ddeEl = document.getElementById('districtDepartmentEditor');
+if (ddeEl) {
+    const props = ddeEl.dataset.props ? JSON.parse(ddeEl.dataset.props) : {};
+    createApp(DistrictDepartmentEditor, props).mount(ddeEl);
+}

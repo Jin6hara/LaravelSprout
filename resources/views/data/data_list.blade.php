@@ -17,9 +17,11 @@
         <a href="{{ route('data.calendar_pattern') }}" class="list-group-item list-group-item-action">
             Calendar Pattern
         </a>
-        <span class="list-group-item text-muted">
+        @can('viewAny', \App\Models\District::class)
+        <a href="{{ route('data.district_department') }}" class="list-group-item list-group-item-action">
             District &amp; Department
-        </span>
+        </a>
+        @endcan
     </div>
 </div>
 @endsection

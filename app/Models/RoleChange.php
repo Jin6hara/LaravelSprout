@@ -17,6 +17,13 @@ class RoleChange extends Model
         'reason',
         'requested_by_id',
         'status',
+        'district_id',
+        'department_id',
+        'scopes',
+    ];
+
+    protected $casts = [
+        'scopes' => 'array',
     ];
 
     public function targetUser(): BelongsTo
@@ -43,7 +50,22 @@ class RoleChange extends Model
     public function applyDomainEffect(): void
     {
         $user = $this->targetUser;
-        // 既存ロールを置換するなら syncRoles、追加なら assignRole
+
         $user->syncRoles([$this->requested_role]);
+
+        $user->district_id   = $this->district_id;
+        $user->department_id = $this->department_id;
+        $user->save();
+
+        $user->managementScopes()->delete();
+
+        if (in_array($this->requested_role, ['admin', 'super_admin'])) {
+            foreach ($this->scopes ?? [] as $scope) {
+                $user->managementScopes()->create([
+                    'district_id'   => $scope['district_id'],
+                    'department_id' => $scope['department_id'],
+                ]);
+            }
+        }
     }
 }

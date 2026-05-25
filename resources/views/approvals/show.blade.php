@@ -6,11 +6,10 @@
 
     <div class="card mt-3">
         <div class="card-body">
-            {{-- 承認リクエストの概要 --}}
             @php
-            $meta = $approvalRequest->metadata ?? [];
+            $meta       = $approvalRequest->metadata ?? [];
             $approvable = $approvalRequest->approvable;
-            $isLeave = $approvable instanceof \App\Models\Leave;
+            $isLeave    = $approvable instanceof \App\Models\Leave;
             @endphp
 
             <table class="table table-bordered">
@@ -36,7 +35,7 @@
                 </tr>
 
                 @if($isLeave)
-                {{-- ★ 有給/特別休暇申請の場合の表示 --}}
+                {{-- 有給/特別休暇申請の場合 --}}
                 <tr>
                     <th>申請種別</th>
                     <td>
@@ -51,13 +50,11 @@
                         {{ $kindLabel ?? '-' }}
                     </td>
                 </tr>
-                @if($meta['kind'] === 'special' || ($approvable->kind ?? null) === 'special')
-                {{-- ★ 特別休暇の場合の追加情報 --}}
+                @if(($meta['kind'] ?? null) === 'special' || ($approvable->kind ?? null) === 'special')
                 <tr>
                     <th>特別休暇の種類</th>
                     <td>{{ $meta['special_type'] ?? $approvable->special_type ?? '-' }}</td>
                 </tr>
-                {{-- ★ 特別休暇の証明添付（ある場合） --}}
                 <tr>
                     <th>添付</th>
                     <td>
@@ -74,38 +71,85 @@
                     </td>
                 </tr>
                 @endif
-
-                <th>対象日</th>
-                <td>
-                    {{-- ★ 期間（特別休暇） or 日, 日, 日（有給） --}}
-                    {{ $dateSummary ?? ($meta['date'] ?? optional($approvable->start_date)->format('Y-m-d') ?? '-') }}
-                </td>
-
+                <tr>
+                    <th>対象日</th>
+                    <td>{{ $dateSummary ?? ($meta['date'] ?? optional($approvable->start_date)->format('Y-m-d') ?? '-') }}</td>
+                </tr>
                 <tr>
                     <th>理由</th>
-                    <td>
-                        {{ $meta['reason'] ?? ($isLeave ? ($approvable->reason ?? '-') : '-') }}
-                    </td>
+                    <td>{{ $meta['reason'] ?? ($approvable->reason ?? '-') }}</td>
                 </tr>
 
                 @else
-                {{-- 変更後ロール（ロール変更リクエストの場合など） --}}
+                {{-- 権限変更申請の場合 --}}
                 <tr>
                     <th>対象ユーザー</th>
+                    <td>{{ $meta['target_user_name'] ?? '不明' }}</td>
+                </tr>
+                <tr>
+                    <th>権限</th>
                     <td>
-                        {{-- metadata からユーザー名を表示 --}}
-                        @if($isLeave)
-                        {{ optional($approvable->user)->name ?? ('ID:' . ($meta['user_id'] ?? '不明')) }}
-                        @else
-                        {{ $meta['target_user_name'] ?? '不明' }}
-                        @endif
+                        @php
+                        $roleLabels = ['general' => '一般', 'admin' => '管理者', 'super_admin' => 'スーパー管理者'];
+                        @endphp
+                        {{ $roleLabels[$meta['current_role'] ?? ''] ?? ($meta['current_role'] ?? '—') }}
+                        →
+                        <strong>{{ $roleLabels[$meta['requested_role'] ?? ''] ?? ($meta['requested_role'] ?? '—') }}</strong>
                     </td>
                 </tr>
                 <tr>
-                    <th>変更後ロール</th>
+                    <th>所属地区</th>
                     <td>
-                        {{ $meta['requested_role'] ?? '-' }}
+                        {{ $meta['current_district'] ?? '—' }}
+                        →
+                        <strong>{{ $meta['requested_district'] ?? '—' }}</strong>
                     </td>
+                </tr>
+                <tr>
+                    <th>所属部署</th>
+                    <td>
+                        {{ $meta['current_department'] ?? '—' }}
+                        →
+                        <strong>{{ $meta['requested_department'] ?? '—' }}</strong>
+                    </td>
+                </tr>
+                <tr>
+                    <th>管理範囲</th>
+                    <td>
+                        <div class="d-flex gap-4">
+                            <div>
+                                <div class="text-muted small mb-1">現在</div>
+                                @php $currentScopes = $meta['current_scopes'] ?? []; @endphp
+                                @if(empty($currentScopes))
+                                    <span class="text-muted">—</span>
+                                @else
+                                    <ul class="mb-0 ps-3">
+                                        @foreach($currentScopes as $s)
+                                        <li>{{ $s['district'] ?? '—' }} ／ {{ $s['department'] ?? '—' }}</li>
+                                        @endforeach
+                                    </ul>
+                                @endif
+                            </div>
+                            <div class="text-muted align-self-center">→</div>
+                            <div>
+                                <div class="text-muted small mb-1">変更後</div>
+                                @php $requestedScopes = $meta['requested_scopes'] ?? []; @endphp
+                                @if(empty($requestedScopes))
+                                    <span class="text-muted">—</span>
+                                @else
+                                    <ul class="mb-0 ps-3">
+                                        @foreach($requestedScopes as $s)
+                                        <li><strong>{{ $s['district'] ?? '—' }} ／ {{ $s['department'] ?? '—' }}</strong></li>
+                                        @endforeach
+                                    </ul>
+                                @endif
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <th>申請理由</th>
+                    <td>{{ $meta['reason'] ?? '—' }}</td>
                 </tr>
                 @endif
             </table>

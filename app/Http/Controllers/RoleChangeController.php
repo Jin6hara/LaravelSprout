@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\RoleChange\ApplyRoleChangeRequest;
+use App\Models\Department;
+use App\Models\District;
 use App\Models\User;
 use App\Services\RoleChange\RoleChangeApplicationService;
 use Illuminate\Support\Facades\Auth;
@@ -21,7 +23,12 @@ class RoleChangeController extends Controller
         $currentRole    = $user->getRoleNames()->first();
         $availableRoles = ['general', 'admin', 'super_admin'];
 
-        return view('user.roleChange', compact('user', 'currentRole', 'availableRoles'));
+        $districts   = District::whereNull('parent_id')->with('children')->orderBy('name')->get();
+        $departments = Department::orderBy('name')->get();
+
+        $user->load(['district', 'department', 'managementScopes.district', 'managementScopes.department']);
+
+        return view('user.roleChange', compact('user', 'currentRole', 'availableRoles', 'districts', 'departments'));
     }
 
     /**
@@ -34,7 +41,15 @@ class RoleChangeController extends Controller
 
         $data = $request->validated();
 
-        $this->roleChangeService->apply($user, Auth::user(), $data['role'], $data['reason']);
+        $this->roleChangeService->apply(
+            $user,
+            Auth::user(),
+            $data['role'],
+            $data['reason'],
+            (int) $data['district_id'],
+            (int) $data['department_id'],
+            $data['scopes'] ?? [],
+        );
 
         return back()->with('toast', '権限変更の申請を受け付けました。');
     }
