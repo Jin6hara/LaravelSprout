@@ -57,16 +57,15 @@ class RoleChange extends Model
         $user->department_id = $this->department_id;
         $user->save();
 
+        $user->managementScopes()->delete();
+
         if (in_array($this->requested_role, ['admin', 'super_admin'])) {
-            $user->managementScopes()->delete();
             foreach ($this->scopes ?? [] as $scope) {
-                $user->managementScopes()->firstOrCreate([
+                $user->managementScopes()->create([
                     'district_id'   => $scope['district_id'],
                     'department_id' => $scope['department_id'],
                 ]);
             }
-        } else {
-            $user->managementScopes()->delete();
         }
     }
 }

@@ -122,17 +122,21 @@ class RoleChangeTest extends TestCase
     /** 2. general 承認後: user_management_scopes が全削除される */
     public function test_general_approval_deletes_all_management_scopes(): void
     {
-        $district   = District::factory()->create();
-        $department = Department::factory()->create();
+        $district    = District::factory()->create();
+        $department1 = Department::factory()->create();
+        $department2 = Department::factory()->create();
+        $department3 = Department::factory()->create();
 
         $target = User::factory()->admin()->create();
-        UserManagementScope::factory()->count(3)->create([
-            'user_id'       => $target->id,
-            'district_id'   => $district->id,
-            'department_id' => $department->id,
-        ]);
+        foreach ([$department1, $department2, $department3] as $dept) {
+            UserManagementScope::factory()->create([
+                'user_id'       => $target->id,
+                'district_id'   => $district->id,
+                'department_id' => $dept->id,
+            ]);
+        }
 
-        $this->buildAndApply($target, 'general', $district->id, $department->id);
+        $this->buildAndApply($target, 'general', $district->id, $department1->id);
 
         $this->assertDatabaseMissing('user_management_scopes', ['user_id' => $target->id]);
     }
@@ -214,17 +218,20 @@ class RoleChangeTest extends TestCase
     /** 6. admin → general 降格後: 既存スコープが全削除される */
     public function test_demotion_from_admin_to_general_clears_scopes(): void
     {
-        $district   = District::factory()->create();
-        $department = Department::factory()->create();
+        $district    = District::factory()->create();
+        $department1 = Department::factory()->create();
+        $department2 = Department::factory()->create();
 
         $target = User::factory()->admin()->create();
-        UserManagementScope::factory()->count(2)->create([
-            'user_id'       => $target->id,
-            'district_id'   => $district->id,
-            'department_id' => $department->id,
-        ]);
+        foreach ([$department1, $department2] as $dept) {
+            UserManagementScope::factory()->create([
+                'user_id'       => $target->id,
+                'district_id'   => $district->id,
+                'department_id' => $dept->id,
+            ]);
+        }
 
-        $this->buildAndApply($target, 'general', $district->id, $department->id);
+        $this->buildAndApply($target, 'general', $district->id, $department1->id);
 
         $this->assertDatabaseMissing('user_management_scopes', ['user_id' => $target->id]);
         $this->assertTrue($target->fresh()->hasRole('general'));
