@@ -30,6 +30,10 @@ class UsersController extends Controller
                 $q->with('leavePeriods')
                     ->orderByDesc('start_date');
             },
+            'district',
+            'department',
+            'managementScopes.district',
+            'managementScopes.department',
         ]);
 
         // 最新の雇用期間を取得（今日の日付でフィルタ）
