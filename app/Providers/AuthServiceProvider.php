@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Models\ApprovalRequest;
+use App\Models\Department;
+use App\Models\District;
 use App\Models\Event;
 use App\Models\Expense;
 use App\Models\ExpenseReport;
@@ -11,6 +13,8 @@ use App\Models\ScheduleDetail;
 use App\Models\ScheduleLine;
 use App\Models\UserManagementScope;
 use App\Policies\ApprovalRequestPolicy;
+use App\Policies\DepartmentPolicy;
+use App\Policies\DistrictPolicy;
 use App\Policies\EventPolicy;
 use App\Policies\ExpensePolicy;
 use App\Policies\ExpenseReportPolicy;
@@ -34,6 +38,8 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\Leave::class               => \App\Policies\LeavePolicy::class,
         \App\Models\Post::class                => \App\Policies\PostPolicy::class,
         ApprovalRequest::class                 => ApprovalRequestPolicy::class,
+        Department::class                      => DepartmentPolicy::class,
+        District::class                        => DistrictPolicy::class,
         Event::class                           => EventPolicy::class,
         ExpenseReport::class                   => ExpenseReportPolicy::class,
         Expense::class                         => ExpensePolicy::class,

@@ -395,6 +395,7 @@ Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
 
 // ---------------------------------------------------------------------------------------------------------▼ Data関連ルート
 use App\Http\Controllers\CalendarPatternEditorController;
+use App\Http\Controllers\DistrictDepartmentController;
 
 Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
     Route::get('/data', function () {
@@ -430,6 +431,22 @@ Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
     Route::delete('/api/calendar-pattern/closure/{closure}', [CalendarPatternEditorController::class, 'closureDestroy'])->name('api.cpe.closure.destroy');
 });
 // ---------------------------------------------------------------------------------------------------------▲ Data関連ルート
+
+// ---------------------------------------------------------------------------------------------------------▼ District & Department (super_admin only)
+Route::middleware(['auth', 'role:super_admin'])->group(function () {
+    Route::get('/data/district-department', [DistrictDepartmentController::class, 'index'])->name('data.district_department');
+
+    Route::get('/api/district',               [DistrictDepartmentController::class, 'districtIndex'])->name('api.district.index');
+    Route::post('/api/district',              [DistrictDepartmentController::class, 'districtStore'])->name('api.district.store');
+    Route::put('/api/district/{district}',    [DistrictDepartmentController::class, 'districtUpdate'])->name('api.district.update');
+    Route::delete('/api/district/{district}', [DistrictDepartmentController::class, 'districtDestroy'])->name('api.district.destroy');
+
+    Route::get('/api/department',                [DistrictDepartmentController::class, 'departmentIndex'])->name('api.department.index');
+    Route::post('/api/department',               [DistrictDepartmentController::class, 'departmentStore'])->name('api.department.store');
+    Route::put('/api/department/{department}',   [DistrictDepartmentController::class, 'departmentUpdate'])->name('api.department.update');
+    Route::delete('/api/department/{department}',[DistrictDepartmentController::class, 'departmentDestroy'])->name('api.department.destroy');
+});
+// ---------------------------------------------------------------------------------------------------------▲ District & Department
 
 // ---------------------------------------------------------------------------------------------------------▼ CSV関連ルート
 use App\Http\Controllers\CsvController;
