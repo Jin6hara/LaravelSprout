@@ -28,6 +28,13 @@
     color: #6c757d;
 }
 
+.master-search {
+    background: #ffffff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 12px 16px;
+}
+
 #masterListSheet {
     width: 100%;
     height: auto;

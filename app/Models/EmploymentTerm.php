@@ -31,7 +31,10 @@ class EmploymentTerm extends Model
     /** 今日の日付で有効な雇用期間を取得するスコープ */
     public function scopeCurrentAt(Builder $q, $date = null): Builder
     {
-        $d = ($date ?? today())->toDateString();
+        $d = $date instanceof \Carbon\CarbonInterface
+            ? $date->toDateString()
+            : ($date ?? today()->toDateString());
+
         return $q->where('start_date', '<=', $d)
             ->where(function ($qq) use ($d) {
                 $qq->whereNull('end_date')->orWhere('end_date', '>=', $d);

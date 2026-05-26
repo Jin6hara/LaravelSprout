@@ -74,13 +74,46 @@ class AdminController extends Controller
         return view('admin.dashboard', compact('users', 'word', 'fields'));
     }
 
-    public function masterList(): View
+    public function masterList(Request $request): View
     {
         $this->authorize('viewAny', User::class);
 
-        $today = today()->toDateString();
+        $todayDate = today();
+        $today = $todayDate->toDateString();
+        $search = trim((string) $request->query('search', ''));
+        $statuses = collect((array) $request->query('statuses', ['active']))
+            ->intersect(['active', 'terminated'])
+            ->values();
 
-        $rows = $this->scopeService->targetUserQuery()
+        if ($statuses->isEmpty()) {
+            $statuses = collect(['active']);
+        }
+
+        $query = $this->scopeService->targetUserQuery()
+            ->when(filled($search), function (Builder $q) use ($search) {
+                $q->where(function (Builder $w) use ($search) {
+                    $w->whereLikeInsensitive('employee_code', $search)
+                        ->orWhereLikeInsensitive('first_name', $search)
+                        ->orWhereLikeInsensitive('family_name', $search)
+                        ->orWhereLikeInsensitive('phone_number', $search)
+                        ->orWhereHas('employmentTerms', fn (Builder $term) => $term->whereLikeInsensitive('type_code', $search))
+                        ->orWhereHas('restPatternAssignments.pattern', fn (Builder $pattern) => $pattern
+                            ->whereLikeInsensitive('name', $search)
+                            ->orWhereLikeInsensitive('code', $search));
+                });
+            })
+            ->where(function (Builder $q) use ($statuses, $today, $todayDate) {
+                if ($statuses->contains('active')) {
+                    $q->whereHas('employmentTerms', fn (Builder $term) => $term->currentAt($today));
+                }
+
+                if ($statuses->contains('terminated')) {
+                    $method = $statuses->contains('active') ? 'orWhere' : 'where';
+                    $q->{$method}(fn (Builder $terminated) => $terminated->terminated($todayDate));
+                }
+            });
+
+        $rows = $query
             ->with([
                 'district',
                 'department',
@@ -132,7 +165,7 @@ class AdminController extends Controller
             'count' => $rows->count(),
         ];
 
-        return view('user.master_list', compact('rows', 'summary'));
+        return view('user.master_list', compact('rows', 'summary', 'search', 'statuses'));
     }
 
     /**
