@@ -51,6 +51,10 @@ document.addEventListener('DOMContentLoaded', function () {
         r.rest_pattern_name ?? '',
         r.employment_note ?? '',
         r.user_note ?? '',
+        r.district_name ?? '',
+        r.department_name ?? '',
+        r.created_at ?? '',
+        r.updated_at ?? '',
     ]));
 
     const scrollWrapper = document.createElement('div');
@@ -76,6 +80,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 { title: 'Rest Pattern', width: 160, readOnly: true },
                 { title: 'Employment Note', width: 240, readOnly: true },
                 { title: 'User Note', width: 260, readOnly: true },
+                { title: 'District', width: 160, readOnly: true },
+                { title: 'Department', width: 160, readOnly: true },
+                { title: 'Created At', width: 150, readOnly: true },
+                { title: 'Last Updated', width: 150, readOnly: true },
             ],
             allowInsertRow: false,
             allowManualInsertRow: false,

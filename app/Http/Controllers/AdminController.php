@@ -82,6 +82,8 @@ class AdminController extends Controller
 
         $rows = $this->scopeService->targetUserQuery()
             ->with([
+                'district',
+                'department',
                 'employmentTerms' => fn ($q) => $q
                     ->orderByRaw('CASE WHEN start_date <= ? AND (end_date IS NULL OR end_date >= ?) THEN 0 ELSE 1 END', [$today, $today])
                     ->orderByDesc('start_date'),
@@ -118,6 +120,10 @@ class AdminController extends Controller
                     'employment_type_code' => $term?->type_code,
                     'employment_note' => $term?->note,
                     'rest_pattern_name' => $restAssignment?->pattern?->name,
+                    'district_name' => $user->district?->name,
+                    'department_name' => $user->department?->name,
+                    'created_at' => $user->created_at?->format('Y-m-d H:i'),
+                    'updated_at' => $user->updated_at?->format('Y-m-d H:i'),
                 ];
             })
             ->values();
