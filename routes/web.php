@@ -396,6 +396,7 @@ Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
 // ---------------------------------------------------------------------------------------------------------▼ Data関連ルート
 use App\Http\Controllers\CalendarPatternEditorController;
 use App\Http\Controllers\DistrictDepartmentController;
+use App\Http\Controllers\LessonEditController;
 
 Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
     Route::get('/data', function () {
@@ -404,6 +405,12 @@ Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
 
     // Calendar Pattern Editor page
     Route::get('/data/calendar-pattern', [CalendarPatternEditorController::class, 'index'])->name('data.calendar_pattern');
+
+    // Lesson edit page
+    Route::get('/data/lesson_edit', [LessonEditController::class, 'index'])->name('data.lessons.index');
+    Route::post('/data/lesson_edit', [LessonEditController::class, 'store'])->name('data.lessons.store');
+    Route::put('/data/lesson_edit/{lesson}', [LessonEditController::class, 'update'])->name('data.lessons.update');
+    Route::delete('/data/lesson_edit/{lesson}', [LessonEditController::class, 'destroy'])->name('data.lessons.destroy');
 
     // Events API (mini-calendar)
     Route::get('/api/calendar-pattern/events', [CalendarPatternEditorController::class, 'events'])->name('api.cpe.events');

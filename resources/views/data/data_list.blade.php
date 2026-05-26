@@ -11,9 +11,9 @@
         <a href="{{ route('schools.search') }}" class="list-group-item list-group-item-action">
             School Search
         </a>
-        <span class="list-group-item text-muted">
+        <a href="{{ route('data.lessons.index') }}" class="list-group-item list-group-item-action">
             Lesson
-        </span>
+        </a>
         <a href="{{ route('data.calendar_pattern') }}" class="list-group-item list-group-item-action">
             Calendar Pattern
         </a>
