@@ -74,6 +74,100 @@ class AdminController extends Controller
         return view('admin.dashboard', compact('users', 'word', 'fields'));
     }
 
+    public function masterList(Request $request): View
+    {
+        $this->authorize('viewAny', User::class);
+
+        $todayDate = today();
+        $today = $todayDate->toDateString();
+        $search = trim((string) $request->query('search', ''));
+        $statuses = collect((array) $request->query('statuses', ['active']))
+            ->intersect(['active', 'terminated'])
+            ->values();
+
+        if ($statuses->isEmpty()) {
+            $statuses = collect(['active']);
+        }
+
+        $query = $this->scopeService->targetUserQuery()
+            ->when(filled($search), function (Builder $q) use ($search) {
+                $q->where(function (Builder $w) use ($search) {
+                    $w->whereLikeInsensitive('employee_code', $search)
+                        ->orWhereLikeInsensitive('first_name', $search)
+                        ->orWhereLikeInsensitive('family_name', $search)
+                        ->orWhereLikeInsensitive('phone_number', $search)
+                        ->orWhereHas('employmentTerms', fn (Builder $term) => $term->whereLikeInsensitive('type_code', $search))
+                        ->orWhereHas('restPatternAssignments.pattern', fn (Builder $pattern) => $pattern
+                            ->whereLikeInsensitive('name', $search)
+                            ->orWhereLikeInsensitive('code', $search));
+                });
+            })
+            ->where(function (Builder $q) use ($statuses, $today, $todayDate) {
+                if ($statuses->contains('active')) {
+                    $q->whereHas('employmentTerms', fn (Builder $term) => $term->currentAt($today));
+                }
+
+                if ($statuses->contains('terminated')) {
+                    $method = $statuses->contains('active') ? 'orWhere' : 'where';
+                    $q->{$method}(fn (Builder $terminated) => $terminated->terminated($todayDate));
+                }
+            });
+
+        $rows = $query
+            ->with([
+                'district',
+                'department',
+                'employmentTerms' => fn ($q) => $q
+                    ->orderByRaw('CASE WHEN start_date <= ? AND (end_date IS NULL OR end_date >= ?) THEN 0 ELSE 1 END', [$today, $today])
+                    ->orderByDesc('start_date'),
+                'restPatternAssignments' => fn ($q) => $q
+                    ->with('pattern')
+                    ->orderByRaw('CASE WHEN start_date <= ? AND (end_date IS NULL OR end_date >= ?) THEN 0 ELSE 1 END', [$today, $today])
+                    ->orderByDesc('start_date'),
+            ])
+            ->orderBy('employee_code')
+            ->get()
+            ->map(function (User $user) use ($today) {
+                $term = $user->employmentTerms->first(
+                    fn ($row) => $row->start_date?->toDateString() <= $today
+                        && (is_null($row->end_date) || $row->end_date->toDateString() >= $today)
+                ) ?? $user->employmentTerms->first();
+
+                $restAssignment = $user->restPatternAssignments->first(
+                    fn ($row) => $row->start_date?->toDateString() <= $today
+                        && (is_null($row->end_date) || $row->end_date->toDateString() >= $today)
+                ) ?? $user->restPatternAssignments->first();
+
+                return [
+                    'profile_url' => route('admin.user.profile', $user),
+                    'employee_code' => $user->employee_code,
+                    'family_name' => $user->family_name,
+                    'first_name' => $user->first_name,
+                    'nick_name' => $user->middle_name,
+                    'email' => $user->email,
+                    'phone_number' => $user->phone_number,
+                    'address' => $user->address,
+                    'user_note' => $user->note,
+                    'employment_start_date' => $term?->start_date?->format('Y-m-d'),
+                    'employment_end_date' => $term?->end_date?->format('Y-m-d'),
+                    'employment_type_code' => $term?->type_code,
+                    'employment_note' => $term?->note,
+                    'rest_pattern_name' => $restAssignment?->pattern?->name,
+                    'district_name' => $user->district?->name,
+                    'department_name' => $user->department?->name,
+                    'created_at' => $user->created_at?->format('Y-m-d H:i'),
+                    'updated_at' => $user->updated_at?->format('Y-m-d H:i'),
+                ];
+            })
+            ->values();
+
+        $summary = [
+            'count' => $rows->count(),
+        ];
+
+        return view('user.master_list', compact('rows', 'summary', 'search', 'statuses'));
+    }
+
     /**
      * ダッシュボード・検索共通のユーザークエリ構築
      * 検索ワード・対象フィールド・ソート順を受け取り [users, word, fields] を返す

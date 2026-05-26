@@ -162,6 +162,11 @@ class User extends Authenticatable
         return $this->hasMany(EmploymentTerm::class);
     }
 
+    public function restPatternAssignments()
+    {
+        return $this->hasMany(UserRestPattern::class);
+    }
+
     /** 最新の雇用期間を1件だけ取得（N+1 を避けるための hasOne + latestOfMany） */
     public function latestEmploymentTerm()
     {
