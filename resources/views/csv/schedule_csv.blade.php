@@ -28,14 +28,34 @@
     </div>
     <div class="card-body">
         <p class="text-muted mb-3">
-            schedule_lines + schedule_details の全件を FileMaker 形式の CSV でダウンロードします。<br>
-            ファイル名：<code>schedules_YYYYmmdd_His.csv</code>　文字コード：UTF-8<br>
+            StartDate が選択年度内の schedule_lines + schedule_details を FileMaker 形式の CSV でダウンロードします。<br>
+            年度は 4月1日〜翌年3月31日 です。例：2026年度 = 2026/04/01〜2027/03/31<br>
+            過去年度に開始したデータは、EndDate が対象年度にはみ出していてもダウンロード対象外です。<br>
+            ファイル名：<code>schedules_YYYYfy_YYYYmmdd_His.csv</code>　文字コード：UTF-8<br>
             同一 schedule_line に複数 detail がある場合、1行目のみ schedule_line 情報を出力し、2行目以降は空白になります（FileMaker 形式）。<br>
             エクスポートした CSV をそのままインポートすることができます。
         </p>
-        <a href="{{ route('csv.schedules.export') }}" class="btn btn-success">
-            <i class="fas fa-download me-1"></i>CSV をダウンロード
-        </a>
+        <form action="{{ route('csv.schedules.export') }}" method="GET" class="row g-3 align-items-end">
+            <div class="col-md-4 col-lg-3">
+                <label for="fiscal_year" class="form-label fw-bold">対象年度</label>
+                <select id="fiscal_year" name="fiscal_year" class="form-select @error('fiscal_year') is-invalid @enderror" required>
+                    <option value="">年度を選択</option>
+                    @foreach ($fiscalYears as $year)
+                        <option value="{{ $year }}" @selected((string) old('fiscal_year', $currentFiscalYear) === (string) $year)>
+                            {{ $year }}年度
+                        </option>
+                    @endforeach
+                </select>
+                @error('fiscal_year')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+            <div class="col-md-auto">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-download me-1"></i>CSV をダウンロード
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -93,11 +113,102 @@
         {{-- サンプルCSV --}}
         <div class="mb-4">
             <h6 class="fw-bold">CSVサンプル（FileMaker 形式）</h6>
-            <pre class="bg-light p-2 rounded small" style="overflow-x:auto;">EndDate,EndTime,LineID,StartDate,StartTime,ClassSlots::cClassName,ClassSlots::EndDate,ClassSlots::LineID,ClassSlots::StartDate,ClassSlots::StartTime,Days::DayName,Employees ＭＡＩＮ::EmployeeCode,Schools::SchoolNumName,district_name,department_name
-2027/03/31,21:20,71446,2026/04/13,15:20,AN,2027/03/31,71446,2026/04/13,15:35,Monday,014064,103 - Kusatsu,Kinki,ECC
-,,,,,BX,2027/03/31,71446,2026/04/13,16:40,,,,
-,,,,,CP,2027/03/31,71446,2026/04/13,17:55,,,,
-,,,,,Enjoy Elem B,2027/03/31,71446,2026/04/13,19:10,,,,</pre>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered align-middle small">
+                    <thead class="table-light">
+                        <tr>
+                            <th>EndDate</th>
+                            <th>EndTime</th>
+                            <th>LineID</th>
+                            <th>StartDate</th>
+                            <th>StartTime</th>
+                            <th>ClassSlots::cClassName</th>
+                            <th>ClassSlots::EndDate</th>
+                            <th>ClassSlots::LineID</th>
+                            <th>ClassSlots::StartDate</th>
+                            <th>ClassSlots::StartTime</th>
+                            <th>Days::DayName</th>
+                            <th>Employees ＭＡＩＮ::EmployeeCode</th>
+                            <th>Schools::SchoolNumName</th>
+                            <th>district_name</th>
+                            <th>department_name</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>2027/03/31</td>
+                            <td>21:20</td>
+                            <td>71446</td>
+                            <td>2026/04/13</td>
+                            <td>15:20</td>
+                            <td>AN</td>
+                            <td>2027/03/31</td>
+                            <td>71446</td>
+                            <td>2026/04/13</td>
+                            <td>15:35</td>
+                            <td>Monday</td>
+                            <td>014064</td>
+                            <td>103 - Kusatsu</td>
+                            <td>Kinki</td>
+                            <td>ECC</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                            <td>BX</td>
+                            <td>2027/03/31</td>
+                            <td>71446</td>
+                            <td>2026/04/13</td>
+                            <td>16:40</td>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                            <td>CP</td>
+                            <td>2027/03/31</td>
+                            <td>71446</td>
+                            <td>2026/04/13</td>
+                            <td>17:55</td>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                            <td>Enjoy Elem B</td>
+                            <td>2027/03/31</td>
+                            <td>71446</td>
+                            <td>2026/04/13</td>
+                            <td>19:10</td>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-muted small mb-0">
+                ※ 同一 schedule_line に複数 detail がある場合、2行目以降の schedule_line 系カラムは CSV 上では空欄になります。
+            </p>
         </div>
 
         {{-- インポートフォーム --}}
