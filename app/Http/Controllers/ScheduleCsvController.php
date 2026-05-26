@@ -19,19 +19,35 @@ class ScheduleCsvController extends Controller
     {
         $this->authorize('viewAny', ScheduleLine::class);
 
-        return view('csv.schedule_csv');
+        $currentFiscalYear = now()->month >= 4 ? now()->year : now()->year - 1;
+        $fiscalYears = range($currentFiscalYear + 1, $currentFiscalYear - 5);
+
+        return view('csv.schedule_csv', [
+            'fiscalYears' => $fiscalYears,
+            'currentFiscalYear' => $currentFiscalYear,
+        ]);
     }
 
     /**
      * スケジュールデータを CSV でエクスポート
      * GET /csv/schedule/export — ScheduleCsvExportService でストリームダウンロード形式に出力
      */
-    public function export(ScheduleCsvExportService $service)
+    public function export(Request $request, ScheduleCsvExportService $service)
     {
         $this->authorize('viewAny', ScheduleLine::class);
 
-        $filename = 'schedules_' . now()->format('Ymd_His') . '.csv';
-        return $service->streamCsv($filename);
+        $validated = $request->validate([
+            'fiscal_year' => ['required', 'integer', 'between:2000,2100'],
+        ], [
+            'fiscal_year.required' => '年度を選択してください。',
+            'fiscal_year.integer' => '年度の指定が不正です。',
+            'fiscal_year.between' => '年度の指定が不正です。',
+        ]);
+
+        $fiscalYear = (int) $validated['fiscal_year'];
+        $filename = 'schedules_' . $fiscalYear . 'fy_' . now()->format('Ymd_His') . '.csv';
+
+        return $service->streamCsv($filename, $fiscalYear);
     }
 
     /**

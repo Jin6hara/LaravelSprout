@@ -37,12 +37,15 @@ class ScheduleCsvExportService
         6 => 'Saturday',
     ];
 
-    public function streamCsv(string $filename): StreamedResponse
+    public function streamCsv(string $filename, int $fiscalYear): StreamedResponse
     {
+        $fiscalStart = sprintf('%04d-04-01', $fiscalYear);
+        $fiscalEnd = sprintf('%04d-03-31', $fiscalYear + 1);
+
         // school_name => school_code の逆引きマップ（export 時の SchoolNumName 組み立て用）
         $schoolCodeMap = School::pluck('school_code', 'school_name')->all();
 
-        return response()->streamDownload(function () use ($schoolCodeMap) {
+        return response()->streamDownload(function () use ($schoolCodeMap, $fiscalStart, $fiscalEnd) {
             $fp = fopen('php://output', 'w');
 
             fputcsv($fp, self::HEADERS);
@@ -64,6 +67,8 @@ class ScheduleCsvExportService
                     'di.name as district_name',
                     'dep.name as department_name'
                 )
+                ->whereDate('sl.effective_start', '>=', $fiscalStart)
+                ->whereDate('sl.effective_start', '<=', $fiscalEnd)
                 ->orderBy('u.employee_code')
                 ->orderBy('sl.effective_start')
                 ->orderBy('sl.dow')
@@ -75,6 +80,8 @@ class ScheduleCsvExportService
                 $details = DB::table('schedule_details as sd')
                     ->join('lessons as l', 'sd.lesson_id', '=', 'l.id')
                     ->where('sd.schedule_line_id', $line->line_id)
+                    ->whereDate('sd.effective_start', '>=', $fiscalStart)
+                    ->whereDate('sd.effective_start', '<=', $fiscalEnd)
                     ->select(
                         'l.fm_lesson_code as lesson_code',
                         'sd.start_time as det_start_time',
