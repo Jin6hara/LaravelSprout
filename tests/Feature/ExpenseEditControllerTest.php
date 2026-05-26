@@ -27,6 +27,7 @@ use Tests\TestCase;
  *   4. ゲスト → ログインページへリダイレクト
  *   5. general ユーザーが他ユーザーの画面を見ようとすると welcome へリダイレクト
  *   6. admin がスコープ内のユーザーを閲覧できる → 200
+ *   6-2. admin がスコープ外ユーザーの編集URLを踏むと経費一覧へリダイレクト
  *
  * [submit — PUT /expenses/reports/{report}/submit]
  *   7. 本人が DRAFT レポートを提出できる → status=SUBMITTED、submitted_at に値が入る
@@ -226,6 +227,30 @@ class ExpenseEditControllerTest extends TestCase
              ->get(route('expenses.admin.edit', ['user' => $target->employee_code]))
              ->assertOk()
              ->assertViewIs('expenses.edit');
+    }
+
+    /**
+     * シナリオ 6-2: スコープ外ユーザーの古い編集URLは、年月を保ったまま経費一覧へ戻す
+     */
+    public function test_admin_edit_outside_scope_redirects_to_report(): void
+    {
+        [$admin, $scope] = $this->makeAdmin();
+
+        $otherDistrict   = District::factory()->create();
+        $otherDepartment = Department::factory()->create();
+        $outsideUser = User::factory()->general()->create([
+            'district_id'   => $otherDistrict->id,
+            'department_id' => $otherDepartment->id,
+        ]);
+
+        $this->actingAs($admin)
+             ->withSession(['selected_scope_id' => $scope->id])
+             ->get(route('expenses.admin.edit', [
+                 'user' => $outsideUser->employee_code,
+                 'year' => 2026,
+                 'month' => 5,
+             ]))
+             ->assertRedirect(route('expenses.admin.report', ['year' => 2026, 'month' => 5]));
     }
 
     // =========================================================================

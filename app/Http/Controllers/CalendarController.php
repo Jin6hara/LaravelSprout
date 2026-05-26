@@ -24,15 +24,13 @@ class CalendarController extends Controller
         $viewer = Auth::user();
         $canViewAnyUser = $viewer->can('viewAny', User::class);
         $viewUser = $user ?? ($canViewAnyUser ? null : $viewer);
-        $this->authorize('view', $user ?? $viewer);
 
         // スコープが切り替わった後に古いユーザーのURLが残っている場合はリセット
-        if ($canViewAnyUser && $viewUser !== null) {
-            $currentDid = $this->scopeService->currentDistrictId();
-            if ($currentDid !== null && $viewUser->district_id !== $currentDid) {
-                return redirect()->route('calendar.index');
-            }
+        if ($canViewAnyUser && $viewUser !== null && ! $viewer->can('view', $viewUser)) {
+            return redirect()->route('calendar.index', $request->only('month'));
         }
+
+        $this->authorize('view', $user ?? $viewer);
 
         // 管理者だけにセレクト用リストを渡す（district/department で直接絞り込み）
         $userOptions = $canViewAnyUser

@@ -28,6 +28,11 @@ class ExpenseEditController extends Controller
      */
     public function adminEdit(User $user, Request $req)
     {
+        $viewer = $req->user();
+        if ($viewer->can('viewAny', User::class) && ! $viewer->can('view', $user)) {
+            return redirect()->route('expenses.admin.report', $req->only(['year', 'month']));
+        }
+
         $this->authorize('view', $user);
         return $this->renderFor($user, $req);
     }
