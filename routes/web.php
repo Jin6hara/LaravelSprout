@@ -105,6 +105,7 @@ Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
     Route::get('/admin/register', [AdminController::class, 'showForm'])->name('register.showForm');
     Route::post('/admin/register', [AdminController::class, 'register'])->name('register.submit');
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+    Route::get('/user/master-list', [AdminController::class, 'masterList'])->name('user.master_list');
 });
 
 //プロファイル関連

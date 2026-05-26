@@ -74,6 +74,61 @@ class AdminController extends Controller
         return view('admin.dashboard', compact('users', 'word', 'fields'));
     }
 
+    public function masterList(): View
+    {
+        $this->authorize('viewAny', User::class);
+
+        $today = today()->toDateString();
+
+        $rows = $this->scopeService->targetUserQuery()
+            ->with([
+                'employmentTerms' => fn ($q) => $q
+                    ->orderByRaw('CASE WHEN start_date <= ? AND (end_date IS NULL OR end_date >= ?) THEN 0 ELSE 1 END', [$today, $today])
+                    ->orderByDesc('start_date'),
+                'restPatternAssignments' => fn ($q) => $q
+                    ->with('pattern')
+                    ->orderByRaw('CASE WHEN start_date <= ? AND (end_date IS NULL OR end_date >= ?) THEN 0 ELSE 1 END', [$today, $today])
+                    ->orderByDesc('start_date'),
+            ])
+            ->orderBy('employee_code')
+            ->get()
+            ->map(function (User $user) use ($today) {
+                $term = $user->employmentTerms->first(
+                    fn ($row) => $row->start_date?->toDateString() <= $today
+                        && (is_null($row->end_date) || $row->end_date->toDateString() >= $today)
+                ) ?? $user->employmentTerms->first();
+
+                $restAssignment = $user->restPatternAssignments->first(
+                    fn ($row) => $row->start_date?->toDateString() <= $today
+                        && (is_null($row->end_date) || $row->end_date->toDateString() >= $today)
+                ) ?? $user->restPatternAssignments->first();
+
+                return [
+                    'profile_url' => route('admin.user.profile', $user),
+                    'employee_code' => $user->employee_code,
+                    'family_name' => $user->family_name,
+                    'first_name' => $user->first_name,
+                    'nick_name' => $user->middle_name,
+                    'email' => $user->email,
+                    'phone_number' => $user->phone_number,
+                    'address' => $user->address,
+                    'user_note' => $user->note,
+                    'employment_start_date' => $term?->start_date?->format('Y-m-d'),
+                    'employment_end_date' => $term?->end_date?->format('Y-m-d'),
+                    'employment_type_code' => $term?->type_code,
+                    'employment_note' => $term?->note,
+                    'rest_pattern_name' => $restAssignment?->pattern?->name,
+                ];
+            })
+            ->values();
+
+        $summary = [
+            'count' => $rows->count(),
+        ];
+
+        return view('user.master_list', compact('rows', 'summary'));
+    }
+
     /**
      * ダッシュボード・検索共通のユーザークエリ構築
      * 検索ワード・対象フィールド・ソート順を受け取り [users, word, fields] を返す

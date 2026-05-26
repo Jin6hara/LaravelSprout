@@ -4,9 +4,14 @@
 <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h1 class="mb-0">管理者ダッシュボード</h1>
-        <a href="{{ route('register.showForm') }}" class="btn btn-sm btn-outline-secondary">
-            Register
-        </a>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ route('user.master_list') }}" class="btn btn-sm btn-outline-primary">
+                Master List
+            </a>
+            <a href="{{ route('register.showForm') }}" class="btn btn-sm btn-outline-secondary">
+                Register
+            </a>
+        </div>
     </div>
     <p class="text-center text-muted mb-4">ここでは管理者向けの情報を表示します。</p>
 
