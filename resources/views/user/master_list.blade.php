@@ -19,9 +19,14 @@
   <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
     <h1 class="mb-0">Teacher Master List</h1>
 
-    <a href="{{ route('admin.dashboard') }}" class="btn btn-sm btn-outline-secondary">
-      Dashboard
-    </a>
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{{ route('user.search.attendance') }}" class="btn btn-sm btn-outline-primary">
+        Attendance Search
+      </a>
+      <a href="{{ route('admin.dashboard') }}" class="btn btn-sm btn-outline-secondary">
+        Dashboard
+      </a>
+    </div>
   </div>
 
   <form method="GET" action="{{ route('user.master_list') }}" class="master-search mb-3" id="masterSearchForm">

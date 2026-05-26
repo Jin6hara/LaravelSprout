@@ -169,6 +169,8 @@ class CalendarResolver
                 // extendedProps の sort_order が無ければ自動補完
                 $arr['extendedProps'] = $arr['extendedProps'] ?? [];
                 $arr['extendedProps']['level'] = $arr['extendedProps']['level'] ?? ($arr['level'] ?? 9);
+                $arr['extendedProps']['type'] = $arr['extendedProps']['type'] ?? ($arr['type'] ?? null);
+                $arr['extendedProps']['plan_group'] = $arr['extendedProps']['plan_group'] ?? ($arr['planGroup'] ?? null);
 
                 $events[] = $arr;
             }

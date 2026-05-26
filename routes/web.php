@@ -15,6 +15,7 @@ use App\Http\Controllers\CalendarPatternController;
 use App\Http\Controllers\LeaveApplyController;
 use App\Http\Controllers\LeaveAttachmentController;
 use App\Http\Controllers\CurrentScopeController;
+use App\Http\Controllers\UserAttendanceSearchController;
 
 /*
 |--------------------------------------------------------------------------
@@ -106,6 +107,7 @@ Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
     Route::post('/admin/register', [AdminController::class, 'register'])->name('register.submit');
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
     Route::get('/user/master-list', [AdminController::class, 'masterList'])->name('user.master_list');
+    Route::get('/user/search/attendance', [UserAttendanceSearchController::class, 'attendance'])->name('user.search.attendance');
 });
 
 //プロファイル関連

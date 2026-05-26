@@ -29,6 +29,11 @@ class CandidateEvent
 
     public function toArray(): array
     {
+        $extendedProps = $this->extendedProps;
+        $extendedProps['level'] = $extendedProps['level'] ?? $this->level;
+        $extendedProps['type'] = $extendedProps['type'] ?? $this->type;
+        $extendedProps['plan_group'] = $extendedProps['plan_group'] ?? $this->planGroup;
+
         return [
             'title' => $this->title,
             'start' => $this->start,
@@ -36,7 +41,7 @@ class CandidateEvent
             'allDay' => $this->allDay,
             'classNames' => $this->classNames,
             'display' => $this->type, // ←追加（背景塗りつぶしスタイル）provoder側での指定は無効（なぜか不明）。
-            'extendedProps' => $this->extendedProps,
+            'extendedProps' => $extendedProps,
         ];
     }
 }
