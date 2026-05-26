@@ -25,12 +25,13 @@ class UserAttendanceSearchController extends Controller
 
         $validated = $request->validate([
             'date' => ['nullable', 'date'],
+            'mode' => ['nullable', 'in:available,regular_on'],
             'regular_on' => ['nullable', 'boolean'],
         ]);
 
         $date = Carbon::parse($validated['date'] ?? today()->toDateString())->startOfDay();
-        $mode = $request->boolean('regular_on') ? 'regular_on' : 'available';
-        $searched = $request->hasAny(['date', 'regular_on']);
+        $mode = $validated['mode'] ?? ($request->boolean('regular_on') ? 'regular_on' : 'available');
+        $searched = $request->hasAny(['date', 'mode', 'regular_on']);
 
         $results = collect();
 

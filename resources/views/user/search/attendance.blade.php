@@ -2,8 +2,45 @@
 
 @section('title', 'Attendance Search')
 
+@push('styles')
+<style>
+  .attendance-page {
+    max-width: 1320px;
+    margin: 20px auto;
+  }
+
+  .attendance-table {
+    min-width: 1120px;
+    table-layout: fixed;
+  }
+
+  .attendance-table th,
+  .attendance-table td {
+    vertical-align: middle;
+  }
+
+  .attendance-table .cell-nowrap {
+    white-space: nowrap;
+  }
+
+  .attendance-table .cell-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .attendance-actions {
+    white-space: nowrap;
+  }
+
+  .attendance-actions .btn + .btn {
+    margin-left: 4px;
+  }
+</style>
+@endpush
+
 @section('content')
-<div class="page-wrap">
+<div class="attendance-page">
   <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
     <h1 class="mb-0">Attendance Search</h1>
     <a href="{{ route('user.master_list') }}" class="btn btn-sm btn-outline-secondary">Master List</a>
@@ -23,17 +60,11 @@
         </div>
 
         <div class="col-md-6">
-          <div class="form-check">
-            <input class="form-check-input"
-                   type="checkbox"
-                   id="regularOn"
-                   name="regular_on"
-                   value="1"
-                   @checked($mode === 'regular_on')>
-            <label class="form-check-label" for="regularOn">
-              通常出勤する人を探す（未チェック: 残業できる人）
-            </label>
-          </div>
+          <label for="attendanceMode" class="form-label">Search Type</label>
+          <select id="attendanceMode" name="mode" class="form-select">
+            <option value="available" @selected($mode === 'available')>Search teachers with a regular day off</option>
+            <option value="regular_on" @selected($mode === 'regular_on')>Search teachers with a regular shift</option>
+          </select>
         </div>
 
         <div class="col-md-3 d-flex gap-2">
@@ -53,36 +84,51 @@
       <div>
         Date: <strong>{{ $date }}</strong>
         / Mode:
-        <strong>{{ $mode === 'regular_on' ? '通常出勤する人' : '残業できる人' }}</strong>
+        <strong>{{ $mode === 'regular_on' ? 'Teachers with a regular shift' : 'Teachers with a regular day off' }}</strong>
         / Results: <strong>{{ number_format($results->count()) }}</strong>
-      </div>
-      <div class="text-muted small">
-        Calendar Resolver の最終returnで判定しています。
       </div>
     </div>
 
     <div class="table-responsive">
-      <table class="table table-sm table-hover align-middle">
+      <table class="table table-sm table-hover align-middle attendance-table">
+        <colgroup>
+          <col style="width: 150px;">
+          <col style="width: 78px;">
+          <col style="width: 180px;">
+          <col style="width: 46px;">
+          <col style="width: 280px;">
+          <col style="width: 116px;">
+          <col style="width: 56px;">
+          <col style="width: 134px;">
+          <col style="width: 100px;">
+          <col style="width: 110px;">
+        </colgroup>
         <thead>
           <tr>
-            <th style="width: 44px;">
+            <th></th>
+            <th>Code</th>
+            <th>Name</th>
+            <th>
               <input type="checkbox" class="form-check-input" id="selectAllEmails" aria-label="Select all emails">
             </th>
-            <th>Employee Code</th>
-            <th>Name</th>
             <th>Email</th>
-            <th>Phone Number</th>
-            <th>Type Code</th>
+            <th>Phone</th>
+            <th>Type</th>
             <th>Rest Pattern</th>
             <th>District</th>
             <th>Department</th>
-            <th></th>
           </tr>
         </thead>
         <tbody>
           @forelse($results as $row)
             @php($user = $row['user'])
             <tr>
+              <td class="attendance-actions">
+                <a href="{{ route('admin.user.profile', $user) }}" class="btn btn-sm btn-outline-primary">Profile</a>
+                <a href="{{ route('calendar.index.user', $user) }}?month={{ substr($date, 0, 7) }}" class="btn btn-sm btn-outline-secondary">Schedule</a>
+              </td>
+              <td class="cell-nowrap">{{ $user->employee_code }}</td>
+              <td class="cell-truncate" title="{{ $user->family_name }} {{ $user->first_name }}">{{ $user->family_name }} {{ $user->first_name }}</td>
               <td>
                 <input type="checkbox"
                        class="form-check-input email-check"
@@ -90,18 +136,12 @@
                        @disabled(blank($user->email))
                        aria-label="Select {{ $user->family_name }} {{ $user->first_name }} email">
               </td>
-              <td>{{ $user->employee_code }}</td>
-              <td>{{ $user->family_name }} {{ $user->first_name }}</td>
-              <td>{{ $user->email }}</td>
-              <td>{{ $user->phone_number }}</td>
-              <td>{{ $row['type_code'] }}</td>
-              <td>{{ $row['rest_pattern'] }}</td>
-              <td>{{ $user->district?->name }}</td>
-              <td>{{ $user->department?->name }}</td>
-              <td class="text-end">
-                <a href="{{ route('admin.user.profile', $user) }}" class="btn btn-sm btn-outline-primary">Profile</a>
-                <a href="{{ route('calendar.index.user', $user) }}?month={{ substr($date, 0, 7) }}" class="btn btn-sm btn-outline-secondary">Schedule</a>
-              </td>
+              <td class="cell-truncate" title="{{ $user->email }}">{{ $user->email }}</td>
+              <td class="cell-nowrap">{{ $user->phone_number }}</td>
+              <td class="cell-nowrap">{{ $row['type_code'] }}</td>
+              <td class="cell-truncate" title="{{ $row['rest_pattern'] }}">{{ $row['rest_pattern'] }}</td>
+              <td class="cell-truncate" title="{{ $user->district?->name }}">{{ $user->district?->name }}</td>
+              <td class="cell-truncate" title="{{ $user->department?->name }}">{{ $user->department?->name }}</td>
             </tr>
           @empty
             <tr>
