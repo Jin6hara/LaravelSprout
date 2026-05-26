@@ -84,12 +84,56 @@
             </p>
         </div>
 
-        {{-- ヘッダー例 --}}
+        {{-- サンプルCSV --}}
         <div class="mb-4">
-            <h6 class="fw-bold">CSVヘッダー例</h6>
-            <pre class="bg-light p-2 rounded small">id,lesson_name,lesson_code,note,lesson_minute,lesson_type,ps_unique_lesson_code,fm_lesson_code,created_at,updated_at
-1,Global,BW,,45,kids,,,
-,NewLesson,NL,,30,Adults,PS001,FM001,</pre>
+            <h6 class="fw-bold">CSVサンプル</h6>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered align-middle small">
+                    <thead class="table-light">
+                        <tr>
+                            <th>id</th>
+                            <th>lesson_name</th>
+                            <th>lesson_code</th>
+                            <th>note</th>
+                            <th>lesson_minute</th>
+                            <th>lesson_type</th>
+                            <th>ps_unique_lesson_code</th>
+                            <th>fm_lesson_code</th>
+                            <th>created_at</th>
+                            <th>updated_at</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>Global</td>
+                            <td>BW</td>
+                            <td class="text-muted">空欄</td>
+                            <td>45</td>
+                            <td>kids</td>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">空欄</td>
+                            <td>NewLesson</td>
+                            <td>NL</td>
+                            <td class="text-muted">空欄</td>
+                            <td>30</td>
+                            <td>Adults</td>
+                            <td>PS001</td>
+                            <td>FM001</td>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-muted small mb-0">
+                ※ <code>created_at</code> / <code>updated_at</code> はインポート時に無視されます。空欄セルは <code>null</code> として保存されます。
+            </p>
         </div>
 
         {{-- インポートフォーム --}}

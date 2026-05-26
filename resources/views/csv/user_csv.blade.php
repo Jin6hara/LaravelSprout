@@ -97,12 +97,83 @@
             </p>
         </div>
 
-        {{-- ヘッダー例 --}}
+        {{-- サンプルCSV --}}
         <div class="mb-4">
-            <h6 class="fw-bold">CSVヘッダー例</h6>
-            <pre class="bg-light p-2 rounded small" style="overflow-x:auto;">id,family_name,first_name,middle_name,name_in_kana,email,gender,note,employee_code,address,phone_number,district_name,department_name,role,employment_start_date,employment_end_date,employment_type_name,employment_type_code,employment_note
-1,山田,太郎,,やまだたろう,taro@example.com,male,,000001,東京都渋谷区1-1,090-1234-5678,東京,営業部,general,2024-04-01,,正社員,SEI,
-,鈴木,花子,,すずきはなこ,hanako@example.com,female,,000002,,,大阪,総務部,admin,2024-04-01,,,,,</pre>
+            <h6 class="fw-bold">CSVサンプル</h6>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered align-middle small">
+                    <thead class="table-light">
+                        <tr>
+                            <th>id</th>
+                            <th>family_name</th>
+                            <th>first_name</th>
+                            <th>middle_name</th>
+                            <th>name_in_kana</th>
+                            <th>email</th>
+                            <th>gender</th>
+                            <th>note</th>
+                            <th>employee_code</th>
+                            <th>address</th>
+                            <th>phone_number</th>
+                            <th>district_name</th>
+                            <th>department_name</th>
+                            <th>role</th>
+                            <th>employment_start_date</th>
+                            <th>employment_end_date</th>
+                            <th>employment_type_name</th>
+                            <th>employment_type_code</th>
+                            <th>employment_note</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>Yamada</td>
+                            <td>Taro</td>
+                            <td class="text-muted">空欄</td>
+                            <td>やまだたろう</td>
+                            <td>taro@example.com</td>
+                            <td>male</td>
+                            <td class="text-muted">空欄</td>
+                            <td>000001</td>
+                            <td>東京都渋谷区1-1</td>
+                            <td>090-1234-5678</td>
+                            <td>Tokyo</td>
+                            <td>Sales</td>
+                            <td>general</td>
+                            <td>2024-04-01</td>
+                            <td class="text-muted">空欄</td>
+                            <td>Full-time</td>
+                            <td>FT</td>
+                            <td class="text-muted">空欄</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">空欄</td>
+                            <td>Suzuki</td>
+                            <td>Hanako</td>
+                            <td class="text-muted">空欄</td>
+                            <td>すずきはなこ</td>
+                            <td>hanako@example.com</td>
+                            <td>female</td>
+                            <td class="text-muted">空欄</td>
+                            <td>000002</td>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                            <td>Osaka</td>
+                            <td>Admin</td>
+                            <td>admin</td>
+                            <td>2024-04-01</td>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                            <td class="text-muted">空欄</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-muted small mb-0">
+                ※ <code>password</code> はインポート・エクスポート対象外です。新規作成時は初期パスワードが自動設定されます。
+            </p>
         </div>
 
         {{-- インポートフォーム --}}
