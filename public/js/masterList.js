@@ -31,17 +31,13 @@ document.addEventListener('DOMContentLoaded', function () {
         rows = [];
     }
 
-    function detailsBtn(url, label, disabled) {
-        if (disabled) {
-            return '<button type="button" class="btn btn-sm btn-outline-secondary master-detail-btn" disabled>Readonly</button>';
-        }
-
+    function detailsBtn(url, label) {
         if (!url) return '';
         return `<a href="${url}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary master-detail-btn">${label || 'Details'}</a>`;
     }
 
     const matrix = rows.map(r => ([
-        detailsBtn(r.detail_url, r.detail_label, r.detail_disabled),
+        detailsBtn(r.detail_url, r.detail_label),
         r.employee_code ?? '',
         r.family_name ?? '',
         r.first_name ?? '',

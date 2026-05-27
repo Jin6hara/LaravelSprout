@@ -129,7 +129,6 @@ class AdminController extends Controller
                         ? ($viewer->is($user) ? route('user.profile') : route('admin.user.profile', $user))
                         : route('calendar.index.user', $user),
                     'detail_label' => $viewer->isAdmin() ? 'Details' : 'Schedule',
-                    'detail_disabled' => $viewer->isAdmin() && ! $viewer->can('update', $user),
                     'employee_code' => $user->employee_code,
                     'family_name' => $user->family_name,
                     'first_name' => $user->first_name,
