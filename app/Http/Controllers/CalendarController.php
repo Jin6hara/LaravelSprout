@@ -30,10 +30,11 @@ class CalendarController extends Controller
             return redirect()->route('calendar.index', $request->only('month'));
         }
 
-        $this->authorize('view', $user ?? $viewer);
+        $this->authorize('viewCalendar', $user ?? $viewer); // Policy で viewCalendar を定義して、ユーザー自身・スコープ内管理者・schedule.viewAll 権限のいずれかで閲覧可能にする
 
-        // 管理者だけにセレクト用リストを渡す（district/department で直接絞り込み）
-        $userOptions = $canViewAnyUser
+        // schedule.viewAll 対象にセレクト用リストを渡す（district/department で直接絞り込み）
+        $canViewScheduleAll = $viewer->can('schedule.viewAll');
+        $userOptions = $canViewScheduleAll
             ? User::query()
                 ->when($this->scopeService->currentDistrictId(),
                     fn($q, $did) => $q->where('district_id', $did))
@@ -77,7 +78,7 @@ class CalendarController extends Controller
 
             $targetUserId = (int) $request->query('user_id', $viewer->id);
             $user = User::findOrFail($targetUserId);
-            $this->authorize('view', $user);
+            $this->authorize('viewCalendar', $user);
 
             $events = $resolver->build($user, $start, $end);
             return response()->json($events);

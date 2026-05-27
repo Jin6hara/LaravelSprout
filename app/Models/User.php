@@ -150,6 +150,7 @@ class User extends Authenticatable
 
         $map = [
             'general'      => '一般',
+            'trainer'      => 'トレーナー',
             'admin'        => '管理者',
             'super_admin'  => 'スーパー管理者',
         ];

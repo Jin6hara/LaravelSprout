@@ -13,7 +13,7 @@ class RoleSeeder extends Seeder
 {
     public function run(): void
     {
-        foreach (['super_admin', 'admin', 'general'] as $role) {
+        foreach (['super_admin', 'admin', 'general', 'trainer'] as $role) {
             Role::firstOrCreate(['name' => $role, 'guard_name' => 'web']);
         }
     }

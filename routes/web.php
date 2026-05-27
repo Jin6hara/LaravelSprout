@@ -41,7 +41,7 @@ Route::middleware(['auth', 'role:admin|super_admin'])
     ->name('current-scope.store');
 
 //共通
-Route::middleware(['auth', 'role:general|admin|super_admin'])->group(function () {
+Route::middleware(['auth'])->group(function () {
     Route::get('/', function () {
         return view('welcome');
     })->name('welcome');
@@ -54,7 +54,7 @@ Route::middleware(['auth'])->group(function () {
     // 自分のカレンダー
     Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
     // 管理者: 任意ユーザーのカレンダー（/calendar/{user}）
-    Route::get('/calendar/{user}', [CalendarController::class, 'index'])->middleware('role:admin|super_admin')->name('calendar.index.user');
+    Route::get('/calendar/{user}', [CalendarController::class, 'index'])->middleware('permission:schedule.viewAll')->name('calendar.index.user');
 });
 
 // Forecast関連

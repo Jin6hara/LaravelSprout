@@ -21,7 +21,7 @@
     </button>
     @endif
     @else
-    <span class="badge text-bg-secondary">Schedule</span>
+    <span class="badge text-bg-secondary">{{ $viewUser ? ($viewUser->first_name.' '.$viewUser->family_name) : 'Not Selected' }}</span>
     @endrole
   </div>
 </div>
@@ -42,7 +42,7 @@
     </div>
 
     {{-- ▼ 管理者だけ：対象ユーザーの選択 --}}
-    @role('admin|super_admin')
+    @can('schedule.viewAll')
     <div class="col-6 col-md-3 col-lg-2 ">
       <label class="form-label small mb-1 ">Teacher</label>
       <select name="user" class="form-select form-select-sm"
@@ -56,7 +56,7 @@
         @endforeach
       </select>
     </div>
-    @endrole
+    @endcan
     {{-- ▲ 管理者だけ：対象ユーザーの選択 --}}
 
   </div>
@@ -80,7 +80,7 @@
   </div>
 </div>
 {{-- Calendar Pattern モーダル（admin + viewUser 選択済み時のみ描画） --}}
-@role('admin|super_admin')
+@can('schedule.viewAll')
 @if($viewUser)
 @php
 $cpeProps = [
@@ -106,7 +106,7 @@ $cpeProps = [
   </div>
 </div>
 @endif
-@endrole
+@endcan
 
 @endsection
 

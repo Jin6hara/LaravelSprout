@@ -1,4 +1,4 @@
-@role('general')
+@unlessrole('admin|super_admin')
 
 <li class="nav-item">
     <a class="btn btn-sm btn-outline-secondary header-btn" href="{{ route('calendar.index') }}">

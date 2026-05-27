@@ -23,6 +23,14 @@ class UserPolicy
         return $currentUser->is($targetUser)
             || $this->isScopedAdminFor($currentUser, $targetUser);
     }
+
+    public function viewCalendar(User $currentUser, User $targetUser): bool
+    {
+        return $currentUser->is($targetUser)
+            || $this->isScopedAdminFor($currentUser, $targetUser)
+            || $currentUser->can('schedule.viewAll');
+    }
+
     /**
      * Determine whether the user can create models.
      */
