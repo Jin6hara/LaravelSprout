@@ -23,9 +23,6 @@
       <a href="{{ route('user.search.attendance') }}" class="btn btn-sm btn-outline-primary">
         Attendance Search
       </a>
-      <a href="{{ route('admin.dashboard') }}" class="btn btn-sm btn-outline-secondary">
-        Dashboard
-      </a>
     </div>
   </div>
 

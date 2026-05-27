@@ -18,7 +18,7 @@ use Tests\TestCase;
  *   1. GET /login → ログイン画面を表示できる（200）
  *
  * [ログイン成功]
- *   2. admin ユーザーがログインすると admin.dashboard へリダイレクト
+ *   2. admin ユーザーがログインすると ForecastCalendar へリダイレクト
  *   3. general ユーザーがログインすると welcome へリダイレクト
  *   4. ログイン後にセッションが再生成されること（セッション固定化攻撃対策）
  *
@@ -40,7 +40,7 @@ use Tests\TestCase;
  * - RefreshDatabase でテストごとに DB をリセット
  * - TestCase::setUp() で RoleSeeder が実行済み（admin/super_admin/general ロール作成）
  * - ログイン成功後のリダイレクト先はロールで分岐する（LoginController の仕様）
- *   admin/super_admin → admin.dashboard
+ *   admin/super_admin → calendar.forecast
  *   それ以外          → welcome
  * - レートリミットのキーは「メール（小文字）| IP」の sha256 ハッシュ
  *   テスト間で干渉しないよう setUp で RateLimiter::clear() を行う
@@ -91,12 +91,12 @@ class AuthTest extends TestCase
     // =========================================================================
 
     /**
-     * シナリオ 2: admin ユーザーがログインすると admin.dashboard へリダイレクト
+     * シナリオ 2: admin ユーザーがログインすると ForecastCalendar へリダイレクト
      *
      * - LoginController はロールを確認してリダイレクト先を決定する。
-     * - admin / super_admin → admin.dashboard
+     * - admin / super_admin → calendar.forecast
      */
-    public function test_admin_user_is_redirected_to_dashboard_after_login(): void
+    public function test_admin_user_is_redirected_to_forecast_calendar_after_login(): void
     {
         $admin = User::factory()->admin()->create([
             'password' => bcrypt($this->password),
@@ -105,7 +105,7 @@ class AuthTest extends TestCase
         $this->post(route('login.submit'), [
             'email'    => $admin->email,
             'password' => $this->password,
-        ])->assertRedirect(route('admin.dashboard'));
+        ])->assertRedirect(route('calendar.forecast'));
 
         $this->assertAuthenticatedAs($admin);
     }
