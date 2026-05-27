@@ -24,6 +24,38 @@
     font-size: 14px;
 }
 
+.expense-table-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.expense-height-select {
+    width: 130px;
+}
+
+.expense-report-top-scroll {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    background: #ffffff;
+    border: 1px solid #dee2e6;
+    border-bottom: 0;
+    height: 18px;
+}
+
+.expense-report-top-scroll-inner {
+    height: 1px;
+}
+
+.expense-report-scroll {
+    border: 1px solid #dee2e6;
+}
+
 #sheet {
     width: 100%;
     height: auto;
