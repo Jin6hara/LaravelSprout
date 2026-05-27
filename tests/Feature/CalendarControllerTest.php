@@ -7,6 +7,8 @@ use App\Models\District;
 use App\Models\User;
 use App\Models\UserManagementScope;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 /**
@@ -88,6 +90,8 @@ class CalendarControllerTest extends TestCase
             'district_id'   => $district->id,
             'department_id' => $department->id,
         ]);
+        $scheduleViewAll = Permission::firstOrCreate(['name' => 'schedule.viewAll', 'guard_name' => 'web']);
+        Role::findByName('admin', 'web')->givePermissionTo($scheduleViewAll);
 
         $scope = UserManagementScope::factory()->create([
             'user_id'       => $admin->id,

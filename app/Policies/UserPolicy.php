@@ -28,7 +28,8 @@ class UserPolicy
     {
         return $currentUser->is($targetUser)
             || $this->isScopedAdminFor($currentUser, $targetUser)
-            || $currentUser->can('schedule.viewAll');
+            // schedule.viewAll 権限があってスコープ内のユーザーも閲覧可能にする
+            || ($currentUser->can('schedule.viewAll') && $this->isInCurrentDistrictDepartment($targetUser));
     }
 
     /**
@@ -86,5 +87,13 @@ class UserPolicy
     {
         return $actor->isAdmin()
             && in_array($target->id, app(CurrentScopeService::class)->targetUserIds(), true);
+    }
+
+    private function isInCurrentDistrictDepartment(User $target): bool
+    {
+        $scope = app(CurrentScopeService::class);
+
+        return $target->district_id === $scope->currentDistrictId()
+            && $target->department_id === $scope->currentDepartmentId();
     }
 }
