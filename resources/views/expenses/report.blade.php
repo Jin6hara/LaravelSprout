@@ -102,13 +102,14 @@
         @endif
       </div>
 
-      <div class="ms-auto d-flex align-items-center" style="gap:8px; flex-wrap:wrap">
-        @foreach(($summary['by_status'] ?? []) as $st => $cnt)
-        @php
-        $cls = match (strtolower($st)) { 'draft' => 'badge-draft', 'submitted' => 'badge-submitted', default => 'badge-secondary', };
-        @endphp
-        <span class="badge {{ $cls }}" title="{{ $st }}">{{ strtoupper($st) }}: {{ $cnt }}</span>
-        @endforeach
+      <div class="expense-table-toolbar ms-auto">
+        <label for="expenseReportHeight" class="form-label m-0 small text-muted">Table Height</label>
+        <select id="expenseReportHeight" class="form-select form-select-sm expense-height-select">
+          <option value="420">Compact</option>
+          <option value="560">Standard</option>
+          <option value="720">Tall</option>
+          <option value="full">Full</option>
+        </select>
       </div>
 
       {{-- ▼ レコード無しメッセージ（count=0 の時のみ表示） --}}
