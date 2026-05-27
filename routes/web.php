@@ -105,7 +105,6 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
     Route::get('/admin/register', [AdminController::class, 'showForm'])->name('register.showForm');
     Route::post('/admin/register', [AdminController::class, 'register'])->name('register.submit');
-    Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
     Route::get('/user/master-list', [AdminController::class, 'masterList'])->name('user.master_list');
     Route::get('/user/search/attendance', [UserAttendanceSearchController::class, 'attendance'])->name('user.search.attendance');
 });
@@ -123,7 +122,6 @@ Route::prefix('profile')->group(function () {
     Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
         Route::get('{user}', [UsersController::class, 'show'])->name('admin.user.profile');
         Route::patch('/update-field/{user}', [UsersController::class, 'updateField'])->name('admin.user.updateField');
-        Route::get('/admin/search', [AdminController::class, 'search'])->name('admin.search');
     });
 });
 

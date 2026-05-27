@@ -19,18 +19,6 @@ class AdminController extends Controller
     ) {}
 
     /**
-     * ダッシュボード（初期表示：全件→検索UIも表示）
-     */
-    public function dashboard(Request $request): View
-    {
-        $this->authorize('viewAny', User::class);
-
-        [$users, $word, $fields] = $this->buildUserQuery($request);
-
-        return view('admin.dashboard', compact('users', 'word', 'fields'));
-    }
-
-    /**
      * ユーザー登録フォーム表示（現在のスコープ情報を表示）
      * GET /admin/register
      */
@@ -58,20 +46,7 @@ class AdminController extends Controller
             $this->scopeService->currentDepartmentId()
         );
 
-        return redirect()->route('admin.dashboard')->with('toast', '登録成功');
-    }
-
-    /**
-     * 検索（GET /admin/search）
-     * 実質は dashboard と100％同じロジック。URL表示を分けるため、ルートだけ分離。
-     */
-    public function search(Request $request): View
-    {
-        $this->authorize('viewAny', User::class);
-
-        [$users, $word, $fields] = $this->buildUserQuery($request);
-
-        return view('admin.dashboard', compact('users', 'word', 'fields'));
+        return redirect()->route('user.master_list')->with('toast', '登録成功');
     }
 
     public function masterList(Request $request): View
@@ -166,49 +141,6 @@ class AdminController extends Controller
         ];
 
         return view('user.master_list', compact('rows', 'summary', 'search', 'statuses'));
-    }
-
-    /**
-     * ダッシュボード・検索共通のユーザークエリ構築
-     * 検索ワード・対象フィールド・ソート順を受け取り [users, word, fields] を返す
-     */
-    private function buildUserQuery(Request $request): array
-    {
-        $allowedFields = ['employee_code', 'name', 'phone_number'];
-
-        $word   = trim((string) $request->query('search_word', ''));
-        $fields = collect((array) $request->query('fields', $allowedFields))
-            ->intersect($allowedFields)
-            ->take(3);
-
-        if ($fields->isEmpty()) {
-            $fields = collect($allowedFields);
-        }
-
-        $allowedSorts = ['updated_at', 'employee_code', 'name'];
-        $allowedDirs  = ['asc', 'desc'];
-
-        $sort = $request->query('sort', 'updated_at');
-        $dir  = strtolower($request->query('dir', 'desc'));
-
-        if (!in_array($sort, $allowedSorts, true)) $sort = 'updated_at';
-        if (!in_array($dir,  $allowedDirs,  true)) $dir  = 'desc';
-
-        $users = $this->scopeService->targetUserQuery()
-            ->when(filled($word), function (Builder $q) use ($word, $fields) {
-                $q->where(function (Builder $w) use ($word, $fields) {
-                    $fields->values()->each(function ($field, $i) use ($w, $word) {
-                        $method = $i === 0 ? 'whereLikeInsensitive' : 'orWhereLikeInsensitive';
-                        $w->{$method}($field, $word);
-                    });
-                });
-            })
-            ->orderBy($sort, $dir)
-            ->with(['district', 'department', 'latestEmploymentTerm'])
-            ->paginate(10)
-            ->withQueryString();
-
-        return [$users, $word, $fields];
     }
 
 }

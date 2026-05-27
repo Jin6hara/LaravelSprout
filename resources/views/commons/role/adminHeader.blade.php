@@ -44,7 +44,7 @@
 </li>
 
 <li class="nav-item">
-    <a class="btn btn-sm btn-outline-secondary header-btn" href="{{ route('admin.dashboard') }}">
+    <a class="btn btn-sm btn-outline-secondary header-btn" href="{{ route('user.master_list') }}">
         Teacher
     </a>
 </li>
