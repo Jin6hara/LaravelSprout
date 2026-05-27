@@ -48,6 +48,16 @@
 
 <span class="nav-divider">|</span>
 
+@can('teacher.viewAll')
+<li class="nav-item">
+    <a class="btn btn-sm btn-outline-secondary header-btn" href="{{ route('user.master_list') }}">
+        Teacher
+    </a>
+</li>
+
+<span class="nav-divider">|</span>
+@endcan
+
 <li class="nav-item">
     <a class="btn btn-sm btn-outline-secondary header-btn" href="{{ route('user.profile') }}">
         Profile

@@ -19,10 +19,15 @@ class PermissionRoleSeeder extends Seeder
         $trainer = Role::firstOrCreate(['name' => 'trainer',     'guard_name' => 'web']);
 
         $scheduleViewAll = Permission::firstOrCreate(['name' => 'schedule.viewAll', 'guard_name' => 'web']);
+        $teacherViewAll = Permission::firstOrCreate(['name' => 'teacher.viewAll', 'guard_name' => 'web']);
 
         $super->givePermissionTo($scheduleViewAll);
         $admin->givePermissionTo($scheduleViewAll);
         $trainer->givePermissionTo($scheduleViewAll);
+
+        $super->givePermissionTo($teacherViewAll);
+        $admin->givePermissionTo($teacherViewAll);
+        $trainer->givePermissionTo($teacherViewAll);
 
         // 2) ユーザーID → ロールの割当マップ
         $explicit = [

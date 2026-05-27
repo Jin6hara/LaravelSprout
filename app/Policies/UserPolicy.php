@@ -15,6 +15,11 @@ class UserPolicy
         return $user->isAdmin();
     }
 
+    public function viewTeacherAny(User $user): bool
+    {
+        return $user->can('teacher.viewAll');
+    }
+
     /**
      * Determine whether the user can view the model.
      */

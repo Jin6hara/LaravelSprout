@@ -31,13 +31,17 @@ document.addEventListener('DOMContentLoaded', function () {
         rows = [];
     }
 
-    function detailsBtn(url) {
+    function detailsBtn(url, label, disabled) {
+        if (disabled) {
+            return '<button type="button" class="btn btn-sm btn-outline-secondary master-detail-btn" disabled>Readonly</button>';
+        }
+
         if (!url) return '';
-        return `<a href="${url}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">Details</a>`;
+        return `<a href="${url}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary master-detail-btn">${label || 'Details'}</a>`;
     }
 
     const matrix = rows.map(r => ([
-        detailsBtn(r.profile_url),
+        detailsBtn(r.detail_url, r.detail_label, r.detail_disabled),
         r.employee_code ?? '',
         r.family_name ?? '',
         r.first_name ?? '',
@@ -186,7 +190,7 @@ document.addEventListener('DOMContentLoaded', function () {
         worksheets: [{
             data: matrix,
             columns: [
-                { title: 'Details', width: 90, readOnly: true, type: 'html' },
+                { title: 'Details', width: 100, readOnly: true, type: 'html' },
                 { title: 'Employee Code', width: 130, readOnly: true },
                 { title: 'Family Name', width: 140, readOnly: true },
                 { title: 'First Name', width: 140, readOnly: true },

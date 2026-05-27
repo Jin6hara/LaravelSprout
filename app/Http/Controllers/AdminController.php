@@ -51,10 +51,11 @@ class AdminController extends Controller
 
     public function masterList(Request $request): View
     {
-        $this->authorize('viewAny', User::class);
+        $this->authorize('viewTeacherAny', User::class);
 
         $todayDate = today();
         $today = $todayDate->toDateString();
+        $viewer = $request->user();
         $search = trim((string) $request->query('search', ''));
         $statuses = collect((array) $request->query('statuses', ['active']))
             ->intersect(['active', 'terminated'])
@@ -64,7 +65,17 @@ class AdminController extends Controller
             $statuses = collect(['active']);
         }
 
-        $query = $this->scopeService->targetUserQuery()
+        $districtId = $this->scopeService->currentDistrictId();
+        $departmentId = $this->scopeService->currentDepartmentId();
+
+        $query = User::query()
+            ->when(
+                $districtId !== null && $departmentId !== null,
+                fn (Builder $q) => $q
+                    ->where('district_id', $districtId)
+                    ->where('department_id', $departmentId),
+                fn (Builder $q) => $q->whereKey($viewer->id)
+            )
             ->when(filled($search), function (Builder $q) use ($search) {
                 $q->where(function (Builder $w) use ($search) {
                     $w->whereLikeInsensitive('employee_code', $search)
@@ -102,7 +113,7 @@ class AdminController extends Controller
             ])
             ->orderBy('employee_code')
             ->get()
-            ->map(function (User $user) use ($today) {
+            ->map(function (User $user) use ($today, $viewer) {
                 $term = $user->employmentTerms->first(
                     fn ($row) => $row->start_date?->toDateString() <= $today
                         && (is_null($row->end_date) || $row->end_date->toDateString() >= $today)
@@ -114,7 +125,11 @@ class AdminController extends Controller
                 ) ?? $user->restPatternAssignments->first();
 
                 return [
-                    'profile_url' => route('admin.user.profile', $user),
+                    'detail_url' => $viewer->isAdmin()
+                        ? ($viewer->is($user) ? route('user.profile') : route('admin.user.profile', $user))
+                        : route('calendar.index.user', $user),
+                    'detail_label' => $viewer->isAdmin() ? 'Details' : 'Schedule',
+                    'detail_disabled' => $viewer->isAdmin() && ! $viewer->can('update', $user),
                     'employee_code' => $user->employee_code,
                     'family_name' => $user->family_name,
                     'first_name' => $user->first_name,
