@@ -128,8 +128,33 @@
       ];
     });
 
+    const sheetEl = document.getElementById('sheet');
+    const scrollWrapper = document.getElementById('sheetScroll');
+    const heightSelect = document.getElementById('expenseEditHeight');
+    const savedHeight = localStorage.getItem('expenseEditHeight') || '560';
+
+    if (!sheetEl || !scrollWrapper) return;
+
+    if (heightSelect) {
+      heightSelect.value = savedHeight;
+    }
+
+    function applyTableHeight(value) {
+      if (value === 'full') {
+        scrollWrapper.style.maxHeight = '';
+      } else {
+        scrollWrapper.style.maxHeight = `${Number(value) || 560}px`;
+      }
+    }
+
+    applyTableHeight(savedHeight);
+    heightSelect?.addEventListener('change', () => {
+      localStorage.setItem('expenseEditHeight', heightSelect.value);
+      applyTableHeight(heightSelect.value);
+    });
+
     // シート生成
-    const sheet = jspreadsheet(document.getElementById('sheet'), {
+    const sheet = jspreadsheet(sheetEl, {
       worksheets: [{
         data: matrix,
         columns: [
@@ -156,7 +181,6 @@
         allowRenameColumn: false,
         allowComments: false,
         allowSaving: false,
-        freezeColumns: 1,
         tableOverflow: false,
         tableHeight: '470px',
         onselection: function (el, column, row) {
@@ -346,7 +370,6 @@
     }
 
     // クリック委譲（削除と追加）
-    const sheetEl = document.getElementById('sheet');
     sheetEl.addEventListener('click', async (e) => {
       if (isLocked) return; // ★ ロック時はセル内ボタン無効
 
