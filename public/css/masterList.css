@@ -35,6 +35,38 @@
     padding: 12px 16px;
 }
 
+.master-table-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.master-height-select {
+    width: 130px;
+}
+
+.master-list-top-scroll {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    background: #ffffff;
+    border: 1px solid #dee2e6;
+    border-bottom: 0;
+    height: 18px;
+}
+
+.master-list-top-scroll-inner {
+    height: 1px;
+}
+
+.master-list-scroll {
+    border: 1px solid #dee2e6;
+}
+
 #masterListSheet {
     width: 100%;
     height: auto;

@@ -57,10 +57,130 @@ document.addEventListener('DOMContentLoaded', function () {
         r.updated_at ?? '',
     ]));
 
+    const heightSelect = document.getElementById('masterListHeight');
+    const savedHeight = localStorage.getItem('masterListHeight') || '560';
+    if (heightSelect) {
+        heightSelect.value = savedHeight;
+    }
+
+    const topScroll = document.createElement('div');
+    topScroll.className = 'master-list-top-scroll';
+    const topScrollInner = document.createElement('div');
+    topScrollInner.className = 'master-list-top-scroll-inner';
+    topScroll.appendChild(topScrollInner);
+
     const scrollWrapper = document.createElement('div');
-    scrollWrapper.style.cssText = 'width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;';
-    el.parentNode.insertBefore(scrollWrapper, el);
+    scrollWrapper.className = 'master-list-scroll';
+    scrollWrapper.style.cssText = 'width:100%;overflow:auto;-webkit-overflow-scrolling:touch;';
+    el.parentNode.insertBefore(topScroll, el);
+    topScroll.parentNode.insertBefore(scrollWrapper, el);
     scrollWrapper.appendChild(el);
+
+    function applyTableHeight(value) {
+        if (value === 'full') {
+            scrollWrapper.style.maxHeight = '';
+        } else {
+            scrollWrapper.style.maxHeight = `${Number(value) || 560}px`;
+        }
+    }
+
+    function syncTopScrollWidth() {
+        topScrollInner.style.width = `${scrollWrapper.scrollWidth}px`;
+    }
+
+    function syncScrollLeft(source, target) {
+        if (Math.abs(target.scrollLeft - source.scrollLeft) > 1) {
+            target.scrollLeft = source.scrollLeft;
+        }
+    }
+
+    applyTableHeight(savedHeight);
+    heightSelect?.addEventListener('change', () => {
+        localStorage.setItem('masterListHeight', heightSelect.value);
+        applyTableHeight(heightSelect.value);
+        window.requestAnimationFrame(syncTopScrollWidth);
+    });
+
+    topScroll.addEventListener('scroll', () => syncScrollLeft(topScroll, scrollWrapper));
+    scrollWrapper.addEventListener('scroll', () => syncScrollLeft(scrollWrapper, topScroll));
+
+    function enableSelectionAutoScroll(wrapper, sheetEl) {
+        let isSelecting = false;
+        let scrollXSpeed = 0;
+        let scrollYSpeed = 0;
+        let frameId = null;
+        const horizontalEdgeSize = 80;
+        const verticalEdgeSize = 110;
+        const maxHorizontalSpeed = 28;
+        const maxVerticalSpeed = 24;
+
+        function stopAutoScroll() {
+            isSelecting = false;
+            scrollXSpeed = 0;
+            scrollYSpeed = 0;
+            if (frameId) {
+                window.cancelAnimationFrame(frameId);
+                frameId = null;
+            }
+        }
+
+        function scrollStep() {
+            if (!isSelecting || (scrollXSpeed === 0 && scrollYSpeed === 0)) {
+                frameId = null;
+                return;
+            }
+
+            if (scrollXSpeed !== 0) {
+                wrapper.scrollLeft += scrollXSpeed;
+            }
+
+            if (scrollYSpeed !== 0) {
+                wrapper.scrollTop += scrollYSpeed;
+            }
+
+            frameId = window.requestAnimationFrame(scrollStep);
+        }
+
+        function updateAutoScroll(clientX, clientY) {
+            if (!isSelecting) return;
+
+            const rect = wrapper.getBoundingClientRect();
+            const distanceLeft = clientX - rect.left;
+            const distanceRight = rect.right - clientX;
+            const distanceTop = clientY - rect.top;
+            const distanceBottom = rect.bottom - clientY;
+
+            if (distanceLeft >= 0 && distanceLeft < horizontalEdgeSize) {
+                scrollXSpeed = -Math.ceil(((horizontalEdgeSize - distanceLeft) / horizontalEdgeSize) * maxHorizontalSpeed);
+            } else if (distanceRight >= 0 && distanceRight < horizontalEdgeSize) {
+                scrollXSpeed = Math.ceil(((horizontalEdgeSize - distanceRight) / horizontalEdgeSize) * maxHorizontalSpeed);
+            } else {
+                scrollXSpeed = 0;
+            }
+
+            if (distanceTop >= 0 && distanceTop < verticalEdgeSize) {
+                scrollYSpeed = -Math.ceil(((verticalEdgeSize - distanceTop) / verticalEdgeSize) * maxVerticalSpeed);
+            } else if (distanceBottom >= 0 && distanceBottom < verticalEdgeSize) {
+                scrollYSpeed = Math.ceil(((verticalEdgeSize - distanceBottom) / verticalEdgeSize) * maxVerticalSpeed);
+            } else {
+                scrollYSpeed = 0;
+            }
+
+            if ((scrollXSpeed !== 0 || scrollYSpeed !== 0) && !frameId) {
+                frameId = window.requestAnimationFrame(scrollStep);
+            }
+        }
+
+        sheetEl.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;
+            isSelecting = true;
+            updateAutoScroll(e.clientX, e.clientY);
+        }, true);
+
+        document.addEventListener('mousemove', (e) => updateAutoScroll(e.clientX, e.clientY), true);
+        document.addEventListener('mouseup', stopAutoScroll, true);
+        window.addEventListener('blur', stopAutoScroll);
+    }
 
     jspreadsheet(el, {
         worksheets: [{
@@ -98,4 +218,15 @@ document.addEventListener('DOMContentLoaded', function () {
             tableHeight: '560px',
         }],
     });
+
+    window.requestAnimationFrame(syncTopScrollWidth);
+    if (window.ResizeObserver) {
+        const resizeObserver = new ResizeObserver(syncTopScrollWidth);
+        resizeObserver.observe(el);
+        resizeObserver.observe(scrollWrapper);
+    } else {
+        window.addEventListener('resize', syncTopScrollWidth);
+    }
+
+    enableSelectionAutoScroll(scrollWrapper, el);
 });

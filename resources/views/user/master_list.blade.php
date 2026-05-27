@@ -74,9 +74,19 @@
   </form>
 
   <div class="header-box mb-4">
-    <div class="meta w-100">
+    <div class="meta w-100 align-items-center">
       <div>Total Teachers: <strong>{{ number_format($summary['count'] ?? 0) }}</strong></div>
       <div class="muted">Current employment/rest pattern is shown first when available.</div>
+
+      <div class="master-table-toolbar ms-auto">
+        <label for="masterListHeight" class="form-label m-0 small text-muted">Table Height</label>
+        <select id="masterListHeight" class="form-select form-select-sm master-height-select">
+          <option value="420">Compact</option>
+          <option value="560">Standard</option>
+          <option value="720">Tall</option>
+          <option value="full">Full</option>
+        </select>
+      </div>
     </div>
   </div>
 
