@@ -15,6 +15,11 @@ class UserPolicy
         return $user->isAdmin();
     }
 
+    public function viewTeacherAny(User $user): bool
+    {
+        return $user->can('teacher.viewAll');
+    }
+
     /**
      * Determine whether the user can view the model.
      */
@@ -23,6 +28,15 @@ class UserPolicy
         return $currentUser->is($targetUser)
             || $this->isScopedAdminFor($currentUser, $targetUser);
     }
+
+    public function viewCalendar(User $currentUser, User $targetUser): bool
+    {
+        return $currentUser->is($targetUser)
+            || $this->isScopedAdminFor($currentUser, $targetUser)
+            // schedule.viewAll 権限があってスコープ内のユーザーも閲覧可能にする
+            || ($currentUser->can('schedule.viewAll') && $this->isInCurrentDistrictDepartment($targetUser));
+    }
+
     /**
      * Determine whether the user can create models.
      */
@@ -78,5 +92,13 @@ class UserPolicy
     {
         return $actor->isAdmin()
             && in_array($target->id, app(CurrentScopeService::class)->targetUserIds(), true);
+    }
+
+    private function isInCurrentDistrictDepartment(User $target): bool
+    {
+        $scope = app(CurrentScopeService::class);
+
+        return $target->district_id === $scope->currentDistrictId()
+            && $target->department_id === $scope->currentDepartmentId();
     }
 }

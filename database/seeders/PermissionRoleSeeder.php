@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use App\Models\User;
 
@@ -15,14 +16,27 @@ class PermissionRoleSeeder extends Seeder
         $super   = Role::firstOrCreate(['name' => 'super_admin', 'guard_name' => 'web']);
         $admin   = Role::firstOrCreate(['name' => 'admin',       'guard_name' => 'web']);
         $general = Role::firstOrCreate(['name' => 'general',     'guard_name' => 'web']);
+        $trainer = Role::firstOrCreate(['name' => 'trainer',     'guard_name' => 'web']);
+
+        $scheduleViewAll = Permission::firstOrCreate(['name' => 'schedule.viewAll', 'guard_name' => 'web']);
+        $teacherViewAll = Permission::firstOrCreate(['name' => 'teacher.viewAll', 'guard_name' => 'web']);
+
+        $super->givePermissionTo($scheduleViewAll);
+        $admin->givePermissionTo($scheduleViewAll);
+        $trainer->givePermissionTo($scheduleViewAll);
+
+        $super->givePermissionTo($teacherViewAll);
+        $admin->givePermissionTo($teacherViewAll);
+        $trainer->givePermissionTo($teacherViewAll);
 
         // 2) ユーザーID → ロールの割当マップ
         $explicit = [
             6 => 'super_admin',
             5 => 'admin',
+            4 => 'trainer',
         ];
 
-        // 3) ID 1〜19 を走査し、6→super_admin、5→admin、それ以外→general を付与
+        // 3) ID 1〜19 を走査し、明示指定以外は general を付与
         foreach (range(1, 19) as $id) {
             $user = User::find($id);
             if (!$user) {

@@ -84,7 +84,8 @@ h1 {
     text-decoration: none !important;
 }
 
-#masterListSheet .btn.btn-sm.btn-outline-primary {
+#masterListSheet .master-detail-btn {
+    width: 84px;
     padding: 2px 8px;
     line-height: 0.9;
 }
