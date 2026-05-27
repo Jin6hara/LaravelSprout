@@ -25,6 +25,23 @@
     color: #6b7280;
 }
 
+.expense-edit-table-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.expense-edit-height-select {
+    width: 130px;
+}
+
+#sheetScroll {
+    width: 100%;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
 #sheet {
     width: 100%;
     max-width: 100%;

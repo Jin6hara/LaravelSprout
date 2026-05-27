@@ -98,6 +98,16 @@
 
         <div class="ms-auto mt-2 mt-sm-0"></div>
 
+        <div class="expense-edit-table-toolbar mt-2 mt-sm-0">
+          <label for="expenseEditHeight" class="form-label m-0 small text-muted">Table Height</label>
+          <select id="expenseEditHeight" class="form-select form-select-sm expense-edit-height-select">
+            <option value="420">Compact</option>
+            <option value="560">Standard</option>
+            <option value="720">Tall</option>
+            <option value="full">Full</option>
+          </select>
+        </div>
+
         {{-- ✅ JS不要でモーダルを開く（data 属性方式） --}}
         <button type="button"
           class="btn btn-warning btn-sm mt-2 mt-sm-0"
@@ -109,6 +119,20 @@
         <div class="ms-auto mt-2 mt-sm-0 d-flex align-items-center gap-2">
 
           @if(auth()->user()?->hasAnyRole(['admin','super_admin']))
+            <span class="text-muted small">
+              Submitted（{{ optional($report->submitted_at)->format('Y-m-d H:i') }}）
+            </span>
+
+            <div class="expense-edit-table-toolbar">
+              <label for="expenseEditHeight" class="form-label m-0 small text-muted">Table Height</label>
+              <select id="expenseEditHeight" class="form-select form-select-sm expense-edit-height-select">
+                <option value="420">Compact</option>
+                <option value="560">Standard</option>
+                <option value="720">Tall</option>
+                <option value="full">Full</option>
+              </select>
+            </div>
+
             {{-- 管理者のみ Unsubmit ボタン表示 --}}
             <form method="POST" action="{{ route('expenses.unsubmit', $report) }}">
               @csrf
@@ -117,15 +141,21 @@
                 Unsubmit
               </button>
             </form>
-
-            <span class="text-muted small">
-              Submitted（{{ optional($report->submitted_at)->format('Y-m-d H:i') }}）
-            </span>
           @else
             {{-- 一般ユーザーは従来通り表示のみ --}}
             <span class="text-muted">
               Submitted（{{ optional($report->submitted_at)->format('Y-m-d H:i') }}）
             </span>
+
+            <div class="expense-edit-table-toolbar">
+              <label for="expenseEditHeight" class="form-label m-0 small text-muted">Table Height</label>
+              <select id="expenseEditHeight" class="form-select form-select-sm expense-edit-height-select">
+                <option value="420">Compact</option>
+                <option value="560">Standard</option>
+                <option value="720">Tall</option>
+                <option value="full">Full</option>
+              </select>
+            </div>
           @endif
         </div>
       @endif
@@ -144,7 +174,7 @@
   {{-- ▼ ルート申請表示カード: 'showMore' => trueでボタンをactive --}}
   @include('routes.showCard', ['routeDecl' => $routeDecl, 'showMore' => true])
 
-  <div id="sheetScroll" style="overflow-x:auto;">
+  <div id="sheetScroll">
     <div id="sheet"></div>
   </div>
 
