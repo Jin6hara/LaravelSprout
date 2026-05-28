@@ -2,10 +2,10 @@
 
 @section('content')
 <div class="container">
-    <h2>承認依頼の詳細</h2>
+    <h2>Approval Request Details</h2>
 
     <div class="card mt-3">
-        <div class="card-body">
+        <div class="card-body approval-show-panel">
             @php
             $meta       = $approvalRequest->metadata ?? [];
             $approvable = $approvalRequest->approvable;
@@ -14,36 +14,36 @@
 
             <table class="table table-bordered">
                 <tr>
-                    <th>タイトル</th>
+                    <th>Title</th>
                     <td>{{ $approvalRequest->title }}</td>
                 </tr>
                 <tr>
-                    <th>依頼者</th>
+                    <th>Requester</th>
                     <td>{{ $approvalRequest->requester->name }} [{{ $approvalRequest->requester->employee_code }}]</td>
                 </tr>
                 <tr>
-                    <th>状態</th>
+                    <th>Status</th>
                     <td>
                         @if($approvalRequest->current_state === 'pending')
-                        <span class="badge bg-warning">承認待ち</span>
+                        <span class="badge bg-warning">Pending</span>
                         @elseif($approvalRequest->current_state === 'approved')
-                        <span class="badge bg-success">承認済み</span>
+                        <span class="badge bg-success">Approved</span>
                         @elseif($approvalRequest->current_state === 'denied')
-                        <span class="badge bg-danger">却下</span>
+                        <span class="badge bg-danger">Denied</span>
                         @endif
                     </td>
                 </tr>
 
                 @if($isLeave)
-                {{-- 有給/特別休暇申請の場合 --}}
+                {{-- Leave request --}}
                 <tr>
-                    <th>申請種別</th>
+                    <th>Request Type</th>
                     <td>
                         @php
                         $kind = $meta['kind'] ?? $approvable->kind ?? null;
                         $kindLabel = match($kind) {
-                        'paid' => '有給（ALP）',
-                        'special' => '特別休暇',
+                        'paid' => 'Paid Leave (ALP)',
+                        'special' => 'Special Leave',
                         default => $kind,
                         };
                         @endphp
@@ -52,15 +52,15 @@
                 </tr>
                 @if(($meta['kind'] ?? null) === 'special' || ($approvable->kind ?? null) === 'special')
                 <tr>
-                    <th>特別休暇の種類</th>
+                    <th>Special Leave Type</th>
                     <td>{{ $meta['special_type'] ?? $approvable->special_type ?? '-' }}</td>
                 </tr>
                 <tr>
-                    <th>添付</th>
+                    <th>Attachment</th>
                     <td>
                         @if($approvable->attachment)
                         <a href="{{ route('leaves.attachments.show', ['leave' => $approvable->id, 'attachment' => $approvable->attachment->id]) }}" target="_blank">
-                            {{ $approvable->attachment->original_name ?? '添付ファイルを開く' }}
+                            {{ $approvable->attachment->original_name ?? 'Open attachment' }}
                         </a>
                         @if($approvable->attachment->size)
                         <small>　{{ number_format($approvable->attachment->size / 1024, 1) }} KB</small>
@@ -72,33 +72,30 @@
                 </tr>
                 @endif
                 <tr>
-                    <th>対象日</th>
+                    <th>Target Date</th>
                     <td>{{ $dateSummary ?? ($meta['date'] ?? optional($approvable->start_date)->format('Y-m-d') ?? '-') }}</td>
                 </tr>
                 <tr>
-                    <th>理由</th>
+                    <th>Reason</th>
                     <td>{{ $meta['reason'] ?? ($approvable->reason ?? '-') }}</td>
                 </tr>
 
                 @else
-                {{-- 権限変更申請の場合 --}}
+                {{-- Role change request --}}
                 <tr>
-                    <th>対象ユーザー</th>
-                    <td>{{ $meta['target_user_name'] ?? '不明' }}</td>
+                    <th>Target User</th>
+                    <td>{{ $meta['target_user_name'] ?? 'Unknown' }}</td>
                 </tr>
                 <tr>
-                    <th>権限</th>
+                    <th>Role</th>
                     <td>
-                        @php
-                        $roleLabels = ['general' => '一般', 'admin' => '管理者', 'super_admin' => 'スーパー管理者'];
-                        @endphp
-                        {{ $roleLabels[$meta['current_role'] ?? ''] ?? ($meta['current_role'] ?? '—') }}
+                        {{ $meta['current_role'] ?? '—' }}
                         →
-                        <strong>{{ $roleLabels[$meta['requested_role'] ?? ''] ?? ($meta['requested_role'] ?? '—') }}</strong>
+                        <strong>{{ $meta['requested_role'] ?? '—' }}</strong>
                     </td>
                 </tr>
                 <tr>
-                    <th>所属地区</th>
+                    <th>District</th>
                     <td>
                         {{ $meta['current_district'] ?? '—' }}
                         →
@@ -106,7 +103,7 @@
                     </td>
                 </tr>
                 <tr>
-                    <th>所属部署</th>
+                    <th>Department</th>
                     <td>
                         {{ $meta['current_department'] ?? '—' }}
                         →
@@ -114,11 +111,11 @@
                     </td>
                 </tr>
                 <tr>
-                    <th>管理範囲</th>
+                    <th>Management Scope</th>
                     <td>
                         <div class="d-flex gap-4">
                             <div>
-                                <div class="text-muted small mb-1">現在</div>
+                                <div class="text-muted small mb-1">Current</div>
                                 @php $currentScopes = $meta['current_scopes'] ?? []; @endphp
                                 @if(empty($currentScopes))
                                     <span class="text-muted">—</span>
@@ -132,7 +129,7 @@
                             </div>
                             <div class="text-muted align-self-center">→</div>
                             <div>
-                                <div class="text-muted small mb-1">変更後</div>
+                                <div class="text-muted small mb-1">Requested</div>
                                 @php $requestedScopes = $meta['requested_scopes'] ?? []; @endphp
                                 @if(empty($requestedScopes))
                                     <span class="text-muted">—</span>
@@ -148,45 +145,56 @@
                     </td>
                 </tr>
                 <tr>
-                    <th>申請理由</th>
+                    <th>Reason</th>
                     <td>{{ $meta['reason'] ?? '—' }}</td>
                 </tr>
                 @endif
             </table>
 
-            {{-- 過去のアクション履歴 --}}
-            <h5 class="mt-4">アクション履歴</h5>
+            {{-- Action history --}}
+            <h5 class="mt-4">Action History</h5>
             <ul class="list-group mb-4">
                 @forelse ($approvalRequest->actions as $action)
                 <li class="list-group-item">
                     <strong>{{ $action->actor->name }}</strong>
-                    が <span class="text-primary">{{ $action->action }}</span>
-                    （{{ $action->created_at->format('Y-m-d H:i') }}）
+                    <span class="text-primary">{{ $action->action }}</span>
+                    ({{ $action->created_at->format('Y-m-d H:i') }})
                     <br>
-                    コメント: {{ $action->comment ?? '（なし）' }}
+                    Comment: {{ $action->comment ?? 'None' }}
                 </li>
                 @empty
-                <li class="list-group-item">まだ承認/却下の履歴はありません。</li>
+                <li class="list-group-item">No approval or denial history yet.</li>
                 @endforelse
             </ul>
 
-            {{-- 承認・却下ボタン（権限がある場合のみ） --}}
+            {{-- Approve / deny actions --}}
             @can('act', $approvalRequest)
             @if($approvalRequest->current_state === 'pending')
             <form action="{{ route('approvals.approve', $approvalRequest) }}" method="POST" class="d-inline">
                 @csrf
-                <input type="text" name="comment" class="form-control mb-2" placeholder="承認コメント（任意）">
-                <button type="submit" class="btn btn-success mb-2">承認する</button>
+                <input type="text" name="comment" class="form-control mb-2" placeholder="Approval comment (optional)">
+                <button type="submit" class="btn btn-success mb-2">Approve</button>
             </form>
 
             <form action="{{ route('approvals.deny', $approvalRequest) }}" method="POST" class="d-inline ms-2">
                 @csrf
-                <input type="text" name="comment" class="form-control mb-2" placeholder="却下理由（任意）">
-                <button type="submit" class="btn btn-danger mb-2">却下する</button>
+                <input type="text" name="comment" class="form-control mb-2" placeholder="Denial reason (optional)">
+                <button type="submit" class="btn btn-danger mb-2">Deny</button>
             </form>
             @endif
             @endcan
         </div>
     </div>
 </div>
+
+<style>
+.approval-show-panel {
+    background-color: #eef6ff;
+}
+
+.approval-show-panel .form-control,
+.approval-show-panel .form-select {
+    background-color: #fff;
+}
+</style>
 @endsection
