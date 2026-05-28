@@ -22,6 +22,11 @@
             District &amp; Department
         </a>
         @endcan
+        @role('super_admin')
+        <a href="{{ route('data.role_manage') }}" class="list-group-item list-group-item-action">
+            Role Management
+        </a>
+        @endrole
     </div>
 </div>
 @endsection
