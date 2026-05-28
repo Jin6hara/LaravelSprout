@@ -24,14 +24,15 @@ use Tests\TestCase;
  *
  * [ログイン失敗]
  *   5. 誤ったパスワードでログインするとログイン画面に戻りエラーが表示される
- *   6. 存在しないメールアドレスでログインすると同様にエラーが表示される
+ *   6. 社員コードでもログインできる
+ *   7. 存在しないログインIDでログインすると同様にエラーが表示される
  *
  * [レートリミット]
- *   7. 5回失敗後はロックアウトされ「試行回数が多すぎます」エラーが表示される
+ *   8. 5回失敗後はロックアウトされ「試行回数が多すぎます」エラーが表示される
  *
  * [ログアウト]
- *   8. ログアウトするとセッションが無効化され login へリダイレクト
- *   9. ログアウト後は認証済みページにアクセスできない
+ *   9. ログアウトするとセッションが無効化され login へリダイレクト
+ *   10. ログアウト後は認証済みページにアクセスできない
  *
  * ─────────────────────────────────────────────────────────────────────────────
  * テストのセットアップ方針
@@ -42,7 +43,7 @@ use Tests\TestCase;
  * - ログイン成功後のリダイレクト先はロールで分岐する（LoginController の仕様）
  *   admin/super_admin → calendar.forecast
  *   それ以外          → welcome
- * - レートリミットのキーは「メール（小文字）| IP」の sha256 ハッシュ
+ * - レートリミットのキーは「ログインID（小文字）| IP」の sha256 ハッシュ
  *   テスト間で干渉しないよう setUp で RateLimiter::clear() を行う
  *
  * ─────────────────────────────────────────────────────────────────────────────
@@ -64,14 +65,14 @@ class AuthTest extends TestCase
     {
         parent::setUp();
 
-        // レートリミットのキーはメール + IP の組み合わせ。
+        // レートリミットのキーはログインID + IP の組み合わせ。
         // テスト間で干渉しないようにすべてクリアしておく。
         RateLimiter::clear($this->throttleKey('test@example.com'));
     }
 
-    private function throttleKey(string $email, string $ip = '127.0.0.1'): string
+    private function throttleKey(string $login, string $ip = '127.0.0.1'): string
     {
-        return hash('sha256', strtolower($email) . '|' . $ip);
+        return hash('sha256', strtolower($login) . '|' . $ip);
     }
 
     // =========================================================================
@@ -103,7 +104,7 @@ class AuthTest extends TestCase
         ]);
 
         $this->post(route('login.submit'), [
-            'email'    => $admin->email,
+            'login'    => $admin->email,
             'password' => $this->password,
         ])->assertRedirect(route('calendar.forecast'));
 
@@ -122,7 +123,7 @@ class AuthTest extends TestCase
         ]);
 
         $this->post(route('login.submit'), [
-            'email'    => $general->email,
+            'login'    => $general->email,
             'password' => $this->password,
         ])->assertRedirect(route('welcome'));
 
@@ -144,7 +145,7 @@ class AuthTest extends TestCase
         $before = session()->getId();
 
         $this->post(route('login.submit'), [
-            'email'    => $user->email,
+            'login'    => $user->email,
             'password' => $this->password,
         ]);
 
@@ -160,7 +161,7 @@ class AuthTest extends TestCase
     /**
      * シナリオ 5: 誤ったパスワードでログインするとエラーが返る
      *
-     * - 認証失敗時は back() + withErrors(['email' => ...]) が返る。
+     * - 認証失敗時は back() + withErrors(['login' => ...]) が返る。
      * - ゲスト状態のままであることを assertGuest() で確認する。
      */
     public function test_login_fails_with_wrong_password(): void
@@ -170,36 +171,53 @@ class AuthTest extends TestCase
         ]);
 
         $this->post(route('login.submit'), [
-            'email'    => $user->email,
+            'login'    => $user->email,
             'password' => 'wrong-password',
         ])
             ->assertRedirect()
-            ->assertSessionHasErrors('email');
+            ->assertSessionHasErrors('login');
 
         $this->assertGuest();
     }
 
     /**
-     * シナリオ 6: 存在しないメールアドレスでログインするとエラーが返る
+     * シナリオ 6: 社員コードでもログインできる
      */
-    public function test_login_fails_with_nonexistent_email(): void
+    public function test_user_can_login_with_employee_code(): void
+    {
+        $user = User::factory()->create([
+            'password' => bcrypt($this->password),
+        ]);
+
+        $this->post(route('login.submit'), [
+            'login'    => $user->employee_code,
+            'password' => $this->password,
+        ])->assertRedirect(route('welcome'));
+
+        $this->assertAuthenticatedAs($user);
+    }
+
+    /**
+     * シナリオ 7: 存在しないログインIDでログインするとエラーが返る
+     */
+    public function test_login_fails_with_nonexistent_login_id(): void
     {
         $this->post(route('login.submit'), [
-            'email'    => 'nobody@example.com',
+            'login'    => 'nobody@example.com',
             'password' => $this->password,
         ])
             ->assertRedirect()
-            ->assertSessionHasErrors('email');
+            ->assertSessionHasErrors('login');
 
         $this->assertGuest();
     }
 
     // =========================================================================
-    // 7. レートリミット
+    // 8. レートリミット
     // =========================================================================
 
     /**
-     * シナリオ 7: 5回ログイン失敗後はロックアウトされる
+     * シナリオ 8: 5回ログイン失敗後はロックアウトされる
      *
      * - LoginController は RateLimiter を使い 5回/120秒 の制限を設ける。
      * - 5回失敗すると「試行回数が多すぎます」エラーメッセージが返る。
@@ -214,28 +232,28 @@ class AuthTest extends TestCase
         // 5回失敗してロックアウトを発動させる
         for ($i = 0; $i < 5; $i++) {
             $this->post(route('login.submit'), [
-                'email'    => $user->email,
+                'login'    => $user->email,
                 'password' => 'wrong',
             ]);
         }
 
         // 6回目: ロックアウト中のエラーが出ること
         $this->post(route('login.submit'), [
-            'email'    => $user->email,
+            'login'    => $user->email,
             'password' => 'wrong',
         ])
             ->assertRedirect()
-            ->assertSessionHasErrors('email');
+            ->assertSessionHasErrors('login');
 
         $this->assertGuest();
     }
 
     // =========================================================================
-    // 8〜9. ログアウト
+    // 9〜10. ログアウト
     // =========================================================================
 
     /**
-     * シナリオ 8: ログアウトするとセッションが無効化され login へリダイレクト
+     * シナリオ 9: ログアウトするとセッションが無効化され login へリダイレクト
      *
      * - Auth::logout() + session()->invalidate() + session()->regenerateToken()
      * - ログアウト後は assertGuest() でゲスト状態を確認する。
@@ -252,7 +270,7 @@ class AuthTest extends TestCase
     }
 
     /**
-     * シナリオ 9: ログアウト後は認証済みページにアクセスできない
+     * シナリオ 10: ログアウト後は認証済みページにアクセスできない
      *
      * - セッション破棄後に auth ミドルウェア保護ルートへアクセスすると login へリダイレクト。
      */

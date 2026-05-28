@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Http\Request;
 
@@ -29,21 +30,41 @@ class LoginController extends Controller
      */
     public function login(Request $request)
     {
-        $credentials = $request->validate([
-            'email'    => ['required', 'email'],
+        $request->merge([
+            'login' => $request->input('login', $request->input('email')),
+        ]);
+
+        $validated = $request->validate([
+            'login'    => ['required', 'string'],
             'password' => ['required'],
         ]);
+
+        $loginField = filter_var($validated['login'], FILTER_VALIDATE_EMAIL)
+            ? 'email'
+            : 'employee_code';
+
+        $credentials = [
+            $loginField => $validated['login'],
+            'password' => $validated['password'],
+        ];
 
         $key          = $this->throttleKey($request);
         $maxAttempts  = 5;
         $decaySeconds = 120;
 
+        $ip = $request->ip();
+
         // ① すでにロックアウト中（6回目以降）は認証処理の前にブロック
         if (RateLimiter::tooManyAttempts($key, $maxAttempts)) {
             $seconds = RateLimiter::availableIn($key);
+            Log::warning('auth.lockout_blocked', [
+                'login' => $validated['login'],
+                'ip'    => $ip,
+                'retry_after_seconds' => $seconds,
+            ]);
             return back()->withErrors([
-                'email' => "試行回数が多すぎます。{$seconds}秒後に再試行してください。",
-            ])->onlyInput('email');
+                'login' => "Too many login attempts. Please try again in {$seconds} seconds.",
+            ])->onlyInput('login');
         }
 
         // ② 認証試行
@@ -66,23 +87,30 @@ class LoginController extends Controller
 
         if (RateLimiter::tooManyAttempts($key, $maxAttempts)) {
             $seconds = RateLimiter::availableIn($key);
+            Log::warning('auth.lockout', [
+                'login' => $validated['login'],
+                'ip'    => $ip,
+                'retry_after_seconds' => $seconds,
+            ]);
             return back()->withErrors([
-                'email' => "試行回数が多すぎます。{$seconds}秒後に再試行してください。",
-            ])->onlyInput('email');
+                'login' => "Too many login attempts. Please try again in {$seconds} seconds.",
+            ])->onlyInput('login');
         }
 
         return back()->withErrors([
-            'email' => 'メールアドレスまたはパスワードが正しくありません。',
-        ])->onlyInput('email');
+            'login' => 'The email, employee code, or password is incorrect.',
+        ])->onlyInput('login');
     }
 
     /**
      * レートリミット用のキーを生成
-     * メールアドレス（小文字）と IP アドレスの組み合わせをハッシュ化して返す
+     * ログインID（小文字）と IP アドレスの組み合わせをハッシュ化して返す
      */
     private function throttleKey(Request $request): string
     {
-        return hash('sha256', strtolower($request->input('email', '')) . '|' . $request->ip());
+        $login = $request->input('login', $request->input('email', ''));
+
+        return hash('sha256', strtolower($login) . '|' . $request->ip());
     }
 
     /**

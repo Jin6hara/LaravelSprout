@@ -23,6 +23,16 @@ $defaultUrl = asset('image/' . $defaultPictures[$user->gender]);
                         data-bs-toggle="modal"
                         data-bs-target="#photoEditModal">写真の編集</button>
                 </div>
+                @role('admin|super_admin')
+                    @can('update', $user)
+                        <form method="POST" action="{{ route('password.invite.send', $user) }}" class="mt-2">
+                            @csrf
+                            <button type="submit" class="btn btn-outline-light btn-block">
+                                Send Invite Email
+                            </button>
+                        </form>
+                    @endcan
+                @endrole
             </div>
         </div>
     </aside>
