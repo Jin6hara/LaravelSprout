@@ -245,14 +245,14 @@
               </div>
 
               <datalist id="role-search-datalist">
-                <option v-for="role in roles" :key="role.id" :value="role.name">{{ role.guard_name }}</option>
+                <option v-for="role in roles" :key="role.id" :value="role.name"></option>
               </datalist>
               <datalist id="user-search-datalist">
                 <option
                   v-for="user in users"
                   :key="user.id"
                   :value="userSearchValue(user)"
-                >{{ user.email }}</option>
+                ></option>
               </datalist>
 
               <div class="row g-2 align-items-start mb-3">
