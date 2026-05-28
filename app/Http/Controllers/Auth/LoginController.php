@@ -73,12 +73,6 @@ class LoginController extends Controller
             RateLimiter::clear($key);
 
             $user = Auth::user();
-            Log::info('auth.login_success', [
-                'user_id' => $user->id,
-                'login'   => $validated['login'],
-                'ip'      => $ip,
-            ]);
-
             // ここは権限認証とまったく関係ない。本認証はRoute+Policyに行っている。
             // ここでは、ユーザーロールを取得してredirect先を決めているだけ。
             if ($user->hasRole(['admin', 'super_admin'])) {
@@ -103,11 +97,6 @@ class LoginController extends Controller
             ])->onlyInput('login');
         }
 
-        Log::warning('auth.login_failed', [
-            'login' => $validated['login'],
-            'ip'    => $ip,
-        ]);
-
         return back()->withErrors([
             'login' => 'メールアドレス、社員コード、またはパスワードが正しくありません。',
         ])->onlyInput('login');
@@ -130,12 +119,6 @@ class LoginController extends Controller
      */
     public function logout(Request $request)
     {
-        $user = Auth::user();
-        Log::info('auth.logout', [
-            'user_id' => $user?->id,
-            'ip'      => $request->ip(),
-        ]);
-
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
