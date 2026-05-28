@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="alert alert-warning py-2 small">
+    <div class="alert alert-info py-2 small">
       Role and permission changes affect access immediately. Core roles and code-referenced permissions are locked when they are in use.
     </div>
 
@@ -215,6 +215,48 @@
             <div class="card-body">
               <div class="row g-2 align-items-start mb-3">
                 <div class="col-md-5">
+                  <input
+                    v-model="modelRoleSearch.user"
+                    list="user-search-datalist"
+                    class="form-control form-control-sm"
+                    placeholder="User search: Last / First / employee_code"
+                    autocomplete="off"
+                    aria-label="User search"
+                    @keyup.enter="searchModelRoles"
+                  >
+                </div>
+                <div class="col-md-5">
+                  <input
+                    v-model="modelRoleSearch.role"
+                    list="role-search-datalist"
+                    class="form-control form-control-sm"
+                    placeholder="Role search"
+                    autocomplete="off"
+                    aria-label="Role search"
+                    @keyup.enter="searchModelRoles"
+                  >
+                </div>
+                <div class="col-md-2">
+                  <div class="btn-group w-100 rm-search-actions" role="group" aria-label="Model role search actions">
+                    <button class="btn btn-sm btn-primary" @click="searchModelRoles">Search</button>
+                    <button class="btn btn-sm btn-outline-secondary" @click="clearModelRoleSearch">Clear</button>
+                  </div>
+                </div>
+              </div>
+
+              <datalist id="role-search-datalist">
+                <option v-for="role in roles" :key="role.id" :value="role.name">{{ role.guard_name }}</option>
+              </datalist>
+              <datalist id="user-search-datalist">
+                <option
+                  v-for="user in users"
+                  :key="user.id"
+                  :value="userSearchValue(user)"
+                >{{ user.email }}</option>
+              </datalist>
+
+              <div class="row g-2 align-items-start mb-3">
+                <div class="col-md-5">
                   <select v-model="modelRoleForm.user_id" class="form-select form-select-sm" :disabled="modelRoleForm.editing">
                     <option value="">Select user</option>
                     <option v-for="user in users" :key="user.id" :value="user.id">{{ userLabel(user) }}</option>
@@ -245,7 +287,7 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="row in modelRoles" :key="`${row.user_id}-${row.role_id}`">
+                    <tr v-for="row in filteredModelRoles" :key="`${row.user_id}-${row.role_id}`">
                       <td>{{ row.employee_code }} - {{ row.user_name }}</td>
                       <td class="text-muted small">{{ row.email }}</td>
                       <td>{{ row.role_name }}</td>
@@ -254,8 +296,11 @@
                         <button class="btn btn-xs btn-outline-danger" @click="deleteModelRole(row)">Del</button>
                       </td>
                     </tr>
-                    <tr v-if="modelRoles.length === 0">
-                      <td colspan="4" class="text-muted small">No user role relations.</td>
+                    <tr v-if="!modelRoleSearch.searched">
+                      <td colspan="4" class="text-muted small">Search by role or user to show user role relations.</td>
+                    </tr>
+                    <tr v-else-if="filteredModelRoles.length === 0">
+                      <td colspan="4" class="text-muted small">No user role relations match the search.</td>
                     </tr>
                   </tbody>
                 </table>
@@ -380,6 +425,7 @@ export default {
       roleForm: { id: null, name: '', original_name: '' },
       permissionForm: { id: null, name: '', original_name: '' },
       rolePermissionForm: { editing: false, role_id: '', permission_id: '', original_permission_id: '' },
+      modelRoleSearch: { role: '', user: '', searched: false },
       modelRoleForm: { editing: false, user_id: '', role_id: '', original_role_id: '' },
       modelPermissionForm: { editing: false, user_id: '', permission_id: '', original_permission_id: '' },
       errors: {
@@ -399,6 +445,29 @@ export default {
   mounted() {
     this.confirmModal = new window.bootstrap.Modal(this.$refs.confirmModalEl);
     this.loadSnapshot();
+  },
+
+  computed: {
+    filteredModelRoles() {
+      if (!this.modelRoleSearch.searched) return [];
+
+      const roleQuery = this.normalizeSearch(this.modelRoleSearch.role);
+      const userQuery = this.normalizeSearch(this.modelRoleSearch.user);
+
+      return this.modelRoles.filter((row) => {
+        const roleMatches = !roleQuery || this.normalizeSearch(row.role_name).includes(roleQuery);
+        const userHaystack = this.normalizeSearch([
+          row.employee_code,
+          row.family_name,
+          row.first_name,
+          row.user_name,
+          row.email,
+        ].filter(Boolean).join(' '));
+        const userMatches = !userQuery || userHaystack.includes(userQuery);
+
+        return roleMatches && userMatches;
+      });
+    },
   },
 
   methods: {
@@ -440,6 +509,27 @@ export default {
 
     userLabel(user) {
       return `${user.employee_code} - ${user.name}`;
+    },
+
+    userSearchValue(user) {
+      return `${user.employee_code} ${user.family_name ?? ''} ${user.first_name ?? ''}`.trim();
+    },
+
+    normalizeSearch(value) {
+      return String(value ?? '').trim().toLowerCase();
+    },
+
+    searchModelRoles() {
+      if (!this.normalizeSearch(this.modelRoleSearch.role) && !this.normalizeSearch(this.modelRoleSearch.user)) {
+        this.showFlash('Enter a role or user search term.', false);
+        return;
+      }
+
+      this.modelRoleSearch.searched = true;
+    },
+
+    clearModelRoleSearch() {
+      this.modelRoleSearch = { role: '', user: '', searched: false };
     },
 
     roleName(id) {
@@ -746,5 +836,11 @@ export default {
 .table td,
 .table th {
   white-space: nowrap;
+}
+
+.rm-search-actions .btn {
+  min-width: 0;
+  padding-left: 0.35rem;
+  padding-right: 0.35rem;
 }
 </style>

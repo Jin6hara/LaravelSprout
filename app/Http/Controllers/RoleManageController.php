@@ -17,8 +17,6 @@ class RoleManageController extends Controller
     private const CORE_ROLES = [
         'super_admin',
         'admin',
-        'general',
-        'trainer',
     ];
 
     private const CODE_PERMISSIONS = [
@@ -55,10 +53,12 @@ class RoleManageController extends Controller
             'users' => User::query()
                 ->orderBy('family_name')
                 ->orderBy('first_name')
-                ->get(['id', 'employee_code', 'name', 'email'])
+                ->get(['id', 'employee_code', 'family_name', 'first_name', 'name', 'email'])
                 ->map(fn (User $user) => [
                     'id' => $user->id,
                     'employee_code' => $user->employee_code,
+                    'family_name' => $user->family_name,
+                    'first_name' => $user->first_name,
                     'name' => $user->name,
                     'email' => $user->email,
                 ])
@@ -470,6 +470,8 @@ class RoleManageController extends Controller
             ->get([
                 'u.id as user_id',
                 'u.employee_code',
+                'u.family_name',
+                'u.first_name',
                 'u.name as user_name',
                 'u.email',
                 'r.id as role_id',
