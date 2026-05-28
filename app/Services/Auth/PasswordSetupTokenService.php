@@ -9,8 +9,8 @@ use Illuminate\Support\Str;
 
 class PasswordSetupTokenService
 {
-    private const INVITE_EXPIRES_HOURS = 72;
-    private const RESET_EXPIRES_MINUTES = 60;
+    private const INVITE_EXPIRES_HOURS = 48;
+    private const RESET_EXPIRES_MINUTES = 30;
 
     /**
      * @return array{token: PasswordSetupToken, plain: string}

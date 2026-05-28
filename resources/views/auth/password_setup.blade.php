@@ -1,5 +1,10 @@
 @extends('layouts.app')
 
+@push('head')
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="referrer" content="no-referrer">
+@endpush
+
 @section('content')
 @php
     $isInvite = $setupToken->purpose === \App\Models\PasswordSetupToken::PURPOSE_INVITE;

@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class PasswordSetupController extends Controller
@@ -122,6 +123,16 @@ class PasswordSetupController extends Controller
             $setupToken->forceFill([
                 'used_at' => now(),
             ])->save();
+
+            PasswordSetupToken::query()
+                ->where('user_id', $user->id)
+                ->whereNull('used_at')
+                ->delete();
+
+            Log::info('password_reset_completed', [
+                'user_id' => $user->id,
+                'purpose' => $setupToken->purpose,
+            ]);
 
             return $user;
         });

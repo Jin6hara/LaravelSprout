@@ -45,6 +45,13 @@ class PasswordSetupTest extends TestCase
             'purpose' => PasswordSetupToken::PURPOSE_INVITE,
             'used_at' => null,
         ]);
+        $this->assertTrue(
+            PasswordSetupToken::query()
+                ->where('user_id', $user->id)
+                ->where('purpose', PasswordSetupToken::PURPOSE_INVITE)
+                ->whereBetween('expires_at', [now()->addHours(47), now()->addHours(49)])
+                ->exists()
+        );
 
         Notification::assertSentTo($user, PasswordSetupNotification::class);
     }
@@ -66,6 +73,13 @@ class PasswordSetupTest extends TestCase
             'purpose' => PasswordSetupToken::PURPOSE_RESET,
             'used_at' => null,
         ]);
+        $this->assertTrue(
+            PasswordSetupToken::query()
+                ->where('user_id', $user->id)
+                ->where('purpose', PasswordSetupToken::PURPOSE_RESET)
+                ->whereBetween('expires_at', [now()->addMinutes(29), now()->addMinutes(31)])
+                ->exists()
+        );
 
         Notification::assertSentTo($user, PasswordSetupNotification::class);
 
@@ -82,6 +96,7 @@ class PasswordSetupTest extends TestCase
             'password' => bcrypt('old-password'),
         ]);
 
+        app(PasswordSetupTokenService::class)->issue($user, PasswordSetupToken::PURPOSE_INVITE);
         $issued = app(PasswordSetupTokenService::class)->issue($user, PasswordSetupToken::PURPOSE_RESET);
 
         $this->get(route('password.setup.show', ['token' => $issued['plain']]))
@@ -104,6 +119,13 @@ class PasswordSetupTest extends TestCase
             'id' => $issued['token']->id,
             'used_at' => null,
         ]);
+        $this->assertSame(
+            0,
+            PasswordSetupToken::query()
+                ->where('user_id', $user->id)
+                ->whereNull('used_at')
+                ->count()
+        );
 
         $this->post(route('password.setup.store'), [
             'token' => $issued['plain'],
