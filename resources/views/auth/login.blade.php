@@ -18,10 +18,10 @@
             @csrf
 
             <div class="mb-3">
-                <label class="form-label">メールアドレス</label>
-                <input type="email" name="email" class="form-control @error('email') is-invalid @enderror"
-                    value="{{ old('email') }}" required autofocus>
-                @error('email') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                <label class="form-label">メールアドレスまたは社員コード</label>
+                <input type="text" name="login" class="form-control @error('login') is-invalid @enderror"
+                    value="{{ old('login') }}" autocomplete="username" required autofocus>
+                @error('login') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>
 
             <div class="mb-3">

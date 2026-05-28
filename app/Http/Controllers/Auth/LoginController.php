@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Http\Request;
 
@@ -29,21 +30,41 @@ class LoginController extends Controller
      */
     public function login(Request $request)
     {
-        $credentials = $request->validate([
-            'email'    => ['required', 'email'],
+        $request->merge([
+            'login' => $request->input('login', $request->input('email')),
+        ]);
+
+        $validated = $request->validate([
+            'login'    => ['required', 'string'],
             'password' => ['required'],
         ]);
+
+        $loginField = filter_var($validated['login'], FILTER_VALIDATE_EMAIL)
+            ? 'email'
+            : 'employee_code';
+
+        $credentials = [
+            $loginField => $validated['login'],
+            'password' => $validated['password'],
+        ];
 
         $key          = $this->throttleKey($request);
         $maxAttempts  = 5;
         $decaySeconds = 120;
 
+        $ip = $request->ip();
+
         // ① すでにロックアウト中（6回目以降）は認証処理の前にブロック
         if (RateLimiter::tooManyAttempts($key, $maxAttempts)) {
             $seconds = RateLimiter::availableIn($key);
+            Log::warning('auth.lockout_blocked', [
+                'login' => $validated['login'],
+                'ip'    => $ip,
+                'retry_after_seconds' => $seconds,
+            ]);
             return back()->withErrors([
-                'email' => "試行回数が多すぎます。{$seconds}秒後に再試行してください。",
-            ])->onlyInput('email');
+                'login' => "試行回数が多すぎます。{$seconds}秒後に再試行してください。",
+            ])->onlyInput('login');
         }
 
         // ② 認証試行
@@ -52,6 +73,12 @@ class LoginController extends Controller
             RateLimiter::clear($key);
 
             $user = Auth::user();
+            Log::info('auth.login_success', [
+                'user_id' => $user->id,
+                'login'   => $validated['login'],
+                'ip'      => $ip,
+            ]);
+
             // ここは権限認証とまったく関係ない。本認証はRoute+Policyに行っている。
             // ここでは、ユーザーロールを取得してredirect先を決めているだけ。
             if ($user->hasRole(['admin', 'super_admin'])) {
@@ -66,23 +93,35 @@ class LoginController extends Controller
 
         if (RateLimiter::tooManyAttempts($key, $maxAttempts)) {
             $seconds = RateLimiter::availableIn($key);
+            Log::warning('auth.lockout', [
+                'login' => $validated['login'],
+                'ip'    => $ip,
+                'retry_after_seconds' => $seconds,
+            ]);
             return back()->withErrors([
-                'email' => "試行回数が多すぎます。{$seconds}秒後に再試行してください。",
-            ])->onlyInput('email');
+                'login' => "試行回数が多すぎます。{$seconds}秒後に再試行してください。",
+            ])->onlyInput('login');
         }
 
+        Log::warning('auth.login_failed', [
+            'login' => $validated['login'],
+            'ip'    => $ip,
+        ]);
+
         return back()->withErrors([
-            'email' => 'メールアドレスまたはパスワードが正しくありません。',
-        ])->onlyInput('email');
+            'login' => 'メールアドレス、社員コード、またはパスワードが正しくありません。',
+        ])->onlyInput('login');
     }
 
     /**
      * レートリミット用のキーを生成
-     * メールアドレス（小文字）と IP アドレスの組み合わせをハッシュ化して返す
+     * ログインID（小文字）と IP アドレスの組み合わせをハッシュ化して返す
      */
     private function throttleKey(Request $request): string
     {
-        return hash('sha256', strtolower($request->input('email', '')) . '|' . $request->ip());
+        $login = $request->input('login', $request->input('email', ''));
+
+        return hash('sha256', strtolower($login) . '|' . $request->ip());
     }
 
     /**
@@ -91,6 +130,12 @@ class LoginController extends Controller
      */
     public function logout(Request $request)
     {
+        $user = Auth::user();
+        Log::info('auth.logout', [
+            'user_id' => $user?->id,
+            'ip'      => $request->ip(),
+        ]);
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
