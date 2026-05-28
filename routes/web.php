@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\PasswordSetupController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\UsersController;
 use App\Http\Controllers\EmploymentTermController;
@@ -34,6 +35,10 @@ use App\Http\Controllers\UserAttendanceSearchController;
 Route::get('/login', [LoginController::class, 'showForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+Route::get('/password/reset', [PasswordSetupController::class, 'requestReset'])->name('password.request');
+Route::post('/password/reset', [PasswordSetupController::class, 'sendResetLink'])->name('password.reset.email');
+Route::get('/password/setup', [PasswordSetupController::class, 'show'])->name('password.setup.show');
+Route::post('/password/setup', [PasswordSetupController::class, 'store'])->name('password.setup.store');
 
 //スコープ切替（admin / super_admin のみ）
 Route::middleware(['auth', 'role:admin|super_admin'])
@@ -105,6 +110,8 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
     Route::get('/admin/register', [AdminController::class, 'showForm'])->name('register.showForm');
     Route::post('/admin/register', [AdminController::class, 'register'])->name('register.submit');
+    Route::post('/users/{user}/password/invite', [PasswordSetupController::class, 'sendInvite'])
+        ->name('password.invite.send');
     Route::get('/user/search/attendance', [UserAttendanceSearchController::class, 'attendance'])->name('user.search.attendance');
 });
 

@@ -63,7 +63,7 @@ class LoginController extends Controller
                 'retry_after_seconds' => $seconds,
             ]);
             return back()->withErrors([
-                'login' => "試行回数が多すぎます。{$seconds}秒後に再試行してください。",
+                'login' => "Too many login attempts. Please try again in {$seconds} seconds.",
             ])->onlyInput('login');
         }
 
@@ -93,12 +93,12 @@ class LoginController extends Controller
                 'retry_after_seconds' => $seconds,
             ]);
             return back()->withErrors([
-                'login' => "試行回数が多すぎます。{$seconds}秒後に再試行してください。",
+                'login' => "Too many login attempts. Please try again in {$seconds} seconds.",
             ])->onlyInput('login');
         }
 
         return back()->withErrors([
-            'login' => 'メールアドレス、社員コード、またはパスワードが正しくありません。',
+            'login' => 'The email, employee code, or password is incorrect.',
         ])->onlyInput('login');
     }
 
