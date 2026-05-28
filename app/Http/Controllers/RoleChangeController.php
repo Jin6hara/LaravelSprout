@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\RoleChange\RoleChangeApplicationService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use Spatie\Permission\Models\Role;
 
 class RoleChangeController extends Controller
 {
@@ -21,7 +22,7 @@ class RoleChangeController extends Controller
     public function show(User $user): View
     {
         $currentRole    = $user->getRoleNames()->first();
-        $availableRoles = ['general', 'admin', 'super_admin'];
+        $availableRoles = Role::where('guard_name', 'web')->orderBy('name')->pluck('name')->all();
 
         $districts   = District::whereNull('parent_id')->with('children')->orderBy('name')->get();
         $departments = Department::orderBy('name')->get();
@@ -51,6 +52,6 @@ class RoleChangeController extends Controller
             $data['scopes'] ?? [],
         );
 
-        return back()->with('toast', '権限変更の申請を受け付けました。');
+        return back()->with('toast', 'Role change request submitted.');
     }
 }

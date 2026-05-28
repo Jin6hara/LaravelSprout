@@ -75,3 +75,11 @@ if (ddeEl) {
     const props = ddeEl.dataset.props ? JSON.parse(ddeEl.dataset.props) : {};
     createApp(DistrictDepartmentEditor, props).mount(ddeEl);
 }
+
+import RoleManageEditor from './components/RoleManageEditor.vue';
+
+const rmeEl = document.getElementById('roleManageEditor');
+if (rmeEl) {
+    const props = rmeEl.dataset.props ? JSON.parse(rmeEl.dataset.props) : {};
+    createApp(RoleManageEditor, props).mount(rmeEl);
+}

@@ -8,6 +8,7 @@ use App\Models\RoleChange;
 use App\Models\User;
 use App\Models\UserManagementScope;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 /**
@@ -288,6 +289,32 @@ class RoleChangeTest extends TestCase
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['scopes']);
+    }
+
+    public function test_custom_role_appears_in_role_change_form_and_can_be_requested(): void
+    {
+        [$actor, $target, $district, $department] = $this->setUpActorAndTarget();
+        Role::firstOrCreate(['name' => 'school', 'guard_name' => 'web']);
+
+        $this->actingAs($actor)
+            ->get(route('admin.user.roleChange', $target))
+            ->assertOk()
+            ->assertSee('value="school"', false);
+
+        $this->actingAs($actor)
+            ->postJson(route('roleChange.apply', $target), [
+                'role'          => 'school',
+                'reason'        => 'test',
+                'district_id'   => $district->id,
+                'department_id' => $department->id,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('role_changes', [
+            'user_id' => $target->id,
+            'requested_role' => 'school',
+            'status' => 'pending',
+        ]);
     }
 
     /** 10. admin + scopes なし → 422（管理範囲は1件以上必須） */

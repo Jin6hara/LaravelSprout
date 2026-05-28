@@ -33,8 +33,8 @@ class RoleChangeApplicationService
                 'scopes'          => $scopes,
             ]);
 
-            $roleLabels = ['general' => '一般', 'admin' => '管理者', 'super_admin' => 'スーパー管理者'];
-            $title = '権限・所属・管理範囲変更: ' . $rc->targetUser->role_label . ' → ' . ($roleLabels[$role] ?? $role);
+            $currentRole = $targetUser->getRoleNames()->first() ?? 'none';
+            $title = 'Role / district / department change: ' . $currentRole . ' -> ' . $role;
 
             $targetUser->load(['district', 'department', 'managementScopes.district', 'managementScopes.department']);
 

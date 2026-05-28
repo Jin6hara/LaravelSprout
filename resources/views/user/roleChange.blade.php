@@ -2,10 +2,10 @@
 
 @section('content')
 <div class="container">
-    <h2>権限変更申請</h2>
+    <h2>Role Change Request</h2>
 
     <div class="card mt-3">
-        <div class="card-body">
+        <div class="card-body role-change-panel">
             {{-- 本人情報 --}}
             <table class="table table-bordered">
                 <colgroup>
@@ -13,28 +13,28 @@
                     <col>
                 </colgroup>
                 <tr>
-                    <th>社員コード</th>
+                    <th>Employee Code</th>
                     <td>{{ $user->employee_code }}</td>
                 </tr>
                 <tr>
-                    <th>氏名</th>
+                    <th>Name</th>
                     <td>{{ $user->name }}</td>
                 </tr>
                 <tr>
-                    <th>現在の権限</th>
-                    <td>{{ $user->role_label }}</td>
+                    <th>Current Role</th>
+                    <td>{{ $currentRole ?? '—' }}</td>
                 </tr>
                 <tr>
-                    <th>現在の所属地区</th>
+                    <th>Current District</th>
                     <td>{{ $user->district?->name ?? '—' }}</td>
                 </tr>
                 <tr>
-                    <th>現在の所属部署</th>
+                    <th>Current Department</th>
                     <td>{{ $user->department?->name ?? '—' }}</td>
                 </tr>
                 @if($user->isAdmin())
                 <tr>
-                    <th>現在の管理範囲</th>
+                    <th>Current Management Scope</th>
                     <td>
                         @if($user->managementScopes->isEmpty())
                             <span class="text-muted">—</span>
@@ -48,7 +48,7 @@
                 @endif
             </table>
 
-            {{-- 申請フォーム --}}
+            {{-- Request form --}}
             @if ($errors->any())
             <div class="alert alert-danger">
                 <ul class="mb-0">
@@ -62,43 +62,40 @@
             <form action="{{ route('roleChange.apply', $user) }}" method="POST">
                 @csrf
 
-                {{-- 変更後の権限 --}}
+                {{-- Requested role --}}
                 <div class="mb-3">
-                    <label for="role" class="form-label">変更後の権限 <span class="text-danger">*</span></label>
+                    <label for="role" class="form-label">Requested Role <span class="text-danger">*</span></label>
                     <select name="role" id="role" class="form-select" required>
                         @foreach ($availableRoles as $r)
-                        @php
-                            $labels = ['general' => '一般', 'admin' => '管理者', 'super_admin' => 'スーパー管理者'];
-                        @endphp
                         <option value="{{ $r }}" {{ old('role', $currentRole) === $r ? 'selected' : '' }}>
-                            {{ $labels[$r] ?? $r }}
+                            {{ $r }}
                         </option>
                         @endforeach
                     </select>
                 </div>
 
-                {{-- 所属地区（read-only） --}}
+                {{-- District (read-only) --}}
                 <div class="mb-3">
-                    <label class="form-label">所属地区</label>
+                    <label class="form-label">District</label>
                     <input type="hidden" name="district_id" value="{{ $user->district_id }}">
                     <p class="form-control-plaintext border rounded px-3 py-2 bg-light mb-0">
                         {{ $user->district?->name ?? '—' }}
                     </p>
                 </div>
 
-                {{-- 所属部署（read-only） --}}
+                {{-- Department (read-only) --}}
                 <div class="mb-3">
-                    <label class="form-label">所属部署</label>
+                    <label class="form-label">Department</label>
                     <input type="hidden" name="department_id" value="{{ $user->department_id }}">
                     <p class="form-control-plaintext border rounded px-3 py-2 bg-light mb-0">
                         {{ $user->department?->name ?? '—' }}
                     </p>
                 </div>
 
-                {{-- 管理範囲（admin / super_admin のみ） --}}
+                {{-- Management scopes (admin / super_admin only) --}}
                 <div id="scopesSection" class="mb-3" style="display:none;">
-                    <label class="form-label">管理範囲 <span class="text-danger">*</span></label>
-                    <div class="mb-1 text-muted small">地区と部署の組み合わせを1件以上追加してください。</div>
+                    <label class="form-label">Management Scope <span class="text-danger">*</span></label>
+                    <div class="mb-1 text-muted small">Add at least one district and department combination.</div>
                     @error('scopes')<div class="text-danger small mb-2">{{ $message }}</div>@enderror
 
                     <div id="scopeRows">
@@ -107,7 +104,7 @@
                             @foreach(old('scopes') as $i => $scope)
                             <div class="scope-row d-flex gap-2 mb-2">
                                 <select name="scopes[{{ $i }}][district_id]" class="form-select @error('scopes.'.$i) is-invalid @enderror">
-                                    <option value="">— 地区 —</option>
+                                    <option value="">— District —</option>
                                     @foreach ($districts as $district)
                                         <option value="{{ $district->id }}" {{ ($scope['district_id'] ?? '') == $district->id ? 'selected' : '' }}>
                                             {{ $district->name }}
@@ -120,31 +117,31 @@
                                     @endforeach
                                 </select>
                                 <select name="scopes[{{ $i }}][department_id]" class="form-select">
-                                    <option value="">— 部署 —</option>
+                                    <option value="">— Department —</option>
                                     @foreach ($departments as $dept)
                                     <option value="{{ $dept->id }}" {{ ($scope['department_id'] ?? '') == $dept->id ? 'selected' : '' }}>
                                         {{ $dept->name }}
                                     </option>
                                     @endforeach
                                 </select>
-                                <button type="button" class="btn btn-outline-danger btn-sm scope-remove" style="white-space:nowrap;">削除</button>
+                                <button type="button" class="btn btn-outline-danger btn-sm scope-remove" style="white-space:nowrap;">Remove</button>
                             </div>
                             @endforeach
                         @endif
                     </div>
 
-                    <button type="button" id="addScope" class="btn btn-outline-secondary btn-sm mt-1">+ 管理範囲を追加</button>
+                    <button type="button" id="addScope" class="btn btn-outline-secondary btn-sm mt-1">+ Add Management Scope</button>
                 </div>
 
-                {{-- 申請理由 --}}
+                {{-- Request reason --}}
                 <div class="mb-3">
-                    <label for="reason" class="form-label">申請理由 <span class="text-danger">*</span></label>
+                    <label for="reason" class="form-label">Reason <span class="text-danger">*</span></label>
                     <textarea name="reason" id="reason" class="form-control @error('reason') is-invalid @enderror"
                               rows="3" required>{{ old('reason') }}</textarea>
                     @error('reason')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
 
-                <button type="submit" class="btn btn-primary">申請する</button>
+                <button type="submit" class="btn btn-primary">Submit Request</button>
             </form>
         </div>
     </div>
@@ -183,7 +180,7 @@ $existingScopesData = $user->managementScopes->map(function ($s) {
     let rowIndex = {{ old('scopes') ? count(old('scopes')) : 0 }};
 
     function buildDistrictOptions(selectedId) {
-        let html = '<option value="">— 地区 —</option>';
+        let html = '<option value="">— District —</option>';
         districtsJson.forEach(d => {
             const sel = d.id == selectedId ? ' selected' : '';
             html += `<option value="${d.id}"${sel}>${d.name}</option>`;
@@ -196,7 +193,7 @@ $existingScopesData = $user->managementScopes->map(function ($s) {
     }
 
     function buildDepartmentOptions(selectedId) {
-        let html = '<option value="">— 部署 —</option>';
+        let html = '<option value="">— Department —</option>';
         departmentsJson.forEach(d => {
             const sel = d.id == selectedId ? ' selected' : '';
             html += `<option value="${d.id}"${sel}>${d.name}</option>`;
@@ -215,7 +212,7 @@ $existingScopesData = $user->managementScopes->map(function ($s) {
             <select name="scopes[${i}][department_id]" class="form-select">
                 ${buildDepartmentOptions(departmentId)}
             </select>
-            <button type="button" class="btn btn-outline-danger btn-sm scope-remove" style="white-space:nowrap;">削除</button>
+            <button type="button" class="btn btn-outline-danger btn-sm scope-remove" style="white-space:nowrap;">Remove</button>
         `;
         scopeRows.appendChild(row);
     }
@@ -251,4 +248,16 @@ $existingScopesData = $user->managementScopes->map(function ($s) {
     // old() でエラー時に行が既にある場合は追加しない（Bladeで描画済み）
 })();
 </script>
+
+<style>
+.role-change-panel {
+    background-color: #eef6ff;
+}
+
+.role-change-panel .form-control,
+.role-change-panel .form-select,
+.role-change-panel .form-control-plaintext {
+    background-color: #fff;
+}
+</style>
 @endsection

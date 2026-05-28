@@ -3,6 +3,7 @@
 namespace App\Http\Requests\RoleChange;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ApplyRoleChangeRequest extends FormRequest
 {
@@ -17,7 +18,7 @@ class ApplyRoleChangeRequest extends FormRequest
         $isAdmin = in_array($role, ['admin', 'super_admin']);
 
         return [
-            'role'                    => ['required', 'in:general,admin,super_admin'],
+            'role'                    => ['required', 'string', Rule::exists('roles', 'name')->where('guard_name', 'web')],
             'reason'                  => ['required', 'string', 'max:2000'],
             'district_id'             => ['required', 'integer', 'exists:districts,id'],
             'department_id'           => ['required', 'integer', 'exists:departments,id'],
@@ -33,8 +34,8 @@ class ApplyRoleChangeRequest extends FormRequest
             $role   = $this->input('role');
             $scopes = $this->input('scopes') ?? [];
 
-            if ($role === 'general' && !empty($scopes)) {
-                $v->errors()->add('scopes', '一般ユーザーには管理範囲を設定できません。');
+            if (!in_array($role, ['admin', 'super_admin'], true) && !empty($scopes)) {
+                $v->errors()->add('scopes', 'Only admin and super_admin roles can have management scopes.');
                 return;
             }
 
@@ -46,7 +47,7 @@ class ApplyRoleChangeRequest extends FormRequest
             foreach ($scopes as $i => $scope) {
                 $key = ($scope['district_id'] ?? '') . '-' . ($scope['department_id'] ?? '');
                 if (isset($seen[$key])) {
-                    $v->errors()->add("scopes.$i", '同じ地区・部署の組み合わせが重複しています。');
+                    $v->errors()->add("scopes.$i", 'The same district and department combination is duplicated.');
                 }
                 $seen[$key] = true;
             }
@@ -56,16 +57,17 @@ class ApplyRoleChangeRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'district_id.required'          => '所属地区を選択してください。',
-            'district_id.exists'            => '選択された所属地区は存在しません。',
-            'department_id.required'        => '所属部署を選択してください。',
-            'department_id.exists'          => '選択された所属部署は存在しません。',
-            'scopes.required'               => '管理地区・部署を1件以上追加してください。',
-            'scopes.min'                    => '管理地区・部署を1件以上追加してください。',
-            'scopes.*.district_id.required' => '管理範囲の地区を選択してください。',
-            'scopes.*.district_id.exists'   => '選択された管理地区は存在しません。',
-            'scopes.*.department_id.required' => '管理範囲の部署を選択してください。',
-            'scopes.*.department_id.exists' => '選択された管理部署は存在しません。',
+            'role.exists'                   => 'The selected role does not exist.',
+            'district_id.required'          => 'Please select a district.',
+            'district_id.exists'            => 'The selected district does not exist.',
+            'department_id.required'        => 'Please select a department.',
+            'department_id.exists'          => 'The selected department does not exist.',
+            'scopes.required'               => 'Please add at least one management scope.',
+            'scopes.min'                    => 'Please add at least one management scope.',
+            'scopes.*.district_id.required' => 'Please select a district for each management scope.',
+            'scopes.*.district_id.exists'   => 'The selected management district does not exist.',
+            'scopes.*.department_id.required' => 'Please select a department for each management scope.',
+            'scopes.*.department_id.exists' => 'The selected management department does not exist.',
         ];
     }
 }

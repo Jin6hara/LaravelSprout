@@ -408,6 +408,7 @@ Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
 use App\Http\Controllers\CalendarPatternEditorController;
 use App\Http\Controllers\DistrictDepartmentController;
 use App\Http\Controllers\LessonEditController;
+use App\Http\Controllers\RoleManageController;
 
 Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
     Route::get('/data', function () {
@@ -465,6 +466,30 @@ Route::middleware(['auth', 'role:super_admin'])->group(function () {
     Route::delete('/api/department/{department}',[DistrictDepartmentController::class, 'departmentDestroy'])->name('api.department.destroy');
 });
 // ---------------------------------------------------------------------------------------------------------▲ District & Department
+
+// ---------------------------------------------------------------------------------------------------------▼ Role Management (super_admin only)
+Route::middleware(['auth', 'role:super_admin'])->group(function () {
+    Route::get('/data/role-manage', [RoleManageController::class, 'index'])->name('data.role_manage');
+
+    Route::get('/api/role-manage', [RoleManageController::class, 'snapshot'])->name('api.role_manage.snapshot');
+
+    Route::post('/api/role-manage/roles', [RoleManageController::class, 'storeRole'])->name('api.role_manage.roles.store');
+    Route::put('/api/role-manage/roles/{role}', [RoleManageController::class, 'updateRole'])->name('api.role_manage.roles.update');
+    Route::delete('/api/role-manage/roles/{role}', [RoleManageController::class, 'destroyRole'])->name('api.role_manage.roles.destroy');
+
+    Route::post('/api/role-manage/role-permissions', [RoleManageController::class, 'storeRolePermission'])->name('api.role_manage.role_permissions.store');
+    Route::put('/api/role-manage/roles/{role}/permissions/{permission}', [RoleManageController::class, 'updateRolePermission'])->name('api.role_manage.role_permissions.update');
+    Route::delete('/api/role-manage/roles/{role}/permissions/{permission}', [RoleManageController::class, 'destroyRolePermission'])->name('api.role_manage.role_permissions.destroy');
+
+    Route::post('/api/role-manage/model-roles', [RoleManageController::class, 'storeModelRole'])->name('api.role_manage.model_roles.store');
+    Route::put('/api/role-manage/users/{user:id}/roles/{role}', [RoleManageController::class, 'updateModelRole'])->name('api.role_manage.model_roles.update');
+    Route::delete('/api/role-manage/users/{user:id}/roles/{role}', [RoleManageController::class, 'destroyModelRole'])->name('api.role_manage.model_roles.destroy');
+
+    Route::post('/api/role-manage/model-permissions', [RoleManageController::class, 'storeModelPermission'])->name('api.role_manage.model_permissions.store');
+    Route::put('/api/role-manage/users/{user:id}/permissions/{permission}', [RoleManageController::class, 'updateModelPermission'])->name('api.role_manage.model_permissions.update');
+    Route::delete('/api/role-manage/users/{user:id}/permissions/{permission}', [RoleManageController::class, 'destroyModelPermission'])->name('api.role_manage.model_permissions.destroy');
+});
+// ---------------------------------------------------------------------------------------------------------▲ Role Management
 
 // ---------------------------------------------------------------------------------------------------------▼ CSV関連ルート
 use App\Http\Controllers\CsvController;
