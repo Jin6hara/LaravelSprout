@@ -79,6 +79,7 @@ class RoleManageControllerTest extends TestCase
                 'model_permissions',
             ])
             ->assertJsonFragment(['name' => 'feature.test'])
+            ->assertJsonFragment(['description' => 'コード側で定義された権限です。利用前にmiddleware / policy / view条件を確認してください。'])
             ->assertJsonFragment(['permission_name' => 'feature.test']);
     }
 
@@ -142,54 +143,22 @@ class RoleManageControllerTest extends TestCase
             ->assertUnprocessable();
     }
 
-    public function test_super_admin_can_create_update_and_delete_unused_permission(): void
+    public function test_code_permissions_include_descriptions(): void
     {
-        $actor = $this->makeSuperAdmin();
+        Permission::firstOrCreate(['name' => 'schedule.viewAll', 'guard_name' => 'web']);
+        Permission::firstOrCreate(['name' => 'teacher.viewAll', 'guard_name' => 'web']);
 
-        $response = $this->actingAs($actor)
-            ->postJson(route('api.role_manage.permissions.store'), ['name' => 'custom.permission', 'confirm' => true])
-            ->assertCreated()
-            ->assertJsonFragment(['name' => 'custom.permission']);
-
-        $permission = Permission::findOrFail($response->json('id'));
-
-        $this->actingAs($actor)
-            ->putJson(route('api.role_manage.permissions.update', $permission), ['name' => 'custom.permission2', 'confirm' => true])
+        $this->actingAs($this->makeSuperAdmin())
+            ->getJson(route('api.role_manage.snapshot'))
             ->assertOk()
-            ->assertJsonFragment(['name' => 'custom.permission2']);
-
-        $permission = $permission->fresh();
-
-        $this->actingAs($actor)
-            ->deleteJson(route('api.role_manage.permissions.destroy', $permission), ['confirm' => true])
-            ->assertNoContent();
-
-        $this->assertDatabaseMissing('permissions', ['id' => $permission->id]);
-    }
-
-    public function test_code_and_used_permissions_cannot_be_updated_or_deleted(): void
-    {
-        $actor = $this->makeSuperAdmin();
-        $codePermission = Permission::firstOrCreate(['name' => 'schedule.viewAll', 'guard_name' => 'web']);
-
-        $this->actingAs($actor)
-            ->putJson(route('api.role_manage.permissions.update', $codePermission), ['name' => 'schedule.all', 'confirm' => true])
-            ->assertUnprocessable();
-
-        $this->actingAs($actor)
-            ->deleteJson(route('api.role_manage.permissions.destroy', $codePermission), ['confirm' => true])
-            ->assertUnprocessable();
-
-        $usedPermission = Permission::create(['name' => 'used.permission', 'guard_name' => 'web']);
-        Role::create(['name' => 'permission_holder', 'guard_name' => 'web'])->givePermissionTo($usedPermission);
-
-        $this->actingAs($actor)
-            ->putJson(route('api.role_manage.permissions.update', $usedPermission), ['name' => 'used.permission2', 'confirm' => true])
-            ->assertUnprocessable();
-
-        $this->actingAs($actor)
-            ->deleteJson(route('api.role_manage.permissions.destroy', $usedPermission), ['confirm' => true])
-            ->assertUnprocessable();
+            ->assertJsonFragment([
+                'name' => 'schedule.viewAll',
+                'description' => '自分以外のScheduleの観覧権限',
+            ])
+            ->assertJsonFragment([
+                'name' => 'teacher.viewAll',
+                'description' => 'Master List の観覧権限',
+            ]);
     }
 
     public function test_super_admin_can_add_update_and_delete_role_permission_relation(): void

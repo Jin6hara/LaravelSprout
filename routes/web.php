@@ -477,10 +477,6 @@ Route::middleware(['auth', 'role:super_admin'])->group(function () {
     Route::put('/api/role-manage/roles/{role}', [RoleManageController::class, 'updateRole'])->name('api.role_manage.roles.update');
     Route::delete('/api/role-manage/roles/{role}', [RoleManageController::class, 'destroyRole'])->name('api.role_manage.roles.destroy');
 
-    Route::post('/api/role-manage/permissions', [RoleManageController::class, 'storePermission'])->name('api.role_manage.permissions.store');
-    Route::put('/api/role-manage/permissions/{permission}', [RoleManageController::class, 'updatePermission'])->name('api.role_manage.permissions.update');
-    Route::delete('/api/role-manage/permissions/{permission}', [RoleManageController::class, 'destroyPermission'])->name('api.role_manage.permissions.destroy');
-
     Route::post('/api/role-manage/role-permissions', [RoleManageController::class, 'storeRolePermission'])->name('api.role_manage.role_permissions.store');
     Route::put('/api/role-manage/roles/{role}/permissions/{permission}', [RoleManageController::class, 'updateRolePermission'])->name('api.role_manage.role_permissions.update');
     Route::delete('/api/role-manage/roles/{role}/permissions/{permission}', [RoleManageController::class, 'destroyRolePermission'])->name('api.role_manage.role_permissions.destroy');

@@ -10,7 +10,7 @@
       <div class="row g-3 mb-4">
         <div class="col-lg-6">
           <section class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center py-2">
+            <div class="card-header d-flex justify-content-between align-items-center py-2 rm-card-header">
               <span class="fw-semibold">Role list</span>
               <button class="btn btn-sm btn-outline-primary" @click="resetRoleForm">New</button>
             </div>
@@ -48,7 +48,6 @@
                     <tr v-for="role in roles" :key="role.id">
                       <td>
                         <span class="fw-semibold">{{ role.name }}</span>
-                        <span v-if="role.is_core" class="badge text-bg-secondary ms-1">core</span>
                       </td>
                       <td class="text-muted small">{{ role.guard_name }}</td>
                       <td class="text-end">{{ role.users_count }}</td>
@@ -77,63 +76,29 @@
 
         <div class="col-lg-6">
           <section class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center py-2">
+            <div class="card-header d-flex justify-content-between align-items-center py-2 rm-card-header">
               <span class="fw-semibold">Permission list</span>
-              <button class="btn btn-sm btn-outline-primary" @click="resetPermissionForm">New</button>
+              <button class="btn btn-sm btn-outline-primary invisible" type="button" aria-hidden="true" tabindex="-1">New</button>
             </div>
             <div class="card-body">
-              <div class="row g-2 align-items-start mb-3">
-                <div class="col">
-                  <input
-                    v-model="permissionForm.name"
-                    type="text"
-                    class="form-control form-control-sm"
-                    :class="{ 'is-invalid': errors.permission.name }"
-                    placeholder="permission.name"
-                  >
-                  <div class="invalid-feedback">{{ errors.permission.name }}</div>
-                </div>
-                <div class="col-auto">
-                  <button class="btn btn-sm btn-primary" :disabled="saving" @click="savePermission">
-                    {{ permissionForm.id ? 'Update' : 'Add' }}
-                  </button>
-                </div>
-              </div>
-
               <div class="table-responsive">
                 <table class="table table-sm table-hover align-middle mb-0">
                   <thead class="table-light">
                     <tr>
                       <th>Name</th>
-                      <th>Guard</th>
+                      <th>Description</th>
                       <th class="text-end">Roles</th>
                       <th class="text-end">Users</th>
-                      <th style="width:120px"></th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-for="permission in permissions" :key="permission.id">
                       <td>
                         <span class="fw-semibold">{{ permission.name }}</span>
-                        <span v-if="permission.is_code_permission" class="badge text-bg-secondary ms-1">code</span>
                       </td>
-                      <td class="text-muted small">{{ permission.guard_name }}</td>
+                      <td class="text-muted small rm-description">{{ permission.description }}</td>
                       <td class="text-end">{{ permission.roles_count }}</td>
                       <td class="text-end">{{ permission.users_count }}</td>
-                      <td class="text-end">
-                        <button
-                          class="btn btn-xs btn-outline-secondary me-1"
-                          :disabled="!permission.can_update"
-                          :title="lockTitle(permission, 'permission')"
-                          @click="editPermission(permission)"
-                        >Edit</button>
-                        <button
-                          class="btn btn-xs btn-outline-danger"
-                          :disabled="!permission.can_delete"
-                          :title="lockTitle(permission, 'permission')"
-                          @click="deletePermission(permission)"
-                        >Del</button>
-                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -405,7 +370,6 @@ export default {
   props: {
     snapshotUrl: { type: String, required: true },
     roleUrl: { type: String, required: true },
-    permissionUrl: { type: String, required: true },
     rolePermissionUrl: { type: String, required: true },
     modelRoleUrl: { type: String, required: true },
     modelPermissionUrl: { type: String, required: true },
@@ -423,14 +387,12 @@ export default {
       modelRoles: [],
       modelPermissions: [],
       roleForm: { id: null, name: '', original_name: '' },
-      permissionForm: { id: null, name: '', original_name: '' },
       rolePermissionForm: { editing: false, role_id: '', permission_id: '', original_permission_id: '' },
       modelRoleSearch: { role: '', user: '', searched: false },
       modelRoleForm: { editing: false, user_id: '', role_id: '', original_role_id: '' },
       modelPermissionForm: { editing: false, user_id: '', permission_id: '', original_permission_id: '' },
       errors: {
         role: {},
-        permission: {},
       },
       confirmModal: null,
       confirm: {
@@ -549,10 +511,6 @@ export default {
       return `${this.roleUrl}/${id}`;
     },
 
-    permissionItemUrl(id) {
-      return `${this.permissionUrl}/${id}`;
-    },
-
     rolePermissionItemUrl(roleId, permissionId) {
       return `${this.roleUrl}/${roleId}/permissions/${permissionId}`;
     },
@@ -636,49 +594,6 @@ export default {
         await axios.delete(this.roleItemUrl(role.id), { data: { confirm: true } });
         await this.loadSnapshot();
         this.showFlash('Role deleted.');
-      });
-    },
-
-    resetPermissionForm() {
-      this.permissionForm = { id: null, name: '', original_name: '' };
-      this.errors.permission = {};
-    },
-
-    editPermission(permission) {
-      this.permissionForm = { id: permission.id, name: permission.name, original_name: permission.name };
-      this.errors.permission = {};
-    },
-
-    savePermission() {
-      this.errors.permission = {};
-      const name = this.permissionForm.name.trim();
-      const isEdit = Boolean(this.permissionForm.id);
-      const lines = isEdit
-        ? [`Permission: ${this.permissionForm.original_name}`, `New name: ${name}`]
-        : [`New permission: ${name}`, 'Guard: web'];
-
-      this.ask(isEdit ? 'Update permission' : 'Create permission', lines, async () => {
-        try {
-          if (isEdit) {
-            await axios.put(this.permissionItemUrl(this.permissionForm.id), { name, confirm: true });
-          } else {
-            await axios.post(this.permissionUrl, { name, confirm: true });
-          }
-          this.resetPermissionForm();
-          await this.loadSnapshot();
-          this.showFlash(isEdit ? 'Permission updated.' : 'Permission added.');
-        } catch (err) {
-          this.handleError(err, 'permission');
-          throw err;
-        }
-      });
-    },
-
-    deletePermission(permission) {
-      this.ask('Delete permission', [`Permission: ${permission.name}`, 'This is allowed only when the permission is unused.'], async () => {
-        await axios.delete(this.permissionItemUrl(permission.id), { data: { confirm: true } });
-        await this.loadSnapshot();
-        this.showFlash('Permission deleted.');
       });
     },
 
@@ -842,5 +757,10 @@ export default {
   min-width: 0;
   padding-left: 0.35rem;
   padding-right: 0.35rem;
+}
+
+.table td.rm-description {
+  white-space: normal;
+  min-width: 220px;
 }
 </style>

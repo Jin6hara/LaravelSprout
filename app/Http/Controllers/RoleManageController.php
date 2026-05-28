@@ -120,57 +120,6 @@ class RoleManageController extends Controller
         return response()->json(null, 204);
     }
 
-    public function storePermission(Request $request)
-    {
-        $this->authorizeSuperAdmin();
-        $this->requireConfirmed($request);
-
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z0-9_.-]+$/', Rule::unique('permissions')->where('guard_name', self::GUARD)],
-        ]);
-
-        $permission = Permission::create(['name' => $data['name'], 'guard_name' => self::GUARD]);
-        $this->forgetPermissionCache();
-
-        return response()->json($this->formatPermission($permission->loadCount('roles')), 201);
-    }
-
-    public function updatePermission(Request $request, Permission $permission)
-    {
-        $this->authorizeSuperAdmin();
-        $this->requireWebGuard($permission);
-        $this->requireConfirmed($request);
-        $this->ensurePermissionCanBeChanged($permission, 'updated');
-
-        $data = $request->validate([
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-                'regex:/^[A-Za-z0-9_.-]+$/',
-                Rule::unique('permissions')->where('guard_name', self::GUARD)->ignore($permission->id),
-            ],
-        ]);
-
-        $permission->update(['name' => $data['name']]);
-        $this->forgetPermissionCache();
-
-        return response()->json($this->formatPermission($permission->fresh()->loadCount('roles')));
-    }
-
-    public function destroyPermission(Request $request, Permission $permission)
-    {
-        $this->authorizeSuperAdmin();
-        $this->requireWebGuard($permission);
-        $this->requireConfirmed($request);
-        $this->ensurePermissionCanBeChanged($permission, 'deleted');
-
-        $permission->delete();
-        $this->forgetPermissionCache();
-
-        return response()->json(null, 204);
-    }
-
     public function storeRolePermission(Request $request)
     {
         $this->authorizeSuperAdmin();
@@ -410,16 +359,6 @@ class RoleManageController extends Controller
         abort_if($role->permissions_count > 0, 422, "This role has permissions and cannot be {$action}.");
     }
 
-    private function ensurePermissionCanBeChanged(Permission $permission, string $action): void
-    {
-        abort_if(in_array($permission->name, self::CODE_PERMISSIONS, true), 422, "Code permission '{$permission->name}' cannot be {$action}.");
-
-        $roleCount = $permission->roles()->count();
-        $modelCount = $this->directUserPermissionCount($permission);
-        abort_if($roleCount > 0, 422, "This permission is assigned to roles and cannot be {$action}.");
-        abort_if($modelCount > 0, 422, "This permission is assigned directly to users and cannot be {$action}.");
-    }
-
     private function ensureRolePermissionCanBeRemoved(Role $role, Permission $permission): void
     {
         abort_if(
@@ -531,9 +470,19 @@ class RoleManageController extends Controller
             'roles_count' => $rolesCount,
             'users_count' => $usersCount,
             'is_code_permission' => $isCodePermission,
+            'description' => $this->permissionDescription($permission->name),
             'can_update' => ! $isCodePermission && $rolesCount === 0 && $usersCount === 0,
             'can_delete' => ! $isCodePermission && $rolesCount === 0 && $usersCount === 0,
         ];
+    }
+
+    private function permissionDescription(string $name): string
+    {
+        return match ($name) {
+            'schedule.viewAll' => '自分以外のScheduleの観覧権限',
+            'teacher.viewAll' => 'Master List の観覧権限',
+            default => 'コード側で定義された権限です。利用前にmiddleware / policy / view条件を確認してください。',
+        };
     }
 
     private function directUserPermissionCount(Permission $permission): int

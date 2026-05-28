@@ -10,7 +10,6 @@
 $props = [
     'snapshotUrl'        => route('api.role_manage.snapshot'),
     'roleUrl'            => url('/api/role-manage/roles'),
-    'permissionUrl'      => url('/api/role-manage/permissions'),
     'rolePermissionUrl'  => url('/api/role-manage/role-permissions'),
     'modelRoleUrl'       => url('/api/role-manage/model-roles'),
     'modelPermissionUrl' => url('/api/role-manage/model-permissions'),
