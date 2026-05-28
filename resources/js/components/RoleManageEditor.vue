@@ -1,9 +1,5 @@
 <template>
   <div>
-    <div v-if="flash.text" :class="['alert', 'py-2', 'px-3', 'mb-3', flash.ok ? 'alert-success' : 'alert-danger']">
-      {{ flash.text }}
-    </div>
-
     <div class="alert alert-warning py-2 small">
       Role and permission changes affect access immediately. Core roles and code-referenced permissions are locked when they are in use.
     </div>
@@ -375,7 +371,6 @@ export default {
     return {
       loading: true,
       saving: false,
-      flash: { text: '', ok: true },
       roles: [],
       permissions: [],
       users: [],
@@ -425,8 +420,9 @@ export default {
     },
 
     showFlash(text, ok = true) {
-      this.flash = { text, ok };
-      setTimeout(() => { this.flash.text = ''; }, 3500);
+      if (typeof window.showToast === 'function') {
+        window.showToast(text, { variant: ok ? 'success' : 'danger', delay: 9000 });
+      }
     },
 
     lockTitle(row, type) {
