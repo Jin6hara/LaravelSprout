@@ -8,6 +8,14 @@ enum ExpenseTripType: string
 {
     use HasValues;
 
-    case ROUND_TRIP = 'Round trip';
-    case ONE_WAY    = 'One way';
+    case ROUND_TRIP = 'round_trip';
+    case ONE_WAY    = 'one_way';
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::ROUND_TRIP => 'Round trip',
+            self::ONE_WAY => 'One way',
+        };
+    }
 }
