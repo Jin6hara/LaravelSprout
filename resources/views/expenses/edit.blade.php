@@ -22,7 +22,7 @@
       @php $me = auth()->user(); @endphp
       <div class="d-flex flex-wrap gap-2">
           @if($me->hasAnyRole(['admin','super_admin']))
-              <a href="{{ route('routes.admin.create', $report->employee_code) }}"
+              <a href="{{ route('routes.admin.create', $user) }}"
                 class="btn btn-outline-primary btn-sm btn-route-fixed">
                   ＋ Route Declaration
               </a>
@@ -34,7 +34,7 @@
           @endif
 
           @if($me->hasAnyRole(['admin','super_admin']))
-              <a href="{{ route('commuter_passes.admin.create', $report->employee_code) }}"
+              <a href="{{ route('commuter_passes.admin.create', $user) }}"
                 class="btn btn-outline-primary btn-sm btn-route-fixed">
                   ＋ Commuter Pass
               </a>
@@ -42,6 +42,18 @@
               <a href="{{ route('commuter_passes.create') }}"
                 class="btn btn-outline-primary btn-sm btn-route-fixed">
                   ＋ Commuter Pass
+              </a>
+          @endif
+
+          @if($me->hasAnyRole(['admin','super_admin']))
+              <a href="{{ route('expenses.admin.pattern', $user) }}"
+                class="btn btn-outline-primary btn-sm btn-route-fixed">
+                  ＋ Pattern
+              </a>
+          @else
+              <a href="{{ route('expenses.pattern') }}"
+                class="btn btn-outline-primary btn-sm btn-route-fixed">
+                  ＋ Pattern
               </a>
           @endif
       </div>

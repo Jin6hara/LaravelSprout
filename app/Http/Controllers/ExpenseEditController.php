@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Expense;
 use App\Models\User;
 use App\Models\ExpenseReport;
+use App\Services\Calendar\CalendarResolver;
 use App\Services\CommutingExpenses\RouteDeclarationService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -184,6 +186,10 @@ class ExpenseEditController extends Controller
         $this->authorize('submit', $report);
         $user = $request->user();
 
+        if ($message = $this->offDayExpenseValidationMessage($report)) {
+            return back()->with('toast_errors', [$message]);
+        }
+
         // 既に提出済みなら何もしない（冪等）
         if ($report->status !== ExpenseReportStatus::SUBMITTED->value) {
             $report->status = ExpenseReportStatus::SUBMITTED->value;
@@ -226,6 +232,72 @@ class ExpenseEditController extends Controller
     }
 
     /**
+     * 経費レポートの提出前バリデーション：オフ日の経費に理由が書いてあるか
+     * ルール：費用 > 0 かつ（理由が null または空文字）な行があって、その日がカレンダー上の「ON」じゃない場合はエラー
+     */
+    private function offDayExpenseValidationMessage(ExpenseReport $report): ?string
+    {
+        $expenses = $report->expenses()
+            ->where('cost', '>', 0)
+            ->where(function ($query) {
+                $query->whereNull('note')
+                    ->orWhere('note', '');
+            })
+            ->orderBy('expense_date')
+            ->orderBy('seq')
+            ->get(['expense_date', 'seq']);
+
+        if ($expenses->isEmpty()) {
+            return null;
+        }
+
+        $workOnMap = $this->workOnMapForReport($report);
+
+        $invalid = $expenses->first(function (Expense $expense) use ($workOnMap) {
+            $date = $expense->expense_date->toDateString();
+
+            return ! ($workOnMap[$date] ?? false);
+        });
+
+        if (! $invalid) {
+            return null;
+        }
+
+        return sprintf(
+            'Please write a reason in Note for travel expenses on non-working days. First invalid row: %s.',
+            $invalid->expense_date->toDateString()
+        );
+    }
+
+    /**
+     * 経費レポートの対象月のカレンダーイベントを取得し、「ON」日のマップを作る
+     * 例: [ '2024-06-03' => true, '2024-06-04' => false, ... ]
+     */
+    private function workOnMapForReport(ExpenseReport $report): array
+    {
+        $start = Carbon::create($report->year, $report->month, 1, 0, 0, 0, 'Asia/Tokyo')->startOfDay();
+        $end = (clone $start)->endOfMonth();
+        $events = app(CalendarResolver::class)->build($report->user()->firstOrFail(), $start, $end);
+
+        $workOnMap = [];
+        foreach ($events as $event) {
+            $dateKey = $event['dateKey'] ?? (isset($event['start'])
+                ? (is_string($event['start']) ? substr($event['start'], 0, 10) : Carbon::parse($event['start'])->toDateString())
+                : null);
+
+            if (! $dateKey) {
+                continue;
+            }
+
+            if (strtolower((string) ($event['display'] ?? '')) === 'on') {
+                $workOnMap[$dateKey] = true;
+            }
+        }
+
+        return $workOnMap;
+    }
+
+    /**
      * 対象年月の当月分 expense_reports と expenses を生成
      * Blade から手動実行する用
      */
@@ -237,8 +309,8 @@ class ExpenseEditController extends Controller
         $year  = (int) $request->input('year', now()->year);
         $month = (int) $request->input('month', now()->month);
 
-        // 既存の Artisan コマンドをそのまま利用
-        Artisan::call('expenses:generate-monthly', [
+        // パターンが有効な日はパターン、未登録日は従来通り空行で生成する
+        Artisan::call('expenses:generate-monthly-by-pattern', [
             'year'  => $year,
             'month' => $month,
         ]);

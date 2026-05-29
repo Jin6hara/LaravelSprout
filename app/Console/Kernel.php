@@ -15,7 +15,7 @@ class Kernel extends ConsoleKernel
         // $schedule->command('inspire')->hourly();
 
         // 毎月 2 日の 0:00 に当月分を自動生成
-        $schedule->command('expenses:generate-monthly')
+        $schedule->command('expenses:generate-monthly-by-pattern')
             ->monthlyOn(2, '0:00')
             ->withoutOverlapping();
 

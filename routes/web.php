@@ -171,15 +171,23 @@ Route::middleware(['auth', 'role:super_admin'])->group(function () {
 });
 
 use App\Http\Controllers\ExpenseEditController;
+use App\Http\Controllers\CommutePatternController;
 
 Route::middleware(['auth'])->group(function () {
     // ユーザー本人: /expenses/edit?year=YYYY&month=M
     Route::get('/expenses/edit', [ExpenseEditController::class, 'selfEdit'])
         ->name('expenses.edit');
 
+    Route::get('/expenses/pattern', [CommutePatternController::class, 'selfEdit'])
+        ->name('expenses.pattern');
+
     // 管理者: /expenses/{user}/edit?year=YYYY&month=M
     Route::get('/expenses/{user}/edit', [ExpenseEditController::class, 'adminEdit'])
         ->name('expenses.admin.edit');
+
+    Route::get('/expenses/{user}/pattern', [CommutePatternController::class, 'adminEdit'])
+        ->name('expenses.admin.pattern');
+
     // ★ 提出（report単位）
     Route::put('/expenses/reports/{report}/submit', [ExpenseEditController::class, 'submit'])
         ->name('expenses.submit');
@@ -201,6 +209,9 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/api/expenses/batch',         [ExpenseApiController::class, 'batchSave'])->name('api.expenses.batch');
     Route::put('/api/expenses/{expense}',     [ExpenseApiController::class, 'update'])->name('api.expenses.update');
     Route::delete('/api/expenses/{expense}',  [ExpenseApiController::class, 'destroy'])->name('api.expenses.destroy');
+
+    Route::put('/api/commute-patterns/batch', [CommutePatternController::class, 'save'])->name('api.commute_patterns.batch');
+    Route::delete('/api/commute-patterns/{pattern}', [CommutePatternController::class, 'destroy'])->name('api.commute_patterns.destroy');
 });
 
 use App\Http\Controllers\ExpenseReportController;

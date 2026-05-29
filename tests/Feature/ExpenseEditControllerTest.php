@@ -2,9 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ExpenseCategory;
 use App\Enums\ExpenseReportStatus;
+use App\Enums\ExpenseTripType;
 use App\Models\Department;
 use App\Models\District;
+use App\Models\Expense;
 use App\Models\ExpenseReport;
 use App\Models\User;
 use App\Models\UserManagementScope;
@@ -308,6 +311,38 @@ class ExpenseEditControllerTest extends TestCase
              ->assertRedirect(
                  route('expenses.edit', ['year' => $report->year, 'month' => $report->month])
              );
+    }
+
+    public function test_submit_requires_note_for_positive_cost_on_non_working_day(): void
+    {
+        [$user, $report] = $this->makeUserWithReport(2026, 5);
+
+        Expense::create([
+            'expense_report_id' => $report->id,
+            'expense_date' => '2026-05-01',
+            'seq' => 100,
+            'station_from' => 'Home',
+            'station_to' => 'School',
+            'note' => null,
+            'cost' => 240,
+            'trip_type' => ExpenseTripType::ROUND_TRIP->value,
+            'category' => ExpenseCategory::REGULAR->value,
+        ]);
+
+        $this->actingAs($user)
+            ->put(route('expenses.submit', $report))
+            ->assertRedirect()
+            ->assertSessionHas('toast_errors', function ($errors) {
+                return in_array(
+                    'Please write a reason in Note for travel expenses on non-working days. First invalid row: 2026-05-01.',
+                    $errors,
+                    true
+                );
+            });
+
+        $report->refresh();
+        $this->assertSame(ExpenseReportStatus::DRAFT, $report->status);
+        $this->assertNull($report->submitted_at);
     }
 
     // =========================================================================
