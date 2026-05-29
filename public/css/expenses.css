@@ -36,10 +36,28 @@
     width: 130px;
 }
 
+.expense-edit-top-scroll {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    background: #ffffff;
+    border: 1px solid #dee2e6;
+    border-bottom: 0;
+    height: 18px;
+}
+
+.expense-edit-top-scroll-inner {
+    height: 1px;
+}
+
 #sheetScroll {
     width: 100%;
     overflow: auto;
     -webkit-overflow-scrolling: touch;
+    border: 1px solid #dee2e6;
 }
 
 #sheet {
