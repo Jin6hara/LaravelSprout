@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\RestPatternAdjustmentKind;
+use App\Enums\RestPatternRuleKind;
 use App\Models\CompanyClosure;
 use App\Models\Holiday;
 use App\Models\RestPattern;
@@ -9,6 +11,7 @@ use App\Models\RestPatternAdjustment;
 use App\Models\RestPatternRule;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class CalendarPatternEditorController extends Controller
 {
@@ -88,11 +91,12 @@ class CalendarPatternEditorController extends Controller
             while ($cur->lte($endCar)) {
                 $ymd  = $cur->toDateString();
                 $rule = $rules->get($cur->dayOfWeek);
-                if ($rule && $rule->kind !== 'work' && !isset($adjMap[$ymd])) {
+                $ruleKind = $rule ? RestPatternRuleKind::tryFrom($rule->kind) : null;
+                if ($ruleKind && $ruleKind !== RestPatternRuleKind::Work && !isset($adjMap[$ymd])) {
                     $result[] = [
                         'start' => $ymd,
-                        'title' => $rule->kind === 'statutory_off' ? 'LRD' : 'ORD',
-                        'kind'  => $rule->kind,
+                        'title' => $ruleKind->title(),
+                        'kind'  => $ruleKind->value,
                         '_type' => 'offday',
                     ];
                 }
@@ -100,11 +104,12 @@ class CalendarPatternEditorController extends Controller
             }
 
             foreach ($adjs as $a) {
+                $adjustmentKind = RestPatternAdjustmentKind::tryFrom($a->kind);
                 $result[] = [
                     'id'    => $a->id,
                     'start' => $a->date->toDateString(),
                     'kind'  => $a->kind,
-                    'title' => $a->title ?: ($a->kind === 'add_off' ? 'ORD' : 'RWD'),
+                    'title' => $a->title ?: ($adjustmentKind?->code() ?? $a->kind),
                     '_type' => 'adjusting',
                 ];
             }
@@ -133,7 +138,7 @@ class CalendarPatternEditorController extends Controller
         $data = $request->validate([
             'rest_pattern_id' => 'required|integer|exists:rest_patterns,id',
             'rules'           => 'required|array',
-            'rules.*'         => 'required|in:statutory_off,prescribed_off,work',
+            'rules.*'         => ['required', Rule::in(RestPatternRuleKind::values())],
         ]);
         $pid = $data['rest_pattern_id'];
         foreach ($data['rules'] as $weekday => $kind) {
@@ -253,12 +258,12 @@ class CalendarPatternEditorController extends Controller
         $data = $request->validate([
             'rest_pattern_id' => 'required|integer|exists:rest_patterns,id',
             'date'            => 'required|date',
-            'kind'            => 'required|in:add_off,work_instead',
+            'kind'            => ['required', Rule::in(RestPatternAdjustmentKind::values())],
             'title'           => 'nullable|string|max:100',
             'is_active'       => 'boolean',
             'note'            => 'nullable|string|max:500',
         ]);
-        $data['code'] = $data['kind'] === 'add_off' ? 'ORD' : 'RWD';
+        $data['code'] = RestPatternAdjustmentKind::from($data['kind'])->code();
 
         $row = RestPatternAdjustment::create($data);
 
@@ -278,12 +283,12 @@ class CalendarPatternEditorController extends Controller
         $data = $request->validate([
             'rest_pattern_id' => 'required|integer|exists:rest_patterns,id',
             'date'            => 'required|date',
-            'kind'            => 'required|in:add_off,work_instead',
+            'kind'            => ['required', Rule::in(RestPatternAdjustmentKind::values())],
             'title'           => 'nullable|string|max:100',
             'is_active'       => 'boolean',
             'note'            => 'nullable|string|max:500',
         ]);
-        $data['code'] = $data['kind'] === 'add_off' ? 'ORD' : 'RWD';
+        $data['code'] = RestPatternAdjustmentKind::from($data['kind'])->code();
         $adjustment->update($data);
 
         return response()->json([

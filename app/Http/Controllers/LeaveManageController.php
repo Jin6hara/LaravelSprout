@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\LeaveExcused;
+use App\Enums\LeaveKind;
+use App\Enums\LeaveStatus;
 use App\Http\Requests\LeaveManage\BulkUpdateLeaveManageRequest;
 use App\Http\Requests\LeaveManage\StoreLeaveManageRequest;
 use App\Http\Requests\LeaveManage\UpdateLeaveManageRequest;
@@ -93,26 +96,9 @@ class LeaveManageController extends Controller
             ->withQueryString();
 
         // 5) オプション
-        $statusOptions = [
-            'approved' => 'Approved',
-            'pending'  => 'Pending',
-            'rejected' => 'Rejected',
-            'cancelled'    => 'Cancelled',
-        ];
-        $kindOptions = [
-            'paid'            => 'ALP',
-            'absence_to_paid' => 'MT to ALP',
-            'special'         => 'Special',
-            'absence'         => 'MT',
-            'adjustment'      => 'Adjustment',
-            'left_early'      => 'Left Early',
-            'late'            => 'Late',
-            'other'           => 'Other',
-        ];
-        $excusedOptions = [
-            'excused'   => 'Excused',
-            'unexcused' => 'Unexcused',
-        ];
+        $statusOptions = LeaveStatus::manageLabels();
+        $kindOptions = LeaveKind::labels();
+        $excusedOptions = LeaveExcused::managedLabels();
 
         // 6) 表示
         return view('calendar.leaveEdit', compact(
@@ -141,12 +127,12 @@ class LeaveManageController extends Controller
             'start_date'    => $data['start_date'],
             'end_date'      => null,
             'reason'        => null,
-            'kind'          => 'special',
-            'excused'       => 'excused',
+            'kind'          => LeaveKind::Special->value,
+            'excused'       => LeaveExcused::Excused->value,
             'time_start'    => null,
             'time_end'      => null,
             'handle_type'   => null,
-            'status'        => 'approved',
+            'status'        => LeaveStatus::Approved->value,
             'district_id'   => $this->scopeService->currentDistrictId(),
             'department_id' => $this->scopeService->currentDepartmentId(),
         ]);

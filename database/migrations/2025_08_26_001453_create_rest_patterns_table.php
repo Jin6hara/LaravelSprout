@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use App\Enums\RestPatternRuleKind;
 
 return new class extends Migration
 {
@@ -22,7 +23,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('rest_pattern_id')->constrained()->cascadeOnDelete();
             $table->tinyInteger('weekday'); // 0(日)〜6(土)
-            $table->enum('kind', ['work', 'prescribed_off', 'statutory_off']);
+            $table->string('kind', 32)->default(RestPatternRuleKind::Work->value);
             $table->timestamps();
             $table->unique(['rest_pattern_id', 'weekday']);
         });

@@ -2,6 +2,9 @@
 
 namespace App\Http\Requests\LeaveManage;
 
+use App\Enums\LeaveExcused;
+use App\Enums\LeaveKind;
+use App\Enums\LeaveStatus;
 use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -20,13 +23,13 @@ class UpdateLeaveManageRequest extends FormRequest
             'start_date'   => ['required', 'date'],
             'end_date'     => ['nullable', 'date', 'after_or_equal:start_date'],
             'reason'       => ['nullable', 'string'],
-            'kind'         => ['required', Rule::in(['paid', 'absence_to_paid', 'special', 'absence', 'adjustment', 'left_early', 'late', 'other'])],
-            'excused'      => ['required', Rule::in(['excused', 'unexcused'])],
+            'kind'         => ['required', Rule::in(LeaveKind::values())],
+            'excused'      => ['required', Rule::in(LeaveExcused::managedValues())],
             'special_type' => ['nullable', 'string', 'max:100'],
             'time_start'   => ['nullable', 'date_format:H:i', 'required_with:time_end'],
             'time_end'     => ['nullable', 'date_format:H:i', 'required_with:time_start'],
             'handle_type'  => ['nullable', 'string'],
-            'status'       => ['required', Rule::in(['approved', 'pending', 'rejected', 'draft', 'cancelled', 'archived'])],
+            'status'       => ['required', Rule::in(LeaveStatus::values())],
         ];
     }
 

@@ -2,6 +2,9 @@
 // app/Services/Calendar/LeaveSnapshotService.php
 namespace App\Services\Calendar;
 
+use App\Enums\EventStatus;
+use App\Enums\LeaveStatus;
+use App\Enums\ShiftType;
 use App\Models\Event;
 use App\Models\EventDetail;
 use App\Models\Leave;
@@ -22,7 +25,7 @@ class LeaveSnapshotService
             $this->deleteSnapshotsForLeave($leave);
 
             // Approved, Pendingの場合生成（ポリシーは要件に合わせて）
-            if (!in_array($leave->status, ['approved', 'pending'], true)) return;
+            if (!in_array($leave->status, LeaveStatus::snapshotValues(), true)) return;
 
             // 期間生成（end_date が null の場合は単日）
             $start = Carbon::parse($leave->start_date);
@@ -109,13 +112,13 @@ class LeaveSnapshotService
                 'school_name'             => $line->school_name,
                 'start_time'              => substr($line->start_time, 0, 8),
                 'end_time'                => substr($line->end_time,   0, 8),
-                'type'                    => 'regular_time',
+                'type'                    => ShiftType::RegularTime->value,
                 'assigned_user_id'        => null,
                 'original_user_id'        => $userId,
                 'Leave_type'              => (string) $leave->kind,
                 'source_schedule_line_id' => $line->id,
                 'source_leave_id'         => $leave->id,
-                'status'                  => 'pending',
+                'status'                  => EventStatus::Pending->value,
                 'notes'                   => null,
                 'district_id'             => $districtId,
                 'department_id'           => $departmentId,

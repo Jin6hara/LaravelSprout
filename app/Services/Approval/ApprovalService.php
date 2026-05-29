@@ -2,6 +2,7 @@
 
 namespace App\Services\Approval;
 
+use App\Enums\LeaveStatus;
 use App\Models\ApprovalRequest;
 use App\Models\Leave;
 use App\Services\LeaveBalanceService;
@@ -28,7 +29,9 @@ class ApprovalService
                 'comment'  => $comment,
             ]);
             $approvalRequest->update(['current_state' => 'approved']);
-            $approvable->update(['status' => 'approved']);
+            $approvable->update([
+                'status' => $approvable instanceof Leave ? LeaveStatus::Approved->value : 'approved',
+            ]);
 
             if (method_exists($approvable, 'applyDomainEffect')) {
                 $approvable->applyDomainEffect();
@@ -58,7 +61,9 @@ class ApprovalService
                 'comment'  => $comment,
             ]);
             $approvalRequest->update(['current_state' => 'rejected']);
-            $approvalRequest->approvable->update(['status' => 'rejected']);
+            $approvalRequest->approvable->update([
+                'status' => $approvable instanceof Leave ? LeaveStatus::Rejected->value : 'rejected',
+            ]);
         });
     }
 
@@ -78,7 +83,7 @@ class ApprovalService
 
             $req->actions()->create(['actor_id' => $actorId, 'action' => 'approved', 'comment' => $comment]);
             $req->update(['current_state' => 'approved']);
-            $leave->update(['status' => 'approved', 'approved_by' => $actorId]);
+            $leave->update(['status' => LeaveStatus::Approved->value, 'approved_by' => $actorId]);
             $this->leaveBalanceService->consume($leave);
         }
     }
@@ -99,7 +104,7 @@ class ApprovalService
 
             $req->actions()->create(['actor_id' => $actorId, 'action' => 'rejected', 'comment' => $comment]);
             $req->update(['current_state' => 'rejected']);
-            $leave->update(['status' => 'rejected']);
+            $leave->update(['status' => LeaveStatus::Rejected->value]);
         }
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\ExpenseApi;
 
+use App\Enums\ExpenseCategory;
+use App\Enums\ExpenseTripType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -23,7 +25,7 @@ class BatchSaveExpenseRequest extends FormRequest
             'updates.*.station_to'     => ['nullable', 'string', 'max:255'],
             'updates.*.note'           => ['nullable', 'string'],
             'updates.*.cost'           => ['nullable', 'integer', 'min:0'],
-            'updates.*.trip_type'      => ['nullable', Rule::in(['round_trip', 'one_way'])],
+            'updates.*.trip_type'      => ['nullable', Rule::in(ExpenseTripType::values())],
             'updates.*.seq'            => ['nullable', 'integer', 'min:0'],
 
             'creates'                  => ['present', 'array'],
@@ -33,8 +35,8 @@ class BatchSaveExpenseRequest extends FormRequest
             'creates.*.station_to'     => ['nullable', 'string', 'max:255'],
             'creates.*.note'           => ['nullable', 'string'],
             'creates.*.cost'           => ['nullable', 'integer', 'min:0'],
-            'creates.*.trip_type'      => ['required', Rule::in(['round_trip', 'one_way'])],
-            'creates.*.category'       => ['required', Rule::in(['regular', 'irregular'])],
+            'creates.*.trip_type'      => ['required', Rule::in(ExpenseTripType::values())],
+            'creates.*.category'       => ['required', Rule::in(ExpenseCategory::values())],
         ];
     }
 }

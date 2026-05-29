@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\EventAssign;
 
+use App\Enums\EventStatus;
+use App\Enums\ShiftType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -25,8 +27,8 @@ class UpdateEventRequest extends FormRequest
             'total_duration'   => ['nullable', 'regex:/^\d{1,2}:\d{2}$/'],
             'Lesson'           => ['nullable', 'string'],
             'assigned_user_id' => ['nullable', 'exists:users,id'],
-            'status'           => ['required', Rule::in(['pending', 'fixed', 'filled', 'in_process'])],
-            'type'             => ['required', Rule::in(['regular_time', 'none_required', 'overtime', 'schedule_change', 'rostered_working_day', 'special'])],
+            'status'           => ['required', Rule::in(EventStatus::values())],
+            'type'             => ['required', Rule::in(ShiftType::values())],
             'notes'            => ['nullable', 'string'],
         ];
     }

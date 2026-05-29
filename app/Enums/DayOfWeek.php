@@ -2,8 +2,12 @@
 
 namespace App\Enums;
 
+use App\Enums\Concerns\HasValues;
+
 enum DayOfWeek: string
 {
+    use HasValues;
+
     case Mon = 'Mon';
     case Tue = 'Tue';
     case Wed = 'Wed';
@@ -12,8 +16,4 @@ enum DayOfWeek: string
     case Sat = 'Sat';
     case Sun = 'Sun';
 
-    public static function values(): array
-    {
-        return array_map(fn($c) => $c->value, self::cases());
-    }
 }

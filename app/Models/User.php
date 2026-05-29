@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\Gender;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -122,12 +123,7 @@ class User extends Authenticatable
 
     public function getGenderLabelAttribute(): string
     {
-        return match ($this->gender) {
-            'male' => '男性',
-            'female' => '女性',
-            'other' => 'その他',
-            default => '未選択',
-        };
+        return Gender::tryFrom((string) $this->gender)?->label() ?? Gender::Unknown->label();
     }
 
     public function isAdmin(): bool

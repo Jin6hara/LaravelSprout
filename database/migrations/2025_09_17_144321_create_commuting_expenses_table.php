@@ -27,7 +27,7 @@ return new class extends Migration
             $t->unsignedSmallInteger('year');
             $t->unsignedTinyInteger('month');
 
-            $t->enum('status', ExpenseReportStatus::values())
+            $t->string('status', 32)
                 ->default(ExpenseReportStatus::DRAFT->value)
                 ->index();
 
@@ -79,10 +79,10 @@ return new class extends Migration
 
             $t->unsignedInteger('cost')->default(0);
 
-            $t->enum('trip_type', ExpenseTripType::values())
+            $t->string('trip_type', 32)
                 ->default(ExpenseTripType::ROUND_TRIP->value);
 
-            $t->enum('category', ExpenseCategory::values())
+            $t->string('category', 32)
                 ->default(ExpenseCategory::REGULAR->value);
 
             $t->foreignId('commuter_pass_id')

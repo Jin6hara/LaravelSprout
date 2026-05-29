@@ -2,6 +2,8 @@
 
 namespace App\Services\Calendar\Providers;
 
+use App\Enums\EventStatus;
+use App\Enums\ShiftType;
 use App\Models\Event;
 use App\Models\User;
 use App\Services\Calendar\{CandidateEvent, EventType, PlanGroup};
@@ -23,7 +25,7 @@ class EventProvider implements CalendarEventProvider
             ->when($districtId,   fn($q) => $q->where('district_id',   $districtId))
             ->when($departmentId, fn($q) => $q->where('department_id', $departmentId))
             // status: fixed/filled のみ対象（cancelled 等はここで除外される）
-            ->whereIn('status', ['fixed', 'filled'])
+            ->whereIn('status', EventStatus::fixedValues())
             // sub 条件を撤去
             ->whereBetween('event_date', [$start->toDateString(), $end->toDateString()])
             ->with(['details.lesson'])
@@ -121,13 +123,7 @@ class EventProvider implements CalendarEventProvider
 
         if ($title) return $title;
 
-        return match ($type) {
-            'overtime'       => '残業',
-            'regular_time'   => '通常勤務',
-            'special'        => '特別イベント',
-            'schedule_change' => '時間変更',
-            default          => 'イベント',
-        };
+        return ShiftType::tryFrom((string) $type)?->calendarLabel() ?? 'イベント';
     }
 
     /**
@@ -136,12 +132,6 @@ class EventProvider implements CalendarEventProvider
      */
     private function sortOrderForType(string $type): int
     {
-        return match ($type) {
-            'overtime'       => 10,
-            'regular_time'   => 20,
-            'special'        => 30,
-            'schedule_change' => 40,
-            default          => 50,
-        };
+        return ShiftType::tryFrom($type)?->sortOrder() ?? 50;
     }
 }

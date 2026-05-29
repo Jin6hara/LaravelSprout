@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\LeaveApply;
 
+use App\Enums\LeaveKind;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class LeaveApplyRequest extends FormRequest
 {
@@ -18,6 +20,8 @@ class LeaveApplyRequest extends FormRequest
             'dates'   => ['required', 'array', 'min:1'],
             'dates.*' => ['required', 'date'],
             'reason'  => ['nullable', 'string'],
+            'type'    => ['nullable', Rule::in(LeaveKind::applicationValues())],
+            'special_type' => ['nullable', 'string', 'max:100'],
         ];
     }
 

@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use App\Enums\LeaveCreditTransactionType;
 
 return new class extends Migration
 {
@@ -25,7 +26,7 @@ return new class extends Migration
         Schema::create('leave_credit_transactions', function (Blueprint $t) {
             $t->id();
             $t->foreignId('leave_credit_id')->constrained()->cascadeOnDelete();
-            $t->enum('type', ['grant', 'consume', 'revert', 'adjust'])->index();
+            $t->string('type', 32)->default(LeaveCreditTransactionType::Grant->value)->index();
             $t->decimal('days', 5, 2);       // 0.5 / 0.25 などOK
             $t->string('reason')->nullable(); // 'leave#123', 'annual grant', etc
             $t->timestamps();

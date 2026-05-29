@@ -2,6 +2,7 @@
 
 namespace App\Services\Calendar\Providers;
 
+use App\Enums\RestPatternRuleKind;
 use App\Models\User;
 use App\Models\UserRestPattern;
 use App\Services\Calendar\{CandidateEvent, EventType, PlanGroup};
@@ -25,10 +26,11 @@ class OffDayProvider implements CalendarEventProvider
             if ($assign && $assign->pattern) {
                 $w = (int)$cur->dayOfWeek;
                 $rule = $assign->pattern->rules->firstWhere('weekday', $w);
-                if ($rule && $rule->kind !== 'work') {
-                    $isStat = $rule->kind === 'statutory_off';
+                $ruleKind = $rule ? RestPatternRuleKind::tryFrom($rule->kind) : null;
+                if ($ruleKind && $ruleKind !== RestPatternRuleKind::Work) {
+                    $isStat = $ruleKind === RestPatternRuleKind::StatutoryOff;
                     $events[] = new CandidateEvent([
-                        'title'  => $isStat ? 'LRD' : 'ORD',
+                        'title'  => $ruleKind->title(),
                         'start'  => $ymd,
                         'allDay' => true,
                         'classNames' => [$isStat ? 'fc-off-statutory' : 'fc-off-prescribed'],

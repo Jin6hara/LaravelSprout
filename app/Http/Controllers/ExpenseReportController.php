@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ExpenseReportStatus;
 use App\Http\Requests\ExpenseReport\ShowExpenseReportRequest;
 use App\Models\ExpenseReport;
 use App\Services\CurrentScopeService;
@@ -61,7 +62,10 @@ class ExpenseReportController extends Controller
         $sum_submitted = (int) $reports->whereNotNull('submitted_at')->sum('total_amount');
         $sum_approved  = (int) $reports->filter(function ($r) {
             $v = $r->status instanceof \BackedEnum ? $r->status->value : (string)$r->status;
-            return in_array(strtolower($v), ['approved', 'paid'], true);
+            return in_array(strtolower($v), [
+                ExpenseReportStatus::APPROVED->value,
+                ExpenseReportStatus::PAID->value,
+            ], true);
         })->sum('total_amount');
 
         $summary = [

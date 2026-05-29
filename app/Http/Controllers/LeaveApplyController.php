@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\LeaveKind;
 use App\Http\Requests\LeaveApply\LeaveApplyRequest;
 use App\Models\LeaveCredit;
 use App\Models\User;
@@ -35,7 +36,7 @@ class LeaveApplyController extends Controller
      */
     public function store(LeaveApplyRequest $request): RedirectResponse
     {
-        $type           = (string) $request->input('type', 'paid');
+        $type           = (string) $request->input('type', LeaveKind::Paid->value);
         $specialType    = (string) $request->input('special_type', '');
         $attachmentMeta = $this->handleAttachment($type, $request);
 
@@ -72,7 +73,7 @@ class LeaveApplyController extends Controller
     {
         $this->authorize('manage', $user);
 
-        $type           = (string) $request->input('type', 'paid');
+        $type           = (string) $request->input('type', LeaveKind::Paid->value);
         $specialType    = (string) $request->input('special_type', '');
         $attachmentMeta = $this->handleAttachment($type, $request);
 
@@ -95,7 +96,7 @@ class LeaveApplyController extends Controller
      */
     private function handleAttachment(string $type, LeaveApplyRequest $request): ?array
     {
-        if ($type !== 'special' || !$request->hasFile('attachment')) {
+        if ($type !== LeaveKind::Special->value || !$request->hasFile('attachment')) {
             return null;
         }
 

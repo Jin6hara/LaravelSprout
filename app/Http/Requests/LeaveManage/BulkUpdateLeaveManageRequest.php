@@ -2,6 +2,9 @@
 
 namespace App\Http\Requests\LeaveManage;
 
+use App\Enums\LeaveExcused;
+use App\Enums\LeaveKind;
+use App\Enums\LeaveStatus;
 use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -22,13 +25,13 @@ class BulkUpdateLeaveManageRequest extends FormRequest
             'items.*.start_date'   => ['required', 'date'],
             'items.*.end_date'     => ['nullable', 'date', 'after_or_equal:items.*.start_date'],
             'items.*.reason'       => ['nullable', 'string'],
-            'items.*.kind'         => ['required', Rule::in(['paid', 'absence_to_paid', 'special', 'absence', 'adjustment', 'left_early', 'late', 'other'])],
-            'items.*.excused'      => ['required', Rule::in(['excused', 'unexcused'])],
+            'items.*.kind'         => ['required', Rule::in(LeaveKind::values())],
+            'items.*.excused'      => ['required', Rule::in(LeaveExcused::managedValues())],
             'items.*.special_type' => ['nullable', 'string', 'max:100'],
             'items.*.time_start'   => ['nullable', 'date_format:H:i', 'required_with:items.*.time_end'],
             'items.*.time_end'     => ['nullable', 'date_format:H:i', 'required_with:items.*.time_start'],
             'items.*.handle_type'  => ['nullable', 'string'],
-            'items.*.status'       => ['required', Rule::in(['approved', 'pending', 'rejected', 'draft', 'cancelled', 'archived'])],
+            'items.*.status'       => ['required', Rule::in(LeaveStatus::values())],
         ];
     }
 

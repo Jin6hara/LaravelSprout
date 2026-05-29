@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Enums\Gender;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UserRequest extends FormRequest
 {
@@ -19,7 +21,7 @@ class UserRequest extends FormRequest
             'name_in_kana'  => ['nullable', 'string', 'max:255'],
             'email'         => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password'      => ['required', 'string', 'min:8', 'confirmed'],
-            'gender'        => ['required', 'in:male,female,other,unknown'],
+            'gender'        => ['required', Rule::in(Gender::values())],
             'employee_code' => ['required', 'digits:6', 'unique:users'],
             'phone_number'  => ['nullable', 'string', 'max:15'],
             'address'       => ['nullable', 'string', 'max:255'],

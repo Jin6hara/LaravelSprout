@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\LeaveKind;
+use App\Enums\LeaveStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
@@ -45,7 +47,7 @@ class Leave extends Model
 
     public function scopeApproved(Builder $q): Builder
     {
-        return $q->where('status', 'approved');
+        return $q->where('status', LeaveStatus::Approved->value);
     }
 
     public function scopeBetween(Builder $q, Carbon $start, Carbon $end): Builder
@@ -73,17 +75,7 @@ class Leave extends Model
 
     public function displayTitle(): string //表示タイトルは再利用のためモデルに置くのが推奨される
     {
-        return match ($this->kind) {
-            'paid'    => 'ALP',
-            'special' => $this->special_type ? "Special Leave（{$this->special_type}）" : 'Special Leave',
-            'absence' => 'Absence',
-            'late'    => 'Late',
-            'left_early' => 'Left Early',
-            'adjustment' => 'Adjustment',
-            'absence_to_paid' => 'ALP',
-            'other'   => $this->special_type ? "{$this->special_type}" : 'Other',
-            default   => 'Absence',
-        };
+        return LeaveKind::tryFrom((string) $this->kind)?->calendarTitle($this->special_type) ?? 'Absence';
     }
 
     public function approvalRequest(): MorphOne
