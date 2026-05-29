@@ -6,9 +6,11 @@ use App\Enums\ExpenseCategory;
 use App\Enums\ExpenseReportStatus;
 use App\Enums\ExpenseTripType;
 use App\Models\CommutePattern;
+use App\Models\CommuterPass;
 use App\Models\EmploymentTerm;
 use App\Models\Expense;
 use App\Models\ExpenseReport;
+use App\Models\ScheduleLine;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -44,6 +46,37 @@ class GenerateMonthlyExpensesByPatternTest extends TestCase
             'type_code' => 'employee',
         ]);
 
+        ScheduleLine::create([
+            'user_id' => $user->id,
+            'dow' => 1,
+            'school_name' => 'School',
+            'start_time' => '09:00:00',
+            'end_time' => '17:00:00',
+            'effective_start' => '2026-05-01',
+            'effective_end' => '2026-05-31',
+            'total_minutes' => 480,
+        ]);
+
+        ScheduleLine::create([
+            'user_id' => $user->id,
+            'dow' => 3,
+            'school_name' => 'School',
+            'start_time' => '09:00:00',
+            'end_time' => '17:00:00',
+            'effective_start' => '2026-05-01',
+            'effective_end' => '2026-05-31',
+            'total_minutes' => 480,
+        ]);
+
+        CommuterPass::create([
+            'user_id' => $user->id,
+            'date_from' => '2026-05-06',
+            'date_to' => '2026-05-06',
+            'station_from' => 'Home',
+            'station_to' => 'School',
+            'cost' => 12000,
+        ]);
+
         $pattern = CommutePattern::create([
             'user_id' => $user->id,
             'submitted_at' => now('Asia/Tokyo'),
@@ -72,6 +105,16 @@ class GenerateMonthlyExpensesByPatternTest extends TestCase
             'cost' => 300,
             'trip_type' => ExpenseTripType::ONE_WAY->value,
             'note' => 'extra',
+        ]);
+
+        $pattern->legs()->create([
+            'dow' => 'Wed',
+            'seq' => 100,
+            'station_from' => 'Home',
+            'station_to' => 'School',
+            'cost' => 700,
+            'trip_type' => ExpenseTripType::ROUND_TRIP->value,
+            'note' => 'pass-covered',
         ]);
 
         $this->artisan('expenses:generate-monthly-by-pattern', [
@@ -117,6 +160,15 @@ class GenerateMonthlyExpensesByPatternTest extends TestCase
         $this->assertSame(0, $blankTuesday->cost);
         $this->assertSame(ExpenseTripType::ROUND_TRIP, $blankTuesday->trip_type);
         $this->assertSame(ExpenseCategory::REGULAR, $blankTuesday->category);
+
+        $blankPassDay = Expense::query()
+            ->where('expense_report_id', $report->id)
+            ->whereDate('expense_date', '2026-05-06')
+            ->firstOrFail();
+
+        $this->assertNull($blankPassDay->station_from);
+        $this->assertNull($blankPassDay->station_to);
+        $this->assertSame(0, $blankPassDay->cost);
     }
 
     public function test_pattern_api_creates_updates_syncs_and_deletes_pattern(): void
