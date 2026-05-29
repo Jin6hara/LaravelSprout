@@ -237,8 +237,8 @@ class ExpenseEditController extends Controller
         $year  = (int) $request->input('year', now()->year);
         $month = (int) $request->input('month', now()->month);
 
-        // 既存の Artisan コマンドをそのまま利用
-        Artisan::call('expenses:generate-monthly', [
+        // パターンが有効な日はパターン、未登録日は従来通り空行で生成する
+        Artisan::call('expenses:generate-monthly-by-pattern', [
             'year'  => $year,
             'month' => $month,
         ]);

@@ -320,6 +320,11 @@ class User extends Authenticatable
         return $this->hasMany(RouteDeclaration::class);
     }
 
+    public function commutePatterns()
+    {
+        return $this->hasMany(CommutePattern::class);
+    }
+
     public function district()
     {
         return $this->belongsTo(District::class);
