@@ -386,6 +386,63 @@
       return maxSeq + 1024;
     }
 
+    function validateRowsForSave(rows) {
+      for (const r of rows) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(r.date)) return `Invalid date format ${r.date}`;
+        const [yy, mm] = r.date.split('-').map(Number);
+        //if (yy !== Number(year) || mm !== Number(month)) return `Dates outside of this month are included: ${r.date}`;
+        if (r.cost < 0 || !Number.isFinite(r.cost)) return `Invalid amount: ${r.cost}`;
+        if (!r.trip) return `Please select "Trip Type" ${r.date}`;
+      }
+
+      return null;
+    }
+
+    function buildBatchPayload(rows) {
+      const updates = rows
+        .filter(r => r.id && initialIdSet.has(String(r.id)))
+        .map(u => ({
+          id:           u.id,
+          station_from: u.from || null,
+          station_to:   u.to   || null,
+          note:         u.note || null,
+          cost:         u.cost,
+          trip_type:    u.trip,
+          seq:          u.seq,
+        }));
+
+      const creates = rows
+        .filter(r => !r.id)
+        .map(c => ({
+          expense_date: c.date,
+          seq:          Number.isFinite(c.seq) ? c.seq : 100,
+          station_from: c.from || null,
+          station_to:   c.to   || null,
+          note:         c.note || null,
+          cost:         c.cost,
+          trip_type:    c.trip,
+          category:     'regular',
+        }));
+
+      return { updates, creates };
+    }
+
+    async function saveRows(rows) {
+      const { updates, creates } = buildBatchPayload(rows);
+
+      const resp = await fetch('/api/expenses/batch', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+        body: JSON.stringify({ report_id: reportId, updates, creates }),
+      });
+
+      if (!resp.ok) {
+        let msg = '';
+        try { msg = (await resp.json())?.message || ''; } catch (_) { msg = await resp.text(); }
+        throw new Error(`Save failed: ${resp.status} ${msg}`);
+      }
+    }
+
     addByDateBtn?.addEventListener('click', () => {
       if (isLocked) return; // ★ ロック中は何もしない
       const dateStr = pickDateEl?.value || '';
@@ -416,53 +473,15 @@
         if (isLocked) return; // ★ ロックなら何もしない
 
         const rows = readCurrentRows();
-
-        for (const r of rows) {
-          if (!/^\d{4}-\d{2}-\d{2}$/.test(r.date)) { showToast(`Invalid date format ${r.date}`, 'warning'); return; }
-          const [yy, mm] = r.date.split('-').map(Number);
-          //if (yy !== Number(year) || mm !== Number(month)) { showToast(`Dates outside of this month are included: ${r.date}`, 'warning'); return; }
-          if (r.cost < 0 || !Number.isFinite(r.cost)) { showToast(`Invalid amount: ${r.cost}`, 'warning'); return; }
-          if (!r.trip) { showToast(`Please select "Trip Type" ${r.date}`, 'warning'); return; }
+        const validationError = validateRowsForSave(rows);
+        if (validationError) {
+          showToast(validationError, 'warning');
+          return;
         }
 
         saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
         try {
-          const updates = rows
-            .filter(r => r.id && initialIdSet.has(String(r.id)))
-            .map(u => ({
-              id:           u.id,
-              station_from: u.from || null,
-              station_to:   u.to   || null,
-              note:         u.note || null,
-              cost:         u.cost,
-              trip_type:    u.trip,
-              seq:          u.seq,
-            }));
-
-          const creates = rows
-            .filter(r => !r.id)
-            .map(c => ({
-              expense_date: c.date,
-              seq:          Number.isFinite(c.seq) ? c.seq : 100,
-              station_from: c.from || null,
-              station_to:   c.to   || null,
-              note:         c.note || null,
-              cost:         c.cost,
-              trip_type:    c.trip,
-              category:     'regular',
-            }));
-
-          const resp = await fetch('/api/expenses/batch', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
-            body: JSON.stringify({ report_id: reportId, updates, creates }),
-          });
-          if (!resp.ok) {
-            let msg = '';
-            try { msg = (await resp.json())?.message || ''; } catch (_) { msg = await resp.text(); }
-            throw new Error(`Save failed: ${resp.status} ${msg}`);
-          }
-
+          await saveRows(rows);
           showToast('Saved successfully.', 'success');
 
           // ★ トーストを少し見せてからリロード
@@ -676,27 +695,86 @@
       const submitFormEl = document.getElementById('submitForm');
       if (!submitFormEl) return;
 
-      submitFormEl.addEventListener('submit', () => {
-        // ★ hidden の _token / _method は無効化しない
-        document.querySelectorAll('button, input, select, textarea').forEach(el => {
-          // hidden（type=hidden）は送信に必要な場合があるのでスキップ
-          if (el.tagName === 'INPUT' && el.type === 'hidden') return;
-          // 念のため _token / _method 名もスキップ
-          if (el.name === '_token' || el.name === '_method') return;
-          el.disabled = true;
-        });
+      let submitInProgress = false;
+      let submitOverlay = null;
+      let submitBtnText = '';
+      const disabledBeforeSubmit = new Map();
 
-        // 送信用ボタン表示切替
+      function setSubmitUiLocked(locked) {
         const btn = submitFormEl.querySelector('button[type="submit"]');
-        if (btn) { btn.innerText = 'Submitting...'; btn.disabled = true; }
 
-        // 薄いオーバーレイ
-        const overlay = document.createElement('div');
-        overlay.style.cssText = `
-      position:fixed; inset:0; background:rgba(255,255,255,.4);
-      backdrop-filter:saturate(120%) blur(1px); z-index:1060;
-    `;
-        document.body.appendChild(overlay);
+        if (locked) {
+          disabledBeforeSubmit.clear();
+
+          // ★ hidden の _token / _method は無効化しない
+          document.querySelectorAll('button, input, select, textarea').forEach(el => {
+            // hidden（type=hidden）は送信に必要な場合があるのでスキップ
+            if (el.tagName === 'INPUT' && el.type === 'hidden') return;
+            // 念のため _token / _method 名もスキップ
+            if (el.name === '_token' || el.name === '_method') return;
+
+            disabledBeforeSubmit.set(el, el.disabled);
+            el.disabled = true;
+          });
+
+          if (btn) {
+            submitBtnText = btn.innerText;
+            btn.innerText = 'Saving...';
+            btn.disabled = true;
+          }
+
+          // 薄いオーバーレイ
+          submitOverlay = document.createElement('div');
+          submitOverlay.style.cssText = `
+        position:fixed; inset:0; background:rgba(255,255,255,.4);
+        backdrop-filter:saturate(120%) blur(1px); z-index:1060;
+      `;
+          document.body.appendChild(submitOverlay);
+
+          return;
+        }
+
+        disabledBeforeSubmit.forEach((wasDisabled, el) => {
+          el.disabled = wasDisabled;
+        });
+        disabledBeforeSubmit.clear();
+
+        if (btn) {
+          btn.innerText = submitBtnText || 'Submit';
+        }
+
+        submitOverlay?.remove();
+        submitOverlay = null;
+      }
+
+      submitFormEl.addEventListener('submit', async (e) => {
+        if (submitInProgress) return;
+
+        e.preventDefault();
+        if (isLocked) return;
+
+        const rows = readCurrentRows();
+        const validationError = validateRowsForSave(rows);
+        if (validationError) {
+          showToast(validationError, 'warning');
+          return;
+        }
+
+        setSubmitUiLocked(true);
+
+        try {
+          await saveRows(rows);
+
+          const btn = submitFormEl.querySelector('button[type="submit"]');
+          if (btn) btn.innerText = 'Submitting...';
+
+          submitInProgress = true;
+          submitFormEl.submit();
+        } catch (err) {
+          console.error(err);
+          showToast('An error occurred while saving before submit.\n' + (err?.message || err), 'danger');
+          setSubmitUiLocked(false);
+        }
       });
     })();
 

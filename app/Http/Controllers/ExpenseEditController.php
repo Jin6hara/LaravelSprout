@@ -231,6 +231,10 @@ class ExpenseEditController extends Controller
         return back()->with('toast', 'Expense report has been returned to draft.');
     }
 
+    /**
+     * 経費レポートの提出前バリデーション：オフ日の経費に理由が書いてあるか
+     * ルール：費用 > 0 かつ（理由が null または空文字）な行があって、その日がカレンダー上の「ON」じゃない場合はエラー
+     */
     private function offDayExpenseValidationMessage(ExpenseReport $report): ?string
     {
         $expenses = $report->expenses()
@@ -265,6 +269,10 @@ class ExpenseEditController extends Controller
         );
     }
 
+    /**
+     * 経費レポートの対象月のカレンダーイベントを取得し、「ON」日のマップを作る
+     * 例: [ '2024-06-03' => true, '2024-06-04' => false, ... ]
+     */
     private function workOnMapForReport(ExpenseReport $report): array
     {
         $start = Carbon::create($report->year, $report->month, 1, 0, 0, 0, 'Asia/Tokyo')->startOfDay();
