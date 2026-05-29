@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\LeaveExcused;
+use App\Enums\LeaveKind;
+use App\Enums\LeaveStatus;
 use App\Http\Requests\Leave\AllReportRequest;
 use App\Http\Requests\Leave\ReportLeaveRequest;
 use App\Http\Requests\Leave\StoreLeaveRequest;
@@ -45,12 +48,12 @@ class LeaveController extends Controller
             'start_date'    => $request->date('start_date'),
             'end_date'      => $request->input('end_date') ? $request->date('end_date') : null,
             'kind'          => $request->input('kind'),
-            'excused'       => $request->input('excused', 'unexcused'),
+            'excused'       => $request->input('excused', LeaveExcused::Unexcused->value),
             'special_type'  => $request->input('special_type'),
             'reason'        => $request->input('reason'),
             'time_start'    => $request->input('time_start'),
             'time_end'      => $request->input('time_end'),
-            'status'        => $request->input('status', 'approved'),
+            'status'        => $request->input('status', LeaveStatus::Approved->value),
             'approved_by'   => auth()->id(), // 簡易に自分で承認した体
             'district_id'   => $targetUser?->district_id,
             'department_id' => $targetUser?->department_id,
@@ -74,9 +77,9 @@ class LeaveController extends Controller
         $this->authorize('cancel', $leave);
 
         DB::transaction(function () use ($leave) {
-            $wasApproved = $leave->status === 'approved';
+            $wasApproved = $leave->status === LeaveStatus::Approved->value;
 
-            $leave->update(['status' => 'cancelled']);
+            $leave->update(['status' => LeaveStatus::Cancelled->value]);
 
             if ($wasApproved) {
                 app(LeaveBalanceService::class)->revert($leave);
@@ -98,16 +101,12 @@ class LeaveController extends Controller
         // 表示するレコード
         $leaves = Leave::query()
             ->where('user_id', $user->id)
-            ->whereIn('kind', ['absence', 'absence_to_paid', 'other'])
+            ->whereIn('kind', LeaveKind::absenceReportValues())
             ->orderByDesc('start_date')
             ->get();
 
         // ラベル
-        $kindLabels = [
-            'absence'         => 'Unpaid Leave',
-            'absence_to_paid' => 'ALP',
-            'other'           => 'Others',
-        ];
+        $kindLabels = LeaveKind::absenceReportLabels();
 
         // Handle Type 選択肢（キー＝保存値、値＝表示文言）
         $handleTypeOptions = [
@@ -121,12 +120,12 @@ class LeaveController extends Controller
 
         // ★ ビューに渡す「行用のビューモデル」を生成
         $rows = $leaves->map(function (Leave $leave) use ($kindLabels, $handleTypeOptions) {
-            $kindLabel = $leave->kind === 'other'
+            $kindLabel = $leave->kind === LeaveKind::Other->value
                 ? ($leave->special_type ?: 'Others')
                 : ($kindLabels[$leave->kind] ?? ucfirst($leave->kind));
 
             // reason の null 判定は外す：kind=absence かつ handle_type が null のとき入力可
-            $needsReport = ($leave->kind === 'absence') && is_null($leave->handle_type);
+            $needsReport = ($leave->kind === LeaveKind::Absence->value) && is_null($leave->handle_type);
 
             $statusText = ($leave->handle_type)
                 ? 'Submitted'
@@ -173,7 +172,7 @@ class LeaveController extends Controller
     {
         $this->authorize('report', $leave);
 
-        if ($leave->kind !== 'absence') {
+            if ($leave->kind !== LeaveKind::Absence->value) {
             return back()->with('toast_errors', ['This leave is not target for absence self-report.']);
         }
         if (!is_null($leave->handle_type)) {
@@ -222,13 +221,13 @@ class LeaveController extends Controller
         $validated = $request->validated();
 
         $status  = $validated['status'] ?? 'all';
-        $kind    = $validated['kind']   ?? 'absence'; // 既定は absence のみ
+        $kind    = $validated['kind']   ?? LeaveKind::Absence->value; // 既定は absence のみ
         $from    = $validated['from']   ?? null;
         $to      = $validated['to']     ?? null;
         $userId  = $validated['user_id'] ?? null;
 
         // 基本クエリ
-        $kinds = $kind === 'all' ? ['absence', 'absence_to_paid', 'other'] : [$kind];
+        $kinds = $kind === 'all' ? LeaveKind::absenceReportValues() : [$kind];
 
         $q = Leave::query()
             ->with(['user:id,first_name,family_name,name,employee_code'])
@@ -242,7 +241,7 @@ class LeaveController extends Controller
         // status フィルタ
         // needsReport = kind=absence && handle_type IS NULL
         if ($status === 'required') {
-            $q->where('kind', 'absence')->whereNull('handle_type');
+            $q->where('kind', LeaveKind::Absence->value)->whereNull('handle_type');
         } elseif ($status === 'submitted') {
             $q->whereNotNull('handle_type');
         }
@@ -250,11 +249,7 @@ class LeaveController extends Controller
         $leaves = $q->orderByDesc('start_date')->paginate(20)->appends($request->query());
 
         // ラベル
-        $kindLabels = [
-            'absence'         => 'Unpaid Leave',
-            'absence_to_paid' => 'ALP',
-            'other'           => 'Others',
-        ];
+        $kindLabels = LeaveKind::absenceReportLabels();
 
         // Handle Type の候補（ラベル=保存値運用にも対応）
         $handleTypeOptions = [
@@ -269,11 +264,11 @@ class LeaveController extends Controller
 
         // 行ビュー用の派生値を付与
         $rows = $leaves->getCollection()->map(function (Leave $leave) use ($kindLabels, $handleTypeDict) {
-            $kindLabel = $leave->kind === 'other'
+            $kindLabel = $leave->kind === LeaveKind::Other->value
                 ? ($leave->special_type ?: 'Others')
                 : ($kindLabels[$leave->kind] ?? ucfirst($leave->kind));
 
-            $needsReport = ($leave->kind === 'absence') && is_null($leave->handle_type);
+            $needsReport = ($leave->kind === LeaveKind::Absence->value) && is_null($leave->handle_type);
 
             $statusText = $leave->handle_type
                 ? 'Submitted'

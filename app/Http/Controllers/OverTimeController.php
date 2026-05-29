@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EventStatus;
+use App\Enums\ShiftType;
 use App\Models\Event;
 use App\Services\CurrentScopeService;
 
@@ -18,8 +20,8 @@ class OverTimeController extends Controller
         $districtId = $this->scopeService->currentDistrictId();
 
         $events = Event::query()
-            ->where('type', 'overtime')
-            ->where('status', 'in_process')
+            ->where('type', ShiftType::Overtime->value)
+            ->where('status', EventStatus::InProcess->value)
             ->whereHas('originalUser', fn($q) => $q->where('district_id', $districtId))
             ->orderBy('event_date')
             ->orderBy('start_time')

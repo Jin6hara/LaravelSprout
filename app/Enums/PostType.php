@@ -2,14 +2,29 @@
 
 namespace App\Enums;
 
+use App\Enums\Concerns\HasValues;
+
 enum PostType: string
 {
+    use HasValues;
+
     case Announcement  = 'announcement';
     case Inquiry       = 'inquiry';
     case DirectMessage = 'dm';
     case NoticeUrgent  = 'notice_urgent';
     case Maintenance   = 'maintenance';
     case Other         = 'other';
+
+    public static function sendValues(): array
+    {
+        return [
+            self::Announcement->value,
+            self::Inquiry->value,
+            self::DirectMessage->value,
+            self::NoticeUrgent->value,
+            self::Maintenance->value,
+        ];
+    }
 
     // タイプ別の既定値（UI/保存時の既定）
     public function defaultAllowReplies(): bool

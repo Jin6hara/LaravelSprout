@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EventStatus;
+use App\Enums\ShiftType;
 use App\Http\Requests\EventAssign\BulkUpdateEventRequest;
 use App\Http\Requests\EventAssign\CopyEventRequest;
 use App\Http\Requests\EventAssign\UpdateEventRequest;
@@ -117,18 +119,18 @@ class EventAssignController extends Controller
             ->withQueryString();
 
         $statusOptions = [
-            'filled'     => 'Filled',
-            'fixed'      => 'Fixed',
-            'pending'    => 'Pending',
-            'in_process' => 'In Process',
+            EventStatus::Filled->value => EventStatus::Filled->label(),
+            EventStatus::Fixed->value => EventStatus::Fixed->label(),
+            EventStatus::Pending->value => EventStatus::Pending->label(),
+            EventStatus::InProcess->value => EventStatus::InProcess->label(),
         ];
         $typeOptions = [
-            'regular_time'         => 'RT',
-            'overtime'             => 'OT',
-            'schedule_change'      => 'SC',
-            'special'              => 'SP',
-            'rostered_working_day' => 'RWD',
-            'none_required'        => 'NS',
+            ShiftType::RegularTime->value => ShiftType::RegularTime->short(),
+            ShiftType::Overtime->value => ShiftType::Overtime->short(),
+            ShiftType::ScheduleChange->value => ShiftType::ScheduleChange->short(),
+            ShiftType::Special->value => ShiftType::Special->short(),
+            ShiftType::RosteredWorkingDay->value => ShiftType::RosteredWorkingDay->short(),
+            ShiftType::NoneRequired->value => ShiftType::NoneRequired->short(),
         ];
 
         // $schoolNames を view に渡す
@@ -186,8 +188,8 @@ class EventAssignController extends Controller
         // 空白イベントを作成
         $event = Event::create([
             'event_date'    => $date,
-            'status'        => 'pending',
-            'type'          => 'regular_time',
+            'status'        => EventStatus::Pending->value,
+            'type'          => ShiftType::RegularTime->value,
             'district_id'   => $this->scopeService->currentDistrictId(),
             'department_id' => $this->scopeService->currentDepartmentId(),
         ]);

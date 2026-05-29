@@ -41,16 +41,9 @@ class Event extends Model
 
     public function getTypeLabelAttribute(): string
     {
-        $map = [
-            'regular_time'         => 'RT',
-            'overtime'             => 'OT',
-            'schedule_change'      => 'SC',
-            'special'              => 'SP',
-            'rostered_working_day' => 'RWD',
-            'none_required'        => 'NS',
-        ];
         $key = (string) ($this->attributes['type'] ?? '');
-        return $map[$key] ?? strtoupper($key ?: '');
+
+        return ShiftType::tryFrom($key)?->short() ?? strtoupper($key ?: '');
     }
 
     protected $appends = ['total_duration']; //API/Bladeで見える

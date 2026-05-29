@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\LeaveKind;
 use App\Models\ApprovalRequest;
 use App\Models\Leave;
 use App\Services\Approval\ApprovalService;
@@ -27,7 +28,7 @@ class ApprovalController extends Controller
         if ($approvable instanceof Leave) {
             $kind = $meta['kind'] ?? $approvable->kind ?? null;
 
-            if ($kind === 'special') {
+            if ($kind === LeaveKind::Special->value) {
                 // ★ 特別休暇 → 期間表示（from〜to）
                 $from = $meta['date_from'] ?? optional($approvable->start_date)->format('Y-m-d');
                 $to   = $meta['date_to']   ?? optional($approvable->end_date)->format('Y-m-d');
@@ -37,7 +38,7 @@ class ApprovalController extends Controller
                 } else {
                     $dateSummary = $from ?: $to ?: '-';
                 }
-            } elseif ($kind === 'paid') {
+            } elseif ($kind === LeaveKind::Paid->value) {
                 // ★ 有給 → 同じバッチの全日を「日, 日, 日」で表示
                 $batchId = $meta['batch_id'] ?? null;
 

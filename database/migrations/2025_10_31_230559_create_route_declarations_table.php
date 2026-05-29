@@ -4,6 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use App\Enums\ExpenseTripType;
 
 return new class extends Migration {
     public function up(): void
@@ -42,7 +43,7 @@ return new class extends Migration {
             $t->string('to_station');      // to
 
             // round/oneway
-            $t->enum('trip_type', ['round_trip', 'one_way'])->default('round_trip');
+            $t->string('trip_type', 32)->default(ExpenseTripType::ROUND_TRIP->value);
 
             // 金額（JPY想定）: 税込片道/往復の合計を記録
             $t->unsignedInteger('amount')->default(0);

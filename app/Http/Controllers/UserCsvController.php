@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Gender;
 use App\Models\Department;
 use App\Models\District;
 use App\Models\EmploymentTerm;
@@ -10,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -184,7 +186,7 @@ class UserCsvController extends Controller
                 'name_in_kana'          => ['nullable', 'string', 'max:255'],
                 'email'                 => ['required', 'email', 'max:255'],
                 'employee_code'         => ['required', 'string', 'size:6'],
-                'gender'                => ['nullable', 'in:male,female,other,unknown'],
+                'gender'                => ['nullable', Rule::in(Gender::values())],
                 'note'                  => ['nullable', 'string'],
                 'address'               => ['nullable', 'string', 'max:255'],
                 'phone_number'          => ['nullable', 'string', 'max:255'],
@@ -273,7 +275,7 @@ class UserCsvController extends Controller
                     'name_in_kana'  => $data['name_in_kana'] ?? null,
                     'email'         => $data['email'],
                     'employee_code' => $data['employee_code'],
-                    'gender'        => $data['gender'] ?? 'unknown',
+                    'gender'        => $data['gender'] ?? Gender::Unknown->value,
                     'note'          => $data['note'] ?? null,
                     'address'       => $data['address'] ?? null,
                     'phone_number'  => $data['phone_number'] ?? null,

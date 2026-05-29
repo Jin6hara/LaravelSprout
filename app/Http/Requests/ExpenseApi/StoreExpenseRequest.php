@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\ExpenseApi;
 
+use App\Enums\ExpenseCategory;
+use App\Enums\ExpenseTripType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -22,8 +24,8 @@ class StoreExpenseRequest extends FormRequest
             'station_to'        => ['nullable', 'string', 'max:255'],
             'note'              => ['nullable', 'string'],
             'cost'              => ['nullable', 'integer', 'min:0'],
-            'trip_type'         => ['required', Rule::in(['round_trip', 'one_way'])],
-            'category'          => ['required', Rule::in(['regular', 'irregular'])],
+            'trip_type'         => ['required', Rule::in(ExpenseTripType::values())],
+            'category'          => ['required', Rule::in(ExpenseCategory::values())],
             'commuter_pass_id'  => ['nullable', 'exists:commuter_passes,id'],
         ];
     }

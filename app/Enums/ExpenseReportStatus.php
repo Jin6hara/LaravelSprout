@@ -2,15 +2,24 @@
 
 namespace App\Enums;
 
+use App\Enums\Concerns\HasValues;
+
 enum ExpenseReportStatus: string
 {
+    use HasValues;
+
     case DRAFT     = 'draft';
     case SUBMITTED = 'submitted';
     case APPROVED  = 'approved';
     case PAID      = 'paid';
 
-    public static function values(): array
+    public function label(): string
     {
-        return array_column(self::cases(), 'value');
+        return match ($this) {
+            self::DRAFT => 'Draft',
+            self::SUBMITTED => 'Submitted',
+            self::APPROVED => 'Approved',
+            self::PAID => 'Paid',
+        };
     }
 }

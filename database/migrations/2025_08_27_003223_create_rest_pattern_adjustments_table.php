@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use App\Enums\RestPatternAdjustmentKind;
 
 return new class extends Migration
 {
@@ -15,7 +16,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('rest_pattern_id')->constrained()->cascadeOnDelete();
             $table->date('date'); // 調整対象日（年度を跨いでもOK）
-            $table->enum('kind', ['add_off', 'work_instead']); // add_off=ORD, work_instead=RWD
+            $table->string('kind', 32)->default(RestPatternAdjustmentKind::AddOff->value); // add_off=ORD, work_instead=RWD
             $table->string('code')->default('');  // 'ORD' / 'RWD' など
             $table->string('title')->nullable();  // 表示名を上書きしたい場合
             $table->boolean('is_active')->default(true);

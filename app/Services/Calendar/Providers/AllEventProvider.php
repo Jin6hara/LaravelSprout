@@ -2,6 +2,8 @@
 
 namespace App\Services\Calendar\Providers;
 
+use App\Enums\EventStatus;
+use App\Enums\ShiftType;
 use App\Models\Event;
 use App\Models\User;
 use App\Services\Calendar\{CandidateEvent, EventType, PlanGroup};
@@ -89,16 +91,16 @@ class AllEventProvider implements CalendarEventProvider
 
             // 追加：緑にしてよい “資格あり” 条件
             $qualifiedGreen = (
-                ($e->type === 'none_required') ||
-                (!empty($e->assigned_user_id) && $e->type !== 'none_required')
+                ($e->type === ShiftType::NoneRequired->value) ||
+                (!empty($e->assigned_user_id) && $e->type !== ShiftType::NoneRequired->value)
             );
-            if (in_array($e->status, ['fixed', 'filled'], true) && $qualifiedGreen) {
+            if (in_array($e->status, EventStatus::fixedValues(), true) && $qualifiedGreen) {
                 $classNames[] = 'is-qualified'; // 緑にして良いときだけ付与
             }
 
             // 既存の「pending/in_process + assignedあり → 黄色枠」
             if (
-                in_array($e->status, ['pending', 'in_process'], true) &&
+                in_array($e->status, EventStatus::assignedValues(), true) &&
                 !empty($e->assigned_user_id)
             ) {
                 $classNames[] = 'status-assigned'; // 黄色枠専用クラス
@@ -167,23 +169,11 @@ class AllEventProvider implements CalendarEventProvider
         if ($schoolName)          return $schoolName;
         if ($time)                return $time;
         if ($title)               return $title;
-        return match ($type) {
-            'overtime'        => '残業',
-            'regular_time'    => '通常勤務',
-            'special'         => '特別イベント',
-            'schedule_change' => '時間変更',
-            default           => 'イベント',
-        };
+        return ShiftType::tryFrom((string) $type)?->calendarLabel() ?? 'イベント';
     }
 
     private function sortOrderForType(string $type): int
     {
-        return match ($type) {
-            'overtime'        => 10,
-            'regular_time'    => 20,
-            'special'         => 30,
-            'schedule_change' => 40,
-            default           => 50,
-        };
+        return ShiftType::tryFrom($type)?->sortOrder() ?? 50;
     }
 }

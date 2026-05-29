@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Leave;
 
+use App\Enums\LeaveKind;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -16,7 +17,7 @@ class AllReportRequest extends FormRequest
     {
         return [
             'status'  => ['nullable', Rule::in(['required', 'submitted', 'all'])],
-            'kind'    => ['nullable', Rule::in(['absence', 'absence_to_paid', 'other', 'all'])],
+            'kind'    => ['nullable', Rule::in([...LeaveKind::absenceReportValues(), 'all'])],
             'from'    => ['nullable', 'date'],
             'to'      => ['nullable', 'date', 'after_or_equal:from'],
             'user_id' => ['nullable', 'integer', 'exists:users,id'],

@@ -2,6 +2,9 @@
 
 namespace App\Services\LeaveApply;
 
+use App\Enums\LeaveExcused;
+use App\Enums\LeaveKind;
+use App\Enums\LeaveStatus;
 use App\Models\Leave;
 use App\Models\User;
 use App\Models\ApprovalRequest;
@@ -21,7 +24,7 @@ class LeaveApplicationService
         array $dates,
         string $reason,
         int $requestedByUserId,
-        string $type = 'paid',
+        string $type = LeaveKind::Paid->value,
         ?string $specialType = null,
         ?array $attachmentMeta = null
     ): array {
@@ -38,7 +41,7 @@ class LeaveApplicationService
 
         $batchId = (string) Str::uuid();
 
-        $result = $type === 'special'
+        $result = $type === LeaveKind::Special->value
             ? $this->applySpecial($userId, $dates, $reason, $requestedByUserId, $specialType, $attachmentMeta, $batchId)
             : $this->applyPaid($userId, $dates, $reason, $requestedByUserId, $batchId);
 
@@ -74,8 +77,8 @@ class LeaveApplicationService
             foreach ($dates as $ymd) {
                 $already = Leave::query()
                     ->where('user_id', $userId)
-                    ->where('kind', 'paid')
-                    ->whereIn('status', ['pending', 'approved'])
+                    ->where('kind', LeaveKind::Paid->value)
+                    ->whereIn('status', [LeaveStatus::Pending->value, LeaveStatus::Approved->value])
                     ->whereDate('start_date', $ymd)
                     ->exists();
 
@@ -89,10 +92,10 @@ class LeaveApplicationService
                     'user_id'       => $userId,
                     'start_date'    => $ymd,
                     'end_date'      => null,
-                    'kind'          => 'paid',
-                    'excused'       => 'excused',
+                    'kind'          => LeaveKind::Paid->value,
+                    'excused'       => LeaveExcused::Excused->value,
                     'reason'        => $reason,
-                    'status'        => 'pending',
+                    'status'        => LeaveStatus::Pending->value,
                     'special_type'  => null,
                     'district_id'   => $user?->district_id,
                     'department_id' => $user?->department_id,
@@ -107,7 +110,7 @@ class LeaveApplicationService
                         'leave_id'     => $leave->id,
                         'user_id'      => $userId,
                         'date'         => $ymd,
-                        'kind'         => 'paid',
+                        'kind'         => LeaveKind::Paid->value,
                         'reason'       => $reason,
                         'special_type' => null,
                     ],
@@ -145,8 +148,8 @@ class LeaveApplicationService
 
             $already = Leave::query()
                 ->where('user_id', $userId)
-                ->where('kind', 'special')
-                ->whereIn('status', ['pending', 'approved'])
+                ->where('kind', LeaveKind::Special->value)
+                ->whereIn('status', [LeaveStatus::Pending->value, LeaveStatus::Approved->value])
                 ->where(function ($q) use ($start, $end) {
                     $q->whereBetween('start_date', [$start, $end])
                       ->orWhereBetween('end_date', [$start, $end])
@@ -166,10 +169,10 @@ class LeaveApplicationService
                 'user_id'       => $userId,
                 'start_date'    => $start,
                 'end_date'      => $end,
-                'kind'          => 'special',
-                'excused'       => 'excused',
+                'kind'          => LeaveKind::Special->value,
+                'excused'       => LeaveExcused::Excused->value,
                 'reason'        => $reason,
-                'status'        => 'pending',
+                'status'        => LeaveStatus::Pending->value,
                 'special_type'  => $specialType ?: null,
                 'district_id'   => $user?->district_id,
                 'department_id' => $user?->department_id,
@@ -190,7 +193,7 @@ class LeaveApplicationService
                     'user_id'      => $userId,
                     'date_from'    => $start,
                     'date_to'      => $end,
-                    'kind'         => 'special',
+                    'kind'         => LeaveKind::Special->value,
                     'reason'       => $reason,
                     'special_type' => $specialType ?: null,
                 ],

@@ -2,6 +2,8 @@
 
 namespace App\Services\Calendar\Providers;
 
+use App\Enums\LeaveStatus;
+use App\Enums\RestPatternAdjustmentKind;
 use App\Models\User;
 use App\Services\CurrentScopeService;
 use Carbon\Carbon;
@@ -34,7 +36,7 @@ class SubCountProvider implements CalendarEventProvider
         $leaveRows = DB::table('leaves')
             ->select('user_id', 'start_date', 'end_date', 'time_start', 'time_end', 'status')
             ->whereIn('user_id', $targetUserIds)
-            ->whereIn('status', ['approved', 'pending'])
+            ->whereIn('status', LeaveStatus::snapshotValues())
             ->whereDate('start_date', '<=', $endDate)
             ->where(function ($q) use ($startDate) {
                 $q->whereNull('end_date')->orWhereDate('end_date', '>=', $startDate);
@@ -58,7 +60,7 @@ class SubCountProvider implements CalendarEventProvider
         $adjRows = DB::table('rest_pattern_adjustments as rpa')
             ->join('user_rest_patterns as urp', 'urp.rest_pattern_id', '=', 'rpa.rest_pattern_id')
             ->whereBetween('rpa.date', [$startDate, $endDate])
-            ->where('rpa.kind', 'work_instead')
+            ->where('rpa.kind', RestPatternAdjustmentKind::WorkInstead->value)
             ->where('rpa.is_active', true)
             ->whereColumn('urp.start_date', '<=', 'rpa.date')
             ->where(function ($q) {

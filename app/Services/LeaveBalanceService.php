@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\LeaveCreditTransactionType;
 use App\Models\Leave;
 use App\Models\LeaveCredit;
 use App\Models\Holiday;
@@ -41,7 +42,7 @@ class LeaveBalanceService
             $credit->save();
 
             $credit->transactions()->create([
-                'type'   => 'consume',
+                'type'   => LeaveCreditTransactionType::Consume->value,
                 'days'   => $days,
                 'reason' => "leave#{$leave->id}",
             ]);
@@ -67,7 +68,7 @@ class LeaveBalanceService
             $credit->save();
 
             $credit->transactions()->create([
-                'type'   => 'revert',
+                'type'   => LeaveCreditTransactionType::Revert->value,
                 'days'   => $days,
                 'reason' => "leave#{$leave->id} cancelled",
             ]);
@@ -85,7 +86,7 @@ class LeaveBalanceService
             );
             $credit->increment('granted_days', $days);
             $credit->transactions()->create([
-                'type' => 'grant',
+                'type' => LeaveCreditTransactionType::Grant->value,
                 'days' => $days,
                 'reason' => $reason,
             ]);

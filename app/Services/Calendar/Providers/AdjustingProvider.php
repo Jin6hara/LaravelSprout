@@ -2,6 +2,7 @@
 
 namespace App\Services\Calendar\Providers;
 
+use App\Enums\RestPatternAdjustmentKind;
 use App\Models\RestPatternAdjustment;
 use App\Models\User;
 use App\Models\UserRestPattern;
@@ -33,26 +34,26 @@ class AdjustingProvider implements CalendarEventProvider
                 /** @var \App\Models\RestPatternAdjustment|null $adj */
                 $adj = data_get($adjs, "{$assign->rest_pattern_id}.{$ymd}.0");
                 if ($adj) {
-                    if ($adj->kind === 'add_off') {
+                    if ($adj->kind === RestPatternAdjustmentKind::AddOff->value) {
                         // 調整休日（所定追加）
                         $events[] = new CandidateEvent([
-                            'title' => $adj->title ?: 'ORD',
+                            'title' => $adj->title ?: RestPatternAdjustmentKind::AddOff->code(),
                             'start' => $ymd,
                             'allDay' => true,
                             'classNames' => ['fc-off-prescribed'],
-                            'extendedProps' => ['category' => '1_off', 'code' => 'ORD'],
+                            'extendedProps' => ['category' => '1_off', 'code' => RestPatternAdjustmentKind::AddOff->code()],
                             'level' => 2,
                             'type' => EventType::BACKGROUND,
                             'planGroup' => PlanGroup::REGULAR_PLAN,
                         ]);
-                    } elseif ($adj->kind === 'work_instead') {
+                    } elseif ($adj->kind === RestPatternAdjustmentKind::WorkInstead->value) {
                         // 調整出勤（黄・ON）
                         $events[] = new CandidateEvent([
                             'title' => $adj->title ?: '調整出勤（RWD）',
                             'start' => $ymd,
                             'allDay' => true,
                             'classNames' => ['fc-rwd'],
-                            'extendedProps' => ['category' => '1_off', 'code' => 'RWD'],
+                            'extendedProps' => ['category' => '1_off', 'code' => RestPatternAdjustmentKind::WorkInstead->code()],
                             'level' => 2,
                             'type' => EventType::ON,
                             'planGroup' => PlanGroup::REGULAR_PLAN,

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\DayOfWeek;
+use App\Enums\ExpenseTripType;
 use App\Models\User;
 use App\Services\CurrentScopeService;
 use Illuminate\Http\Request;
@@ -11,6 +13,7 @@ use Illuminate\Http\RedirectResponse;
 use App\Models\RouteDeclaration;
 use App\Models\EmploymentTerm;
 use App\Models\ScheduleLine;
+use Illuminate\Validation\Rule;
 
 class RouteDeclarationController extends Controller
 {
@@ -123,10 +126,10 @@ class RouteDeclarationController extends Controller
             'reason'          => ['nullable', 'string'],
 
             'details'                => ['required', 'array', 'min:1'],
-            'details.*.dow'          => ['required', 'in:Mon,Tue,Wed,Thu,Fri,Sat,Sun'],
+            'details.*.dow'          => ['required', Rule::in(DayOfWeek::values())],
             'details.*.from_station' => ['required', 'string', 'max:255'],
             'details.*.to_station'   => ['required', 'string', 'max:255'],
-            'details.*.trip_type'    => ['required', 'in:round_trip,one_way'],
+            'details.*.trip_type'    => ['required', Rule::in(ExpenseTripType::values())],
             'details.*.amount'       => ['required', 'integer', 'min:0'],
             'details.*.route_text'   => ['nullable', 'string'],
             'details.*.note'         => ['nullable', 'string'],

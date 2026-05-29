@@ -2,6 +2,9 @@
 
 namespace App\Services\Calendar\Providers;
 
+use App\Enums\LeaveExcused;
+use App\Enums\LeaveKind;
+use App\Enums\LeaveStatus;
 use App\Models\Leave;
 use App\Models\User;
 use App\Models\Event;
@@ -78,7 +81,7 @@ class AllLeaveProvider
                 // CSS クラス（既存 LeaveProvider と揃える）
                 $classes = ['fc-leave', "fc-leave-{$leave->kind}"];
 
-                if ($leave->excused !== 'unknown') {
+                if ($leave->excused !== LeaveExcused::Unknown->value) {
                     $classes[] = "fc-leave-{$leave->excused}";
                 }
 
@@ -92,13 +95,13 @@ class AllLeaveProvider
                  *  1) handle_type = null && status = pending → red
                  *  2) handle_type != null && status = pending → yellow
                  */
-                if ($leave->kind === 'absence') {
+                if ($leave->kind === LeaveKind::Absence->value) {
                     $handled = !empty($leave->handle_type);
 
-                    if (!$handled && $leave->status === 'pending') {
+                    if (!$handled && $leave->status === LeaveStatus::Pending->value) {
                         // 1) 未ハンドル & pending
                         $classes[] = 'absence-unhandled-pending';
-                    } elseif ($handled && $leave->status === 'pending') {
+                    } elseif ($handled && $leave->status === LeaveStatus::Pending->value) {
                         // 2) ハンドル済み & pending
                         $classes[] = 'absence-handled-pending';
                     }

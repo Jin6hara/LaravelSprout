@@ -2,13 +2,20 @@
 
 namespace App\Enums;
 
+use App\Enums\Concerns\HasValues;
+
 enum ExpenseTripType: string
 {
+    use HasValues;
+
     case ROUND_TRIP = 'round_trip';
     case ONE_WAY    = 'one_way';
 
-    public static function values(): array
+    public function label(): string
     {
-        return array_column(self::cases(), 'value');
+        return match ($this) {
+            self::ROUND_TRIP => 'Round trip',
+            self::ONE_WAY => 'One way',
+        };
     }
 }

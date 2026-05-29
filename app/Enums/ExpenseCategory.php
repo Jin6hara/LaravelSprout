@@ -2,13 +2,12 @@
 
 namespace App\Enums;
 
+use App\Enums\Concerns\HasValues;
+
 enum ExpenseCategory: string
 {
+    use HasValues;
+
     case REGULAR   = 'regular';
     case IRREGULAR = 'irregular';
-
-    public static function values(): array
-    {
-        return array_column(self::cases(), 'value');
-    }
 }

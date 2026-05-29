@@ -2,6 +2,7 @@
 
 namespace App\Services\Calendar\Providers;
 
+use App\Enums\LeaveExcused;
 use App\Models\Leave;
 use App\Models\User;
 use App\Services\Calendar\EventType;
@@ -48,7 +49,7 @@ class LeaveProvider
                     : $this->mergeDateAndTime($date, $leave->time_end)->toIso8601String();
 
                 $classes = ['fc-leave', "fc-leave-{$leave->kind}"];
-                if ($leave->excused !== 'unknown') $classes[] = "fc-leave-{$leave->excused}";
+                if ($leave->excused !== LeaveExcused::Unknown->value) $classes[] = "fc-leave-{$leave->excused}";
 
                 $events->push([
                     'title'   => $leave->displayTitle(),

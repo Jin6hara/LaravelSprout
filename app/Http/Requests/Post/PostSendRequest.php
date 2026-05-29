@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\Post;
 
+use App\Enums\PostType;
 use App\Models\Post;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class PostSendRequest extends FormRequest
 {
@@ -15,7 +17,7 @@ class PostSendRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'type'          => ['required', 'string', 'in:announcement,inquiry,dm,notice_urgent,maintenance'],
+            'type'          => ['required', 'string', Rule::in(PostType::sendValues())],
             'title'         => ['nullable', 'string', 'max:255'],
             'body'          => ['required', 'string'],
             'recipients'    => ['required', 'array', 'min:1'],

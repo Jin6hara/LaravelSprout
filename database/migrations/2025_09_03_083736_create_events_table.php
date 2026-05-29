@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use App\Enums\EventStatus;
 
 return new class extends Migration
 {
@@ -23,8 +24,8 @@ return new class extends Migration
             $t->string('total_duration', 5)->nullable(); // "H:MM" 最大 "23:59" を想定
             $t->text('Lesson')->nullable();
             $t->foreignId('assigned_user_id')->nullable()->constrained('users')->nullOnDelete();
-            $t->enum('status', ['pending', 'fixed', 'filled', 'in_process'])->default('pending')->index();
-            $t->enum('type', ['regular_time', 'none_required', 'overtime', 'schedule_change', 'rostered_working_day', 'special'])->index();
+            $t->string('status', 32)->default(EventStatus::Pending->value)->index();
+            $t->string('type', 64)->index();
             $t->text('notes')->nullable();
             // 欠席時コピー元（正規コマ追跡用）
             $t->foreignId('source_schedule_line_id')->nullable()->constrained('schedule_lines')->nullOnDelete();
