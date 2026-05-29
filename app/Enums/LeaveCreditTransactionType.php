@@ -8,8 +8,8 @@ enum LeaveCreditTransactionType: string
 {
     use HasValues;
 
-    case Grant = 'grant';
-    case Consume = 'consume';
-    case Revert = 'revert';
-    case Adjust = 'adjust';
+    case Grant = 'Grant';
+    case Consume = 'Consume';
+    case Revert = 'Revert';
+    case Adjust = 'Adjust';
 }

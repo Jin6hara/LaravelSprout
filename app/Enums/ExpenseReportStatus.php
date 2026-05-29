@@ -8,8 +8,8 @@ enum ExpenseReportStatus: string
 {
     use HasValues;
 
-    case DRAFT     = 'draft';
-    case SUBMITTED = 'submitted';
-    case APPROVED  = 'approved';
-    case PAID      = 'paid';
+    case DRAFT     = 'Draft';
+    case SUBMITTED = 'Submitted';
+    case APPROVED  = 'Approved';
+    case PAID      = 'Paid';
 }

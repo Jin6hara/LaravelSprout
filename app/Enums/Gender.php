@@ -16,10 +16,10 @@ enum Gender: string
     public function label(): string
     {
         return match ($this) {
-            self::Male => '男性',
-            self::Female => '女性',
-            self::Other => 'その他',
-            self::Unknown => '未選択',
+            self::Male => 'Male',
+            self::Female => 'Female',
+            self::Other => 'Other',
+            self::Unknown => 'Unknown',
         };
     }
 }

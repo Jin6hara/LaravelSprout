@@ -8,6 +8,6 @@ enum ExpenseTripType: string
 {
     use HasValues;
 
-    case ROUND_TRIP = 'round_trip';
-    case ONE_WAY    = 'one_way';
+    case ROUND_TRIP = 'Round trip';
+    case ONE_WAY    = 'One way';
 }

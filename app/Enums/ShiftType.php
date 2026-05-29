@@ -33,12 +33,12 @@ enum ShiftType: string
     public function calendarLabel(): string
     {
         return match ($this) {
-            self::Overtime => '残業',
-            self::RegularTime => '通常勤務',
-            self::Special => '特別イベント',
-            self::ScheduleChange => '時間変更',
-            self::RosteredWorkingDay => '振替出勤',
-            self::NoneRequired => '勤務不要',
+            self::Overtime => 'OT (No title)',
+            self::RegularTime => 'RT (No title)',
+            self::Special => 'SP (No title)',
+            self::ScheduleChange => 'SC (No title)',
+            self::RosteredWorkingDay => 'RWD (No title)',
+            self::NoneRequired => 'NS (No title)',
         };
     }
 
