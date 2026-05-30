@@ -1,85 +1,206 @@
-<div class="col-lg-12 mb-3">
-    @if(!empty($routeDecl))
-    @php
-    $d = $routeDecl;
-    @endphp
-    <div class="card shadow-sm">
-        {{-- ヘッダー（横並び） --}}
-        <div class="card-header py-2 px-3 bg-light d-flex flex-wrap justify-content-between align-items-center">
-            <div class="d-flex flex-wrap gap-3 align-items-center">
-                <small class="fw-semibold">Eff: {{ \Illuminate\Support\Carbon::parse($d->effective_date)->format('Y-m-d') }}</small>
-                <small class="fw-semibold">Station: {{ $d->closest_station }}</small>
-                @if($d->train_line)
-                <small class="fw-semibold">Line: {{ $d->train_line }}</small>
-                @endif
-                @if($d->reason)
-                <small class="fw-semibold text-truncate" style="max-width: 100%;">Reason: {{ $d->reason }}</small>
+@php
+    $pattern = $commutePattern ?? null;
+    $owner = $user ?? $pattern?->user;
+    $isAdminViewer = auth()->user()?->hasAnyRole(['admin', 'super_admin']);
+    $moreUrl = $isAdminViewer && $owner
+        ? route('routes.user', ['user' => $owner])
+        : route('routes.index');
+    $visibleLegs = $pattern?->legs
+        ? $pattern->legs->filter(fn ($leg) => (int) $leg->cost > 0)->values()
+        : collect();
+@endphp
+
+@if($pattern && $visibleLegs->isNotEmpty())
+    <div class="commute-pattern-card mb-2">
+        <div class="commute-pattern-card__head">
+            <div class="commute-pattern-card__meta">
+                <span class="commute-pattern-card__title">Pattern</span>
+                <span>{{ $pattern->valid_from?->format('Y-m-d') }} - {{ $pattern->valid_to?->format('Y-m-d') }}</span>
+                <span class="commute-pattern-card__station">{{ $pattern->closest_station }}</span>
+                @if($pattern->train_line)
+                    <span class="commute-pattern-card__line">{{ $pattern->train_line }}</span>
                 @endif
             </div>
 
             {{-- expenses/edit: More ボタン --}}
-            @if(($showMore ?? false) && isset($d->user))
-            @if(auth()->user()?->hasAnyRole(['admin', 'super_admin']))
-            {{-- admin以上：今まで通りユーザー別のルート画面へ --}}
-            <a href="{{ route('routes.user', ['user' => $d->user->employee_code]) }}"
-                class="btn btn-outline-primary btn-sm">
-                More
-            </a>
-            @else
-            {{-- それ以外：routes.index へ --}}
-            <a href="{{ route('routes.index') }}"
-                class="btn btn-outline-primary btn-sm">
-                More
-            </a>
-            @endif
+            @if($showMore ?? false)
+                <a href="{{ $moreUrl }}" class="btn btn-outline-primary btn-sm commute-pattern-card__more">
+                    More
+                </a>
             @endif
         </div>
 
-        {{-- 明細：横並び --}}
-        <div class="card-body p-1">
-            @if($d->details && $d->details->count())
-            <div class="d-flex flex-wrap gap-1">
-                @foreach($d->details as $det)
-                @php
-                $tripType = is_object($det->trip_type) ? $det->trip_type->value : $det->trip_type;
-                $tripDisp = $tripType === 'one_way' ? 'One-way' : 'Round-trip';
-                @endphp
-                <div class="border rounded-2 p-1 flex-shrink-0" style="min-width: auto;">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="badge text-bg-light border">{{ $det->dow }}</span>
-                        <span class="badge text-muted">¥{{ number_format($det->amount) }}</span>
-                        <div class="small">{{ $tripDisp }}</div>
+        <div class="commute-pattern-card__body">
+            <div class="commute-pattern-legs">
+                @foreach($visibleLegs as $leg)
+                    @php
+                        $dow = is_object($leg->dow) ? $leg->dow->value : $leg->dow;
+                        $tripType = is_object($leg->trip_type) ? $leg->trip_type->value : $leg->trip_type;
+                        $tripDisp = $tripType === 'one_way' ? 'OW' : 'RT';
+                        $from = $leg->station_from ?: '-';
+                        $to = $leg->station_to ?: '-';
+                    @endphp
+                    <div class="commute-pattern-leg">
+                        <div class="commute-pattern-leg__day">{{ $dow }}</div>
+                        <div class="commute-pattern-leg__route">
+                            <span class="commute-pattern-leg__route-text" title="{{ $from }} → {{ $to }}">
+                                {{ $from }} <span class="text-muted">→</span> {{ $to }}
+                            </span>
+                        </div>
+                        <div class="commute-pattern-leg__fare">
+                            <span>¥{{ number_format((int) $leg->cost) }}</span>
+                            <span class="commute-pattern-leg__trip">{{ $tripDisp }}</span>
+                        </div>
+                        @if($leg->note)
+                            <div class="commute-pattern-leg__note" title="{{ $leg->note }}">{{ $leg->note }}</div>
+                        @endif
                     </div>
-                    <div class="small">
-                        <span class="fw-semibold">{{ $det->from_station }}</span> →
-                        <span class="fw-semibold">{{ $det->to_station }}</span>
-                    </div>
-                    @if(!empty($det->note))
-                    <div class="text-muted small mt-1 text-truncate" title="{{ $det->note }}">
-                        {{ $det->note }}
-                    </div>
-                    @endif
-                </div>
                 @endforeach
             </div>
-            @else
-            <div class="text-muted small px-1">No route details.</div>
-            @endif
         </div>
     </div>
-    @else
-    <div class="text-muted small">No route declaration to display.</div>
-    @endif
-</div>
+@elseif(!$pattern)
+    <div class="text-muted small">No commuting pattern to display.</div>
+@endif
 
+@once
 <style>
-    /* ルート明細カードをさらに見やすく */
-    .card .border.rounded-2 {
-        background-color: #fafafa;
-        transition: 0.2s ease;
+    .commute-pattern-card {
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        background: #fff;
+        overflow: hidden;
     }
 
-    .card .border.rounded-2:hover {
-        background-color: #e5eafa;
+    .commute-pattern-card__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+        padding: 5px 8px;
+        background: #f8f9fa;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .commute-pattern-card__meta {
+        min-width: 0;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 3px 8px;
+        font-size: .78rem;
+        line-height: 1.2;
+    }
+
+    .commute-pattern-card__title {
+        font-weight: 700;
+        color: #212529;
+    }
+
+    .commute-pattern-card__station,
+    .commute-pattern-card__line {
+        min-width: 0;
+        max-width: 220px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .commute-pattern-card__more {
+        flex: 0 0 auto;
+        min-width: 54px;
+        padding-block: 2px;
+    }
+
+    .commute-pattern-card__body {
+        padding: 4px;
+    }
+
+    .commute-pattern-legs {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+        gap: 4px;
+    }
+
+    .commute-pattern-leg {
+        display: grid;
+        grid-template-columns: 34px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 6px;
+        border: 1px solid #edf0f2;
+        border-radius: 5px;
+        background: #fcfcfd;
+        font-size: .78rem;
+        line-height: 1.2;
+        min-width: 0;
+    }
+
+    .commute-pattern-leg__day {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 22px;
+        border-radius: 5px;
+        border: 1px solid #dee2e6;
+        background: #fff;
+        font-weight: 700;
+    }
+
+    .commute-pattern-leg__route {
+        min-width: 0;
+        font-weight: 600;
+    }
+
+    .commute-pattern-leg__route-text,
+    .commute-pattern-leg__note {
+        display: block;
+        min-width: 0;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .commute-pattern-leg__note {
+        grid-column: 2 / 4;
+        margin-top: -2px;
+        color: #6c757d;
+        font-size: .72rem;
+    }
+
+    .commute-pattern-leg__fare {
+        display: flex;
+        flex-direction: row;
+        align-items: flex-end;
+        gap: 4px;
+        white-space: nowrap;
+        font-weight: 700;
+    }
+
+    .commute-pattern-leg__trip {
+        color: #6c757d;
+        font-size: .72rem;
+        font-weight: 400;
+    }
+
+    @media (max-width: 575.98px) {
+        .commute-pattern-card__head {
+            align-items: center;
+        }
+
+        .commute-pattern-card__meta {
+            gap: 3px 7px;
+        }
+
+        .commute-pattern-card__station,
+        .commute-pattern-card__line {
+            max-width: 130px;
+        }
+
+        .commute-pattern-legs {
+            grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+        }
     }
 </style>
+@endonce

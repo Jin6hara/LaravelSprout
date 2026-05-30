@@ -1,57 +1,142 @@
 @extends('layouts.app')
 
+@section('title', 'Commuting Route Summary')
+
 @section('content')
-<div class="container-fluid py-2">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-        <h5 class="mb-0 fw-bold">Route Declarations</h5>
-        @isset($targetUser)
-        <div class="d-flex justify-content-between align-items-center mb-2">
+@php
+    $patternUrl = $isAdminMode
+        ? route('expenses.admin.pattern', ['user' => $targetUser])
+        : route('expenses.pattern');
+    $passUrl = $isAdminMode
+        ? route('commuter_passes.admin.create', ['user' => $targetUser])
+        : route('commuter_passes.create');
+    $backUrl = $isAdminMode
+        ? route('expenses.admin.edit', ['user' => $targetUser])
+        : route('expenses.edit');
+@endphp
 
-            <span class="badge bg-info-subtle text-dark border px-3 py-2" style="font-size: 0.9rem;">
-                👤 Viewing:
-                <strong>{{ $targetUser->first_name ?? '' }} {{ $targetUser->family_name }}</strong>
-                [{{ $targetUser->employee_code }}]
-            </span>
-
-        </div>
-        @endisset
-    </div>
-
-    {{-- ▼ 定期券カード（Commuter Pass） --}}
-    @php
-    $passOwner = $targetUser ?? optional($declarations->first())->user;
-    $passes = optional($passOwner)->commuterPasses ?? collect();
-    @endphp
-    @if($passes->count())
-    <div class="card shadow-sm mt-3 mb-3">
-        <div class="card-header py-2 px-3 bg-light d-flex align-items-center gap-2">
-            <span class="fw-semibold small">Commuter Pass</span>
-            <span class="text-muted small">({{ $passes->count() }})</span>
-        </div>
-        <div class="card-body p-2">
-            @foreach($passes->sortByDesc('date_from') as $p)
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 small py-1 border-bottom">
-                <div class="text-truncate">
-                    <strong>{{ $p->station_from }}</strong> → <strong>{{ $p->station_to }}</strong>
-                    <span class="text-muted">
-                        ({{ $p->date_from->format('Y-m-d') }}〜{{ $p->date_to->format('Y-m-d') }})
-                    </span>
-                    @if($p->note)
-                    <span class="text-muted fst-italic">｜{{ $p->note }}</span>
-                    @endif
-                </div>
-                <div class="text-end">¥{{ number_format($p->cost) }}</div>
+<div class="container-fluid py-2 commute-route-summary">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+        <div>
+            <h5 class="mb-1 fw-bold">Commuting Route Summary</h5>
+            <div class="text-muted small">
+                {{ $targetUser->first_name }} {{ $targetUser->family_name }} [{{ $targetUser->employee_code }}]
             </div>
-            @endforeach
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ $backUrl }}" class="btn btn-outline-secondary btn-sm commute-route-summary__btn">Back</a>
+            <a href="{{ $passUrl }}" class="btn btn-outline-primary btn-sm commute-route-summary__btn">＋ Commuter Pass</a>
+            <a href="{{ $patternUrl }}" class="btn btn-outline-primary btn-sm commute-route-summary__btn">＋ Pattern</a>
         </div>
     </div>
-    @endif
 
-    {{-- ▼ すべてのルート申請カード --}}
-    @forelse($declarations as $routeDecl)
-    @include('routes.showCard', ['routeDecl' => $routeDecl])
-    @empty
-    <div class="text-muted small">No route declaration to display.</div>
-    @endforelse
+    <section class="mb-3">
+        <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+            <h6 class="mb-0 fw-bold">Commuter Pass</h6>
+            <span class="text-muted small">{{ $passes->count() }} item(s)</span>
+        </div>
+
+        @if($passes->count())
+            <div class="commute-route-list">
+                @foreach($passes as $pass)
+                    <div class="commute-route-row">
+                        <div class="commute-route-row__main">
+                            <div class="fw-semibold">
+                                {{ $pass->station_from }} <span class="text-muted">→</span> {{ $pass->station_to }}
+                            </div>
+                            <div class="text-muted small">
+                                {{ $pass->date_from?->format('Y-m-d') }} - {{ $pass->date_to?->format('Y-m-d') }}
+                            </div>
+                            @if($pass->note)
+                                <div class="text-muted small text-truncate">{{ $pass->note }}</div>
+                            @endif
+                        </div>
+                        <div class="commute-route-row__amount">¥{{ number_format((int) $pass->cost) }}</div>
+                    </div>
+                @endforeach
+            </div>
+        @else
+            <div class="text-muted small border rounded p-2 bg-white">No commuter pass to display.</div>
+        @endif
+    </section>
+
+    <section>
+        <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+            <h6 class="mb-0 fw-bold">Commute Pattern</h6>
+            <span class="text-muted small">{{ $patterns->count() }} item(s)</span>
+        </div>
+
+        @forelse($patterns as $pattern)
+            <div class="commute-route-pattern">
+                @include('routes.showCard', ['commutePattern' => $pattern, 'user' => $targetUser])
+                <div class="text-end">
+                    <a href="{{ $isAdminMode
+                            ? route('expenses.admin.pattern', ['user' => $targetUser, 'pattern' => $pattern->id])
+                            : route('expenses.pattern', ['pattern' => $pattern->id]) }}"
+                        class="btn btn-outline-secondary btn-sm">
+                        Edit Pattern
+                    </a>
+                </div>
+            </div>
+        @empty
+            <div class="text-muted small border rounded p-2 bg-white">No commute pattern to display.</div>
+        @endforelse
+    </section>
 </div>
 @endsection
+
+@push('styles')
+<style>
+    .commute-route-summary__btn {
+        min-width: 128px;
+        white-space: nowrap;
+    }
+
+    .commute-route-list {
+        display: grid;
+        gap: 6px;
+    }
+
+    .commute-route-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        background: #fff;
+        font-size: .875rem;
+    }
+
+    .commute-route-row__main {
+        min-width: 0;
+    }
+
+    .commute-route-row__amount {
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .commute-route-pattern {
+        margin-bottom: 10px;
+    }
+
+    @media (max-width: 575.98px) {
+        .commute-route-summary__btn {
+            flex: 1 1 120px;
+            min-width: 0;
+        }
+
+        .commute-route-row {
+            grid-template-columns: 1fr;
+            gap: 4px;
+        }
+
+        .commute-route-row__amount {
+            text-align: right;
+        }
+    }
+</style>
+@endpush

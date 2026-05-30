@@ -6,7 +6,7 @@ use App\Models\Expense;
 use App\Models\User;
 use App\Models\ExpenseReport;
 use App\Services\Calendar\CalendarResolver;
-use App\Services\CommutingExpenses\RouteDeclarationService;
+use App\Services\CommutingExpenses\CommutePatternService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use App\Enums\ExpenseReportStatus;
@@ -41,7 +41,7 @@ class ExpenseEditController extends Controller
 
     /**
      * 経費編集画面の共通レンダリング処理
-     * 指定年月の明細・定期券・カレンダーON/OFF情報・ルート宣言を収集してビューへ渡す
+     * 指定年月の明細・定期券・カレンダーON/OFF情報・通勤パターンを収集してビューへ渡す
      */
     private function renderFor(User $user, Request $req)
     {
@@ -158,10 +158,9 @@ class ExpenseEditController extends Controller
             ];
         })->values()->all();
 
-        // ユーザーの最新ルート宣言を1件取得（月単位）
-        $end = $end ?? now('Asia/Tokyo')->endOfDay(); //end が null の場合その日の 23:59:59 に丸める
-        $svc = app(RouteDeclarationService::class);
-        $routeDecl = $svc->latestUntil($user, $end);
+        // ユーザーの当月末時点で有効な通勤パターンを1件取得
+        $patternSvc = app(CommutePatternService::class);
+        $commutePattern = $patternSvc->activeOrLatest($user, $end);
 
         return view('expenses.edit', [
             'user'          => $user,
@@ -173,7 +172,7 @@ class ExpenseEditController extends Controller
             'eventOnMap'    => $eventOnMap,          // ★ イベントON日のマップ 
             'passActiveMap' => $passActiveMap,       // ★ 定期券の有効日マップ
             'activePasses'  => $activePasses,        // ★ ヘッダー表示用
-            'routeDecl'     => $routeDecl,           // ★ RouteDeclaration
+            'commutePattern' => $commutePattern,      // ★ CommutePattern
         ]);
     }
 

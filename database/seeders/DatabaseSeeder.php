@@ -38,7 +38,6 @@ class DatabaseSeeder extends Seeder
             ManagementScopeSeeder::class,
             CommuterPassSeeder::class,
             SubsTableSeeder::class,
-            RouteDeclarationUser2Seeder::class,
             ScheduleDetailsCopySeeder::class,
         ]);
 

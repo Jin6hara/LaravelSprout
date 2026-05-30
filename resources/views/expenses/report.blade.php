@@ -75,13 +75,8 @@
       </button>
     </form>
 
-    {{-- Route Declaration Report --}}
     @if($me && $me->hasAnyRole(['admin','super_admin']))
-    <a href="{{ route('routes.report') }}"
-      class="btn btn-outline-primary mb-2 btn-sm ms-lg-auto">
-      Route Declaration Report
-    </a>
-    <a class="btn btn-sm mb-2 btn-outline-success" href="{{ route('commuter.advisor.index') }}">
+    <a class="btn btn-sm mb-2 btn-outline-success ms-lg-auto" href="{{ route('commuter.advisor.index') }}">
       Commuter Pass Advisor
     </a>
     @endif
