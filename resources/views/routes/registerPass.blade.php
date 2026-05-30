@@ -107,11 +107,11 @@
                         min="0" step="1">
                 </div>
 
-                <div class="col-12">
+                <div class="col-sm-6 col-lg-9">
                     <label for="note" class="form-label small mb-0">Note</label>
                     <textarea name="note"
                         id="note"
-                        rows="2"
+                        rows="1"
                         class="form-control form-control-sm">{{ old('note') }}</textarea>
                 </div>
             </div>
@@ -123,6 +123,46 @@
             </div>
         </div>
     </form>
+
+    <div class="header-box register-pass-history mt-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+            <h6 class="mb-0 fw-bold">Commuter Pass History</h6>
+            <span class="text-muted small">{{ $passHistory->count() }} item(s)</span>
+        </div>
+
+        @if($passHistory->isNotEmpty())
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0 register-pass-history-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Valid Period</th>
+                            <th scope="col">Route</th>
+                            <th scope="col" class="text-end">Cost</th>
+                            <th scope="col">Note</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($passHistory as $pass)
+                            <tr>
+                                <td class="text-nowrap">
+                                    {{ $pass->date_from?->format('Y-m-d') }} - {{ $pass->date_to?->format('Y-m-d') }}
+                                </td>
+                                <td>
+                                    {{ $pass->station_from }} <span class="text-muted">→</span> {{ $pass->station_to }}
+                                </td>
+                                <td class="text-end text-nowrap">¥{{ number_format((int) $pass->cost) }}</td>
+                                <td class="register-pass-history-note">
+                                    {{ $pass->note ?: '-' }}
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @else
+            <div class="text-muted small border rounded p-2 bg-white">No commuter pass history to display.</div>
+        @endif
+    </div>
 </div>
 @endsection
 
@@ -136,6 +176,24 @@
 
     .register-pass-panel .form-control-sm {
         min-height: 32px;
+    }
+
+    .register-pass-history-table {
+        font-size: .875rem;
+    }
+
+    .register-pass-history-table thead th {
+        color: #6b7280;
+        font-weight: 600;
+        border-bottom-color: #cfd8ea;
+    }
+
+    .register-pass-history-note {
+        min-width: 180px;
+        max-width: 420px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 </style>
 @endpush

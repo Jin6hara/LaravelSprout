@@ -22,9 +22,15 @@ class CommuterPassController extends Controller
         $target      = $user ?: $me;
         $this->authorize('view', $target);
 
+        $passHistory = $target->commuterPasses()
+            ->orderByDesc('date_from')
+            ->orderByDesc('id')
+            ->get();
+
         return view('routes.registerPass', [
             'target'      => $target,
             'isAdminMode' => $isAdminMode,
+            'passHistory' => $passHistory,
         ]);
     }
 
