@@ -307,40 +307,15 @@ Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
         ->name('commuter.advisor.index');
 });
 
-use App\Http\Controllers\RouteDeclarationController;
+use App\Http\Controllers\CommuteRouteController;
 
 Route::middleware(['auth'])->group(function () {
-
-    // ===== 一般ユーザー / 共通 =====
-    Route::get('/routes', [RouteDeclarationController::class, 'index'])
+    Route::get('/routes', [CommuteRouteController::class, 'index'])
         ->name('routes.index');
 
-    Route::get('/routes/create', [RouteDeclarationController::class, 'create'])
-        ->name('routes.create');    // 本人用 画面
-
-    Route::post('/routes', [RouteDeclarationController::class, 'store'])
-        ->name('routes.store');     // 本人用 保存
-
-
-    // ===== 管理者専用 =====
-    Route::middleware('role:admin|super_admin')->group(function () {
-
-        // ルート申告レポート
-        Route::get('/routes/declarations/report', [RouteDeclarationController::class, 'report'])
-            ->name('routes.report');
-
-        // 管理者が他人分を作成
-        Route::get('/routes/{user}/create', [RouteDeclarationController::class, 'create'])
-            ->name('routes.admin.create'); // 同じ create メソッドを使う
-
-        Route::post('/routes/{user}', [RouteDeclarationController::class, 'store'])
-            ->name('routes.admin.store');  // 同じ store メソッドを使う
-
-        // 特定ユーザーの一覧・表示
-        Route::get('/routes/{user}', [RouteDeclarationController::class, 'showUser'])
-            ->name('routes.user')
-            ->whereNumber('user'); // ← これ重要（/routes/declarations/... を食べないため）
-    });
+    Route::get('/routes/{user}', [CommuteRouteController::class, 'showUser'])
+        ->name('routes.user')
+        ->middleware('role:admin|super_admin');
 });
 
 use App\Http\Controllers\CommuterPassController;

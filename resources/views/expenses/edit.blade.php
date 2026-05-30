@@ -22,18 +22,6 @@
       @php $me = auth()->user(); @endphp
       <div class="d-flex flex-wrap gap-2">
           @if($me->hasAnyRole(['admin','super_admin']))
-              <a href="{{ route('routes.admin.create', $user) }}"
-                class="btn btn-outline-primary btn-sm btn-route-fixed">
-                  ＋ Route Declaration
-              </a>
-          @else
-              <a href="{{ route('routes.create') }}"
-                class="btn btn-outline-primary btn-sm btn-route-fixed">
-                  ＋ Route Declaration
-              </a>
-          @endif
-
-          @if($me->hasAnyRole(['admin','super_admin']))
               <a href="{{ route('commuter_passes.admin.create', $user) }}"
                 class="btn btn-outline-primary btn-sm btn-route-fixed">
                   ＋ Commuter Pass
@@ -183,8 +171,8 @@
     @endif
   </div>
 
-  {{-- ▼ ルート申請表示カード: 'showMore' => trueでボタンをactive --}}
-  @include('routes.showCard', ['routeDecl' => $routeDecl, 'showMore' => true])
+  {{-- ▼ 通勤パターン表示カード: 'showMore' => trueでボタンをactive --}}
+  @include('routes.showCard', ['commutePattern' => $commutePattern, 'showMore' => true, 'user' => $user])
 
   <div id="sheetScroll">
     <div id="sheet"></div>

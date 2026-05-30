@@ -47,9 +47,6 @@ return new class extends Migration
             'trip_type' => ExpenseTripType::class,
             'category' => ExpenseCategory::class,
         ],
-        'route_details' => [
-            'trip_type' => ExpenseTripType::class,
-        ],
     ];
 
     public function up(): void
