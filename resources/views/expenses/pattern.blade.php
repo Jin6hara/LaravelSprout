@@ -108,6 +108,63 @@
     <div id="patternSheet"></div>
   </div>
 
+  <div class="header-box commute-pattern-history mt-3">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+      <h6 class="mb-0 fw-bold">Commute Pattern History</h6>
+      <span class="text-muted small">{{ $patternHistory->count() }} item(s)</span>
+    </div>
+
+    @if($patternHistory->isNotEmpty())
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0 commute-pattern-history-table">
+          <thead>
+            <tr>
+              <th scope="col">Valid Period</th>
+              <th scope="col">Closest Station</th>
+              <th scope="col">Train Line</th>
+              <th scope="col" class="text-end">Rows</th>
+              <th scope="col" class="text-end">Amount</th>
+              <th scope="col">Reason</th>
+              <th scope="col" class="text-end">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            @foreach($patternHistory as $historyPattern)
+              @php
+                $historyUrl = $isAdminMode
+                  ? route('expenses.admin.pattern', ['user' => $user, 'pattern' => $historyPattern->id])
+                  : route('expenses.pattern', ['pattern' => $historyPattern->id]);
+                $historyAmount = $historyPattern->legs->sum(fn ($leg) => (int) $leg->cost);
+                $isCurrentPattern = $pattern?->id === $historyPattern->id;
+              @endphp
+              <tr @class(['table-primary' => $isCurrentPattern])>
+                <td class="text-nowrap">
+                  {{ $historyPattern->valid_from?->format('Y-m-d') }} - {{ $historyPattern->valid_to?->format('Y-m-d') }}
+                </td>
+                <td>{{ $historyPattern->closest_station }}</td>
+                <td>{{ $historyPattern->train_line ?: '-' }}</td>
+                <td class="text-end text-nowrap">{{ $historyPattern->legs->count() }}</td>
+                <td class="text-end text-nowrap">¥{{ number_format($historyAmount) }}</td>
+                <td class="commute-pattern-history-reason">
+                  {{ $historyPattern->reason ?: '-' }}
+                </td>
+                <td class="text-end text-nowrap">
+                  @if($isCurrentPattern)
+                    <span class="badge text-bg-primary">Editing</span>
+                  @else
+                    <a href="{{ $historyUrl }}" class="btn btn-outline-secondary btn-sm">Load</a>
+                  @endif
+                </td>
+              </tr>
+            @endforeach
+          </tbody>
+        </table>
+      </div>
+    @else
+      <div class="text-muted small border rounded p-2 bg-white">No commute pattern history to display.</div>
+    @endif
+  </div>
+
   <div class="mt-2 d-flex gap-2">
     <a href="https://world.jorudan.co.jp/mln/en/?sub_lang=nosub"
       class="btn btn-outline-secondary btn-sm"
@@ -168,6 +225,24 @@
   #patternSheet .jspreadsheet {
     margin-left: auto;
     margin-right: auto;
+  }
+
+  .commute-pattern-history-table {
+    font-size: .875rem;
+  }
+
+  .commute-pattern-history-table thead th {
+    color: #6b7280;
+    font-weight: 600;
+    border-bottom-color: #cfd8ea;
+  }
+
+  .commute-pattern-history-reason {
+    min-width: 180px;
+    max-width: 360px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   @media (min-width: 1200px) {

@@ -144,6 +144,7 @@ class CommutePatternController extends Controller
             'user' => $user,
             'isAdminMode' => $isAdminMode,
             'patterns' => $allPatterns,
+            'patternHistory' => $allPatterns,
             'pattern' => $selected,
             'rows' => $this->rowsFor($selected),
             'dowValues' => CommutePatternService::DOW_VALUES,
