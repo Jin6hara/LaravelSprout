@@ -29,9 +29,8 @@
   document.addEventListener('DOMContentLoaded', function () {
     const boot = window.COMMUTE_PATTERN_BOOTSTRAP || {};
     const sheetEl = document.getElementById('patternSheet');
-    const scrollWrapper = document.getElementById('patternSheetScroll');
 
-    if (!sheetEl || !scrollWrapper) return;
+    if (!sheetEl) return;
 
     const csrfToken = boot.csrfToken;
     const patternId = boot.patternId || null;
@@ -76,27 +75,6 @@
         r.seq ?? 100,
       ]);
     }
-
-    const heightSelect = document.getElementById('commutePatternHeight');
-    const savedHeight = localStorage.getItem('commutePatternHeight') || '560';
-
-    if (heightSelect) {
-      heightSelect.value = savedHeight;
-    }
-
-    function applyTableHeight(value) {
-      if (value === 'full') {
-        scrollWrapper.style.maxHeight = '';
-      } else {
-        scrollWrapper.style.maxHeight = `${Number(value) || 560}px`;
-      }
-    }
-
-    applyTableHeight(savedHeight);
-    heightSelect?.addEventListener('change', () => {
-      localStorage.setItem('commutePatternHeight', heightSelect.value);
-      applyTableHeight(heightSelect.value);
-    });
 
     const sheet = jspreadsheet(sheetEl, {
       worksheets: [{

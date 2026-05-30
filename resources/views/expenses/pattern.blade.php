@@ -101,16 +101,6 @@
         @endforeach
       </select>
       <button id="addDowBtn" class="btn btn-success btn-sm" type="button">＋ Add Day</button>
-
-      <div class="ms-auto expense-edit-table-toolbar">
-        <label for="commutePatternHeight" class="form-label m-0 small text-muted">Table Height</label>
-        <select id="commutePatternHeight" class="form-select form-select-sm expense-edit-height-select">
-          <option value="420">Compact</option>
-          <option value="560">Standard</option>
-          <option value="720">Tall</option>
-          <option value="full">Full</option>
-        </select>
-      </div>
     </div>
   </div>
 
