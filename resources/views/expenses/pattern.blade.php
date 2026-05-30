@@ -11,6 +11,8 @@
 
 @section('content')
 @php
+    $canManagePatterns = $canManagePatterns ?? false;
+    $isReadOnlyPattern = $pattern && ! $canManagePatterns;
     $newUrl = $isAdminMode
         ? route('expenses.admin.pattern', ['user' => $user, 'new' => 1])
         : route('expenses.pattern', ['new' => 1]);
@@ -37,7 +39,7 @@
     </div>
   </div>
 
-  @if($patterns->isNotEmpty())
+  @if($canManagePatterns && $patterns->isNotEmpty())
     <form method="GET" action="{{ $loadUrl }}" class="mb-3 d-flex align-items-center gap-2">
       <label for="patternPick" class="form-label m-0">Pattern</label>
       <select id="patternPick" name="pattern" class="form-select form-select-sm" style="max-width:420px">
@@ -57,37 +59,39 @@
       <div class="col-md-3">
         <label for="closestStation" class="form-label small mb-0">Closest Station <span class="text-danger">*</span></label>
         <input type="text" id="closestStation" class="form-control form-control-sm"
-          value="{{ old('closest_station', $pattern?->closest_station) }}" required>
+          value="{{ old('closest_station', $pattern?->closest_station) }}" @disabled($isReadOnlyPattern) required>
       </div>
 
       <div class="col-md-3">
         <label for="trainLine" class="form-label small mb-0">Train Line</label>
         <input type="text" id="trainLine" class="form-control form-control-sm"
-          value="{{ old('train_line', $pattern?->train_line) }}">
+          value="{{ old('train_line', $pattern?->train_line) }}" @disabled($isReadOnlyPattern)>
       </div>
 
       <div class="col-md-2">
         <label for="validFrom" class="form-label small mb-0">Valid From <span class="text-danger">*</span></label>
         <input type="date" id="validFrom" class="form-control form-control-sm"
-          value="{{ $defaultValidFrom }}" required>
+          value="{{ $defaultValidFrom }}" @disabled($isReadOnlyPattern) required>
       </div>
 
       <div class="col-md-2">
         <label for="validTo" class="form-label small mb-0">Valid To <span class="text-danger">*</span></label>
         <input type="date" id="validTo" class="form-control form-control-sm"
-          value="{{ $defaultValidTo }}" required>
+          value="{{ $defaultValidTo }}" @disabled($isReadOnlyPattern) required>
       </div>
 
       <div class="col-md-2 d-flex gap-2 justify-content-md-end">
+        @if(! $pattern || $canManagePatterns)
         <button id="savePatternBtn" class="btn btn-primary btn-sm" type="button">Save</button>
-        @if($pattern)
+        @endif
+        @if($pattern && $canManagePatterns)
           <button id="deletePatternBtn" class="btn btn-outline-danger btn-sm" type="button">Delete</button>
         @endif
       </div>
 
       <div class="col-12">
         <label for="patternReason" class="form-label small mb-0">Reason for Submitting Expenses</label>
-        <textarea id="patternReason" rows="2" class="form-control form-control-sm">{{ old('reason', $pattern?->reason) }}</textarea>
+        <textarea id="patternReason" rows="2" class="form-control form-control-sm" @disabled($isReadOnlyPattern)>{{ old('reason', $pattern?->reason) }}</textarea>
       </div>
     </div>
   </div>
@@ -100,7 +104,9 @@
           <option value="{{ $dow }}">{{ $dow }}</option>
         @endforeach
       </select>
+      @if(! $isReadOnlyPattern)
       <button id="addDowBtn" class="btn btn-success btn-sm" type="button">＋ Add Day</button>
+      @endif
     </div>
   </div>
 
@@ -125,7 +131,9 @@
               <th scope="col" class="text-end">Rows</th>
               <th scope="col" class="text-end">Amount</th>
               <th scope="col">Reason</th>
-              <th scope="col" class="text-end">Action</th>
+              @if($canManagePatterns)
+                <th scope="col" class="text-end">Action</th>
+              @endif
             </tr>
           </thead>
           <tbody>
@@ -148,13 +156,15 @@
                 <td class="commute-pattern-history-reason">
                   {{ $historyPattern->reason ?: '-' }}
                 </td>
-                <td class="text-end text-nowrap">
-                  @if($isCurrentPattern)
-                    <button type="button" class="btn btn-primary btn-sm" disabled>Editing</button>
-                  @else
-                    <a href="{{ $historyUrl }}" class="btn btn-outline-secondary btn-sm">Load</a>
-                  @endif
-                </td>
+                @if($canManagePatterns)
+                  <td class="text-end text-nowrap">
+                    @if($isCurrentPattern)
+                      <button type="button" class="btn btn-primary btn-sm" disabled>Editing</button>
+                    @else
+                      <a href="{{ $historyUrl }}" class="btn btn-outline-secondary btn-sm">Load</a>
+                    @endif
+                  </td>
+                @endif
               </tr>
             @endforeach
           </tbody>
@@ -281,6 +291,7 @@
     dowValues: @json($dowValues),
     saveUrl: @json(route('api.commute_patterns.batch')),
     deleteUrl: @json($pattern ? route('api.commute_patterns.destroy', $pattern) : null),
+    isReadOnly: @json($isReadOnlyPattern),
   };
 </script>
 <script src="{{ asset('js/commute-patterns.js') }}?v={{ filemtime(public_path('js/commute-patterns.js')) }}" defer></script>

@@ -9,6 +9,7 @@
 @section('content')
 @php
     $isEditingPass = $selectedPass !== null;
+    $showPassActions = $canManagePasses ?? false;
     $newPassUrl = $isAdminMode
         ? route('commuter_passes.admin.create', ['user' => $target])
         : route('commuter_passes.create');
@@ -142,7 +143,9 @@
                             <th scope="col">Route</th>
                             <th scope="col" class="text-end">Cost</th>
                             <th scope="col">Note</th>
+                            @if($showPassActions)
                             <th scope="col" class="text-end">Action</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody>
@@ -164,13 +167,23 @@
                                 <td class="register-pass-history-note">
                                     {{ $pass->note ?: '-' }}
                                 </td>
+                                @if($showPassActions)
                                 <td class="text-end text-nowrap">
                                     @if($isCurrentPass)
                                         <button type="button" class="btn btn-primary btn-sm" disabled>Editing</button>
                                     @else
                                         <a href="{{ $passUrl }}" class="btn btn-outline-secondary btn-sm">Load</a>
                                     @endif
+                                    <form method="POST"
+                                        action="{{ route('commuter_passes.destroy', $pass) }}"
+                                        class="d-inline"
+                                        onsubmit="return confirm('Delete this commuter pass?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                                    </form>
                                 </td>
+                                @endif
                             </tr>
                         @endforeach
                     </tbody>

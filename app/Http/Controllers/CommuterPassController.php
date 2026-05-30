@@ -23,6 +23,8 @@ class CommuterPassController extends Controller
         $target      = $user ?: $me;
         $this->authorize('view', $target);
 
+        $canManagePasses = $me?->hasAnyRole(['admin', 'super_admin']) ?? false;
+
         $passHistory = $target->commuterPasses()
             ->orderByDesc('date_from')
             ->orderByDesc('id')
@@ -31,6 +33,8 @@ class CommuterPassController extends Controller
 
         $selectedPass = null;
         if ($request->filled('pass')) {
+            abort_unless($canManagePasses, 403);
+
             $selectedPass = $target->commuterPasses()
                 ->findOrFail($request->integer('pass'));
         }
@@ -40,6 +44,7 @@ class CommuterPassController extends Controller
             'isAdminMode' => $isAdminMode,
             'passHistory' => $passHistory,
             'selectedPass' => $selectedPass,
+            'canManagePasses' => $canManagePasses,
         ]);
     }
 
@@ -74,6 +79,8 @@ class CommuterPassController extends Controller
      */
     public function update(StoreCommuterPassRequest $request, CommuterPass $pass): RedirectResponse
     {
+        abort_unless($request->user()?->hasAnyRole(['admin', 'super_admin']), 403);
+
         $target = $pass->user()->firstOrFail();
         $this->authorize('update', $target);
 
@@ -89,5 +96,25 @@ class CommuterPassController extends Controller
         ]);
 
         return redirect()->back()->with('toast', 'Commuter pass has been updated.');
+    }
+
+    /**
+     * 削除処理
+     * - DELETE /commuter-passes/{pass} → Admin以上のみ
+     */
+    public function destroy(Request $request, CommuterPass $pass): RedirectResponse
+    {
+        abort_unless($request->user()?->hasAnyRole(['admin', 'super_admin']), 403);
+
+        $target = $pass->user()->firstOrFail();
+        $this->authorize('update', $target);
+
+        $pass->delete();
+
+        $redirectUrl = $request->user()->is($target)
+            ? route('commuter_passes.create')
+            : route('commuter_passes.admin.create', ['user' => $target]);
+
+        return redirect($redirectUrl)->with('toast', 'Commuter pass has been deleted.');
     }
 }

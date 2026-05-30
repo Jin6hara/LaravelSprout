@@ -38,6 +38,7 @@
     const initialRows = boot.initialRows || [];
     const dowValues = boot.dowValues || ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const dowOrder = new Map(dowValues.map((dow, index) => [dow, index]));
+    const isReadOnly = Boolean(boot.isReadOnly);
 
     const ACTION_BTN_HTML = '<button type="button" class="btn btn-outline-danger btn-sm js-row-del" title="この行を削除">Del</button>';
     const ADD_BTN_HTML = '<button type="button" class="btn btn-outline-primary btn-sm js-row-add" title="この曜日の行を下に追加">Add</button>';
@@ -63,8 +64,8 @@
 
     function buildMatrix(rows) {
       return rows.map(r => [
-        ACTION_BTN_HTML,
-        ADD_BTN_HTML,
+        isReadOnly ? '' : ACTION_BTN_HTML,
+        isReadOnly ? '' : ADD_BTN_HTML,
         r.dow || 'Sun',
         r.station_from || '',
         r.station_to || '',
@@ -82,12 +83,12 @@
         columns: [
           { title: '-', type: 'html', width: 60, readOnly: true },
           { title: '+', type: 'html', width: 60, readOnly: true },
-          { title: 'Day', type: 'dropdown', width: 90, source: dayOptions },
-          { title: 'From', type: 'text', width: 220 },
-          { title: 'To', type: 'text', width: 220 },
-          { title: 'Amount', type: 'numeric', width: 110, mask: '#,##0' },
-          { title: 'Trip Type', type: 'dropdown', width: 120, source: tripTypeOptions },
-          { title: 'Note', type: 'text', width: 260 },
+          { title: 'Day', type: 'dropdown', width: 90, source: dayOptions, readOnly: isReadOnly },
+          { title: 'From', type: 'text', width: 220, readOnly: isReadOnly },
+          { title: 'To', type: 'text', width: 220, readOnly: isReadOnly },
+          { title: 'Amount', type: 'numeric', width: 110, mask: '#,##0', readOnly: isReadOnly },
+          { title: 'Trip Type', type: 'dropdown', width: 120, source: tripTypeOptions, readOnly: isReadOnly },
+          { title: 'Note', type: 'text', width: 260, readOnly: isReadOnly },
           { title: '_id', type: 'text', width: 0, readOnly: true },
           { title: '_seq', type: 'numeric', width: 0, readOnly: true },
         ],
@@ -106,6 +107,10 @@
     });
 
     function hideInternalCols() {
+      if (isReadOnly) {
+        sheet[0].hideColumn(COL.ACTIONS);
+        sheet[0].hideColumn(COL.ADD);
+      }
       sheet[0].hideColumn(COL.ID);
       sheet[0].hideColumn(COL.SEQ);
     }

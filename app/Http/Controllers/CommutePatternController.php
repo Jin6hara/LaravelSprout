@@ -41,6 +41,8 @@ class CommutePatternController extends Controller
 
         $pattern = null;
         if (! empty($data['pattern_id'])) {
+            abort_unless($request->user()?->hasAnyRole(['admin', 'super_admin']), 403, 'Only admins can edit commute patterns.');
+
             $pattern = CommutePattern::query()
                 ->where('user_id', $target->id)
                 ->findOrFail($data['pattern_id']);
@@ -111,6 +113,8 @@ class CommutePatternController extends Controller
 
     public function destroy(Request $request, CommutePattern $pattern): JsonResponse
     {
+        abort_unless($request->user()?->hasAnyRole(['admin', 'super_admin']), 403, 'Only admins can delete commute patterns.');
+
         $target = $pattern->user()->firstOrFail();
         $this->authorize('update', $target);
 
@@ -124,6 +128,7 @@ class CommutePatternController extends Controller
 
     private function renderFor(User $user, Request $request, bool $isAdminMode, CommutePatternService $patterns)
     {
+        $canManagePatterns = $request->user()?->hasAnyRole(['admin', 'super_admin']) ?? false;
         $allPatterns = $patterns->allForUser($user);
         $patternHistory = CommutePattern::query()
             ->where('user_id', $user->id)
@@ -151,6 +156,7 @@ class CommutePatternController extends Controller
         return view('expenses.pattern', [
             'user' => $user,
             'isAdminMode' => $isAdminMode,
+            'canManagePatterns' => $canManagePatterns,
             'patterns' => $allPatterns,
             'patternHistory' => $patternHistory,
             'pattern' => $selected,
