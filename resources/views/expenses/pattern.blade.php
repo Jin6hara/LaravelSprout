@@ -111,10 +111,10 @@
   <div class="header-box commute-pattern-history mt-3">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
       <h6 class="mb-0 fw-bold">Commute Pattern History</h6>
-      <span class="text-muted small">{{ $patternHistory->count() }} item(s)</span>
+      <span class="text-muted small">{{ $patternHistory->total() }} item(s)</span>
     </div>
 
-    @if($patternHistory->isNotEmpty())
+    @if($patternHistory->count() > 0)
       <div class="table-responsive">
         <table class="table table-sm table-hover align-middle mb-0 commute-pattern-history-table">
           <thead>
@@ -150,7 +150,7 @@
                 </td>
                 <td class="text-end text-nowrap">
                   @if($isCurrentPattern)
-                    <span class="badge text-bg-primary">Editing</span>
+                    <button type="button" class="btn btn-primary btn-sm" disabled>Editing</button>
                   @else
                     <a href="{{ $historyUrl }}" class="btn btn-outline-secondary btn-sm">Load</a>
                   @endif
@@ -159,6 +159,9 @@
             @endforeach
           </tbody>
         </table>
+      </div>
+      <div class="mt-2 commute-pattern-history-pagination">
+        {{ $patternHistory->links() }}
       </div>
     @else
       <div class="text-muted small border rounded p-2 bg-white">No commute pattern history to display.</div>
@@ -243,6 +246,11 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .commute-pattern-history-pagination .pagination {
+    margin-bottom: 0;
+    justify-content: flex-end;
   }
 
   @media (min-width: 1200px) {

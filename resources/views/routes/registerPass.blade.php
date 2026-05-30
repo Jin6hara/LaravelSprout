@@ -21,22 +21,6 @@
         </a>
     </div>
 
-    @if(session('toast'))
-    <div class="alert alert-success py-2 px-3">
-        {{ session('toast') }}
-    </div>
-    @endif
-
-    @if ($errors->any())
-    <div class="alert alert-danger py-2 px-3">
-        <ul class="mb-0">
-            @foreach ($errors->all() as $msg)
-            <li>{{ $msg }}</li>
-            @endforeach
-        </ul>
-    </div>
-    @endif
-
     <form method="POST"
         action="{{ $isAdminMode
                     ? route('commuter_passes.admin.store', $target)
@@ -127,10 +111,10 @@
     <div class="header-box register-pass-history mt-3">
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
             <h6 class="mb-0 fw-bold">Commuter Pass History</h6>
-            <span class="text-muted small">{{ $passHistory->count() }} item(s)</span>
+            <span class="text-muted small">{{ $passHistory->total() }} item(s)</span>
         </div>
 
-        @if($passHistory->isNotEmpty())
+        @if($passHistory->count() > 0)
             <div class="table-responsive">
                 <table class="table table-sm table-hover align-middle mb-0 register-pass-history-table">
                     <thead>
@@ -158,6 +142,9 @@
                         @endforeach
                     </tbody>
                 </table>
+            </div>
+            <div class="mt-2 register-pass-history-pagination">
+                {{ $passHistory->links() }}
             </div>
         @else
             <div class="text-muted small border rounded p-2 bg-white">No commuter pass history to display.</div>
@@ -194,6 +181,11 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+    }
+
+    .register-pass-history-pagination .pagination {
+        margin-bottom: 0;
+        justify-content: flex-end;
     }
 </style>
 @endpush

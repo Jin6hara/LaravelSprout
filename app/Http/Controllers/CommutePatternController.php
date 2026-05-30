@@ -125,6 +125,14 @@ class CommutePatternController extends Controller
     private function renderFor(User $user, Request $request, bool $isAdminMode, CommutePatternService $patterns)
     {
         $allPatterns = $patterns->allForUser($user);
+        $patternHistory = CommutePattern::query()
+            ->where('user_id', $user->id)
+            ->with(['legs' => fn ($q) => $q->orderByRaw(CommutePatternService::DOW_ORDER)->orderBy('seq')->orderBy('id')])
+            ->orderByDesc('valid_from')
+            ->orderByDesc('submitted_at')
+            ->orderByDesc('id')
+            ->paginate(12)
+            ->withQueryString();
         $selected = null;
 
         if (! $request->boolean('new')) {
@@ -144,7 +152,7 @@ class CommutePatternController extends Controller
             'user' => $user,
             'isAdminMode' => $isAdminMode,
             'patterns' => $allPatterns,
-            'patternHistory' => $allPatterns,
+            'patternHistory' => $patternHistory,
             'pattern' => $selected,
             'rows' => $this->rowsFor($selected),
             'dowValues' => CommutePatternService::DOW_VALUES,

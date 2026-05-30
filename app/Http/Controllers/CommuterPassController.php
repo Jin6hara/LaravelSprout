@@ -25,7 +25,8 @@ class CommuterPassController extends Controller
         $passHistory = $target->commuterPasses()
             ->orderByDesc('date_from')
             ->orderByDesc('id')
-            ->get();
+            ->paginate(12)
+            ->withQueryString();
 
         return view('routes.registerPass', [
             'target'      => $target,
