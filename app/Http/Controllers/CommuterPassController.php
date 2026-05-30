@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CommuterPass\StoreCommuterPassRequest;
+use App\Models\CommuterPass;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
@@ -28,10 +29,17 @@ class CommuterPassController extends Controller
             ->paginate(12)
             ->withQueryString();
 
+        $selectedPass = null;
+        if ($request->filled('pass')) {
+            $selectedPass = $target->commuterPasses()
+                ->findOrFail($request->integer('pass'));
+        }
+
         return view('routes.registerPass', [
             'target'      => $target,
             'isAdminMode' => $isAdminMode,
             'passHistory' => $passHistory,
+            'selectedPass' => $selectedPass,
         ]);
     }
 
@@ -58,5 +66,28 @@ class CommuterPassController extends Controller
         ]);
 
         return redirect()->back()->with('toast', 'Commuter pass has been registered.');
+    }
+
+    /**
+     * 更新処理
+     * - PUT /commuter-passes/{pass} → 本人/管理者共通
+     */
+    public function update(StoreCommuterPassRequest $request, CommuterPass $pass): RedirectResponse
+    {
+        $target = $pass->user()->firstOrFail();
+        $this->authorize('update', $target);
+
+        $data = $request->validated();
+
+        $pass->update([
+            'date_from'    => $data['date_from'],
+            'date_to'      => $data['date_to'],
+            'station_from' => $data['station_from'],
+            'station_to'   => $data['station_to'],
+            'note'         => $data['note'] ?? null,
+            'cost'         => $data['cost'] ?? 0,
+        ]);
+
+        return redirect()->back()->with('toast', 'Commuter pass has been updated.');
     }
 }

@@ -329,6 +329,11 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/commuter-passes', [CommuterPassController::class, 'store'])
         ->name('commuter_passes.store');
 
+    // 本人/管理者共通：定期更新
+    Route::put('/commuter-passes/{pass}', [CommuterPassController::class, 'update'])
+        ->name('commuter_passes.update')
+        ->whereNumber('pass');
+
     // 管理者用：他人分の定期登録
     Route::middleware('role:admin|super_admin')->group(function () {
         // admin: 指定ユーザーの定期登録画面

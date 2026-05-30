@@ -7,32 +7,51 @@
 @endpush
 
 @section('content')
+@php
+    $isEditingPass = $selectedPass !== null;
+    $newPassUrl = $isAdminMode
+        ? route('commuter_passes.admin.create', ['user' => $target])
+        : route('commuter_passes.create');
+@endphp
+
 <div class="page-wrap">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <h1 class="mb-0">
-            Register Commuter Pass
+            {{ $isEditingPass ? 'Edit Commuter Pass' : 'Register Commuter Pass' }}
             <small class="text-muted fs-6">
                 for {{ $target->first_name }} {{ $target->family_name }} ({{ $target->employee_code }})
             </small>
         </h1>
 
-        <a href="{{ url()->previous() }}" class="btn btn-outline-secondary btn-sm btn-route-fixed">
-            Back
-        </a>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ url()->previous() }}" class="btn btn-outline-secondary btn-sm btn-route-fixed">
+                Back
+            </a>
+            @if($isEditingPass)
+                <a href="{{ $newPassUrl }}" class="btn btn-outline-primary btn-sm btn-route-fixed">
+                    ＋ New Pass
+                </a>
+            @endif
+        </div>
     </div>
 
     <form method="POST"
-        action="{{ $isAdminMode
-                    ? route('commuter_passes.admin.store', $target)
-                    : route('commuter_passes.store') }}">
+        action="{{ $isEditingPass
+                    ? route('commuter_passes.update', $selectedPass)
+                    : ($isAdminMode
+                        ? route('commuter_passes.admin.store', $target)
+                        : route('commuter_passes.store')) }}">
         @csrf
+        @if($isEditingPass)
+            @method('PUT')
+        @endif
 
         <div class="header-box register-pass-panel">
             <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
                 <div>
                     <h6 class="mb-1 fw-bold">Commuter Pass Info</h6>
                     <div class="text-muted small">
-                        Register the valid period, route, and optional fare amount.
+                        {{ $isEditingPass ? 'Update the valid period, route, and optional fare amount.' : 'Register the valid period, route, and optional fare amount.' }}
                     </div>
                 </div>
                 <div class="text-muted small text-end">
@@ -46,7 +65,7 @@
                     <input type="date"
                         id="dateFrom"
                         name="date_from"
-                        value="{{ old('date_from') }}"
+                        value="{{ old('date_from', $selectedPass?->date_from?->format('Y-m-d')) }}"
                         class="form-control form-control-sm"
                         required>
                 </div>
@@ -56,7 +75,7 @@
                     <input type="date"
                         id="dateTo"
                         name="date_to"
-                        value="{{ old('date_to') }}"
+                        value="{{ old('date_to', $selectedPass?->date_to?->format('Y-m-d')) }}"
                         class="form-control form-control-sm"
                         required>
                 </div>
@@ -66,7 +85,7 @@
                     <input type="text"
                         id="stationFrom"
                         name="station_from"
-                        value="{{ old('station_from') }}"
+                        value="{{ old('station_from', $selectedPass?->station_from) }}"
                         class="form-control form-control-sm"
                         required>
                 </div>
@@ -76,7 +95,7 @@
                     <input type="text"
                         id="stationTo"
                         name="station_to"
-                        value="{{ old('station_to') }}"
+                        value="{{ old('station_to', $selectedPass?->station_to) }}"
                         class="form-control form-control-sm"
                         required>
                 </div>
@@ -86,7 +105,7 @@
                     <input type="number"
                         id="cost"
                         name="cost"
-                        value="{{ old('cost') }}"
+                        value="{{ old('cost', $selectedPass?->cost) }}"
                         class="form-control form-control-sm"
                         min="0" step="1">
                 </div>
@@ -96,13 +115,13 @@
                     <textarea name="note"
                         id="note"
                         rows="1"
-                        class="form-control form-control-sm">{{ old('note') }}</textarea>
+                        class="form-control form-control-sm">{{ old('note', $selectedPass?->note) }}</textarea>
                 </div>
             </div>
 
             <div class="mt-3 d-flex justify-content-end">
                 <button type="submit" class="btn btn-primary btn-sm btn-route-fixed">
-                    Register
+                    {{ $isEditingPass ? 'Update' : 'Register' }}
                 </button>
             </div>
         </div>
@@ -123,11 +142,18 @@
                             <th scope="col">Route</th>
                             <th scope="col" class="text-end">Cost</th>
                             <th scope="col">Note</th>
+                            <th scope="col" class="text-end">Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($passHistory as $pass)
-                            <tr>
+                            @php
+                                $passUrl = $isAdminMode
+                                    ? route('commuter_passes.admin.create', ['user' => $target, 'pass' => $pass->id])
+                                    : route('commuter_passes.create', ['pass' => $pass->id]);
+                                $isCurrentPass = $selectedPass?->id === $pass->id;
+                            @endphp
+                            <tr @class(['table-primary' => $isCurrentPass])>
                                 <td class="text-nowrap">
                                     {{ $pass->date_from?->format('Y-m-d') }} - {{ $pass->date_to?->format('Y-m-d') }}
                                 </td>
@@ -137,6 +163,13 @@
                                 <td class="text-end text-nowrap">¥{{ number_format((int) $pass->cost) }}</td>
                                 <td class="register-pass-history-note">
                                     {{ $pass->note ?: '-' }}
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    @if($isCurrentPass)
+                                        <button type="button" class="btn btn-primary btn-sm" disabled>Editing</button>
+                                    @else
+                                        <a href="{{ $passUrl }}" class="btn btn-outline-secondary btn-sm">Load</a>
+                                    @endif
                                 </td>
                             </tr>
                         @endforeach
