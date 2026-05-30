@@ -163,6 +163,7 @@
     width: 100%;
     overflow: auto;
     -webkit-overflow-scrolling: touch;
+    text-align: left;
   }
 
   #patternSheet {
@@ -170,6 +171,27 @@
     max-width: 100%;
     height: auto;
     margin: 0 auto;
+  }
+
+  #patternSheet .jss,
+  #patternSheet .jss_container,
+  #patternSheet .jspreadsheet {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  @media (min-width: 1200px) {
+    #patternSheetScroll {
+      text-align: center;
+    }
+
+    #patternSheet {
+      display: inline-block;
+      width: auto;
+      min-width: 1140px;
+      text-align: left;
+      vertical-align: top;
+    }
   }
 </style>
 @endpush
