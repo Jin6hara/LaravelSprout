@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\CommuterPass\StoreCommuterPassRequest;
 use App\Models\CommuterPass;
 use App\Models\User;
+use App\Services\CommutingExpenses\CommuterPassWriteService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 
@@ -52,22 +53,12 @@ class CommuterPassController extends Controller
      * - POST /commuter-passes             → 本人
      * - POST /commuter-passes/{user}      → admin が他人分
      */
-    public function store(StoreCommuterPassRequest $request, ?User $user = null): RedirectResponse
+    public function store(StoreCommuterPassRequest $request, CommuterPassWriteService $writer, ?User $user = null): RedirectResponse
     {
         $target = $user ?: $request->user();
         $this->authorize('update', $target);
 
-        $data = $request->validated();
-
-        // 対象ユーザーに紐づけて定期を登録
-        $target->commuterPasses()->create([
-            'date_from'    => $data['date_from'],
-            'date_to'      => $data['date_to'],
-            'station_from' => $data['station_from'],
-            'station_to'   => $data['station_to'],
-            'note'         => $data['note'] ?? null,
-            'cost'         => $data['cost'] ?? 0,
-        ]);
+        $writer->create($target, $request->validated());
 
         return redirect()->back()->with('toast', 'Commuter pass has been registered.');
     }
@@ -76,21 +67,12 @@ class CommuterPassController extends Controller
      * 更新処理
      * - PUT /commuter-passes/{pass} → 本人/管理者共通
      */
-    public function update(StoreCommuterPassRequest $request, CommuterPass $pass): RedirectResponse
+    public function update(StoreCommuterPassRequest $request, CommuterPass $pass, CommuterPassWriteService $writer): RedirectResponse
     {
         $target = $pass->user()->firstOrFail();
         $this->authorize('update', $pass);
 
-        $data = $request->validated();
-
-        $pass->update([
-            'date_from'    => $data['date_from'],
-            'date_to'      => $data['date_to'],
-            'station_from' => $data['station_from'],
-            'station_to'   => $data['station_to'],
-            'note'         => $data['note'] ?? null,
-            'cost'         => $data['cost'] ?? 0,
-        ]);
+        $writer->update($pass, $request->validated());
 
         return redirect()->back()->with('toast', 'Commuter pass has been updated.');
     }

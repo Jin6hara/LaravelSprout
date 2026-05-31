@@ -2,16 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\DayOfWeek;
 use App\Enums\ExpenseTripType;
+use App\Http\Requests\CommutePattern\SaveCommutePatternRequest;
 use App\Models\CommutePattern;
 use App\Models\User;
 use App\Services\CommutingExpenses\CommutePatternService;
+use App\Services\CommutingExpenses\CommutePatternWriteService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 
 class CommutePatternController extends Controller
 {
@@ -32,9 +31,9 @@ class CommutePatternController extends Controller
         return $this->renderFor($user, $request, true, $patterns);
     }
 
-    public function save(Request $request): JsonResponse
+    public function save(SaveCommutePatternRequest $request, CommutePatternWriteService $writer): JsonResponse
     {
-        $data = $this->validatePayload($request);
+        $data = $request->validated();
         $target = $this->resolveTargetUser($request, $data['user_id'] ?? null);
 
         $this->authorize('update', $target);
@@ -47,61 +46,7 @@ class CommutePatternController extends Controller
             $this->authorize('update', $pattern);
         }
 
-        $pattern = DB::transaction(function () use ($data, $target, $pattern) {
-            $pattern ??= new CommutePattern;
-            $pattern->user_id = $target->id;
-            $pattern->fill([
-                'submitted_at' => $pattern->submitted_at ?: now('Asia/Tokyo'),
-                'closest_station' => $data['closest_station'],
-                'train_line' => $data['train_line'] ?? null,
-                'valid_from' => $data['valid_from'],
-                'valid_to' => $data['valid_to'],
-                'reason' => $data['reason'] ?? null,
-            ]);
-            $pattern->save();
-
-            $rows = collect($data['rows'])->values();
-            $incomingIds = $rows
-                ->pluck('id')
-                ->filter()
-                ->map(fn ($id) => (int) $id)
-                ->unique()
-                ->values();
-
-            if ($incomingIds->isNotEmpty()) {
-                $ownedCount = $pattern->legs()
-                    ->whereIn('id', $incomingIds)
-                    ->count();
-
-                abort_if($ownedCount !== $incomingIds->count(), 403, 'Some commute pattern leg IDs do not belong to this pattern.');
-            }
-
-            $deleteQuery = $pattern->legs();
-            if ($incomingIds->isNotEmpty()) {
-                $deleteQuery->whereNotIn('id', $incomingIds);
-            }
-            $deleteQuery->delete();
-
-            foreach ($rows as $index => $row) {
-                $payload = [
-                    'dow' => $row['dow'],
-                    'seq' => (int) ($row['seq'] ?? (($index + 1) * 100)),
-                    'station_from' => $row['station_from'] ?? null,
-                    'station_to' => $row['station_to'] ?? null,
-                    'note' => $row['note'] ?? null,
-                    'cost' => (int) ($row['cost'] ?? 0),
-                    'trip_type' => $row['trip_type'] ?? ExpenseTripType::ROUND_TRIP->value,
-                ];
-
-                if (! empty($row['id'])) {
-                    $pattern->legs()->whereKey($row['id'])->firstOrFail()->update($payload);
-                } else {
-                    $pattern->legs()->create($payload);
-                }
-            }
-
-            return $pattern->fresh(['legs']);
-        });
+        $pattern = $writer->save($target, $data, $pattern);
 
         return response()->json([
             'ok' => true,
@@ -161,29 +106,6 @@ class CommutePatternController extends Controller
             'dowValues' => CommutePatternService::DOW_VALUES,
             'defaultValidFrom' => $validFrom,
             'defaultValidTo' => old('valid_to', optional($selected?->valid_to)->toDateString() ?: $this->defaultValidTo(Carbon::parse($validFrom))),
-        ]);
-    }
-
-    private function validatePayload(Request $request): array
-    {
-        return $request->validate([
-            'pattern_id' => ['nullable', 'integer', 'exists:commute_patterns,id'],
-            'user_id' => ['nullable', 'integer', 'exists:users,id'],
-            'closest_station' => ['required', 'string', 'max:255'],
-            'train_line' => ['nullable', 'string', 'max:255'],
-            'valid_from' => ['required', 'date'],
-            'valid_to' => ['required', 'date', 'after_or_equal:valid_from'],
-            'reason' => ['nullable', 'string'],
-
-            'rows' => ['required', 'array', 'min:1'],
-            'rows.*.id' => ['nullable', 'integer'],
-            'rows.*.dow' => ['required', Rule::in(DayOfWeek::values())],
-            'rows.*.seq' => ['nullable', 'integer', 'min:0'],
-            'rows.*.station_from' => ['nullable', 'string', 'max:255'],
-            'rows.*.station_to' => ['nullable', 'string', 'max:255'],
-            'rows.*.note' => ['nullable', 'string'],
-            'rows.*.cost' => ['required', 'integer', 'min:0'],
-            'rows.*.trip_type' => ['required', Rule::in(ExpenseTripType::values())],
         ]);
     }
 
