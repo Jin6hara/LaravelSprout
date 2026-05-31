@@ -18,11 +18,3 @@ yarn-error.log
 /.idea
 /.vscode
 /.claude
-
-# Local AI / project instruction files
-AGENTS.md
-CLAUDE.md
-docs/architecture.md
-docs/coding-standards.md
-docs/authorization.md
-docs/validation.md

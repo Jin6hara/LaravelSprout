@@ -186,20 +186,24 @@ class LeaveController extends Controller
             'handle_type' => $validated['handle_type'],
         ]);
 
+        // ★ 添付ファイルの保存処理（最小追加）
         if ($request->hasFile('attachment')) {
             $file = $request->file('attachment');
-            DB::transaction(function () use ($file, $leave) {
-                if ($leave->attachment) {
-                    Storage::disk('local')->delete($leave->attachment->path);
-                    $leave->attachment->delete();
-                }
-                $path = $file->store('attachments/' . now()->format('Y/m'), 'local');
-                $leave->attachment()->create([
-                    'path'          => $path,
-                    'original_name' => $file->getClientOriginalName(),
-                    'size'          => $file->getSize(),
-                ]);
-            });
+
+            // 既存の添付があれば削除したい場合（任意）
+            if ($leave->attachment) {
+                Storage::disk('local')->delete($leave->attachment->path);
+                $leave->attachment->delete();
+            }
+
+            // storage/app/attachments/YYYY/MM/... に保存（非公開）
+            $path = $file->store('attachments/' . now()->format('Y/m'), 'local');
+
+            $leave->attachment()->create([
+                'path'          => $path,
+                'original_name' => $file->getClientOriginalName(),
+                'size'          => $file->getSize(),
+            ]);
         }
 
         return back()->with('toast', 'Submitted.');

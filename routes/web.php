@@ -264,7 +264,7 @@ Route::middleware(['auth'])->group(function () {
 
 use App\Http\Controllers\SchoolProfileController;
 
-Route::middleware('auth')->get('/schools/search', [SchoolProfileController::class, 'search'])
+Route::get('/schools/search', [SchoolProfileController::class, 'search'])
     ->name('schools.search');
 
 use App\Http\Controllers\ScheduleLineController;
