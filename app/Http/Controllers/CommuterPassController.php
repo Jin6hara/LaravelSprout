@@ -24,7 +24,7 @@ class CommuterPassController extends Controller
         $target      = $user ?: $me;
         $this->authorize('view', $target);
 
-        $canManagePasses = $me?->hasAnyRole(['admin', 'super_admin']) ?? false;
+        $canManagePasses = $me?->can('manage', CommuterPass::class) ?? false;
 
         $passHistory = $target->commuterPasses()
             ->orderByDesc('date_from')
@@ -69,7 +69,6 @@ class CommuterPassController extends Controller
      */
     public function update(StoreCommuterPassRequest $request, CommuterPass $pass, CommuterPassWriteService $writer): RedirectResponse
     {
-        $target = $pass->user()->firstOrFail();
         $this->authorize('update', $pass);
 
         $writer->update($pass, $request->validated());

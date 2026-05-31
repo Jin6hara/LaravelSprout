@@ -7,14 +7,19 @@ use App\Models\Lesson;
 use App\Models\ScheduleLine;
 use App\Models\ScheduleDetail;
 use App\Services\CurrentScopeService;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use App\Services\ScheduleDetail\BulkUpdateScheduleDetailService;
+use App\Services\ScheduleDetail\CopyScheduleDetailService;
+use App\Services\ScheduleDetail\StoreBlankScheduleDetailService;
 use Illuminate\Support\Facades\Validator;
-use Carbon\Carbon;
 
 class ScheduleDetailController extends Controller
 {
-    public function __construct(private CurrentScopeService $scopeService) {}
+    public function __construct(
+        private CurrentScopeService $scopeService,
+        private StoreBlankScheduleDetailService $storeService,
+        private CopyScheduleDetailService $copyService,
+        private BulkUpdateScheduleDetailService $bulkUpdateService,
+    ) {}
 
     /**
      * スケジュール詳細編集画面
@@ -82,38 +87,19 @@ class ScheduleDetailController extends Controller
     public function store(ScheduleLine $line)
     {
         $this->authorize('update', $line);
+        if (!Lesson::query()->orderBy('id')->exists()) {
+            $this->authorize('create', Lesson::class);
+        }
 
-        DB::beginTransaction();
         try {
-            // lesson: 既存の先頭 or プレースホルダ作成
-            $lesson = Lesson::query()->orderBy('id')->first();
-            if (!$lesson) {
-                $this->authorize('create', Lesson::class);
-                $lesson = Lesson::create([
-                    'lesson_name'   => '未設定',
-                    'lesson_code'   => 'TEMP',
-                    'note'          => null,
-                    'lesson_minute' => 0,
-                    'lesson_type'   => null,
-                ]);
-            }
-
-            $detail = ScheduleDetail::create([
-                'schedule_line_id' => $line->id,
-                'start_time'       => '00:00:00',
-                'lesson_id'        => $lesson->id,
-                'effective_start'  => Carbon::today()->toDateString(),
-                'effective_end'    => null,
-            ]);
-
-            DB::commit();
+            $detail = $this->storeService->handle($line);
+            $detail->loadMissing('lesson');
             return response()->json([
                 'ok' => true,
-                'message' => sprintf("Blank detail added (00:00, %s).", $lesson->lesson_code),
+                'message' => sprintf("Blank detail added (00:00, %s).", optional($detail->lesson)->lesson_code ?? 'TEMP'),
                 'new_id' => $detail->id,
             ]);
         } catch (\Throwable $e) {
-            DB::rollBack();
             report($e);
             return response()->json([
                 'ok' => false,
@@ -131,39 +117,8 @@ class ScheduleDetailController extends Controller
     {
         $this->authorize('copy', $detail);
 
-        DB::beginTransaction();
         try {
-            $created = $detail->replicate(['id', 'created_at', 'updated_at']);
-
-            // ユニーク制約を避けるために日付をずらす（必要なら）
-            $baseStart = Carbon::parse($detail->effective_start);
-            $baseEnd   = $detail->effective_end ? Carbon::parse($detail->effective_end) : null;
-
-            $delta = 0;
-            do {
-                $candidateStart = $baseStart->copy()->addDays($delta)->toDateString();
-                $exists = ScheduleDetail::query()
-                    ->where('schedule_line_id', $detail->schedule_line_id)
-                    ->where('start_time',       $detail->start_time)
-                    ->where('lesson_id',        $detail->lesson_id)
-                    ->whereDate('effective_start', $candidateStart)
-                    ->exists();
-
-                if (!$exists) {
-                    $created->effective_start = $candidateStart;
-                    $created->effective_end = $baseEnd ? $baseEnd->copy()->addDays($delta)->toDateString() : null;
-                    break;
-                }
-                $delta++;
-            } while ($delta < 3650);
-
-            if (!isset($created->effective_start)) {
-                throw new \RuntimeException('複写先の日付を確保できませんでした。');
-            }
-
-            $created->save();
-
-            DB::commit();
+            $created = $this->copyService->handle($detail);
             $startDisplay = $detail->start_hm;
             $lessonCode   = optional($detail->lesson)->lesson_code ?? '-';
             return response()->json([
@@ -172,7 +127,6 @@ class ScheduleDetailController extends Controller
                 'new_id' => $created->id,
             ]);
         } catch (\Throwable $e) {
-            DB::rollBack();
             report($e);
             return response()->json([
                 'ok' => false,
@@ -191,85 +145,52 @@ class ScheduleDetailController extends Controller
         $this->authorize('update', $line);
 
         $items = $request->input('items', []);
-
         $errors = [];
-        $updated = 0;
+        $resolvedItems = [];
 
-        DB::beginTransaction();
-        try {
-            foreach ($items as $raw) {
-                $detailId = $raw['id'] ?? null;
-                if (!$detailId) {
-                    $errors[] = ['id' => null, 'messages' => ['Detail ID is missing.']];
-                    continue;
-                }
-
-                /** @var ScheduleDetail|null $detail */
-                $detail = ScheduleDetail::query()
-                    ->where('schedule_line_id', $line->id)
-                    ->find($detailId);
-
-                if (!$detail) {
-                    $errors[] = ['id' => $detailId, 'messages' => ['Detail not found.']];
-                    continue;
-                }
-                $this->authorize('update', $detail);
-
-                $v = Validator::make($raw, BulkUpdateScheduleDetailRequest::itemRules());
-                if ($v->fails()) {
-                    $errors[] = ['id' => $detailId, 'messages' => $v->errors()->all()];
-                    continue;
-                }
-                $data = $v->validated();
-
-                // 1) lesson_code または ps_unique_lesson_code で取得（無ければエラー）
-                $lesson = Lesson::query()
-                    ->where(function ($q) use ($data) {
-                        $q->where('lesson_code', $data['lesson_code'])
-                          ->orWhere('ps_unique_lesson_code', $data['lesson_code']);
-                    })
-                    ->first();
-                if (!$lesson) {
-                    $errors[] = ['id' => $detailId, 'messages' => ['lesson_code / ps_unique_lesson_code not found.']];
-                    continue;
-                }
-                $this->authorize('update', $lesson);
-
-                // 2) schedule_details を更新
-                $detail->lesson_id    = $lesson->id;
-                $detail->start_time   = $data['start_time'] . ':00';
-                $detail->effective_start = Carbon::parse($data['effective_start'])->toDateString();
-                $detail->effective_end   = isset($data['effective_end']) && $data['effective_end'] !== ''
-                    ? Carbon::parse($data['effective_end'])->toDateString()
-                    : null;
-                // schedule_details 固有のメモ（detail_note がリクエストに含まれる場合のみ更新）
-                if (array_key_exists('detail_note', $data)) {
-                    $detail->note = $data['detail_note'] ?? null;
-                }
-                $detail->save();
-
-                // 3) lesson の note を更新（画面の「note」は lessons.note を指す）
-                if (array_key_exists('note', $data)) {
-                    $lesson->note = $data['note'] ?? null;
-                    $lesson->save();
-                }
-
-                $updated++;
+        foreach ($items as $raw) {
+            $detailId = $raw['id'] ?? null;
+            if (!$detailId) {
+                $errors[] = ['id' => null, 'messages' => ['Detail ID is missing.']];
+                continue;
             }
 
-            DB::commit();
+            /** @var ScheduleDetail|null $detail */
+            $detail = ScheduleDetail::query()
+                ->where('schedule_line_id', $line->id)
+                ->find($detailId);
 
-            $msg = "Saved {$updated} detail(s).";
-            if (!empty($errors)) $msg .= " " . count($errors) . " error(s) occurred.";
+            if (!$detail) {
+                $errors[] = ['id' => $detailId, 'messages' => ['Detail not found.']];
+                continue;
+            }
+            $this->authorize('update', $detail);
 
-            return response()->json([
-                'ok'      => empty($errors),
-                'message' => $msg,
-                'updated' => $updated,
-                'errors'  => $errors,
-            ], empty($errors) ? 200 : 207);
+            $v = Validator::make($raw, BulkUpdateScheduleDetailRequest::itemRules());
+            if ($v->fails()) {
+                $errors[] = ['id' => $detailId, 'messages' => $v->errors()->all()];
+                continue;
+            }
+            $data = $v->validated();
+
+            $lesson = Lesson::query()
+                ->where(function ($q) use ($data) {
+                    $q->where('lesson_code', $data['lesson_code'])
+                      ->orWhere('ps_unique_lesson_code', $data['lesson_code']);
+                })
+                ->first();
+            if (!$lesson) {
+                $errors[] = ['id' => $detailId, 'messages' => ['lesson_code / ps_unique_lesson_code not found.']];
+                continue;
+            }
+            $this->authorize('update', $lesson);
+
+            $resolvedItems[] = compact('detail', 'lesson', 'data');
+        }
+
+        try {
+            $updated = $this->bulkUpdateService->handle($resolvedItems);
         } catch (\Throwable $e) {
-            DB::rollBack();
             report($e);
             return response()->json([
                 'ok' => false,
@@ -277,6 +198,16 @@ class ScheduleDetailController extends Controller
                 'error' => $e->getMessage(),
             ], 422);
         }
+
+        $msg = "Saved {$updated} detail(s).";
+        if (!empty($errors)) $msg .= " " . count($errors) . " error(s) occurred.";
+
+        return response()->json([
+            'ok'      => empty($errors),
+            'message' => $msg,
+            'updated' => $updated,
+            'errors'  => $errors,
+        ], empty($errors) ? 200 : 207);
     }
 
     /**

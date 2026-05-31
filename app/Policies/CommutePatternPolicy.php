@@ -7,6 +7,11 @@ use App\Models\User;
 
 class CommutePatternPolicy
 {
+    public function manage(User $actor): bool
+    {
+        return $actor->isAdmin();
+    }
+
     public function update(User $actor, CommutePattern $pattern): bool
     {
         return $actor->hasAnyRole(['admin', 'super_admin'])

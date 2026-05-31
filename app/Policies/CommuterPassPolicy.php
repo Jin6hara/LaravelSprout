@@ -7,6 +7,11 @@ use App\Models\User;
 
 class CommuterPassPolicy
 {
+    public function manage(User $actor): bool
+    {
+        return $actor->isAdmin();
+    }
+
     public function update(User $actor, CommuterPass $pass): bool
     {
         return $actor->hasAnyRole(['admin', 'super_admin'])
