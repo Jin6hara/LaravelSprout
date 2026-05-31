@@ -25,6 +25,11 @@ document.addEventListener('DOMContentLoaded', function () {
     return String(n).padStart(2, '0');
   }
 
+  function minToHhmm(min) {
+    const normalized = ((min % 1440) + 1440) % 1440;
+    return `${pad2(Math.floor(normalized / 60))}:${pad2(normalized % 60)}`;
+  }
+
   function recalcTotal(row, force = false) {
     const start = row.querySelector('[name="start_time"]')?.value || '';
     const end = row.querySelector('[name="end_time"]')?.value || '';
@@ -216,8 +221,135 @@ document.addEventListener('DOMContentLoaded', function () {
     addGroup('Absence Extra Subs', absentUsers.subs || [], true);
   }
 
+  function appendText(parent, tag, text, className = '') {
+    const el = document.createElement(tag);
+    if (className) el.className = className;
+    el.textContent = text;
+    parent.appendChild(el);
+    return el;
+  }
+
+  function appendMeta(parent, label, value) {
+    if (value == null || value === '') return;
+    const item = document.createElement('div');
+    item.className = 'dsb-modal-meta-item';
+    appendText(item, 'span', label, 'dsb-modal-meta-label');
+    appendText(item, 'span', value, 'dsb-modal-meta-value');
+    parent.appendChild(item);
+  }
+
+  function openDailyEventModal(event) {
+    const props = event.extendedProps || {};
+    if (props.category !== 'event') return;
+
+    const titleEl = document.getElementById('dailyEventModalTitle');
+    const bodyEl = document.getElementById('dailyEventModalBody');
+    const modalEl = document.getElementById('dailyEventModal');
+    if (!bodyEl || !modalEl) return;
+
+    if (titleEl) {
+      titleEl.textContent = event.title || 'Shift Details';
+    }
+
+    bodyEl.innerHTML = '';
+
+    const meta = document.createElement('div');
+    meta.className = 'dsb-modal-meta';
+    appendMeta(meta, 'Date', props.event_date || (event.start ? event.start.toISOString().slice(0, 10) : ''));
+    appendMeta(meta, 'Original', props.original_user_name || '');
+    appendMeta(meta, 'Assigned', props.assigned_user_name || (props.assigned_user_id != null ? `#${props.assigned_user_id}` : ''));
+    appendMeta(meta, 'School', props.school_name || props.school || '');
+    appendMeta(meta, 'Time', props.start_time && props.end_time ? `${props.start_time}-${props.end_time}` : (props.start_time || props.end_time || ''));
+    bodyEl.appendChild(meta);
+
+    appendText(bodyEl, 'div', 'Class Details', 'dsb-modal-section-title');
+
+    const details = Array.isArray(props.details) ? props.details : [];
+    if (!details.length) {
+      appendText(bodyEl, 'div', 'No class details.', 'text-muted small');
+    } else {
+      const list = document.createElement('div');
+      list.className = 'dsb-class-detail-list';
+
+      details.forEach((detail) => {
+        const row = document.createElement('div');
+        row.className = 'dsb-class-detail-row';
+
+        const start = detail?.start_hm || '';
+        const minutes = detail?.lesson_min != null ? Number(detail.lesson_min) : null;
+        const startMin = hhmmToMin(start);
+        const end = startMin != null && minutes != null ? minToHhmm(startMin + minutes) : '';
+        const range = start && end ? `${start}-${end}` : (start || '-');
+
+        appendText(row, 'span', range, 'dsb-class-detail-time');
+        appendText(row, 'span', detail?.lesson_code || '-', 'dsb-class-detail-code');
+        appendText(row, 'span', detail?.lesson_name || '-', 'dsb-class-detail-name');
+        appendText(row, 'span', minutes != null ? `${minutes} min` : (detail?.lesson_type || '-'), 'dsb-class-detail-min');
+
+        list.appendChild(row);
+      });
+
+      bodyEl.appendChild(list);
+    }
+
+    if (props.notes) {
+      appendText(bodyEl, 'div', 'Notes', 'dsb-modal-section-title');
+      const notes = document.createElement('div');
+      notes.className = 'dsb-modal-notes';
+      notes.textContent = props.notes;
+      bodyEl.appendChild(notes);
+    }
+
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+  }
+
   const calendarEl = document.getElementById('dailyCalendar');
   if (calendarEl && window.FullCalendar) {
+    function dailyEventContent(arg) {
+      const event = arg.event;
+      const props = event.extendedProps || {};
+      const wrap = document.createElement('div');
+      wrap.className = 'dsb-fc-event';
+
+      const title = document.createElement('div');
+      title.className = 'dsb-fc-event-title';
+      title.textContent = event.title || '';
+      wrap.appendChild(title);
+
+      if (props.category === 'event') {
+        const original = props.original_user_name || null;
+        const assigned = props.assigned_user_name || (props.assigned_user_id != null ? `#${props.assigned_user_id}` : null);
+        const metaParts = [];
+
+        if (original) metaParts.push(`Original: ${original}`);
+        if (assigned) metaParts.push(`Assigned: ${assigned}`);
+
+        if (metaParts.length) {
+          const meta = document.createElement('div');
+          meta.className = 'dsb-fc-event-meta';
+          meta.textContent = metaParts.join(' / ');
+          wrap.appendChild(meta);
+        }
+
+        if (Array.isArray(props.details) && props.details.length) {
+          const codes = [...new Set(props.details.map((detail) => detail?.lesson_code).filter(Boolean))];
+          if (codes.length) {
+            const codeWrap = document.createElement('div');
+            codeWrap.className = 'dsb-fc-event-codes';
+            codes.forEach((code) => {
+              const pill = document.createElement('span');
+              pill.className = 'dsb-fc-code';
+              pill.textContent = code;
+              codeWrap.appendChild(pill);
+            });
+            wrap.appendChild(codeWrap);
+          }
+        }
+      }
+
+      return { domNodes: [wrap] };
+    }
+
     const calendar = new FullCalendar.Calendar(calendarEl, {
       locale: 'en',
       initialView: 'listDay',
@@ -226,6 +358,7 @@ document.addEventListener('DOMContentLoaded', function () {
       displayEventTime: false,
       headerToolbar: { left: '', center: 'title', right: '' },
       noEventsContent: 'No forecast events.',
+      eventContent: dailyEventContent,
       events(fetchInfo, successCallback, failureCallback) {
         const url = new URL(config.eventsUrl, window.location.origin);
         url.searchParams.set('start', fetchInfo.startStr);
@@ -248,6 +381,7 @@ document.addEventListener('DOMContentLoaded', function () {
       },
       eventClick(info) {
         info.jsEvent?.preventDefault();
+        openDailyEventModal(info.event);
       },
     });
     calendar.render();

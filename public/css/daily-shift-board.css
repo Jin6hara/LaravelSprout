@@ -46,6 +46,142 @@
   min-width: 680px;
 }
 
+.dsb-fc-event {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.18rem 0.45rem;
+  min-width: 0;
+}
+
+.dsb-fc-event-title {
+  font-weight: 700;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.dsb-fc-event-meta {
+  font-size: 0.76rem;
+  line-height: 1.25;
+  opacity: 0.95;
+  white-space: normal;
+}
+
+.dsb-fc-event-codes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.18rem;
+}
+
+.dsb-fc-code {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  padding: 0.03rem 0.3rem;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.88);
+  color: #212529;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.dsb-modal-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.35rem 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.dsb-modal-meta-item {
+  display: flex;
+  gap: 0.35rem;
+  min-width: 0;
+  font-size: 0.86rem;
+}
+
+.dsb-modal-meta-label {
+  flex: 0 0 auto;
+  color: #6c757d;
+  font-weight: 600;
+}
+
+.dsb-modal-meta-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.dsb-modal-section-title {
+  margin: 0.75rem 0 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #343a40;
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 0.18rem;
+}
+
+.dsb-class-detail-list {
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dsb-class-detail-row {
+  display: grid;
+  grid-template-columns: 90px 90px minmax(0, 1fr) 80px;
+  gap: 0.45rem;
+  align-items: center;
+  padding: 0.32rem 0.5rem;
+  border-bottom: 1px solid #edf0f2;
+  font-size: 0.84rem;
+}
+
+.dsb-class-detail-row:last-child {
+  border-bottom: none;
+}
+
+.dsb-class-detail-time {
+  color: #495057;
+  font-variant-numeric: tabular-nums;
+}
+
+.dsb-class-detail-code {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
+  padding: 0.05rem 0.35rem;
+  border-radius: 3px;
+  background: #e9ecef;
+  font-weight: 700;
+}
+
+.dsb-class-detail-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dsb-class-detail-min {
+  color: #6c757d;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.dsb-modal-notes {
+  white-space: pre-wrap;
+  font-size: 0.86rem;
+  color: #495057;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 0.5rem;
+}
+
 .dsb-sub-summary {
   height: 320px;
   min-height: 180px;

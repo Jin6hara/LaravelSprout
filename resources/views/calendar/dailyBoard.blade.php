@@ -205,6 +205,18 @@
         <span class="dsb-resize-grip">&#8942;&#8942;&#8942;</span>
     </div>
 </div>
+
+<div class="modal fade" id="dailyEventModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title mb-0" id="dailyEventModalTitle">Shift Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="dailyEventModalBody">Reading...</div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('styles')
