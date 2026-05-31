@@ -2,23 +2,27 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\LeaveExcused;
 use App\Enums\LeaveKind;
-use App\Enums\LeaveStatus;
 use App\Http\Requests\Leave\AllReportRequest;
 use App\Http\Requests\Leave\ReportLeaveRequest;
 use App\Http\Requests\Leave\StoreLeaveRequest;
 use App\Models\Leave;
 use App\Models\User;
 use App\Services\CurrentScopeService;
-use App\Services\LeaveBalanceService;
+use App\Services\Leave\CancelLeaveService;
+use App\Services\Leave\ReportLeaveService;
+use App\Enums\LeaveExcused;
+use App\Enums\LeaveStatus;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class LeaveController extends Controller
 {
-    public function __construct(private CurrentScopeService $scopeService) {}
+    public function __construct(
+        private CurrentScopeService $scopeService,
+        private CancelLeaveService $cancelService,
+        private ReportLeaveService $reportService,
+    ) {}
 
     /**
      * 休暇登録フォーム表示（管理者用）
@@ -76,15 +80,7 @@ class LeaveController extends Controller
     {
         $this->authorize('cancel', $leave);
 
-        DB::transaction(function () use ($leave) {
-            $wasApproved = $leave->status === LeaveStatus::Approved->value;
-
-            $leave->update(['status' => LeaveStatus::Cancelled->value]);
-
-            if ($wasApproved) {
-                app(LeaveBalanceService::class)->revert($leave);
-            }
-        });
+        $this->cancelService->handle($leave);
 
         return back()->with('toast', '申請を取り消しました。');
     }
@@ -179,28 +175,11 @@ class LeaveController extends Controller
             return back()->with('toast_errors', ['Already submitted.']);
         }
 
-        $validated = $request->validated();
-
-        $leave->update([
-            'reason'      => $validated['reason'],
-            'handle_type' => $validated['handle_type'],
-        ]);
-
-        if ($request->hasFile('attachment')) {
-            $file = $request->file('attachment');
-            DB::transaction(function () use ($file, $leave) {
-                if ($leave->attachment) {
-                    Storage::disk('local')->delete($leave->attachment->path);
-                    $leave->attachment->delete();
-                }
-                $path = $file->store('attachments/' . now()->format('Y/m'), 'local');
-                $leave->attachment()->create([
-                    'path'          => $path,
-                    'original_name' => $file->getClientOriginalName(),
-                    'size'          => $file->getSize(),
-                ]);
-            });
-        }
+        $this->reportService->handle(
+            $leave,
+            $request->validated(),
+            $request->hasFile('attachment') ? $request->file('attachment') : null,
+        );
 
         return back()->with('toast', 'Submitted.');
     }
