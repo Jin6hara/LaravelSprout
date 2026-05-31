@@ -259,10 +259,24 @@ document.addEventListener('DOMContentLoaded', function () {
     const storageKey = handle.dataset.storageKey;
     const target = document.getElementById(targetId);
     if (!target) return;
+    const linkedTargets = targetId === 'dailyCalendarPane'
+      ? [document.getElementById('dailySubSummary')].filter(Boolean)
+      : [];
+
+    function applyHeight(height) {
+      const px = `${Math.round(height)}px`;
+      target.style.height = px;
+      linkedTargets.forEach((el) => {
+        el.style.height = px;
+      });
+      if (targetId === 'dailyCalendarPane' && window.dailyShiftBoardCalendar) {
+        window.dailyShiftBoardCalendar.updateSize();
+      }
+    }
 
     const saved = Number(localStorage.getItem(storageKey));
     if (saved) {
-      target.style.height = `${Math.max(180, Math.min(saved, window.innerHeight * 0.78))}px`;
+      applyHeight(Math.max(180, Math.min(saved, window.innerHeight * 0.78)));
     }
 
     handle.addEventListener('mousedown', (e) => {
@@ -272,10 +286,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       const onMove = (ev) => {
         const next = Math.max(180, Math.min(startHeight + ev.clientY - startY, window.innerHeight * 0.78));
-        target.style.height = `${Math.round(next)}px`;
-        if (targetId === 'dailyCalendarPane' && window.dailyShiftBoardCalendar) {
-          window.dailyShiftBoardCalendar.updateSize();
-        }
+        applyHeight(next);
       };
 
       const onUp = () => {
