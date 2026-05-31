@@ -267,6 +267,12 @@ class EventAssignController extends Controller
         $this->authorize('update', $event);
 
         $validated = $request->validated();
+        if ($this->hasUpdateConflict($event, $validated['updated_at'] ?? null)) {
+            return back()
+                ->withInput()
+                ->with('toast', 'Already updated by others. Please reload before saving.');
+        }
+        unset($validated['updated_at']);
 
         // ⬇︎ H:i または H:i:s を安全に H:i:s へ正規化（例外を出さない）
         $normalizeTime = function ($val) {
@@ -329,6 +335,17 @@ class EventAssignController extends Controller
             }
             $this->authorize('update', $event);
             $this->authorizeReferencedUsers($data);
+            if ($this->hasUpdateConflict($event, $data['updated_at'] ?? null)) {
+                $results[] = [
+                    'id' => $event->id,
+                    'ok' => false,
+                    'conflict' => true,
+                    'message' => 'Already updated by others. Please reload before saving.',
+                    'current_updated_at' => $this->eventUpdateToken($event),
+                ];
+                continue;
+            }
+            unset($data['updated_at']);
 
             // H:i → H:i:s に正規化
             foreach (['start_time', 'end_time'] as $k) {
@@ -350,15 +367,23 @@ class EventAssignController extends Controller
 
             $event->fill($data)->save(); // Observerがあれば最終整合を取ってくれます
 
-            $results[] = ['id' => $event->id, 'ok' => true];
+            $results[] = [
+                'id' => $event->id,
+                'ok' => true,
+                'updated_at' => $this->eventUpdateToken($event),
+            ];
         }
 
         $okCount = collect($results)->where('ok', true)->count();
         $ngCount = count($results) - $okCount;
+        $conflictCount = collect($results)->where('conflict', true)->count();
 
         // ✅ JSON返却でもフラッシュを仕込む
+        $failureMessage = $conflictCount
+            ? 'Some shifts were already updated by others. Please reload before saving.'
+            : 'Some shifts failed to save.';
         $flash = $ngCount
-            ? "Some shifts failed to save (saved: {$okCount} / failed: {$ngCount})."
+            ? "{$failureMessage} (saved: {$okCount} / failed: {$ngCount})."
             : "Updated {$okCount} shift(s).";
         if (! $request->headers->has('X-Daily-Board')) {
             session()->flash('toast', $flash);
@@ -369,7 +394,7 @@ class EventAssignController extends Controller
             'updated' => $okCount,
             'failed'  => $ngCount,
             'results' => $results,
-            'message' => $ngCount ? 'Some shifts failed to save.' : "Updated {$okCount} shift(s).",
+            'message' => $ngCount ? $failureMessage : "Updated {$okCount} shift(s).",
         ]);
     }
 
@@ -666,5 +691,22 @@ class EventAssignController extends Controller
             $targetUser = User::findOrFail((int) $userId);
             $this->authorize('view', $targetUser);
         }
+    }
+
+    /**
+     * 画面表示時の更新時刻と現在の更新時刻が違う場合は、古い画面からの保存として扱う
+     */
+    private function hasUpdateConflict(Event $event, ?string $submittedUpdatedAt): bool
+    {
+        if ($submittedUpdatedAt === null || $submittedUpdatedAt === '' || $event->updated_at === null) {
+            return false;
+        }
+
+        return $this->eventUpdateToken($event) !== Carbon::parse($submittedUpdatedAt)->format('Y-m-d H:i:s');
+    }
+
+    private function eventUpdateToken(Event $event): ?string
+    {
+        return $event->updated_at?->format('Y-m-d H:i:s');
     }
 }

@@ -140,7 +140,10 @@
                     <tbody>
                     @foreach($events as $event)
                         <tr class="js-daily-event-row" data-event-id="{{ $event->id }}">
-                            <td class="text-muted">#{{ $event->id }}</td>
+                            <td class="text-muted">
+                                #{{ $event->id }}
+                                <input type="hidden" name="updated_at" value="{{ $event->updated_at?->format('Y-m-d H:i:s') }}">
+                            </td>
                             <td>
                                 <input list="dailyTitleOptions" name="title" class="form-control form-control-sm" value="{{ $event->title }}" style="min-width:9rem">
                             </td>

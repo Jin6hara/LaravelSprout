@@ -28,8 +28,17 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function failedMessage(rows, data) {
+    const results = Array.isArray(data.results) ? data.results : [];
+    const hasConflict = results.some((result) => result?.conflict);
     if (rows.length === 1) {
-      return `Event #${rows[0].dataset.eventId} failed to save.`;
+      const rowResult = results.find((result) => String(result.id) === String(rows[0].dataset.eventId));
+      if (rowResult?.conflict || hasConflict) {
+        return `Event #${rows[0].dataset.eventId} was already updated by others. Please reload.`;
+      }
+      return rowResult?.message || data.message || `Event #${rows[0].dataset.eventId} failed to save.`;
+    }
+    if (hasConflict) {
+      return 'Some events were already updated by others. Please reload before saving.';
     }
     return data.message || 'Some events failed to save.';
   }
@@ -69,6 +78,15 @@ document.addEventListener('DOMContentLoaded', function () {
     out.value = Math.floor(diff / 60) + ':' + pad2(diff % 60);
   }
 
+  function stableJson(data) {
+    return JSON.stringify(
+      Object.keys(data).sort().reduce((sorted, key) => {
+        sorted[key] = data[key];
+        return sorted;
+      }, {})
+    );
+  }
+
   function collectRow(row) {
     const data = { id: Number(row.dataset.eventId) };
     row.querySelectorAll('input[name], select[name], textarea[name]').forEach((field) => {
@@ -77,10 +95,53 @@ document.addEventListener('DOMContentLoaded', function () {
     return data;
   }
 
+  function rowComparableState(row) {
+    const data = collectRow(row);
+    delete data.updated_at;
+    return stableJson(data);
+  }
+
+  function setRowBaseline(row) {
+    row.dataset.originalState = rowComparableState(row);
+    row.classList.remove('is-dirty');
+  }
+
+  function rowIsDirty(row) {
+    return row.dataset.originalState !== rowComparableState(row);
+  }
+
+  function refreshRowDirtyState(row) {
+    row.classList.toggle('is-dirty', rowIsDirty(row));
+  }
+
+  function applySaveResults(rows, data) {
+    const results = Array.isArray(data.results) ? data.results : [];
+    const byId = new Map(results.map((result) => [String(result.id), result]));
+
+    rows.forEach((row) => {
+      const result = byId.get(String(row.dataset.eventId));
+      const ok = result ? result.ok !== false : data.ok !== false;
+
+      row.classList.remove('is-saving');
+      row.classList.add(ok ? 'is-saved' : 'is-error');
+
+      if (!ok) return;
+
+      const updatedAt = result?.updated_at;
+      const token = row.querySelector('[name="updated_at"]');
+      if (updatedAt && token) {
+        token.value = updatedAt;
+      }
+      setRowBaseline(row);
+    });
+  }
+
   async function saveRows(rows) {
-    const targetRows = Array.from(rows).filter(Boolean);
+    const candidates = Array.from(rows).filter(Boolean);
+    candidates.forEach(refreshRowDirtyState);
+    const targetRows = candidates.filter(rowIsDirty);
     if (!targetRows.length) {
-      setStatus('No rows to save.', 'warning', 3000);
+      setStatus('No changed rows to save.', 'warning', 3000);
       return false;
     }
 
@@ -107,12 +168,12 @@ document.addEventListener('DOMContentLoaded', function () {
       const data = await res.json().catch(() => ({}));
       const ok = res.ok && data.ok !== false;
 
-      targetRows.forEach((row) => {
-        row.classList.remove('is-saving');
-        row.classList.add(ok ? 'is-saved' : 'is-error');
-      });
+      applySaveResults(targetRows, data);
 
       if (!ok) {
+        if (Number(data.updated || 0) > 0 && window.dailyShiftBoardCalendar) {
+          window.dailyShiftBoardCalendar.refetchEvents();
+        }
         setStatus(failedMessage(targetRows, data), 'danger', 3000);
         return false;
       }
@@ -136,12 +197,30 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  document.querySelectorAll('.js-daily-event-row').forEach((row) => recalcTotal(row));
+  document.querySelectorAll('.js-daily-event-row').forEach((row) => {
+    recalcTotal(row);
+    setRowBaseline(row);
+  });
 
   document.addEventListener('input', (e) => {
     if (!e.target.classList.contains('js-dsb-time')) return;
     const row = e.target.closest('.js-daily-event-row');
-    if (row) recalcTotal(row, true);
+    if (row) {
+      recalcTotal(row, true);
+      refreshRowDirtyState(row);
+    }
+  });
+
+  document.addEventListener('input', (e) => {
+    const row = e.target.closest('.js-daily-event-row');
+    if (!row || !e.target.matches('input[name], select[name], textarea[name]')) return;
+    refreshRowDirtyState(row);
+  });
+
+  document.addEventListener('change', (e) => {
+    const row = e.target.closest('.js-daily-event-row');
+    if (!row || !e.target.matches('input[name], select[name], textarea[name]')) return;
+    refreshRowDirtyState(row);
   });
 
   document.addEventListener('click', (e) => {

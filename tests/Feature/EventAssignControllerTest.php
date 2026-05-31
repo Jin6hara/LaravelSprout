@@ -382,6 +382,7 @@ class EventAssignControllerTest extends TestCase
             ->postJson(route('events.bulk_update'), [
                 'items' => [[
                     'id'         => $event->id,
+                    'updated_at' => $event->updated_at?->format('Y-m-d H:i:s'),
                     'event_date' => '2026-05-31',
                     'status'     => 'fixed',
                     'type'       => 'regular_time',
@@ -396,6 +397,49 @@ class EventAssignControllerTest extends TestCase
         $this->assertDatabaseHas('events', [
             'id'     => $event->id,
             'status' => 'fixed',
+        ]);
+    }
+
+    /**
+     * シナリオ 9d: 古い画面からの一括更新は updated_at の不一致で拒否される
+     */
+    public function test_bulk_update_rejects_stale_event_payload(): void
+    {
+        [$admin, $scope, $district, $department] = $this->makeAdmin();
+
+        $event = Event::factory()->create([
+            'district_id'   => $district->id,
+            'department_id' => $department->id,
+            'event_date'    => '2026-05-31',
+            'status'        => 'pending',
+            'type'          => 'regular_time',
+        ]);
+
+        $staleUpdatedAt = $event->updated_at?->copy()->subMinute()->format('Y-m-d H:i:s');
+
+        $this->actingAs($admin)
+            ->withSession(['selected_scope_id' => $scope->id])
+            ->postJson(route('events.bulk_update'), [
+                'items' => [[
+                    'id'         => $event->id,
+                    'updated_at' => $staleUpdatedAt,
+                    'event_date' => '2026-05-31',
+                    'status'     => 'fixed',
+                    'type'       => 'regular_time',
+                ]],
+            ])
+            ->assertOk()
+            ->assertJson([
+                'ok'      => false,
+                'updated' => 0,
+                'failed'  => 1,
+                'message' => 'Some shifts were already updated by others. Please reload before saving.',
+            ])
+            ->assertJsonPath('results.0.conflict', true);
+
+        $this->assertDatabaseHas('events', [
+            'id'     => $event->id,
+            'status' => 'pending',
         ]);
     }
 

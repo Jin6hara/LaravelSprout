@@ -250,6 +250,7 @@
             data-event-id="{{ $event->id }}">
           @csrf
           @method('PUT')
+          <input type="hidden" name="updated_at" value="{{ $event->updated_at?->format('Y-m-d H:i:s') }}">
 
           <div class="card-body py-1 px-2 light-blue">
             <div class="mb-0 d-grid gap-0"> {{-- gapは下記四項目すべてに適用する --}}
@@ -655,15 +656,78 @@ document.addEventListener('input', (e) => {
     return obj;
   }
 
+  function stableJson(data) {
+    return JSON.stringify(
+      Object.keys(data).sort().reduce((sorted, key) => {
+        sorted[key] = data[key];
+        return sorted;
+      }, {})
+    );
+  }
+
+  function formComparableState(form) {
+    const data = formToObject(form);
+    delete data.updated_at;
+    return stableJson(data);
+  }
+
+  function setFormBaseline(form) {
+    form.dataset.originalState = formComparableState(form);
+    form.classList.remove('is-dirty');
+  }
+
+  function isFormDirty(form) {
+    return form.dataset.originalState !== formComparableState(form);
+  }
+
+  function refreshFormDirtyState(form) {
+    form.classList.toggle('is-dirty', isFormDirty(form));
+  }
+
+  function currentEventForms() {
+    let forms = document.querySelectorAll('.js-event-form');
+    if (!forms.length) {
+      forms = document.querySelectorAll('.row .card form'); // 従来の対象（後方互換）
+    }
+    return Array.from(forms);
+  }
+
+  function initFormBaselines() {
+    currentEventForms().forEach((form) => {
+      const card = form.closest('.card');
+      if (card) recalcTotal(card);
+      setFormBaseline(form);
+    });
+  }
+
+  document.addEventListener('input', (e) => {
+    const form = e.target.closest('.js-event-form');
+    if (!form || !e.target.matches('input[name], select[name], textarea[name]')) return;
+    refreshFormDirtyState(form);
+  });
+
+  document.addEventListener('change', (e) => {
+    const form = e.target.closest('.js-event-form');
+    if (!form || !e.target.matches('input[name], select[name], textarea[name]')) return;
+    refreshFormDirtyState(form);
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initFormBaselines);
+  } else {
+    initFormBaselines();
+  }
+
   bulkBtn.addEventListener('click', async () => {
     // まずはイベント編集フォーム（識別クラス）を優先的に取得。無ければ従来セレクタを使用。
-    let cards = document.querySelectorAll('.js-event-form');
-    if (!cards.length) {
-      cards = document.querySelectorAll('.row .card form'); // 従来の対象（後方互換）
-    }
+    const cards = currentEventForms();
     const items = [];
 
     cards.forEach(form => {
+      if (!isFormDirty(form)) return;
+      const card = form.closest('.card');
+      if (card) recalcTotal(card, { force: true });
+
       // data-event-id を優先、無ければ従来の URL 解析で補完
       const dataId = form.dataset?.eventId ? parseInt(form.dataset.eventId, 10) : null;
       const urlId  = parseEventIdFromAction(form.action);
@@ -675,7 +739,7 @@ document.addEventListener('input', (e) => {
     });
 
     if (!items.length) {
-      alert('保存対象がありません。');
+      alert('No changed shifts to save.');
       return;
     }
 
@@ -690,9 +754,12 @@ document.addEventListener('input', (e) => {
         },
         body: JSON.stringify({ items }),
       });
-      if (!res.ok) {
-        const json = await res.json().catch(() => ({}));
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json?.ok === false) {
         alert(json?.message || '保存に失敗しました。');
+        if (json?.updated > 0) {
+          location.reload();
+        }
         return;
       }
       // ✅ 成功時はアラートを出さず、フラッシュ表示のために即リロード
