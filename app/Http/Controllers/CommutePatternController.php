@@ -41,11 +41,10 @@ class CommutePatternController extends Controller
 
         $pattern = null;
         if (! empty($data['pattern_id'])) {
-            abort_unless($request->user()?->hasAnyRole(['admin', 'super_admin']), 403, 'Only admins can edit commute patterns.');
-
             $pattern = CommutePattern::query()
                 ->where('user_id', $target->id)
                 ->findOrFail($data['pattern_id']);
+            $this->authorize('update', $pattern);
         }
 
         $pattern = DB::transaction(function () use ($data, $target, $pattern) {
@@ -113,10 +112,8 @@ class CommutePatternController extends Controller
 
     public function destroy(Request $request, CommutePattern $pattern): JsonResponse
     {
-        abort_unless($request->user()?->hasAnyRole(['admin', 'super_admin']), 403, 'Only admins can delete commute patterns.');
-
         $target = $pattern->user()->firstOrFail();
-        $this->authorize('update', $target);
+        $this->authorize('delete', $pattern);
 
         $pattern->delete();
 

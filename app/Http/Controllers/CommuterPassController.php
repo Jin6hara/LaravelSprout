@@ -33,10 +33,9 @@ class CommuterPassController extends Controller
 
         $selectedPass = null;
         if ($request->filled('pass')) {
-            abort_unless($canManagePasses, 403);
-
             $selectedPass = $target->commuterPasses()
                 ->findOrFail($request->integer('pass'));
+            $this->authorize('update', $selectedPass);
         }
 
         return view('routes.registerPass', [
@@ -79,10 +78,8 @@ class CommuterPassController extends Controller
      */
     public function update(StoreCommuterPassRequest $request, CommuterPass $pass): RedirectResponse
     {
-        abort_unless($request->user()?->hasAnyRole(['admin', 'super_admin']), 403);
-
         $target = $pass->user()->firstOrFail();
-        $this->authorize('update', $target);
+        $this->authorize('update', $pass);
 
         $data = $request->validated();
 
@@ -104,10 +101,8 @@ class CommuterPassController extends Controller
      */
     public function destroy(Request $request, CommuterPass $pass): RedirectResponse
     {
-        abort_unless($request->user()?->hasAnyRole(['admin', 'super_admin']), 403);
-
         $target = $pass->user()->firstOrFail();
-        $this->authorize('update', $target);
+        $this->authorize('delete', $pass);
 
         $pass->delete();
 

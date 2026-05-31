@@ -116,6 +116,7 @@
                     <textarea name="note"
                         id="note"
                         rows="1"
+                        placeholder="Transfer details, route notes, etc."
                         class="form-control form-control-sm">{{ old('note', $selectedPass?->note) }}</textarea>
                 </div>
             </div>
