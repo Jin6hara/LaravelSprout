@@ -211,6 +211,8 @@ class GenerateMonthlyExpensesByPatternTest extends TestCase
 
         $sunLeg = $pattern->legs()->where('dow', 'Sun')->firstOrFail();
 
+        $user->assignRole('admin');
+
         $this->actingAs($user)->putJson(route('api.commute_patterns.batch'), [
             'pattern_id' => $pattern->id,
             'user_id' => $user->id,
