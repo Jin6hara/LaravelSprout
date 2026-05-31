@@ -16,6 +16,8 @@
         if (preg_match('/^\s*(\d{2}:\d{2})/', $s, $m)) return $m[1];
         return '';
     };
+    $previousDate = \Illuminate\Support\Carbon::parse($selectedDate)->subDay()->toDateString();
+    $nextDate = \Illuminate\Support\Carbon::parse($selectedDate)->addDay()->toDateString();
     $titleOptions = ['Support Shift', 'OPPT/ML', '#Memo', 'Cover Shift'];
 @endphp
 
@@ -40,6 +42,12 @@
             </div>
             <div class="col-auto">
                 <button type="submit" class="btn btn-sm btn-primary">Select</button>
+            </div>
+            <div class="col-auto">
+                <div class="btn-group btn-group-sm" role="group" aria-label="Daily navigation">
+                    <a href="{{ route('calendar.daily_assigner', ['date' => $previousDate]) }}" class="btn btn-outline-secondary">&lt;</a>
+                    <a href="{{ route('calendar.daily_assigner', ['date' => $nextDate]) }}" class="btn btn-outline-secondary">&gt;</a>
+                </div>
             </div>
             <div class="col-auto">
                 <a href="{{ route('calendar.daily_assigner', ['date' => now()->toDateString()]) }}" class="btn btn-sm btn-outline-secondary">Today</a>
