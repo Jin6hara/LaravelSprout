@@ -256,7 +256,14 @@ class EventAssignControllerTest extends TestCase
             ->get(route('calendar.daily_assigner', ['date' => '2026-05-31']))
             ->assertOk()
             ->assertSee('Daily Shift Board')
-            ->assertSee('Scope School');
+            ->assertSee('Scope School')
+            ->assertSee('Tentative Sublist Preview')
+            ->assertSee('Master Sublist Preview')
+            ->assertSee('Final Sublist Preview')
+            ->assertSee(route('calendar.edit.pdf.preview', [
+                'mode' => 'tentative',
+                'event_date' => '2026-05-31',
+            ]));
     }
 
     // =========================================================================

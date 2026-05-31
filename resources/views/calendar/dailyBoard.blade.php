@@ -206,7 +206,15 @@
                                 <textarea name="notes" class="form-control form-control-sm" rows="1" style="min-width:17rem">{{ $event->notes }}</textarea>
                             </td>
                             <td>
+                                <div class="d-inline-flex align-items-center gap-2">
                                 <button type="button" class="btn btn-sm btn-success js-dsb-row-save">Save</button>
+                                <div class="form-check mb-0">
+                                    <input class="form-check-input js-daily-exclude-event" type="checkbox" value="{{ $event->id }}" id="dailyEx{{ $event->id }}">
+                                    <label class="form-check-label small" for="dailyEx{{ $event->id }}">
+                                        Exclude
+                                    </label>
+                                </div>
+                                </div>
                             </td>
                         </tr>
                     @endforeach
@@ -218,6 +226,27 @@
 
     <div class="dsb-resize-handle" data-target="dailyEditorPane" data-storage-key="dailyShiftBoardEditorHeight">
         <span class="dsb-resize-grip">&#8942;&#8942;&#8942;</span>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 mt-2">
+        <a href="{{ route('calendar.edit.pdf.preview', ['mode' => 'tentative', 'event_date' => $selectedDate]) }}"
+            target="_blank"
+            rel="noopener"
+            class="btn btn-sm btn-outline-primary js-daily-sublist-preview">
+            Tentative Sublist Preview
+        </a>
+        <a href="{{ route('calendar.edit.pdf.preview', ['mode' => 'master', 'event_date' => $selectedDate]) }}"
+            target="_blank"
+            rel="noopener"
+            class="btn btn-sm btn-outline-primary js-daily-sublist-preview">
+            Master Sublist Preview
+        </a>
+        <a href="{{ route('calendar.edit.pdf.preview', ['mode' => 'final', 'event_date' => $selectedDate]) }}"
+            target="_blank"
+            rel="noopener"
+            class="btn btn-sm btn-outline-primary js-daily-sublist-preview">
+            Final Sublist Preview
+        </a>
     </div>
 </div>
 
@@ -248,6 +277,19 @@
         eventsUrl: @json(route('calendar.forecast.events')),
         bulkUpdateUrl: @json(route('events.bulk_update')),
     };
+</script>
+<script>
+    document.addEventListener('click', (e) => {
+        const link = e.target.closest('.js-daily-sublist-preview');
+        if (!link) return;
+
+        const url = new URL(link.href);
+        url.searchParams.delete('exclude_event_ids[]');
+        document.querySelectorAll('.js-daily-exclude-event:checked').forEach((checkbox) => {
+            url.searchParams.append('exclude_event_ids[]', checkbox.value);
+        });
+        link.href = url.toString();
+    });
 </script>
 <script src="{{ asset('js/daily-shift-board.js') }}?v={{ filemtime(public_path('js/daily-shift-board.js')) }}"></script>
 @endpush
