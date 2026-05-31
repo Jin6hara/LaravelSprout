@@ -87,7 +87,7 @@
     <div class="d-flex align-items-center justify-content-between mt-2 mb-2">
         <div class="fw-semibold">Shift Editor</div>
         <div class="d-flex align-items-center gap-2">
-            <span id="dailyBoardSaveStatus" class="small text-muted"></span>
+            <span id="dailyBoardSaveStatus" class="small text-muted d-none"></span>
             <button type="button"
                 class="btn btn-sm btn-primary"
                 id="dailyBoardBulkSave"

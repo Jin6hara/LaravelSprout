@@ -4,11 +4,34 @@ document.addEventListener('DOMContentLoaded', function () {
   const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
     || document.querySelector('input[name="_token"]')?.value;
   const statusEl = document.getElementById('dailyBoardSaveStatus');
+  let statusTimer = null;
 
-  function setStatus(message, kind = 'muted') {
+  function setStatus(message, kind = 'muted', autoClearMs = null) {
     if (!statusEl) return;
+    clearTimeout(statusTimer);
     statusEl.textContent = message || '';
-    statusEl.className = `small text-${kind}`;
+    statusEl.className = message ? `small text-${kind}` : 'small text-muted d-none';
+    if (autoClearMs && message) {
+      statusTimer = setTimeout(() => {
+        statusEl.textContent = '';
+        statusEl.className = 'small text-muted d-none';
+      }, autoClearMs);
+    }
+  }
+
+  function savedMessage(rows, data) {
+    if (rows.length === 1) {
+      return `Event #${rows[0].dataset.eventId} saved.`;
+    }
+    const count = Number(data.updated || rows.length);
+    return `${count} events saved.`;
+  }
+
+  function failedMessage(rows, data) {
+    if (rows.length === 1) {
+      return `Event #${rows[0].dataset.eventId} failed to save.`;
+    }
+    return data.message || 'Some events failed to save.';
   }
 
   function hhmmToMin(t) {
@@ -57,7 +80,7 @@ document.addEventListener('DOMContentLoaded', function () {
   async function saveRows(rows) {
     const targetRows = Array.from(rows).filter(Boolean);
     if (!targetRows.length) {
-      setStatus('No rows to save.', 'warning');
+      setStatus('No rows to save.', 'warning', 3000);
       return false;
     }
 
@@ -75,6 +98,7 @@ document.addEventListener('DOMContentLoaded', function () {
         headers: {
           'Content-Type': 'application/json',
           'X-CSRF-TOKEN': csrf,
+          'X-Daily-Board': '1',
           'Accept': 'application/json',
         },
         body: JSON.stringify({ items: targetRows.map(collectRow) }),
@@ -89,11 +113,11 @@ document.addEventListener('DOMContentLoaded', function () {
       });
 
       if (!ok) {
-        setStatus(data.message || 'Save failed.', 'danger');
+        setStatus(failedMessage(targetRows, data), 'danger', 3000);
         return false;
       }
 
-      setStatus(data.message || 'Saved.', 'success');
+      setStatus(savedMessage(targetRows, data), 'success', 3000);
       if (window.dailyShiftBoardCalendar) {
         window.dailyShiftBoardCalendar.refetchEvents();
       }
@@ -107,7 +131,7 @@ document.addEventListener('DOMContentLoaded', function () {
         row.classList.remove('is-saving');
         row.classList.add('is-error');
       });
-      setStatus('Network error.', 'danger');
+      setStatus('Network error.', 'danger', 3000);
       return false;
     }
   }

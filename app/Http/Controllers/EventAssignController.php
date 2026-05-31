@@ -357,15 +357,19 @@ class EventAssignController extends Controller
         $ngCount = count($results) - $okCount;
 
         // ✅ JSON返却でもフラッシュを仕込む
-        $flash = $ngCount ? "一部保存に失敗しました（保存: {$okCount} / 失敗: {$ngCount}）" : "Updated {$okCount} shift(s).";
-        session()->flash('toast', $flash);
+        $flash = $ngCount
+            ? "Some shifts failed to save (saved: {$okCount} / failed: {$ngCount})."
+            : "Updated {$okCount} shift(s).";
+        if (! $request->headers->has('X-Daily-Board')) {
+            session()->flash('toast', $flash);
+        }
 
         return response()->json([
             'ok'      => $ngCount === 0,
             'updated' => $okCount,
             'failed'  => $ngCount,
             'results' => $results,
-            'message' => $ngCount ? '一部保存に失敗しました' : 'すべて保存しました',
+            'message' => $ngCount ? 'Some shifts failed to save.' : "Updated {$okCount} shift(s).",
         ]);
     }
 
