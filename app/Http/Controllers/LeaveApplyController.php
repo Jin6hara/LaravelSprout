@@ -101,7 +101,7 @@ class LeaveApplyController extends Controller
         }
 
         $file = $request->file('attachment');
-        $path = $file->store('attachments/' . now()->format('Y/m'), 'public');
+        $path = $file->store('attachments/' . now()->format('Y/m'), 'local');
 
         return [
             'path'          => $path,
