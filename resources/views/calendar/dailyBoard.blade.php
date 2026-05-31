@@ -69,6 +69,10 @@
             </div>
         </section>
 
+        <div class="dsb-width-handle" title="Resize SUB width" aria-hidden="true">
+            <span class="dsb-width-grip">&#8942;</span>
+        </div>
+
         <aside class="dsb-sub-section">
             <div class="dsb-section-head">
                 <span>SUB</span>

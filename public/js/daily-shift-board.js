@@ -490,5 +490,48 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  function setupSubWidthHandle() {
+    const grid = document.querySelector('.dsb-top-grid');
+    const handle = document.querySelector('.dsb-width-handle');
+    if (!grid || !handle) return;
+
+    const storageKey = 'dailyShiftBoardSubWidth';
+    const saved = Number(localStorage.getItem(storageKey));
+    if (saved) {
+      grid.style.setProperty('--dsb-sub-width', `${Math.round(saved)}px`);
+    }
+
+    handle.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      const startX = e.clientX;
+      const startWidth = Number(
+        getComputedStyle(grid).getPropertyValue('--dsb-sub-width').replace('px', '').trim()
+      ) || 420;
+
+      const onMove = (ev) => {
+        const gridWidth = grid.getBoundingClientRect().width;
+        const maxWidth = Math.max(320, Math.min(720, gridWidth * 0.62));
+        const next = Math.max(320, Math.min(startWidth - (ev.clientX - startX), maxWidth));
+        grid.style.setProperty('--dsb-sub-width', `${Math.round(next)}px`);
+        if (window.dailyShiftBoardCalendar) {
+          window.dailyShiftBoardCalendar.updateSize();
+        }
+      };
+
+      const onUp = () => {
+        const current = Number(
+          getComputedStyle(grid).getPropertyValue('--dsb-sub-width').replace('px', '').trim()
+        ) || 420;
+        localStorage.setItem(storageKey, String(Math.round(current)));
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      };
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
+
   document.querySelectorAll('.dsb-resize-handle').forEach(setupResizeHandle);
+  setupSubWidthHandle();
 });
