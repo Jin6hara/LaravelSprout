@@ -226,6 +226,7 @@ use App\Http\Controllers\EventAssignController;
 use App\Http\Controllers\LeaveController;
 
 Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
+    Route::get('/forecast/day-assigner', [EventAssignController::class, 'dailyBoard'])->name('calendar.daily_assigner');
     Route::get('/shift_assigner', [EventAssignController::class, 'edit'])->name('calendar.edit');
     // PDF（モード: tentative|final|master）
     // Vue プレビュー画面

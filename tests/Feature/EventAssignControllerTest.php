@@ -29,6 +29,7 @@ use Tests\TestCase;
  *
  * [権限: admin ユーザー（正常系）]
  *   7. shift_assigner (edit) を表示できる → 200
+ *   7b. daily shift board を表示できる → 200
  *   8. store でスコープ内に Event が作成される → DB確認
  *   9. update でスコープ内の Event を更新できる → DB確認
  *  10. destroy でスコープ内の Event を削除できる → DB確認
@@ -137,6 +138,18 @@ class EventAssignControllerTest extends TestCase
     }
 
     /**
+     * シナリオ 2b: general ユーザーは daily shift board を表示できず welcome へリダイレクト
+     */
+    public function test_general_user_cannot_view_daily_shift_board(): void
+    {
+        $user = User::factory()->general()->create();
+
+        $this->actingAs($user)
+            ->get(route('calendar.daily_assigner'))
+            ->assertRedirect(route('welcome'));
+    }
+
+    /**
      * シナリオ 3: general ユーザーは Event を新規作成できず welcome へリダイレクト
      */
     public function test_general_user_cannot_store_event(): void
@@ -220,6 +233,30 @@ class EventAssignControllerTest extends TestCase
             ->withSession(['selected_scope_id' => $scope->id])
             ->get(route('calendar.edit'))
             ->assertOk();
+    }
+
+    /**
+     * シナリオ 7b: admin は指定日の daily shift board を表示できる
+     */
+    public function test_admin_can_view_daily_shift_board(): void
+    {
+        [$admin, $scope, $district, $department] = $this->makeAdmin();
+
+        Event::factory()->create([
+            'district_id'   => $district->id,
+            'department_id' => $department->id,
+            'event_date'    => '2026-05-31',
+            'status'        => 'pending',
+            'type'          => 'regular_time',
+            'school_name'   => 'Scope School',
+        ]);
+
+        $this->actingAs($admin)
+            ->withSession(['selected_scope_id' => $scope->id])
+            ->get(route('calendar.daily_assigner', ['date' => '2026-05-31']))
+            ->assertOk()
+            ->assertSee('Daily Shift Board')
+            ->assertSee('Scope School');
     }
 
     // =========================================================================
@@ -322,6 +359,43 @@ class EventAssignControllerTest extends TestCase
             'id'             => $event->id,
             'school_name'    => 'Test School',
             'total_duration' => '8:00',
+        ]);
+    }
+
+    /**
+     * シナリオ 9c: daily shift board 用の一括更新 API で status を即時更新できる
+     */
+    public function test_admin_can_bulk_update_event_status_for_daily_shift_board(): void
+    {
+        [$admin, $scope, $district, $department] = $this->makeAdmin();
+
+        $event = Event::factory()->create([
+            'district_id'   => $district->id,
+            'department_id' => $department->id,
+            'event_date'    => '2026-05-31',
+            'status'        => 'pending',
+            'type'          => 'regular_time',
+        ]);
+
+        $this->actingAs($admin)
+            ->withSession(['selected_scope_id' => $scope->id])
+            ->postJson(route('events.bulk_update'), [
+                'items' => [[
+                    'id'         => $event->id,
+                    'event_date' => '2026-05-31',
+                    'status'     => 'fixed',
+                    'type'       => 'regular_time',
+                ]],
+            ])
+            ->assertOk()
+            ->assertJson([
+                'ok'      => true,
+                'updated' => 1,
+            ]);
+
+        $this->assertDatabaseHas('events', [
+            'id'     => $event->id,
+            'status' => 'fixed',
         ]);
     }
 

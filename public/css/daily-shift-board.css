@@ -1,0 +1,182 @@
+.daily-shift-board {
+  font-size: 0.86rem;
+}
+
+.dsb-date-form {
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 0.5rem;
+}
+
+.dsb-top-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.dsb-calendar-section,
+.dsb-sub-section {
+  min-width: 0;
+}
+
+.dsb-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 28px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 1px solid #adb5bd;
+  margin-bottom: 0.3rem;
+}
+
+.dsb-calendar-pane {
+  height: 320px;
+  min-height: 180px;
+  max-height: 78vh;
+  overflow: auto;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  padding: 0.35rem;
+  background: #fff;
+}
+
+#dailyCalendar {
+  min-width: 680px;
+}
+
+.dsb-sub-summary {
+  height: 320px;
+  min-height: 180px;
+  max-height: 78vh;
+  overflow: auto;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  padding: 0.5rem;
+  background: #f8f9fa;
+}
+
+.dsb-sub-group {
+  margin-bottom: 0.75rem;
+}
+
+.dsb-sub-group-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #6c757d;
+  text-transform: uppercase;
+  margin-bottom: 0.2rem;
+}
+
+.dsb-sub-pill {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin: 0 0.2rem 0.25rem 0;
+  padding: 0.14rem 0.38rem;
+  border-radius: 4px;
+  background: #fff3cd;
+  border: 1px solid #ffe69c;
+  line-height: 1.15;
+}
+
+.dsb-sub-pill--absent {
+  background: #cff4fc;
+  border-color: #9eeaf9;
+}
+
+.dsb-sub-time {
+  font-size: 0.68rem;
+  color: #6c757d;
+}
+
+.dsb-resize-handle {
+  height: 10px;
+  margin: 0.35rem 0;
+  background: #dee2e6;
+  border-top: 1px solid #adb5bd;
+  border-bottom: 1px solid #adb5bd;
+  cursor: ns-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.dsb-resize-grip {
+  font-size: 0.6rem;
+  color: #6c757d;
+  letter-spacing: 1px;
+  line-height: 1;
+}
+
+.dsb-editor-pane {
+  height: 430px;
+  min-height: 180px;
+  max-height: 78vh;
+  overflow: auto;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.daily-shift-table {
+  font-size: 0.8125rem;
+  margin-bottom: 0;
+}
+
+.daily-shift-table th,
+.daily-shift-table td {
+  padding: 0.25rem 0.35rem;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.daily-shift-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.daily-shift-table .form-control-sm,
+.daily-shift-table .form-select-sm {
+  min-height: 28px;
+  padding-top: 0.15rem;
+  padding-bottom: 0.15rem;
+  font-size: 0.8125rem;
+}
+
+.daily-shift-table textarea.form-control-sm {
+  resize: vertical;
+  min-height: 28px;
+}
+
+.daily-shift-table .btn-sm {
+  padding: 0.15rem 0.35rem;
+  font-size: 0.75rem;
+}
+
+.js-daily-event-row.is-saving {
+  opacity: 0.72;
+}
+
+.js-daily-event-row.is-saved {
+  outline: 2px solid rgba(25, 135, 84, 0.35);
+  outline-offset: -2px;
+}
+
+.js-daily-event-row.is-error {
+  outline: 2px solid rgba(220, 53, 69, 0.45);
+  outline-offset: -2px;
+}
+
+@media (max-width: 992px) {
+  .dsb-top-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dsb-sub-summary {
+    height: 180px;
+  }
+}

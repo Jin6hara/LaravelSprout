@@ -206,6 +206,16 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             // end ★編集ボタンの初期化
 
+            // ★Daily Boardボタンを毎回初期化（非表示/無効化）
+            const dayBoardBtn = document.getElementById('dayBoardLink');
+            if (dayBoardBtn) {
+                dayBoardBtn.href = '#';
+                dayBoardBtn.style.display = 'none';
+                dayBoardBtn.classList.add('disabled');
+                dayBoardBtn.setAttribute('aria-disabled', 'true');
+            }
+            // end ★Daily Boardボタンの初期化
+
             // ★Leaveボタンの初期化
             const leaveBtn = document.getElementById('leaveEditLink');
             if (leaveBtn) {
@@ -290,6 +300,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
             // end ★ イベント枠の場合のみ編集リンクを設定して表示
+
+            // ★ イベント日付の Daily Board へのリンク
+            if (dayBoardBtn) {
+                const ymd = p?.event_date || (e.start ? e.start.toISOString().slice(0, 10) : null);
+                if (ymd) {
+                    dayBoardBtn.href = `/forecast/day-assigner?date=${encodeURIComponent(ymd)}`;
+                    dayBoardBtn.style.removeProperty('display');
+                    dayBoardBtn.classList.remove('disabled');
+                    dayBoardBtn.setAttribute('aria-disabled', 'false');
+                }
+            }
+            // end ★ イベント日付の Daily Board へのリンク
 
             // ★対応する Leave へのリンク設定（source_leave_id がある場合のみ）
             if (leaveBtn) {

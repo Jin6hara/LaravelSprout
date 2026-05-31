@@ -138,6 +138,67 @@ class EventAssignController extends Controller
     }
 
     /**
+     * 単日カレンダーとイベント編集テーブルを同一画面で表示する
+     * GET /forecast/day-assigner — 指定日の Forecast List と Shift 編集行を同期して扱う
+     */
+    public function dailyBoard(Request $request)
+    {
+        $this->authorize('viewAny', Event::class);
+
+        try {
+            $selectedDate = Carbon::parse($request->input('date', now()->toDateString()))->toDateString();
+        } catch (\Throwable $e) {
+            $selectedDate = now()->toDateString();
+        }
+
+        $userOptions = $this->scopeService->targetUserQuery()
+            ->select('id', 'first_name', 'family_name', 'employee_code')
+            ->orderBy('employee_code')
+            ->limit(500)
+            ->get();
+
+        $schoolNames = $this->scopeService->schoolQuery()
+            ->where('is_active', true)
+            ->orderBy('school_name')
+            ->distinct()
+            ->pluck('school_name');
+
+        $events = Event::query()
+            ->where('district_id', $this->scopeService->currentDistrictId())
+            ->where('department_id', $this->scopeService->currentDepartmentId())
+            ->whereDate('event_date', $selectedDate)
+            ->with(['assignedUser:id,name,employee_code', 'originalUser:id,name,employee_code'])
+            ->orderBy('school_name')
+            ->orderBy('start_time')
+            ->orderBy('assigned_user_id')
+            ->get();
+
+        $statusOptions = [
+            EventStatus::Filled->value => EventStatus::Filled->label(),
+            EventStatus::Fixed->value => EventStatus::Fixed->label(),
+            EventStatus::Pending->value => EventStatus::Pending->label(),
+            EventStatus::InProcess->value => EventStatus::InProcess->label(),
+        ];
+        $typeOptions = [
+            ShiftType::RegularTime->value => ShiftType::RegularTime->short(),
+            ShiftType::Overtime->value => ShiftType::Overtime->short(),
+            ShiftType::ScheduleChange->value => ShiftType::ScheduleChange->short(),
+            ShiftType::Special->value => ShiftType::Special->short(),
+            ShiftType::RosteredWorkingDay->value => ShiftType::RosteredWorkingDay->short(),
+            ShiftType::NoneRequired->value => ShiftType::NoneRequired->short(),
+        ];
+
+        return view('calendar.dailyBoard', compact(
+            'events',
+            'userOptions',
+            'statusOptions',
+            'typeOptions',
+            'schoolNames',
+            'selectedDate'
+        ));
+    }
+
+    /**
      * イベントを複製して新規作成
      * POST /calendar/events/copy — バリデーション済みデータを元に時刻を正規化し、同スコープで新規 Event を作成
      */
