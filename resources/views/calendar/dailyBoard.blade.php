@@ -116,7 +116,7 @@
                 @endforeach
             </datalist>
 
-            <div class="table-responsive">
+            <div id="dailyEditorScroll" class="table-responsive dsb-editor-scroll">
                 <table class="table table-sm table-bordered align-middle daily-shift-table">
                     <thead class="table-light">
                         <tr>

@@ -300,6 +300,21 @@
   margin-bottom: 0;
 }
 
+.dsb-editor-scroll {
+  min-height: 100%;
+}
+
+.daily-shift-table thead {
+  cursor: grab;
+  user-select: none;
+}
+
+.dsb-editor-scroll.is-dragging,
+.dsb-editor-scroll.is-dragging * {
+  cursor: grabbing !important;
+  user-select: none !important;
+}
+
 .daily-shift-table th,
 .daily-shift-table td {
   padding: 0.25rem 0.35rem;

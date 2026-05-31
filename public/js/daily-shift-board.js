@@ -532,6 +532,51 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  function setupEditorHorizontalScroll() {
+    const scroller = document.getElementById('dailyEditorScroll');
+    if (!scroller) return;
+
+    const canScrollX = () => scroller.scrollWidth > scroller.clientWidth + 1;
+
+    scroller.addEventListener('wheel', (e) => {
+      if (!canScrollX()) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      const isHorizontalGesture = Math.abs(e.deltaX) > Math.abs(e.deltaY);
+      const delta = isHorizontalGesture ? e.deltaX : e.deltaY;
+      scroller.scrollLeft += delta;
+    }, { passive: false });
+
+    const header = scroller.querySelector('thead');
+    if (!header) return;
+
+    header.addEventListener('mousedown', (e) => {
+      if (e.button !== 0 || !canScrollX()) return;
+
+      e.preventDefault();
+      scroller.classList.add('is-dragging');
+
+      const startX = e.clientX;
+      const startLeft = scroller.scrollLeft;
+
+      const onMove = (ev) => {
+        scroller.scrollLeft = startLeft - (ev.clientX - startX);
+      };
+
+      const onUp = () => {
+        scroller.classList.remove('is-dragging');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      };
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
+
   document.querySelectorAll('.dsb-resize-handle').forEach(setupResizeHandle);
   setupSubWidthHandle();
+  setupEditorHorizontalScroll();
 });
