@@ -19,9 +19,8 @@
           Commuting Expense（{{ $y }}/{{ $m }}）
       </h1>
 
-      @php $me = auth()->user(); @endphp
       <div class="d-flex flex-wrap gap-2">
-          @if($me->hasAnyRole(['admin','super_admin']))
+          @can('manage', \App\Models\CommuterPass::class)
               <a href="{{ route('commuter_passes.admin.create', $user) }}"
                 class="btn btn-outline-primary btn-sm btn-route-fixed">
                   ＋ Commuter Pass
@@ -31,9 +30,9 @@
                 class="btn btn-outline-primary btn-sm btn-route-fixed">
                   ＋ Commuter Pass
               </a>
-          @endif
+          @endcan
 
-          @if($me->hasAnyRole(['admin','super_admin']))
+          @can('manage', \App\Models\CommutePattern::class)
               <a href="{{ route('expenses.admin.pattern', $user) }}"
                 class="btn btn-outline-primary btn-sm btn-route-fixed">
                   ＋ Pattern
@@ -43,7 +42,7 @@
                 class="btn btn-outline-primary btn-sm btn-route-fixed">
                   ＋ Pattern
               </a>
-          @endif
+          @endcan
       </div>
   </div>
 
@@ -118,7 +117,7 @@
       @else
         <div class="ms-auto mt-2 mt-sm-0 d-flex align-items-center gap-2">
 
-          @if(auth()->user()?->hasAnyRole(['admin','super_admin']))
+          @can('unsubmit', $report)
             <span class="text-muted small">
               Submitted（{{ optional($report->submitted_at)->format('Y-m-d H:i') }}）
             </span>
@@ -156,7 +155,7 @@
                 <option value="full">Full</option>
               </select>
             </div>
-          @endif
+          @endcan
         </div>
       @endif
     </div>

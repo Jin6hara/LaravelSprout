@@ -23,10 +23,8 @@
       Commuting Expense Reports（{{ $y }}/{{ $m }}）
     </h1>
 
-    @php $me = auth()->user(); @endphp
-
     {{-- 右側：管理者用 Generate / Cleanup ボタン群 --}}
-    @if($me && $me->hasAnyRole(['admin','super_admin']))
+    @can('manage', \App\Models\ExpenseReport::class)
     <div class="d-flex align-items-center gap-2">
 
       {{-- ★ 自動生成（対象月の全ユーザー分のレポート＆日別行を作成） --}}
@@ -56,7 +54,7 @@
       </form>
 
     </div>
-    @endif
+    @endcan
   </div>
 
   {{-- ▼ 月選択 + 関連ページボタン行 --}}
@@ -75,11 +73,11 @@
       </button>
     </form>
 
-    @if($me && $me->hasAnyRole(['admin','super_admin']))
+    @can('manage', \App\Models\ExpenseReport::class)
     <a class="btn btn-sm mb-2 btn-outline-success ms-lg-auto" href="{{ route('commuter.advisor.index') }}">
       Commuter Pass Advisor
     </a>
-    @endif
+    @endcan
 
   </div>
 

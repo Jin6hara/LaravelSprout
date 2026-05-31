@@ -75,7 +75,7 @@ class LoginController extends Controller
             $user = Auth::user();
             // ここは権限認証とまったく関係ない。本認証はRoute+Policyに行っている。
             // ここでは、ユーザーロールを取得してredirect先を決めているだけ。
-            if ($user->hasRole(['admin', 'super_admin'])) {
+            if ($user->isAdmin()) {
                 return redirect()->route('calendar.forecast');
             } else {
                 return redirect()->route('welcome');

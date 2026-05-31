@@ -2,10 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\RoleManage\DestroyModelPermissionRequest;
+use App\Http\Requests\RoleManage\DestroyModelRoleRequest;
+use App\Http\Requests\RoleManage\DestroyRolePermissionRequest;
+use App\Http\Requests\RoleManage\DestroyRoleRequest;
+use App\Http\Requests\RoleManage\StoreModelPermissionRequest;
+use App\Http\Requests\RoleManage\StoreModelRoleRequest;
+use App\Http\Requests\RoleManage\StoreRolePermissionRequest;
+use App\Http\Requests\RoleManage\StoreRoleRequest;
+use App\Http\Requests\RoleManage\UpdateModelPermissionRequest;
+use App\Http\Requests\RoleManage\UpdateModelRoleRequest;
+use App\Http\Requests\RoleManage\UpdateRolePermissionRequest;
+use App\Http\Requests\RoleManage\UpdateRoleRequest;
 use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -69,14 +79,9 @@ class RoleManageController extends Controller
         ]);
     }
 
-    public function storeRole(Request $request)
+    public function storeRole(StoreRoleRequest $request)
     {
-        $this->authorizeSuperAdmin();
-        $this->requireConfirmed($request);
-
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z0-9_.-]+$/', Rule::unique('roles')->where('guard_name', self::GUARD)],
-        ]);
+        $data = $request->validated();
 
         $role = Role::create(['name' => $data['name'], 'guard_name' => self::GUARD]);
         $this->forgetPermissionCache();
@@ -84,22 +89,12 @@ class RoleManageController extends Controller
         return response()->json($this->formatRole($role->loadCount(['permissions', 'users'])), 201);
     }
 
-    public function updateRole(Request $request, Role $role)
+    public function updateRole(UpdateRoleRequest $request, Role $role)
     {
-        $this->authorizeSuperAdmin();
         $this->requireWebGuard($role);
-        $this->requireConfirmed($request);
         $this->ensureRoleCanBeChanged($role, 'updated');
 
-        $data = $request->validate([
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-                'regex:/^[A-Za-z0-9_.-]+$/',
-                Rule::unique('roles')->where('guard_name', self::GUARD)->ignore($role->id),
-            ],
-        ]);
+        $data = $request->validated();
 
         $role->update(['name' => $data['name']]);
         $this->forgetPermissionCache();
@@ -107,11 +102,9 @@ class RoleManageController extends Controller
         return response()->json($this->formatRole($role->fresh()->loadCount(['permissions', 'users'])));
     }
 
-    public function destroyRole(Request $request, Role $role)
+    public function destroyRole(DestroyRoleRequest $request, Role $role)
     {
-        $this->authorizeSuperAdmin();
         $this->requireWebGuard($role);
-        $this->requireConfirmed($request);
         $this->ensureRoleCanBeChanged($role, 'deleted');
 
         $role->delete();
@@ -120,12 +113,13 @@ class RoleManageController extends Controller
         return response()->json(null, 204);
     }
 
-    public function storeRolePermission(Request $request)
+    public function storeRolePermission(StoreRolePermissionRequest $request)
     {
-        $this->authorizeSuperAdmin();
-        $this->requireConfirmed($request);
-
-        [$role, $permission] = $this->validateRolePermissionInput($request);
+        $data = $request->validated();
+        $role = Role::findOrFail($data['role_id']);
+        $permission = Permission::findOrFail($data['permission_id']);
+        $this->requireWebGuard($role);
+        $this->requireWebGuard($permission);
 
         abort_if($role->hasPermissionTo($permission), 422, 'This role already has the selected permission.');
 
@@ -135,16 +129,12 @@ class RoleManageController extends Controller
         return response()->json(['message' => 'Role permission added.'], 201);
     }
 
-    public function updateRolePermission(Request $request, Role $role, Permission $permission)
+    public function updateRolePermission(UpdateRolePermissionRequest $request, Role $role, Permission $permission)
     {
-        $this->authorizeSuperAdmin();
         $this->requireWebGuard($role);
         $this->requireWebGuard($permission);
-        $this->requireConfirmed($request);
 
-        $data = $request->validate([
-            'permission_id' => ['required', 'integer', 'exists:permissions,id'],
-        ]);
+        $data = $request->validated();
 
         $newPermission = Permission::findOrFail($data['permission_id']);
         $this->requireWebGuard($newPermission);
@@ -162,12 +152,10 @@ class RoleManageController extends Controller
         return response()->json(['message' => 'Role permission updated.']);
     }
 
-    public function destroyRolePermission(Request $request, Role $role, Permission $permission)
+    public function destroyRolePermission(DestroyRolePermissionRequest $request, Role $role, Permission $permission)
     {
-        $this->authorizeSuperAdmin();
         $this->requireWebGuard($role);
         $this->requireWebGuard($permission);
-        $this->requireConfirmed($request);
         $this->ensureRolePermissionCanBeRemoved($role, $permission);
 
         abort_unless($role->hasPermissionTo($permission), 422, 'The selected relation does not exist.');
@@ -178,12 +166,12 @@ class RoleManageController extends Controller
         return response()->json(null, 204);
     }
 
-    public function storeModelRole(Request $request)
+    public function storeModelRole(StoreModelRoleRequest $request)
     {
-        $this->authorizeSuperAdmin();
-        $this->requireConfirmed($request);
-
-        [$user, $role] = $this->validateUserRoleInput($request);
+        $data = $request->validated();
+        $user = User::findOrFail($data['user_id']);
+        $role = Role::findOrFail($data['role_id']);
+        $this->requireWebGuard($role);
 
         abort_if($user->hasRole($role), 422, 'This user already has the selected role.');
 
@@ -193,15 +181,11 @@ class RoleManageController extends Controller
         return response()->json(['message' => 'User role added.'], 201);
     }
 
-    public function updateModelRole(Request $request, User $user, Role $role)
+    public function updateModelRole(UpdateModelRoleRequest $request, User $user, Role $role)
     {
-        $this->authorizeSuperAdmin();
         $this->requireWebGuard($role);
-        $this->requireConfirmed($request);
 
-        $data = $request->validate([
-            'role_id' => ['required', 'integer', 'exists:roles,id'],
-        ]);
+        $data = $request->validated();
 
         $newRole = Role::findOrFail($data['role_id']);
         $this->requireWebGuard($newRole);
@@ -219,11 +203,9 @@ class RoleManageController extends Controller
         return response()->json(['message' => 'User role updated.']);
     }
 
-    public function destroyModelRole(Request $request, User $user, Role $role)
+    public function destroyModelRole(DestroyModelRoleRequest $request, User $user, Role $role)
     {
-        $this->authorizeSuperAdmin();
         $this->requireWebGuard($role);
-        $this->requireConfirmed($request);
         $this->ensureRoleCanBeDetachedFromUser($user, $role);
 
         abort_unless($user->hasRole($role), 422, 'The selected relation does not exist.');
@@ -234,12 +216,12 @@ class RoleManageController extends Controller
         return response()->json(null, 204);
     }
 
-    public function storeModelPermission(Request $request)
+    public function storeModelPermission(StoreModelPermissionRequest $request)
     {
-        $this->authorizeSuperAdmin();
-        $this->requireConfirmed($request);
-
-        [$user, $permission] = $this->validateUserPermissionInput($request);
+        $data = $request->validated();
+        $user = User::findOrFail($data['user_id']);
+        $permission = Permission::findOrFail($data['permission_id']);
+        $this->requireWebGuard($permission);
 
         abort_if($user->hasDirectPermission($permission), 422, 'This user already has the selected direct permission.');
 
@@ -249,15 +231,11 @@ class RoleManageController extends Controller
         return response()->json(['message' => 'User direct permission added.'], 201);
     }
 
-    public function updateModelPermission(Request $request, User $user, Permission $permission)
+    public function updateModelPermission(UpdateModelPermissionRequest $request, User $user, Permission $permission)
     {
-        $this->authorizeSuperAdmin();
         $this->requireWebGuard($permission);
-        $this->requireConfirmed($request);
 
-        $data = $request->validate([
-            'permission_id' => ['required', 'integer', 'exists:permissions,id'],
-        ]);
+        $data = $request->validated();
 
         $newPermission = Permission::findOrFail($data['permission_id']);
         $this->requireWebGuard($newPermission);
@@ -274,11 +252,9 @@ class RoleManageController extends Controller
         return response()->json(['message' => 'User direct permission updated.']);
     }
 
-    public function destroyModelPermission(Request $request, User $user, Permission $permission)
+    public function destroyModelPermission(DestroyModelPermissionRequest $request, User $user, Permission $permission)
     {
-        $this->authorizeSuperAdmin();
         $this->requireWebGuard($permission);
-        $this->requireConfirmed($request);
 
         abort_unless($user->hasDirectPermission($permission), 422, 'The selected relation does not exist.');
 
@@ -293,61 +269,9 @@ class RoleManageController extends Controller
         abort_unless(auth()->user()?->isSuperAdmin(), 403);
     }
 
-    private function requireConfirmed(Request $request): void
-    {
-        $request->validate([
-            'confirm' => ['accepted'],
-        ], [
-            'confirm.accepted' => 'Confirmation is required before changing role management data.',
-        ]);
-    }
-
     private function requireWebGuard(Role|Permission $model): void
     {
         abort_unless($model->guard_name === self::GUARD, 404);
-    }
-
-    private function validateRolePermissionInput(Request $request): array
-    {
-        $data = $request->validate([
-            'role_id' => ['required', 'integer', 'exists:roles,id'],
-            'permission_id' => ['required', 'integer', 'exists:permissions,id'],
-        ]);
-
-        $role = Role::findOrFail($data['role_id']);
-        $permission = Permission::findOrFail($data['permission_id']);
-        $this->requireWebGuard($role);
-        $this->requireWebGuard($permission);
-
-        return [$role, $permission];
-    }
-
-    private function validateUserRoleInput(Request $request): array
-    {
-        $data = $request->validate([
-            'user_id' => ['required', 'integer', 'exists:users,id'],
-            'role_id' => ['required', 'integer', 'exists:roles,id'],
-        ]);
-
-        $user = User::findOrFail($data['user_id']);
-        $role = Role::findOrFail($data['role_id']);
-        $this->requireWebGuard($role);
-
-        return [$user, $role];
-    }
-
-    private function validateUserPermissionInput(Request $request): array
-    {
-        $data = $request->validate([
-            'user_id' => ['required', 'integer', 'exists:users,id'],
-            'permission_id' => ['required', 'integer', 'exists:permissions,id'],
-        ]);
-
-        $user = User::findOrFail($data['user_id']);
-        $permission = Permission::findOrFail($data['permission_id']);
-        $this->requireWebGuard($permission);
-
-        return [$user, $permission];
     }
 
     private function ensureRoleCanBeChanged(Role $role, string $action): void

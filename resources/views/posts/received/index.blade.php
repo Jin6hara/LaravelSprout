@@ -8,13 +8,13 @@
     <h2 class="mb-0">Inbox</h2>
 
     {{-- admin以上は代理検索フォーム表示 --}}
-    @if(auth()->user()->hasAnyRole(['admin','super_admin']))
+    @can('viewAny', \App\Models\Post::class)
     <form method="GET" action="{{ route('messages.index') }}" class="d-flex gap-2">
         <input type="text" name="employee_code" value="{{ request('employee_code') }}"
             class="form-control form-control-sm" placeholder="Search by Employee Code">
         <button class="btn btn-outline-secondary btn-sm" type="submit">Search</button>
     </form>
-    @endif
+    @endcan
 </div>
 
 {{-- 代理閲覧バッジ（検索仕様） --}}

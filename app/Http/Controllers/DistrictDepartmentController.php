@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\DistrictDepartment\StoreDepartmentRequest;
+use App\Http\Requests\DistrictDepartment\StoreDistrictRequest;
+use App\Http\Requests\DistrictDepartment\UpdateDepartmentRequest;
+use App\Http\Requests\DistrictDepartment\UpdateDistrictRequest;
 use App\Models\Department;
 use App\Models\District;
-use Illuminate\Http\Request;
 
 class DistrictDepartmentController extends Controller
 {
@@ -32,14 +35,11 @@ class DistrictDepartmentController extends Controller
         return response()->json($districts);
     }
 
-    public function districtStore(Request $request)
+    public function districtStore(StoreDistrictRequest $request)
     {
         $this->authorize('create', District::class);
 
-        $data = $request->validate([
-            'name'      => 'required|string|max:255',
-            'parent_id' => 'nullable|integer|exists:districts,id',
-        ]);
+        $data = $request->validated();
 
         $district = District::create($data);
         $district->load('children');
@@ -47,14 +47,11 @@ class DistrictDepartmentController extends Controller
         return response()->json($this->formatDistrict($district), 201);
     }
 
-    public function districtUpdate(Request $request, District $district)
+    public function districtUpdate(UpdateDistrictRequest $request, District $district)
     {
         $this->authorize('update', $district);
 
-        $data = $request->validate([
-            'name'      => 'required|string|max:255',
-            'parent_id' => 'nullable|integer|exists:districts,id',
-        ]);
+        $data = $request->validated();
 
         if ($data['parent_id'] ?? null) {
             abort_if($data['parent_id'] == $district->id, 422, 'Cannot set self as parent.');
@@ -100,21 +97,21 @@ class DistrictDepartmentController extends Controller
         return response()->json(Department::orderBy('name')->get(['id', 'name']));
     }
 
-    public function departmentStore(Request $request)
+    public function departmentStore(StoreDepartmentRequest $request)
     {
         $this->authorize('create', Department::class);
 
-        $data = $request->validate(['name' => 'required|string|max:255']);
+        $data = $request->validated();
         $dept = Department::create($data);
 
         return response()->json($dept, 201);
     }
 
-    public function departmentUpdate(Request $request, Department $department)
+    public function departmentUpdate(UpdateDepartmentRequest $request, Department $department)
     {
         $this->authorize('update', $department);
 
-        $data = $request->validate(['name' => 'required|string|max:255']);
+        $data = $request->validated();
         $department->update($data);
 
         return response()->json($department);

@@ -70,7 +70,7 @@ class CommutePatternController extends Controller
 
     private function renderFor(User $user, Request $request, bool $isAdminMode, CommutePatternService $patterns)
     {
-        $canManagePatterns = $request->user()?->hasAnyRole(['admin', 'super_admin']) ?? false;
+        $canManagePatterns = $request->user()?->can('manage', CommutePattern::class) ?? false;
         $allPatterns = $patterns->allForUser($user);
         $patternHistory = CommutePattern::query()
             ->where('user_id', $user->id)
