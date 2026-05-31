@@ -257,6 +257,8 @@ class EventAssignControllerTest extends TestCase
             ->assertOk()
             ->assertSee('Daily Shift Board')
             ->assertSee('Scope School')
+            ->assertSee('Create Absence')
+            ->assertSee(route('api.users.search'))
             ->assertSee('Tentative Sublist Preview')
             ->assertSee('Master Sublist Preview')
             ->assertSee('Final Sublist Preview')
@@ -294,6 +296,103 @@ class EventAssignControllerTest extends TestCase
             'district_id'   => $district->id,
             'department_id' => $department->id,
         ]);
+    }
+
+    /**
+     * シナリオ 7c: daily shift board から選択日の Absence を作成でき、Daily に戻る
+     */
+    public function test_admin_can_create_absence_from_daily_shift_board(): void
+    {
+        [$admin, $scope, $district, $department] = $this->makeAdmin();
+
+        $targetUser = User::factory()->create([
+            'district_id'   => $district->id,
+            'department_id' => $department->id,
+        ]);
+
+        $selectedDate = '2026-05-31';
+
+        $this->actingAs($admin)
+            ->withSession(['selected_scope_id' => $scope->id])
+            ->post(route('leaves.store'), [
+                'user_id'     => $targetUser->id,
+                'start_date'  => $selectedDate,
+                'kind'        => 'absence',
+                'excused'     => 'unexcused',
+                'status'      => 'pending',
+                'redirect_to' => route('calendar.daily_assigner', ['date' => $selectedDate]),
+            ])
+            ->assertRedirect(route('calendar.daily_assigner', ['date' => $selectedDate]));
+
+        $this->assertDatabaseHas('leaves', [
+            'user_id'    => $targetUser->id,
+            'start_date' => $selectedDate,
+            'kind'       => 'absence',
+            'status'     => 'pending',
+        ]);
+    }
+
+    /**
+     * シナリオ 7d: hidden user_id が空でも補完表示文字列からユーザーを特定して Absence を作成できる
+     */
+    public function test_daily_absence_create_resolves_user_from_lookup_text(): void
+    {
+        [$admin, $scope, $district, $department] = $this->makeAdmin();
+
+        $targetUser = User::factory()->create([
+            'district_id'    => $district->id,
+            'department_id'  => $department->id,
+            'first_name'     => 'Jane',
+            'family_name'    => 'Teacher',
+            'employee_code'  => 'T12345',
+        ]);
+
+        $selectedDate = '2026-05-31';
+
+        $this->actingAs($admin)
+            ->withSession(['selected_scope_id' => $scope->id])
+            ->post(route('leaves.store'), [
+                'user_id'     => '',
+                'user_lookup' => 'Jane Teacher [T12345]',
+                'start_date'  => $selectedDate,
+                'kind'        => 'absence',
+                'excused'     => 'unexcused',
+                'status'      => 'pending',
+                'redirect_to' => route('calendar.daily_assigner', ['date' => $selectedDate]),
+            ])
+            ->assertRedirect(route('calendar.daily_assigner', ['date' => $selectedDate]));
+
+        $this->assertDatabaseHas('leaves', [
+            'user_id'    => $targetUser->id,
+            'start_date' => $selectedDate,
+            'kind'       => 'absence',
+        ]);
+    }
+
+    /**
+     * シナリオ 7e: ユーザーを特定できない場合は Absence を作成せず Toast error を返す
+     */
+    public function test_daily_absence_create_returns_toast_error_when_target_user_is_not_found(): void
+    {
+        [$admin, $scope] = $this->makeAdmin();
+
+        $selectedDate = '2026-05-31';
+
+        $this->actingAs($admin)
+            ->withSession(['selected_scope_id' => $scope->id])
+            ->post(route('leaves.store'), [
+                'user_id'     => '',
+                'user_lookup' => 'Unknown User',
+                'start_date'  => $selectedDate,
+                'kind'        => 'absence',
+                'excused'     => 'unexcused',
+                'status'      => 'pending',
+                'redirect_to' => route('calendar.daily_assigner', ['date' => $selectedDate]),
+            ])
+            ->assertRedirect(route('calendar.daily_assigner', ['date' => $selectedDate]))
+            ->assertSessionHas('toast_errors', ['Target not found. Please select a user from the suggestions.']);
+
+        $this->assertDatabaseCount('leaves', 0);
     }
 
     // =========================================================================

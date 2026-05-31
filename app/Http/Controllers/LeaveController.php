@@ -43,12 +43,17 @@ class LeaveController extends Controller
     public function store(StoreLeaveRequest $request)
     {
         // 承認フローがある場合は pending から始めるなど調整してください
-        $targetUser = \App\Models\User::find((int) $request->input('user_id'));
-        abort_if(! $targetUser, 404);
+        $redirectUrl = $this->leaveStoreRedirectUrl($request, $request->input('start_date'));
+        $targetUser = $this->resolveLeaveTargetUser($request);
+        if (! $targetUser) {
+            return redirect()->to($redirectUrl)
+                ->withInput()
+                ->with('toast_errors', ['Target not found. Please select a user from the suggestions.']);
+        }
         $this->authorize('manage', $targetUser);
 
         $leave = Leave::create([
-            'user_id'       => (int)$request->input('user_id'),
+            'user_id'       => $targetUser->id,
             'start_date'    => $request->date('start_date'),
             'end_date'      => $request->input('end_date') ? $request->date('end_date') : null,
             'kind'          => $request->input('kind'),
@@ -67,8 +72,50 @@ class LeaveController extends Controller
         $date = optional($leave->start_date)->format('Y-m-d');
 
         // Observer が自動でスナップショット生成
-        return redirect()->to(route('calendar.edit') . '?event_date=' . urlencode($date))
+        return redirect()->to($this->leaveStoreRedirectUrl($request, $date))
             ->with('toast', 'Absence successfully registered. If a regular shift exists for that day, an Event will be created automatically.');
+    }
+
+    private function leaveStoreRedirectUrl(StoreLeaveRequest $request, ?string $date): string
+    {
+        $redirectTo = (string) $request->input('redirect_to', '');
+        if ($redirectTo !== '' && str_starts_with($redirectTo, url('/'))) {
+            return $redirectTo;
+        }
+
+        return route('calendar.edit') . '?event_date=' . urlencode((string) $date);
+    }
+
+    private function resolveLeaveTargetUser(StoreLeaveRequest $request): ?User
+    {
+        $userId = (int) $request->input('user_id');
+        if ($userId > 0) {
+            return $this->scopeService->targetUserQuery()->whereKey($userId)->first();
+        }
+
+        $lookup = trim((string) $request->input('user_lookup', ''));
+        if ($lookup === '') {
+            return null;
+        }
+
+        if (preg_match('/\[([^\]]+)\]\s*$/', $lookup, $m)) {
+            return $this->scopeService->targetUserQuery()
+                ->where('employee_code', trim($m[1]))
+                ->first();
+        }
+
+        $matches = $this->scopeService->targetUserQuery()
+            ->where(function ($q) use ($lookup) {
+                $q->whereLikeInsensitive('first_name', $lookup)
+                    ->orWhereLikeInsensitive('family_name', $lookup)
+                    ->orWhereLikeInsensitive('name', $lookup)
+                    ->orWhereLikeInsensitive('employee_code', $lookup)
+                    ->orWhereLikeInsensitive('email', $lookup);
+            })
+            ->limit(2)
+            ->get();
+
+        return $matches->count() === 1 ? $matches->first() : null;
     }
 
 

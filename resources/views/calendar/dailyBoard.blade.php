@@ -88,9 +88,32 @@
         <span class="dsb-resize-grip">&#8942;&#8942;&#8942;</span>
     </div>
 
-    <div class="d-flex align-items-center justify-content-between mt-2 mb-2">
+    <div class="d-flex align-items-center gap-2 mt-2 mb-2">
         <div class="fw-semibold">Shift Editor</div>
-        <div class="d-flex align-items-center gap-2">
+        <form method="POST" action="{{ route('leaves.store') }}" class="d-flex align-items-center gap-1">
+            @csrf
+            <input type="hidden" name="kind" value="absence">
+            <input type="hidden" name="excused" value="unexcused">
+            <input type="hidden" name="status" value="pending">
+            <input type="hidden" name="start_date" value="{{ $selectedDate }}">
+            <input type="hidden" name="redirect_to" value="{{ route('calendar.daily_assigner', ['date' => $selectedDate]) }}">
+            <input type="hidden" name="user_id" id="dailyAbsenceUserId">
+            <datalist id="dailyAbsenceUserOptions"></datalist>
+            <input type="text"
+                name="user_lookup"
+                class="form-control form-control-sm"
+                style="width: 16rem"
+                placeholder="Search user"
+                list="dailyAbsenceUserOptions"
+                autocomplete="off"
+                required
+                data-user-autocomplete
+                data-user-autocomplete-url="{{ route('api.users.search') }}"
+                data-user-autocomplete-hidden="#dailyAbsenceUserId"
+                data-user-autocomplete-limit="20">
+            <button type="submit" class="btn btn-sm btn-warning text-nowrap">Create Absence for {{ $selectedDate }}</button>
+        </form>
+        <div class="d-flex align-items-center gap-2 ms-auto">
             <span id="dailyBoardSaveStatus" class="small text-muted d-none"></span>
             <button type="button"
                 class="btn btn-sm btn-primary"
@@ -278,6 +301,7 @@
         bulkUpdateUrl: @json(route('events.bulk_update')),
     };
 </script>
+<script src="{{ asset('js/user-autocomplete.js') }}?v={{ filemtime(public_path('js/user-autocomplete.js')) }}"></script>
 <script>
     document.addEventListener('click', (e) => {
         const link = e.target.closest('.js-daily-sublist-preview');
