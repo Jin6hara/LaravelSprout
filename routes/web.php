@@ -211,7 +211,9 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/api/expenses/{expense}',  [ExpenseApiController::class, 'destroy'])->name('api.expenses.destroy');
 
     Route::put('/api/commute-patterns/batch', [CommutePatternController::class, 'save'])->name('api.commute_patterns.batch');
-    Route::delete('/api/commute-patterns/{pattern}', [CommutePatternController::class, 'destroy'])->name('api.commute_patterns.destroy');
+    Route::delete('/api/commute-patterns/{pattern}', [CommutePatternController::class, 'destroy'])
+        ->name('api.commute_patterns.destroy')
+        ->middleware('role:admin|super_admin');
 });
 
 use App\Http\Controllers\ExpenseReportController;
@@ -328,6 +330,18 @@ Route::middleware(['auth'])->group(function () {
     // 本人用：保存
     Route::post('/commuter-passes', [CommuterPassController::class, 'store'])
         ->name('commuter_passes.store');
+
+    // 本人/管理者共通：定期更新
+    Route::put('/commuter-passes/{pass}', [CommuterPassController::class, 'update'])
+        ->name('commuter_passes.update')
+        ->whereNumber('pass')
+        ->middleware('role:admin|super_admin');
+
+    // 本人/管理者共通：定期削除（Admin以上のみ）
+    Route::delete('/commuter-passes/{pass}', [CommuterPassController::class, 'destroy'])
+        ->name('commuter_passes.destroy')
+        ->whereNumber('pass')
+        ->middleware('role:admin|super_admin');
 
     // 管理者用：他人分の定期登録
     Route::middleware('role:admin|super_admin')->group(function () {

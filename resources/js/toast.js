@@ -64,9 +64,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!el) return;
 
     const toast = el.dataset.toast ? JSON.parse(el.dataset.toast) : null;
+    const status = el.dataset.status ? JSON.parse(el.dataset.status) : null;
     const errors = el.dataset.errors ? JSON.parse(el.dataset.errors) : null;
 
     if (toast) window.showToast(toast, { variant: 'success', delay: 9000 });
+    if (status) window.showToast(status, { variant: 'success', delay: 9000 });
     if (Array.isArray(errors)) {
         errors.forEach(err => window.showToast(err, { variant: 'danger', delay: 9000 }));
     }

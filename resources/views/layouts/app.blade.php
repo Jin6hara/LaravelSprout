@@ -37,6 +37,7 @@
 
     <div id="toastFlash"
         data-toast='@json(session("toast"))'
+        data-status='@json(session("status"))'
         data-errors='@json(session("toast_errors"))'>
     </div>
 

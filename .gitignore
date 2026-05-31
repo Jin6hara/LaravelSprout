@@ -18,3 +18,9 @@ yarn-error.log
 /.idea
 /.vscode
 /.claude
+
+# Local AI / project instruction files
+AGENTS.md
+CLAUDE.md
+.github/copilot-instructions.md
+docs/

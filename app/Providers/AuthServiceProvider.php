@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Models\ApprovalRequest;
+use App\Models\CommutePattern;
+use App\Models\CommuterPass;
 use App\Models\Department;
 use App\Models\District;
 use App\Models\Event;
@@ -13,6 +15,8 @@ use App\Models\ScheduleDetail;
 use App\Models\ScheduleLine;
 use App\Models\UserManagementScope;
 use App\Policies\ApprovalRequestPolicy;
+use App\Policies\CommutePatternPolicy;
+use App\Policies\CommuterPassPolicy;
 use App\Policies\DepartmentPolicy;
 use App\Policies\DistrictPolicy;
 use App\Policies\EventPolicy;
@@ -38,6 +42,8 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\Leave::class               => \App\Policies\LeavePolicy::class,
         \App\Models\Post::class                => \App\Policies\PostPolicy::class,
         ApprovalRequest::class                 => ApprovalRequestPolicy::class,
+        CommutePattern::class                  => CommutePatternPolicy::class,
+        CommuterPass::class                    => CommuterPassPolicy::class,
         Department::class                      => DepartmentPolicy::class,
         District::class                        => DistrictPolicy::class,
         Event::class                           => EventPolicy::class,

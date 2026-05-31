@@ -11,6 +11,8 @@
 
 @section('content')
 @php
+    $canManagePatterns = $canManagePatterns ?? false;
+    $isReadOnlyPattern = $pattern && ! $canManagePatterns;
     $newUrl = $isAdminMode
         ? route('expenses.admin.pattern', ['user' => $user, 'new' => 1])
         : route('expenses.pattern', ['new' => 1]);
@@ -37,7 +39,7 @@
     </div>
   </div>
 
-  @if($patterns->isNotEmpty())
+  @if($canManagePatterns && $patterns->isNotEmpty())
     <form method="GET" action="{{ $loadUrl }}" class="mb-3 d-flex align-items-center gap-2">
       <label for="patternPick" class="form-label m-0">Pattern</label>
       <select id="patternPick" name="pattern" class="form-select form-select-sm" style="max-width:420px">
@@ -57,37 +59,39 @@
       <div class="col-md-3">
         <label for="closestStation" class="form-label small mb-0">Closest Station <span class="text-danger">*</span></label>
         <input type="text" id="closestStation" class="form-control form-control-sm"
-          value="{{ old('closest_station', $pattern?->closest_station) }}" required>
+          value="{{ old('closest_station', $pattern?->closest_station) }}" @disabled($isReadOnlyPattern) required>
       </div>
 
       <div class="col-md-3">
         <label for="trainLine" class="form-label small mb-0">Train Line</label>
         <input type="text" id="trainLine" class="form-control form-control-sm"
-          value="{{ old('train_line', $pattern?->train_line) }}">
+          value="{{ old('train_line', $pattern?->train_line) }}" @disabled($isReadOnlyPattern)>
       </div>
 
       <div class="col-md-2">
         <label for="validFrom" class="form-label small mb-0">Valid From <span class="text-danger">*</span></label>
         <input type="date" id="validFrom" class="form-control form-control-sm"
-          value="{{ $defaultValidFrom }}" required>
+          value="{{ $defaultValidFrom }}" @disabled($isReadOnlyPattern) required>
       </div>
 
       <div class="col-md-2">
         <label for="validTo" class="form-label small mb-0">Valid To <span class="text-danger">*</span></label>
         <input type="date" id="validTo" class="form-control form-control-sm"
-          value="{{ $defaultValidTo }}" required>
+          value="{{ $defaultValidTo }}" @disabled($isReadOnlyPattern) required>
       </div>
 
       <div class="col-md-2 d-flex gap-2 justify-content-md-end">
+        @if(! $pattern || $canManagePatterns)
         <button id="savePatternBtn" class="btn btn-primary btn-sm" type="button">Save</button>
-        @if($pattern)
+        @endif
+        @if($pattern && $canManagePatterns)
           <button id="deletePatternBtn" class="btn btn-outline-danger btn-sm" type="button">Delete</button>
         @endif
       </div>
 
       <div class="col-12">
         <label for="patternReason" class="form-label small mb-0">Reason for Submitting Expenses</label>
-        <textarea id="patternReason" rows="2" class="form-control form-control-sm">{{ old('reason', $pattern?->reason) }}</textarea>
+        <textarea id="patternReason" rows="2" class="form-control form-control-sm" @disabled($isReadOnlyPattern)>{{ old('reason', $pattern?->reason) }}</textarea>
       </div>
     </div>
   </div>
@@ -100,22 +104,78 @@
           <option value="{{ $dow }}">{{ $dow }}</option>
         @endforeach
       </select>
+      @if(! $isReadOnlyPattern)
       <button id="addDowBtn" class="btn btn-success btn-sm" type="button">＋ Add Day</button>
-
-      <div class="ms-auto expense-edit-table-toolbar">
-        <label for="commutePatternHeight" class="form-label m-0 small text-muted">Table Height</label>
-        <select id="commutePatternHeight" class="form-select form-select-sm expense-edit-height-select">
-          <option value="420">Compact</option>
-          <option value="560">Standard</option>
-          <option value="720">Tall</option>
-          <option value="full">Full</option>
-        </select>
-      </div>
+      @endif
     </div>
   </div>
 
   <div id="patternSheetScroll">
     <div id="patternSheet"></div>
+  </div>
+
+  <div class="header-box commute-pattern-history mt-3">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+      <h6 class="mb-0 fw-bold">Commute Pattern History</h6>
+      <span class="text-muted small">{{ $patternHistory->total() }} item(s)</span>
+    </div>
+
+    @if($patternHistory->count() > 0)
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0 commute-pattern-history-table">
+          <thead>
+            <tr>
+              <th scope="col">Valid Period</th>
+              <th scope="col">Closest Station</th>
+              <th scope="col">Train Line</th>
+              <th scope="col" class="text-end">Rows</th>
+              <th scope="col" class="text-end">Amount</th>
+              <th scope="col">Reason</th>
+              @if($canManagePatterns)
+                <th scope="col" class="text-end">Action</th>
+              @endif
+            </tr>
+          </thead>
+          <tbody>
+            @foreach($patternHistory as $historyPattern)
+              @php
+                $historyUrl = $isAdminMode
+                  ? route('expenses.admin.pattern', ['user' => $user, 'pattern' => $historyPattern->id])
+                  : route('expenses.pattern', ['pattern' => $historyPattern->id]);
+                $historyAmount = $historyPattern->legs->sum(fn ($leg) => (int) $leg->cost);
+                $isCurrentPattern = $pattern?->id === $historyPattern->id;
+              @endphp
+              <tr @class(['table-primary' => $isCurrentPattern])>
+                <td class="text-nowrap">
+                  {{ $historyPattern->valid_from?->format('Y-m-d') }} - {{ $historyPattern->valid_to?->format('Y-m-d') }}
+                </td>
+                <td>{{ $historyPattern->closest_station }}</td>
+                <td>{{ $historyPattern->train_line ?: '-' }}</td>
+                <td class="text-end text-nowrap">{{ $historyPattern->legs->count() }}</td>
+                <td class="text-end text-nowrap">¥{{ number_format($historyAmount) }}</td>
+                <td class="commute-pattern-history-reason">
+                  {{ $historyPattern->reason ?: '-' }}
+                </td>
+                @if($canManagePatterns)
+                  <td class="text-end text-nowrap">
+                    @if($isCurrentPattern)
+                      <button type="button" class="btn btn-primary btn-sm" disabled>Editing</button>
+                    @else
+                      <a href="{{ $historyUrl }}" class="btn btn-outline-secondary btn-sm">Load</a>
+                    @endif
+                  </td>
+                @endif
+              </tr>
+            @endforeach
+          </tbody>
+        </table>
+      </div>
+      <div class="mt-2 commute-pattern-history-pagination">
+        {{ $patternHistory->links() }}
+      </div>
+    @else
+      <div class="text-muted small border rounded p-2 bg-white">No commute pattern history to display.</div>
+    @endif
   </div>
 
   <div class="mt-2 d-flex gap-2">
@@ -163,6 +223,7 @@
     width: 100%;
     overflow: auto;
     -webkit-overflow-scrolling: touch;
+    text-align: left;
   }
 
   #patternSheet {
@@ -170,6 +231,50 @@
     max-width: 100%;
     height: auto;
     margin: 0 auto;
+  }
+
+  #patternSheet .jss,
+  #patternSheet .jss_container,
+  #patternSheet .jspreadsheet {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .commute-pattern-history-table {
+    font-size: .875rem;
+  }
+
+  .commute-pattern-history-table thead th {
+    color: #6b7280;
+    font-weight: 600;
+    border-bottom-color: #cfd8ea;
+  }
+
+  .commute-pattern-history-reason {
+    min-width: 180px;
+    max-width: 360px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .commute-pattern-history-pagination .pagination {
+    margin-bottom: 0;
+    justify-content: flex-end;
+  }
+
+  @media (min-width: 1200px) {
+    #patternSheetScroll {
+      text-align: center;
+    }
+
+    #patternSheet {
+      display: inline-block;
+      width: auto;
+      min-width: 1140px;
+      text-align: left;
+      vertical-align: top;
+    }
   }
 </style>
 @endpush
@@ -186,6 +291,7 @@
     dowValues: @json($dowValues),
     saveUrl: @json(route('api.commute_patterns.batch')),
     deleteUrl: @json($pattern ? route('api.commute_patterns.destroy', $pattern) : null),
+    isReadOnly: @json($isReadOnlyPattern),
   };
 </script>
 <script src="{{ asset('js/commute-patterns.js') }}?v={{ filemtime(public_path('js/commute-patterns.js')) }}" defer></script>
