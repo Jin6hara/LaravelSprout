@@ -168,6 +168,18 @@ document.addEventListener('DOMContentLoaded', function () {
     const summaryEl = document.getElementById('dailySubSummary');
     if (!summaryEl) return;
 
+    const assignmentCounts = new Map();
+    (events || []).forEach((event) => {
+      const props = event.extendedProps || {};
+      if (props.category !== 'event') return;
+
+      const assignedUserId = props.assigned_user_id;
+      if (assignedUserId == null || assignedUserId === '') return;
+
+      const key = String(assignedUserId);
+      assignmentCounts.set(key, (assignmentCounts.get(key) || 0) + 1);
+    });
+
     const subEvent = (events || []).find((event) => {
       const props = event.extendedProps || {};
       const classes = event.classNames || [];
@@ -214,12 +226,32 @@ document.addEventListener('DOMContentLoaded', function () {
         group.appendChild(none);
       } else {
         list.forEach((item) => {
+          const userId = item && typeof item === 'object' ? item.id : null;
+          const assignedCount = !absent && userId != null
+            ? Number(assignmentCounts.get(String(userId)) || 0)
+            : 0;
+          const pillClasses = ['dsb-sub-pill'];
+          if (absent) {
+            pillClasses.push('dsb-sub-pill--absent');
+          } else if (assignedCount >= 2) {
+            pillClasses.push('dsb-sub-pill--assigned-multiple');
+          } else if (assignedCount === 1) {
+            pillClasses.push('dsb-sub-pill--assigned-once');
+          }
+
           const pill = document.createElement('span');
-          pill.className = absent ? 'dsb-sub-pill dsb-sub-pill--absent' : 'dsb-sub-pill';
+          pill.className = pillClasses.join(' ');
 
           const name = document.createElement('span');
           name.textContent = item?.name || String(item || '');
           pill.appendChild(name);
+
+          if (assignedCount > 0) {
+            const badge = document.createElement('span');
+            badge.className = 'dsb-sub-assigned-count';
+            badge.textContent = `Assigned x${assignedCount}`;
+            pill.appendChild(badge);
+          }
 
           if (item?.start_hm || item?.end_hm) {
             const time = document.createElement('span');

@@ -222,6 +222,24 @@
   border-color: #9eeaf9;
 }
 
+.dsb-sub-pill--assigned-once {
+  background: #d1e7dd;
+  border-color: #75b798;
+}
+
+.dsb-sub-pill--assigned-multiple {
+  background: #a7f3d0;
+  border-color: #10b981;
+}
+
+.dsb-sub-assigned-count {
+  margin-top: 2px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: #14532d;
+  line-height: 1;
+}
+
 .dsb-sub-time {
   font-size: 0.68rem;
   color: #6c757d;
