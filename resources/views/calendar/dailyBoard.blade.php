@@ -161,7 +161,7 @@
                                 <input type="text" name="total_duration" class="form-control form-control-sm js-dsb-total" value="{{ $event->total_duration }}" placeholder="H:MM" readonly style="min-width:4.5rem">
                             </td>
                             <td>
-                                <textarea name="Lesson" class="form-control form-control-sm" rows="1" style="min-width:9rem">{{ $event->Lesson }}</textarea>
+                                <textarea name="Lesson" class="form-control form-control-sm" rows="1" style="min-width:16.2rem">{{ $event->Lesson }}</textarea>
                             </td>
                             <td>
                                 <select name="assigned_user_id" class="form-select form-select-sm" style="min-width:11rem">
@@ -174,21 +174,21 @@
                                 </select>
                             </td>
                             <td>
-                                <select name="type" class="form-select form-select-sm">
+                                <select name="type" class="form-select form-select-sm" style="min-width:4.8rem">
                                     @foreach($typeOptions as $v => $label)
                                         <option value="{{ $v }}" @selected($event->type === $v)>{{ $label }}</option>
                                     @endforeach
                                 </select>
                             </td>
                             <td>
-                                <select name="status" class="form-select form-select-sm js-dsb-status">
+                                <select name="status" class="form-select form-select-sm js-dsb-status" style="min-width:7rem">
                                     @foreach($statusOptions as $v => $label)
                                         <option value="{{ $v }}" @selected($event->status === $v)>{{ $label }}</option>
                                     @endforeach
                                 </select>
                             </td>
                             <td>
-                                <textarea name="notes" class="form-control form-control-sm" rows="1" style="min-width:10rem">{{ $event->notes }}</textarea>
+                                <textarea name="notes" class="form-control form-control-sm" rows="1" style="min-width:17rem">{{ $event->notes }}</textarea>
                             </td>
                             <td>
                                 <button type="button" class="btn btn-sm btn-success js-dsb-row-save">Save</button>
