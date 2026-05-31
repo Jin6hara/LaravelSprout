@@ -22,6 +22,7 @@ class LeaveApplyRequest extends FormRequest
             'reason'  => ['nullable', 'string'],
             'type'    => ['nullable', Rule::in(LeaveKind::applicationValues())],
             'special_type' => ['nullable', 'string', 'max:100'],
+            'attachment'   => ['nullable', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png'],
         ];
     }
 
