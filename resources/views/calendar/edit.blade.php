@@ -384,12 +384,21 @@
                 data-store="{{ route('events.copy') }}">
                 Copy
               </button>
-              <button type="button"
-                class="btn btn-sm btn-outline-danger js-delete"
-                data-url="{{ route('events.destroy', $event) }}"
-                data-date="{{ $event->event_date?->format('Y-m-d') ?? '未設定' }}">
-                Delete
-              </button>
+              @if($event->source_leave_id)
+                <button type="button"
+                  class="btn btn-sm btn-secondary"
+                  disabled
+                  title="Managed by absence">
+                  Delete
+                </button>
+              @else
+                <button type="button"
+                  class="btn btn-sm btn-outline-danger js-delete"
+                  data-url="{{ route('events.destroy', $event) }}"
+                  data-date="{{ $event->event_date?->format('Y-m-d') ?? '未設定' }}">
+                  Delete
+                </button>
+              @endif
               <button type="submit" class="btn btn-sm btn-primary">Save</button>
             </div>
             <small class="{{ $cls }} text-left d-block mt-1">

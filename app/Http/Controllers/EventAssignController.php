@@ -444,6 +444,13 @@ class EventAssignController extends Controller
     public function destroy(Request $request, Event $event)
     {
         $this->authorize('delete', $event);
+
+        if ($event->source_leave_id) {
+            return back()->with('toast_errors', [
+                'This shift is managed by an absence. Please edit the absence instead.',
+            ]);
+        }
+
         $event->delete();
         return back()->with('toast', 'Deleted');
     }

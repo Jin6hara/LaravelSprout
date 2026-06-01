@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Department;
 use App\Models\District;
 use App\Models\Event;
+use App\Models\Leave;
 use App\Models\User;
 use App\Models\UserManagementScope;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -266,6 +267,8 @@ class EventAssignControllerTest extends TestCase
             ->assertSee('+ Add Shift')
             ->assertSee('New Shift for 2026-05-31')
             ->assertSee('Copy Shift')
+            ->assertSee('Delete')
+            ->assertSee('Delete Confirmation')
             ->assertSee(asset('js/shift-copy-modal.js'))
             ->assertSee(route('api.users.search'))
             ->assertSee('Tentative Sublist Preview')
@@ -644,6 +647,76 @@ class EventAssignControllerTest extends TestCase
             ->assertRedirect();
 
         $this->assertDatabaseMissing('events', ['id' => $event->id]);
+    }
+
+    /**
+     * シナリオ 10b: admin でも Leave snapshot 由来の Event は直接削除できない
+     *
+     * - source_leave_id がある Event は Leave が正本なので Event 側から削除しない
+     * - 削除したい場合は Absence / Leave 側を編集・削除する
+     */
+    public function test_admin_cannot_delete_event_managed_by_absence(): void
+    {
+        [$admin, $scope, $district, $department] = $this->makeAdmin();
+
+        $leave = Leave::factory()->create([
+            'district_id'   => $district->id,
+            'department_id' => $department->id,
+            'start_date'    => now()->toDateString(),
+            'status'        => 'approved',
+        ]);
+
+        $event = Event::factory()->create([
+            'district_id'     => $district->id,
+            'department_id'   => $department->id,
+            'event_date'      => now()->toDateString(),
+            'status'          => 'pending',
+            'type'            => 'regular_time',
+            'source_leave_id' => $leave->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->withSession(['selected_scope_id' => $scope->id])
+            ->delete(route('events.destroy', $event))
+            ->assertRedirect()
+            ->assertSessionHas('toast_errors');
+
+        $this->assertDatabaseHas('events', [
+            'id'              => $event->id,
+            'source_leave_id' => $leave->id,
+        ]);
+    }
+
+    /**
+     * シナリオ 10c: Leave snapshot 由来の Event は画面上でも削除不可として表示する
+     */
+    public function test_absence_managed_event_delete_button_is_disabled_on_shift_assigner(): void
+    {
+        [$admin, $scope, $district, $department] = $this->makeAdmin();
+
+        $leave = Leave::factory()->create([
+            'district_id'   => $district->id,
+            'department_id' => $department->id,
+            'start_date'    => '2026-05-31',
+            'status'        => 'approved',
+        ]);
+
+        Event::factory()->create([
+            'district_id'     => $district->id,
+            'department_id'   => $department->id,
+            'event_date'      => '2026-05-31',
+            'status'          => 'pending',
+            'type'            => 'regular_time',
+            'school_name'     => 'Managed School',
+            'source_leave_id' => $leave->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->withSession(['selected_scope_id' => $scope->id])
+            ->get(route('calendar.edit', ['event_date' => '2026-05-31']))
+            ->assertOk()
+            ->assertSee('Managed School')
+            ->assertSee('Managed by absence');
     }
 
     // =========================================================================

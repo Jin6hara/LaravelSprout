@@ -239,6 +239,21 @@
                                     data-store="{{ route('events.copy') }}">
                                     Copy
                                 </button>
+                                @if($event->source_leave_id)
+                                    <button type="button"
+                                        class="btn btn-sm btn-secondary"
+                                        disabled
+                                        title="Managed by absence">
+                                        Delete
+                                    </button>
+                                @else
+                                    <button type="button"
+                                        class="btn btn-sm btn-outline-danger js-delete"
+                                        data-url="{{ route('events.destroy', $event) }}"
+                                        data-date="{{ $event->event_date?->format('Y-m-d') ?? 'not set' }}">
+                                        Delete
+                                    </button>
+                                @endif
                                 <div class="form-check mb-0">
                                     <input class="form-check-input js-daily-exclude-event" type="checkbox" value="{{ $event->id }}" id="dailyEx{{ $event->id }}">
                                     <label class="form-check-label small" for="dailyEx{{ $event->id }}">
@@ -254,6 +269,11 @@
             </div>
         @endif
     </div>
+
+    <form id="js-delete-form" method="POST" style="display:none;">
+        @csrf
+        @method('DELETE')
+    </form>
 
     <div class="dsb-resize-handle" data-target="dailyEditorPane" data-storage-key="dailyShiftBoardEditorHeight">
         <span class="dsb-resize-grip">&#8942;&#8942;&#8942;</span>
@@ -515,6 +535,24 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-sm">
+            <div class="modal-header bg-danger text-white py-2">
+                <h6 class="modal-title" id="deleteConfirmLabel">Delete Confirmation</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0" id="deleteConfirmText">Are you sure you want to delete this shift?</p>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger btn-sm" id="confirmDeleteBtn">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('styles')
@@ -535,6 +573,28 @@
 </script>
 <script src="{{ asset('js/user-autocomplete.js') }}?v={{ filemtime(public_path('js/user-autocomplete.js')) }}"></script>
 <script src="{{ asset('js/shift-copy-modal.js') }}?v={{ filemtime(public_path('js/shift-copy-modal.js')) }}"></script>
+<script>
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.js-delete');
+        if (!btn) return;
+
+        const modalText = document.getElementById('deleteConfirmText');
+        modalText.textContent = `Are you sure you want to delete ${btn.dataset.date || 'this shift'}?`;
+
+        const form = document.getElementById('js-delete-form');
+        form.action = btn.dataset.url;
+
+        const modalEl = document.getElementById('deleteConfirmModal');
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+
+        const confirmBtn = document.getElementById('confirmDeleteBtn');
+        confirmBtn.onclick = () => {
+            modal.hide();
+            form.submit();
+        };
+    });
+</script>
 <script>
     document.addEventListener('click', (e) => {
         const link = e.target.closest('.js-daily-sublist-preview');
