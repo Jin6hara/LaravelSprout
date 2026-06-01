@@ -232,7 +232,9 @@ class EventAssignControllerTest extends TestCase
         $this->actingAs($admin)
             ->withSession(['selected_scope_id' => $scope->id])
             ->get(route('calendar.edit'))
-            ->assertOk();
+            ->assertOk()
+            ->assertSee('Copy Shift')
+            ->assertSee(asset('js/shift-copy-modal.js'));
     }
 
     /**
@@ -258,6 +260,8 @@ class EventAssignControllerTest extends TestCase
             ->assertSee('Daily Shift Board')
             ->assertSee('Scope School')
             ->assertSee('Create Absence')
+            ->assertSee('Copy Shift')
+            ->assertSee(asset('js/shift-copy-modal.js'))
             ->assertSee(route('api.users.search'))
             ->assertSee('Tentative Sublist Preview')
             ->assertSee('Master Sublist Preview')

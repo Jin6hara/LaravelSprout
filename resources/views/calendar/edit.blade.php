@@ -384,7 +384,7 @@
             {{-- 9 --}}
             <div class="card-footer bg-white d-flex justify-content-between align-items-center py-2 px-2 gap-1">             
               <button type="button"
-                class="btn btn-sm btn-outline-secondary js-duplicate"
+                class="btn btn-sm btn-outline-secondary js-shift-copy"
                 data-store="{{ route('events.copy') }}">
                 Copy
               </button>
@@ -436,6 +436,112 @@
           <button type="button" class="btn btn-danger btn-sm" id="confirmDeleteBtn">Delete</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="shiftCopyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <form method="POST" action="{{ route('events.copy') }}" class="modal-content shift-copy-form" id="shiftCopyForm">
+        @csrf
+        <div class="modal-header">
+          <h5 class="modal-title mb-0" id="shiftCopyModalTitle">Copy Shift</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body shift-copy-modal-body">
+          <datalist id="copyTitleOptions">
+            @foreach (['Support Shift', 'OPPT/ML', '#Memo', 'Cover Shift'] as $opt)
+              <option value="{{ $opt }}">
+            @endforeach
+          </datalist>
+          <datalist id="copySchoolOptions">
+            @foreach ($schoolNames as $s)
+              <option value="{{ $s }}">
+            @endforeach
+          </datalist>
+
+          <div class="row g-2">
+            <div class="col-12 col-md-4">
+              <label class="form-label small mb-1">Date</label>
+              <input type="date" name="event_date" class="form-control form-control-sm" required>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label small mb-1">Title</label>
+              <input list="copyTitleOptions" name="title" class="form-control form-control-sm">
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label small mb-1">Leave</label>
+              <input type="text" name="Leave_type" class="form-control form-control-sm">
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label small mb-1">Original User</label>
+              <select name="original_user_id" class="form-select form-select-sm">
+                <option value="">-</option>
+                @foreach($userOptions as $u)
+                  <option value="{{ $u->id }}">{{ $u->first_name }} {{ $u->family_name }} [{{ $u->employee_code }}]</option>
+                @endforeach
+              </select>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label small mb-1">Assigned User</label>
+              <select name="assigned_user_id" class="form-select form-select-sm">
+                <option value="">-</option>
+                @foreach($userOptions as $u)
+                  <option value="{{ $u->id }}">{{ $u->first_name }} {{ $u->family_name }} [{{ $u->employee_code }}]</option>
+                @endforeach
+              </select>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label small mb-1">School</label>
+              <input list="copySchoolOptions" name="school_name" class="form-control form-control-sm">
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label small mb-1">Start</label>
+              <input type="time" name="start_time" class="form-control form-control-sm" step="60">
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label small mb-1">End</label>
+              <input type="time" name="end_time" class="form-control form-control-sm" step="60">
+            </div>
+
+            <div class="col-12">
+              <label class="form-label small mb-1">Lesson</label>
+              <textarea name="Lesson" class="form-control form-control-sm" rows="2"></textarea>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label small mb-1">Type</label>
+              <select name="type" class="form-select form-select-sm" required>
+                @foreach($typeOptions as $v => $label)
+                  <option value="{{ $v }}">{{ $label }}</option>
+                @endforeach
+              </select>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label small mb-1">Status</label>
+              <select name="status" class="form-select form-select-sm" required>
+                @foreach($statusOptions as $v => $label)
+                  <option value="{{ $v }}">{{ $label }}</option>
+                @endforeach
+              </select>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label small mb-1">Total</label>
+              <input type="text" name="total_duration" class="form-control form-control-sm" placeholder="Auto">
+            </div>
+
+            <div class="col-12">
+              <label class="form-label small mb-1">Notes</label>
+              <textarea name="notes" class="form-control form-control-sm" rows="2"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-sm btn-primary">Create Copy</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -494,6 +600,7 @@
 @endsection
 
 @push('styles')
+<link href="{{ asset('css/shift-copy-modal.css') }}?v={{ filemtime(public_path('css/shift-copy-modal.css')) }}" rel="stylesheet">
 <style>
   .card-body.light-blue {
     background-color: #eef6ff;
@@ -597,35 +704,7 @@ document.addEventListener('input', (e) => {
   });
 </script>
 
-<script>
-  // 複写：現在のフォーム値で /events に POST
-  document.addEventListener('click', (e) => {
-    const btn = e.target.closest('.js-duplicate');
-    if (!btn) return;
-
-    const form = btn.closest('form');
-    if (!form) return;
-
-    // PUT のメソッド偽装を外す
-    const spoof = form.querySelector('input[name="_method"]');
-    if (spoof) spoof.remove();
-
-    // 送信先を store に差し替え、method を POST に
-    form.action = btn.dataset.store;
-    form.method = 'POST';
-
-    // 複写フラグ（必要ならコントローラで分岐可能）
-    if (!form.querySelector('input[name="_duplicate"]')) {
-      const f = document.createElement('input');
-      f.type = 'hidden';
-      f.name = '_duplicate';
-      f.value = '1';
-      form.appendChild(f);
-    }
-
-    form.submit();
-  });
-</script>
+<script src="{{ asset('js/shift-copy-modal.js') }}?v={{ filemtime(public_path('js/shift-copy-modal.js')) }}"></script>
 
 <script>
 // 一括保存

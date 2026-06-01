@@ -1,0 +1,18 @@
+.shift-copy-form .modal-header,
+.shift-copy-modal-body,
+.shift-copy-form .modal-footer {
+  background-color: #eef6ff;
+}
+
+.shift-copy-form .form-control,
+.shift-copy-form .form-select {
+  background-color: #fff;
+  border-color: #b6c7d8;
+}
+
+.shift-copy-form .form-control:focus,
+.shift-copy-form .form-select:focus {
+  background-color: #fff;
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.15rem rgba(13, 110, 253, 0.18);
+}

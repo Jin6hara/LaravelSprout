@@ -231,6 +231,11 @@
                             <td>
                                 <div class="d-inline-flex align-items-center gap-2">
                                 <button type="button" class="btn btn-sm btn-success js-dsb-row-save">Save</button>
+                                <button type="button"
+                                    class="btn btn-sm btn-outline-secondary js-shift-copy"
+                                    data-store="{{ route('events.copy') }}">
+                                    Copy
+                                </button>
                                 <div class="form-check mb-0">
                                     <input class="form-check-input js-daily-exclude-event" type="checkbox" value="{{ $event->id }}" id="dailyEx{{ $event->id }}">
                                     <label class="form-check-label small" for="dailyEx{{ $event->id }}">
@@ -273,6 +278,112 @@
     </div>
 </div>
 
+<div class="modal fade" id="shiftCopyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <form method="POST" action="{{ route('events.copy') }}" class="modal-content shift-copy-form" id="shiftCopyForm">
+            @csrf
+            <div class="modal-header">
+                <h5 class="modal-title mb-0" id="shiftCopyModalTitle">Copy Shift</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body shift-copy-modal-body">
+                <datalist id="dailyCopyTitleOptions">
+                    @foreach($titleOptions as $opt)
+                        <option value="{{ $opt }}">
+                    @endforeach
+                </datalist>
+                <datalist id="dailyCopySchoolOptions">
+                    @foreach($schoolNames as $s)
+                        <option value="{{ $s }}">
+                    @endforeach
+                </datalist>
+
+                <div class="row g-2">
+                    <div class="col-12 col-md-4">
+                        <label class="form-label small mb-1">Date</label>
+                        <input type="date" name="event_date" class="form-control form-control-sm" required>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label small mb-1">Title</label>
+                        <input list="dailyCopyTitleOptions" name="title" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label small mb-1">Leave</label>
+                        <input type="text" name="Leave_type" class="form-control form-control-sm">
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small mb-1">Original User</label>
+                        <select name="original_user_id" class="form-select form-select-sm">
+                            <option value="">-</option>
+                            @foreach($userOptions as $u)
+                                <option value="{{ $u->id }}">{{ $u->first_name }} {{ $u->family_name }} [{{ $u->employee_code }}]</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small mb-1">Assigned User</label>
+                        <select name="assigned_user_id" class="form-select form-select-sm">
+                            <option value="">-</option>
+                            @foreach($userOptions as $u)
+                                <option value="{{ $u->id }}">{{ $u->first_name }} {{ $u->family_name }} [{{ $u->employee_code }}]</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small mb-1">School</label>
+                        <input list="dailyCopySchoolOptions" name="school_name" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label small mb-1">Start</label>
+                        <input type="time" name="start_time" class="form-control form-control-sm" step="60">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label small mb-1">End</label>
+                        <input type="time" name="end_time" class="form-control form-control-sm" step="60">
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label small mb-1">Lesson</label>
+                        <textarea name="Lesson" class="form-control form-control-sm" rows="2"></textarea>
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <label class="form-label small mb-1">Type</label>
+                        <select name="type" class="form-select form-select-sm" required>
+                            @foreach($typeOptions as $v => $label)
+                                <option value="{{ $v }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label small mb-1">Status</label>
+                        <select name="status" class="form-select form-select-sm" required>
+                            @foreach($statusOptions as $v => $label)
+                                <option value="{{ $v }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label small mb-1">Total</label>
+                        <input type="text" name="total_duration" class="form-control form-control-sm" placeholder="Auto">
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label small mb-1">Notes</label>
+                        <textarea name="notes" class="form-control form-control-sm" rows="2"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-sm btn-primary">Create Copy</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="modal fade" id="dailyEventModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
@@ -289,6 +400,7 @@
 @push('styles')
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.css" rel="stylesheet">
 <link href="{{ asset('css/forecast-custom.css') }}" rel="stylesheet">
+<link href="{{ asset('css/shift-copy-modal.css') }}?v={{ filemtime(public_path('css/shift-copy-modal.css')) }}" rel="stylesheet">
 <link href="{{ asset('css/daily-shift-board.css') }}?v={{ filemtime(public_path('css/daily-shift-board.css')) }}" rel="stylesheet">
 @endpush
 
@@ -302,6 +414,7 @@
     };
 </script>
 <script src="{{ asset('js/user-autocomplete.js') }}?v={{ filemtime(public_path('js/user-autocomplete.js')) }}"></script>
+<script src="{{ asset('js/shift-copy-modal.js') }}?v={{ filemtime(public_path('js/shift-copy-modal.js')) }}"></script>
 <script>
     document.addEventListener('click', (e) => {
         const link = e.target.closest('.js-daily-sublist-preview');
