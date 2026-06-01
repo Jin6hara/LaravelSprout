@@ -233,7 +233,10 @@ class EventAssignControllerTest extends TestCase
             ->withSession(['selected_scope_id' => $scope->id])
             ->get(route('calendar.edit'))
             ->assertOk()
+            ->assertSee('+ Add Shift')
+            ->assertSee('New Shift')
             ->assertSee('Copy Shift')
+            ->assertSee(asset('js/user-autocomplete.js'))
             ->assertSee(asset('js/shift-copy-modal.js'));
     }
 
@@ -260,6 +263,8 @@ class EventAssignControllerTest extends TestCase
             ->assertSee('Daily Shift Board')
             ->assertSee('Scope School')
             ->assertSee('Create Absence')
+            ->assertSee('+ Add Shift')
+            ->assertSee('New Shift for 2026-05-31')
             ->assertSee('Copy Shift')
             ->assertSee(asset('js/shift-copy-modal.js'))
             ->assertSee(route('api.users.search'))
@@ -299,6 +304,65 @@ class EventAssignControllerTest extends TestCase
             'type'          => 'regular_time',
             'district_id'   => $district->id,
             'department_id' => $department->id,
+        ]);
+    }
+
+    /**
+     * シナリオ 8b: 入力モーダル用の項目付き Event を作成できる
+     */
+    public function test_admin_can_store_event_from_create_modal_payload(): void
+    {
+        [$admin, $scope, $district, $department] = $this->makeAdmin();
+
+        $originalUser = User::factory()->create([
+            'district_id'   => $district->id,
+            'department_id' => $department->id,
+            'first_name'    => 'Original',
+            'family_name'   => 'Teacher',
+            'employee_code' => 'O12345',
+        ]);
+        $assignedUser = User::factory()->create([
+            'district_id'   => $district->id,
+            'department_id' => $department->id,
+            'first_name'    => 'Assigned',
+            'family_name'   => 'Teacher',
+            'employee_code' => 'A12345',
+        ]);
+
+        $date = '2026-05-31';
+
+        $this->actingAs($admin)
+            ->withSession(['selected_scope_id' => $scope->id])
+            ->post(route('events.store'), [
+                'event_date'           => $date,
+                'title'                => 'Cover Shift',
+                'original_user_lookup' => 'Original Teacher [O12345]',
+                'assigned_user_lookup' => 'Assigned Teacher [A12345]',
+                'school_name'          => 'Modal School',
+                'start_time'           => '09:00',
+                'end_time'             => '12:30',
+                'Lesson'               => 'G1 Math',
+                'type'                 => 'regular_time',
+                'status'               => 'pending',
+                'notes'                => 'Created from modal',
+            ])
+            ->assertRedirect(route('calendar.edit', ['event_date' => $date]));
+
+        $this->assertDatabaseHas('events', [
+            'event_date'       => $date,
+            'title'            => 'Cover Shift',
+            'original_user_id' => $originalUser->id,
+            'assigned_user_id' => $assignedUser->id,
+            'school_name'      => 'Modal School',
+            'start_time'       => '09:00:00',
+            'end_time'         => '12:30:00',
+            'total_duration'   => '3:30',
+            'Lesson'           => 'G1 Math',
+            'type'             => 'regular_time',
+            'status'           => 'pending',
+            'notes'            => 'Created from modal',
+            'district_id'      => $district->id,
+            'department_id'    => $department->id,
         ]);
     }
 

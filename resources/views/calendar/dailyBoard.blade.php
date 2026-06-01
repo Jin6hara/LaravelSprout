@@ -113,6 +113,9 @@
                 data-user-autocomplete-limit="20">
             <button type="submit" class="btn btn-sm btn-warning text-nowrap">Create Absence for {{ $selectedDate }}</button>
         </form>
+        <button type="button" class="btn btn-sm btn-success text-nowrap" data-bs-toggle="modal" data-bs-target="#shiftCreateModal">
+            + Add Shift
+        </button>
         <div class="d-flex align-items-center gap-2 ms-auto">
             <span id="dailyBoardSaveStatus" class="small text-muted d-none"></span>
             <button type="button"
@@ -275,6 +278,123 @@
             class="btn btn-sm btn-outline-primary js-daily-sublist-preview">
             Final Sublist Preview
         </a>
+    </div>
+</div>
+
+<div class="modal fade" id="shiftCreateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <form method="POST" action="{{ route('events.store') }}" class="modal-content shift-copy-form">
+            @csrf
+            <input type="hidden" name="redirect_to" value="{{ route('calendar.daily_assigner', ['date' => $selectedDate]) }}">
+            <div class="modal-header">
+                <h5 class="modal-title mb-0">New Shift for {{ $selectedDate }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body shift-copy-modal-body">
+                <datalist id="dailyCreateTitleOptions">
+                    @foreach($titleOptions as $opt)
+                        <option value="{{ $opt }}">
+                    @endforeach
+                </datalist>
+                <datalist id="dailyCreateSchoolOptions">
+                    @foreach($schoolNames as $s)
+                        <option value="{{ $s }}">
+                    @endforeach
+                </datalist>
+                <datalist id="dailyCreateOriginalUserOptions"></datalist>
+                <datalist id="dailyCreateAssignedUserOptions"></datalist>
+
+                <div class="row g-2">
+                    <div class="col-12 col-md-4">
+                        <label class="form-label small mb-1">Date</label>
+                        <input type="date" name="event_date" class="form-control form-control-sm" value="{{ $selectedDate }}" readonly required>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label small mb-1">Title</label>
+                        <input list="dailyCreateTitleOptions" name="title" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label small mb-1">Leave</label>
+                        <input type="text" name="Leave_type" class="form-control form-control-sm">
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small mb-1">Original User</label>
+                        <input type="hidden" name="original_user_id" id="dailyCreateOriginalUserId">
+                        <input type="text"
+                            name="original_user_lookup"
+                            class="form-control form-control-sm"
+                            list="dailyCreateOriginalUserOptions"
+                            autocomplete="off"
+                            data-user-autocomplete
+                            data-user-autocomplete-url="{{ route('api.users.search') }}"
+                            data-user-autocomplete-hidden="#dailyCreateOriginalUserId"
+                            data-user-autocomplete-limit="20">
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small mb-1">Assigned User</label>
+                        <input type="hidden" name="assigned_user_id" id="dailyCreateAssignedUserId">
+                        <input type="text"
+                            name="assigned_user_lookup"
+                            class="form-control form-control-sm"
+                            list="dailyCreateAssignedUserOptions"
+                            autocomplete="off"
+                            data-user-autocomplete
+                            data-user-autocomplete-url="{{ route('api.users.search') }}"
+                            data-user-autocomplete-hidden="#dailyCreateAssignedUserId"
+                            data-user-autocomplete-limit="20">
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small mb-1">School</label>
+                        <input list="dailyCreateSchoolOptions" name="school_name" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label small mb-1">Start</label>
+                        <input type="time" name="start_time" class="form-control form-control-sm" step="60">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label small mb-1">End</label>
+                        <input type="time" name="end_time" class="form-control form-control-sm" step="60">
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label small mb-1">Lesson</label>
+                        <textarea name="Lesson" class="form-control form-control-sm" rows="2"></textarea>
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <label class="form-label small mb-1">Type</label>
+                        <select name="type" class="form-select form-select-sm">
+                            @foreach($typeOptions as $v => $label)
+                                <option value="{{ $v }}" @selected($v === \App\Enums\ShiftType::RegularTime->value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label small mb-1">Status</label>
+                        <select name="status" class="form-select form-select-sm">
+                            @foreach($statusOptions as $v => $label)
+                                <option value="{{ $v }}" @selected($v === \App\Enums\EventStatus::Pending->value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label small mb-1">Total</label>
+                        <input type="text" name="total_duration" class="form-control form-control-sm" placeholder="Auto">
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label small mb-1">Notes</label>
+                        <textarea name="notes" class="form-control form-control-sm" rows="2"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-sm btn-success">Create</button>
+            </div>
+        </form>
     </div>
 </div>
 

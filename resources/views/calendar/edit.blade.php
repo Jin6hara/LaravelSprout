@@ -198,13 +198,9 @@
   
   <div class="d-flex align-items-center gap-1 mb-2">
     {{-- 空白イベント追加 -------------------------------------------------------------------------------------------}}
-    <form method="POST" action="{{ route('events.store') }}" class="m-0 p-0">
-      @csrf
-      <input type="hidden" name="event_date" value="{{ request('event_date', now()->toDateString()) }}">
-      <button type="submit" class="btn btn-sm btn-success">
-        ＋ Add Blank
-      </button>
-    </form>
+    <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#shiftCreateModal">
+      + Add Shift
+    </button>
     <button type="button"
       class="btn btn-sm btn-primary"
       id="js-bulk-save"
@@ -436,6 +432,123 @@
           <button type="button" class="btn btn-danger btn-sm" id="confirmDeleteBtn">Delete</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="shiftCreateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <form method="POST" action="{{ route('events.store') }}" class="modal-content shift-copy-form">
+        @csrf
+        <input type="hidden" name="redirect_to" value="{{ url()->full() }}">
+        <div class="modal-header">
+          <h5 class="modal-title mb-0">New Shift</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body shift-copy-modal-body">
+          <datalist id="createTitleOptions">
+            @foreach (['Support Shift', 'OPPT/ML', '#Memo', 'Cover Shift'] as $opt)
+              <option value="{{ $opt }}">
+            @endforeach
+          </datalist>
+          <datalist id="createSchoolOptions">
+            @foreach ($schoolNames as $s)
+              <option value="{{ $s }}">
+            @endforeach
+          </datalist>
+          <datalist id="createOriginalUserOptions"></datalist>
+          <datalist id="createAssignedUserOptions"></datalist>
+
+          <div class="row g-2">
+            <div class="col-12 col-md-4">
+              <label class="form-label small mb-1">Date</label>
+              <input type="date" name="event_date" class="form-control form-control-sm" value="{{ request('event_date', now()->toDateString()) }}" required>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label small mb-1">Title</label>
+              <input list="createTitleOptions" name="title" class="form-control form-control-sm">
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label small mb-1">Leave</label>
+              <input type="text" name="Leave_type" class="form-control form-control-sm">
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label small mb-1">Original User</label>
+              <input type="hidden" name="original_user_id" id="createOriginalUserId">
+              <input type="text"
+                name="original_user_lookup"
+                class="form-control form-control-sm"
+                list="createOriginalUserOptions"
+                autocomplete="off"
+                data-user-autocomplete
+                data-user-autocomplete-url="{{ route('api.users.search') }}"
+                data-user-autocomplete-hidden="#createOriginalUserId"
+                data-user-autocomplete-limit="20">
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label small mb-1">Assigned User</label>
+              <input type="hidden" name="assigned_user_id" id="createAssignedUserId">
+              <input type="text"
+                name="assigned_user_lookup"
+                class="form-control form-control-sm"
+                list="createAssignedUserOptions"
+                autocomplete="off"
+                data-user-autocomplete
+                data-user-autocomplete-url="{{ route('api.users.search') }}"
+                data-user-autocomplete-hidden="#createAssignedUserId"
+                data-user-autocomplete-limit="20">
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label small mb-1">School</label>
+              <input list="createSchoolOptions" name="school_name" class="form-control form-control-sm">
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label small mb-1">Start</label>
+              <input type="time" name="start_time" class="form-control form-control-sm" step="60">
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label small mb-1">End</label>
+              <input type="time" name="end_time" class="form-control form-control-sm" step="60">
+            </div>
+
+            <div class="col-12">
+              <label class="form-label small mb-1">Lesson</label>
+              <textarea name="Lesson" class="form-control form-control-sm" rows="2"></textarea>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <label class="form-label small mb-1">Type</label>
+              <select name="type" class="form-select form-select-sm">
+                @foreach($typeOptions as $v => $label)
+                  <option value="{{ $v }}" @selected($v === \App\Enums\ShiftType::RegularTime->value)>{{ $label }}</option>
+                @endforeach
+              </select>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label small mb-1">Status</label>
+              <select name="status" class="form-select form-select-sm">
+                @foreach($statusOptions as $v => $label)
+                  <option value="{{ $v }}" @selected($v === \App\Enums\EventStatus::Pending->value)>{{ $label }}</option>
+                @endforeach
+              </select>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label small mb-1">Total</label>
+              <input type="text" name="total_duration" class="form-control form-control-sm" placeholder="Auto">
+            </div>
+
+            <div class="col-12">
+              <label class="form-label small mb-1">Notes</label>
+              <textarea name="notes" class="form-control form-control-sm" rows="2"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-sm btn-success">Create</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -704,6 +817,7 @@ document.addEventListener('input', (e) => {
   });
 </script>
 
+<script src="{{ asset('js/user-autocomplete.js') }}?v={{ filemtime(public_path('js/user-autocomplete.js')) }}"></script>
 <script src="{{ asset('js/shift-copy-modal.js') }}?v={{ filemtime(public_path('js/shift-copy-modal.js')) }}"></script>
 
 <script>

@@ -6,6 +6,7 @@ use App\Enums\EventStatus;
 use App\Enums\ShiftType;
 use App\Http\Requests\EventAssign\BulkUpdateEventRequest;
 use App\Http\Requests\EventAssign\CopyEventRequest;
+use App\Http\Requests\EventAssign\StoreEventRequest;
 use App\Http\Requests\EventAssign\UpdateEventRequest;
 use App\Models\Event;
 use App\Models\User;
@@ -239,23 +240,61 @@ class EventAssignController extends Controller
      * 空の新規イベントを作成
      * POST /calendar/events — 指定日に pending・regular_time の空白イベントを生成して管理画面へ戻す
      */
-    public function store(Request $request)
+    public function store(StoreEventRequest $request)
     {
         $this->authorize('create', Event::class);
 
-        // リクエストやURLクエリから event_date を取得（POSTでもGETでも対応）
-        $date = $request->input('event_date', now()->toDateString());
+        $validated = $request->validated();
+        $date = $validated['event_date'];
+        $redirectUrl = $this->eventStoreRedirectUrl($request, $date);
 
-        // 空白イベントを作成
-        $event = Event::create([
-            'event_date'    => $date,
-            'status'        => EventStatus::Pending->value,
-            'type'          => ShiftType::RegularTime->value,
-            'district_id'   => $this->scopeService->currentDistrictId(),
-            'department_id' => $this->scopeService->currentDepartmentId(),
-        ]);
+        $originalUser = $this->resolveEventUser($request, 'original');
+        if (($request->filled('original_user_id') || $request->filled('original_user_lookup')) && ! $originalUser) {
+            return redirect()->to($redirectUrl)
+                ->withInput()
+                ->with('toast_errors', ['Original user not found. Please select a user from the suggestions.']);
+        }
 
-        return back()->with('toast', "Created shift at {$date}.");
+        $assignedUser = $this->resolveEventUser($request, 'assigned');
+        if (($request->filled('assigned_user_id') || $request->filled('assigned_user_lookup')) && ! $assignedUser) {
+            return redirect()->to($redirectUrl)
+                ->withInput()
+                ->with('toast_errors', ['Assigned user not found. Please select a user from the suggestions.']);
+        }
+
+        unset(
+            $validated['original_user_lookup'],
+            $validated['assigned_user_lookup'],
+            $validated['redirect_to']
+        );
+
+        $validated['original_user_id'] = $originalUser?->id;
+        $validated['assigned_user_id'] = $assignedUser?->id;
+        $validated['status'] = $validated['status'] ?? EventStatus::Pending->value;
+        $validated['type'] = $validated['type'] ?? ShiftType::RegularTime->value;
+
+        foreach (['start_time', 'end_time'] as $k) {
+            if (!empty($validated[$k])) {
+                $validated[$k] = Carbon::createFromFormat('H:i', $validated[$k])->format('H:i:s');
+            } else {
+                $validated[$k] = null;
+            }
+        }
+
+        if (empty($validated['total_duration']) && $validated['start_time'] && $validated['end_time']) {
+            $start = Carbon::createFromFormat('H:i:s', $validated['start_time']);
+            $end   = Carbon::createFromFormat('H:i:s', $validated['end_time']);
+            if ($end->lt($start)) $end->addDay();
+            $mins = $start->diffInMinutes($end);
+            $validated['total_duration'] = sprintf('%d:%02d', intdiv($mins, 60), $mins % 60);
+        }
+
+        $this->authorizeReferencedUsers($validated);
+        $validated['district_id']   = $this->scopeService->currentDistrictId();
+        $validated['department_id'] = $this->scopeService->currentDepartmentId();
+        Event::create($validated);
+
+        return redirect()->to($redirectUrl)->with('toast', "Created shift at {$date}.");
     }
 
     /**
@@ -691,6 +730,48 @@ class EventAssignController extends Controller
             $targetUser = User::findOrFail((int) $userId);
             $this->authorize('view', $targetUser);
         }
+    }
+
+    private function eventStoreRedirectUrl(StoreEventRequest $request, string $date): string
+    {
+        $redirectTo = (string) $request->input('redirect_to', '');
+        if ($redirectTo !== '' && str_starts_with($redirectTo, url('/'))) {
+            return $redirectTo;
+        }
+
+        return route('calendar.edit', ['event_date' => $date]);
+    }
+
+    private function resolveEventUser(StoreEventRequest $request, string $prefix): ?User
+    {
+        $userId = (int) $request->input("{$prefix}_user_id");
+        if ($userId > 0) {
+            return $this->scopeService->targetUserQuery()->whereKey($userId)->first();
+        }
+
+        $lookup = trim((string) $request->input("{$prefix}_user_lookup", ''));
+        if ($lookup === '') {
+            return null;
+        }
+
+        if (preg_match('/\[([^\]]+)\]\s*$/', $lookup, $m)) {
+            return $this->scopeService->targetUserQuery()
+                ->where('employee_code', trim($m[1]))
+                ->first();
+        }
+
+        $matches = $this->scopeService->targetUserQuery()
+            ->where(function ($q) use ($lookup) {
+                $q->whereLikeInsensitive('first_name', $lookup)
+                    ->orWhereLikeInsensitive('family_name', $lookup)
+                    ->orWhereLikeInsensitive('name', $lookup)
+                    ->orWhereLikeInsensitive('employee_code', $lookup)
+                    ->orWhereLikeInsensitive('email', $lookup);
+            })
+            ->limit(2)
+            ->get();
+
+        return $matches->count() === 1 ? $matches->first() : null;
     }
 
     /**
