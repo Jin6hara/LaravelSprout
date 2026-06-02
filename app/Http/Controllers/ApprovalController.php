@@ -24,6 +24,7 @@ class ApprovalController extends Controller
         $meta       = $approvalRequest->metadata ?? [];
         $approvable = $approvalRequest->approvable;
         $dateSummary = null;
+        $generatedShiftDetails = collect();
 
         if ($approvable instanceof Leave) {
             $kind = $meta['kind'] ?? $approvable->kind ?? null;
@@ -64,11 +65,14 @@ class ApprovalController extends Controller
                     $dateSummary = $meta['date'] ?? optional($approvable->start_date)->format('Y-m-d') ?? '-';
                 }
             }
+
+            $generatedShiftDetails = $this->generatedShiftDetailsForApproval($approvalRequest);
         }
 
         return view('approvals.show', [
-            'approvalRequest' => $approvalRequest,
-            'dateSummary'     => $dateSummary,
+            'approvalRequest'       => $approvalRequest,
+            'dateSummary'           => $dateSummary,
+            'generatedShiftDetails' => $generatedShiftDetails,
         ]);
     }
 
@@ -93,8 +97,74 @@ class ApprovalController extends Controller
     {
         $this->authorize('act', $approvalRequest);
 
-        $this->approvalService->deny($approvalRequest, Auth::id(), $request->input('comment'));
+        $generatedShiftAction = $request->input('inactive_generated_shift_action');
+        $generatedShiftCount = $this->generatedShiftDetailsForApproval($approvalRequest)->count();
+
+        if ($generatedShiftCount > 0 && !in_array($generatedShiftAction, ['detach', 'delete'], true)) {
+            return back()->with('toast_errors', [
+                'Please confirm what to do with generated shift(s) before denying this leave request.',
+            ]);
+        }
+
+        $this->approvalService->deny(
+            $approvalRequest,
+            Auth::id(),
+            $request->input('comment'),
+            $generatedShiftAction
+        );
 
         return back()->with('toast', '却下しました。');
+    }
+
+    private function generatedShiftDetailsForApproval(ApprovalRequest $approvalRequest)
+    {
+        $approvalRequest->loadMissing('approvable');
+        $approvable = $approvalRequest->approvable;
+
+        if (!$approvable instanceof Leave) {
+            return collect();
+        }
+
+        $meta = $approvalRequest->metadata ?? [];
+        $batchId = $meta['batch_id'] ?? null;
+
+        $leaves = collect([$approvable]);
+
+        if ($batchId) {
+            $leaves = ApprovalRequest::query()
+                ->where('approvable_type', Leave::class)
+                ->where('metadata->batch_id', $batchId)
+                ->with('approvable')
+                ->get()
+                ->pluck('approvable')
+                ->filter(fn($leave) => $leave instanceof Leave)
+                ->unique('id')
+                ->values();
+        }
+
+        $leaves->each->load([
+            'generatedEvents.originalUser:id,first_name,family_name,employee_code',
+            'generatedEvents.assignedUser:id,first_name,family_name,employee_code',
+        ]);
+
+        return $leaves
+            ->flatMap(fn(Leave $leave) => $leave->generatedEvents->map(function ($event) use ($leave) {
+                $original = trim(($event->originalUser?->first_name ?? '') . ' ' . ($event->originalUser?->family_name ?? ''));
+                $assigned = trim(($event->assignedUser?->first_name ?? '') . ' ' . ($event->assignedUser?->family_name ?? ''));
+
+                return [
+                    'leave_id' => $leave->id,
+                    'id' => $event->id,
+                    'date' => optional($event->event_date)->format('Y-m-d') ?: '-',
+                    'original' => $original !== '' ? $original : '-',
+                    'assigned' => $assigned !== '' ? $assigned : '-',
+                    'school' => $event->school_name ?: '-',
+                    'time' => trim(optional($event->start_time)->format('H:i') . ' - ' . optional($event->end_time)->format('H:i'), ' -') ?: '-',
+                    'lesson' => $event->Lesson ?: '-',
+                    'status' => $event->status ?: '-',
+                    'notes' => $event->notes ?: '-',
+                ];
+            }))
+            ->values();
     }
 }
