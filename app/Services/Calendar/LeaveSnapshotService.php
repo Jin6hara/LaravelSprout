@@ -21,11 +21,18 @@ class LeaveSnapshotService
     public function rebuildSnapshotsForLeave(Leave $leave): void
     {
         DB::transaction(function () use ($leave) {
+            if (!in_array($leave->status, LeaveStatus::snapshotValues(), true)) {
+                if ($leave->generatedShiftInactiveAction === 'delete') {
+                    $this->deleteSnapshotsForLeave($leave);
+                    return;
+                }
+
+                $this->detachSnapshotsForLeave($leave);
+                return;
+            }
+
             // まず既存のスナップショットを消す（冪等性）
             $this->deleteSnapshotsForLeave($leave);
-
-            // Approved, Pendingの場合生成（ポリシーは要件に合わせて）
-            if (!in_array($leave->status, LeaveStatus::snapshotValues(), true)) return;
 
             // 期間生成（end_date が null の場合は単日）
             $start = Carbon::parse($leave->start_date);
@@ -47,6 +54,16 @@ class LeaveSnapshotService
         Event::query()
             ->where('source_leave_id', $leave->id)
             ->delete(); // EventDetail は FK cascade で自動削除
+    }
+
+    /**
+     * Leave が Rejected / Cancelled などになった場合、紐づく Event は削除せず手動シフトとして残す
+     */
+    public function detachSnapshotsForLeave(Leave $leave): void
+    {
+        Event::query()
+            ->where('source_leave_id', $leave->id)
+            ->update(['source_leave_id' => null]);
     }
 
     /**

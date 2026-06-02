@@ -137,12 +137,14 @@
         <form method="POST"
               action="{{ route('leaves.update', $leave) }}"
               class="h-100 d-flex flex-column js-leave-form"
-              data-user-id="{{ $leave->user_id }}">
+              data-user-id="{{ $leave->user_id }}"
+              data-current-status="{{ $leave->status }}">
           @csrf
           @method('PUT')
 
           {{-- Add Bulk 用ID隠しフィールド (JS用？) --}}
           <input type="hidden" name="id" value="{{ $leave->id }}">
+          <input type="hidden" name="inactive_generated_shift_action" value="">
 
           <div class="card-body py-1 px-2">
             <div class="mb-0 d-grid gap-0">
@@ -329,6 +331,27 @@
   </div>
 </div>
 
+<div class="modal fade" id="inactiveStatusConfirmModal" tabindex="-1" aria-labelledby="inactiveStatusConfirmLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow-sm">
+      <div class="modal-header bg-warning py-2">
+        <h6 class="modal-title" id="inactiveStatusConfirmLabel">Status Change Confirmation</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-2" id="inactiveStatusConfirmText">This absence has generated shift(s).</p>
+        <div class="small text-muted mb-2" id="inactiveGeneratedShiftSummary"></div>
+        <div class="generated-shift-list" id="inactiveGeneratedShiftWrap" style="display:none;"></div>
+      </div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" id="inactiveKeepGeneratedShiftsBtn">Keep Shift</button>
+        <button type="button" class="btn btn-danger btn-sm" id="inactiveDeleteGeneratedShiftsBtn">Delete Shift</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 @endsection
 
 @push('styles')
@@ -397,6 +420,69 @@
 
 @push('scripts')
 <script>
+  function renderGeneratedShiftCards(wrap, shifts) {
+    wrap.innerHTML = '';
+
+    shifts.forEach((shift) => {
+      const card = document.createElement('div');
+      card.className = 'generated-shift-card';
+
+      const title = document.createElement('div');
+      title.className = 'fw-semibold mb-2';
+      title.textContent = `Generated Shift #${shift.id || '-'}`;
+      card.appendChild(title);
+
+      const meta = document.createElement('div');
+      meta.className = 'generated-shift-meta';
+      [
+        ['Date', 'date'],
+        ['Original', 'original'],
+        ['Assigned', 'assigned'],
+        ['School', 'school'],
+        ['Time', 'time'],
+        ['Status', 'status'],
+      ].forEach(([label, key]) => {
+        const field = document.createElement('div');
+        field.className = 'generated-shift-field';
+
+        const labelEl = document.createElement('span');
+        labelEl.className = 'generated-shift-label';
+        labelEl.textContent = label;
+
+        const valueEl = document.createElement('div');
+        valueEl.className = 'generated-shift-value';
+        valueEl.textContent = shift[key] || '-';
+
+        field.append(labelEl, valueEl);
+        meta.appendChild(field);
+      });
+      card.appendChild(meta);
+
+      ['lesson', 'notes'].forEach((key) => {
+        const wide = document.createElement('div');
+        wide.className = 'generated-shift-wide';
+
+        const labelEl = document.createElement('span');
+        labelEl.className = 'generated-shift-label';
+        labelEl.textContent = key === 'lesson' ? 'Lesson' : 'Notes';
+
+        const valueEl = document.createElement('div');
+        valueEl.className = 'generated-shift-value';
+        valueEl.textContent = shift[key] || '-';
+
+        wide.append(labelEl, valueEl);
+        card.appendChild(wide);
+      });
+
+      wrap.appendChild(card);
+    });
+  }
+
+  function generatedShiftsFromSource(sourceId) {
+    const source = document.getElementById(sourceId);
+    return source ? JSON.parse(source.textContent || '[]') : [];
+  }
+
   // 削除確認ダイアログ（日付表示） → Bootstrap Modal に置き換え（英語UI）
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('.js-delete');
@@ -407,71 +493,17 @@
     const modalText = document.getElementById('deleteConfirmText');
     modalText.textContent = `Are you sure you want to delete the absence for ${date}?`;
 
-    const shiftsSource = document.getElementById(btn.dataset.shiftsSource);
-    const shifts = shiftsSource ? JSON.parse(shiftsSource.textContent || '[]') : [];
+    const shifts = generatedShiftsFromSource(btn.dataset.shiftsSource);
     const summary = document.getElementById('deleteGeneratedShiftSummary');
     const wrap = document.getElementById('deleteGeneratedShiftWrap');
-    wrap.innerHTML = '';
 
     if (shifts.length > 0) {
       summary.textContent = `${shifts.length} generated shift(s) are linked to this absence. They will also be deleted unless you choose Keep Shift.`;
       wrap.style.display = '';
-
-      shifts.forEach((shift) => {
-        const card = document.createElement('div');
-        card.className = 'generated-shift-card';
-
-        const title = document.createElement('div');
-        title.className = 'fw-semibold mb-2';
-        title.textContent = `Generated Shift #${shift.id || '-'}`;
-        card.appendChild(title);
-
-        const meta = document.createElement('div');
-        meta.className = 'generated-shift-meta';
-        [
-          ['Date', 'date'],
-          ['Original', 'original'],
-          ['Assigned', 'assigned'],
-          ['School', 'school'],
-          ['Time', 'time'],
-          ['Status', 'status'],
-        ].forEach(([label, key]) => {
-          const field = document.createElement('div');
-          field.className = 'generated-shift-field';
-
-          const labelEl = document.createElement('span');
-          labelEl.className = 'generated-shift-label';
-          labelEl.textContent = label;
-
-          const valueEl = document.createElement('div');
-          valueEl.className = 'generated-shift-value';
-          valueEl.textContent = shift[key] || '-';
-
-          field.append(labelEl, valueEl);
-          meta.appendChild(field);
-        });
-        card.appendChild(meta);
-
-        ['lesson', 'notes'].forEach((key) => {
-          const wide = document.createElement('div');
-          wide.className = 'generated-shift-wide';
-
-          const labelEl = document.createElement('span');
-          labelEl.className = 'generated-shift-label';
-          labelEl.textContent = key === 'lesson' ? 'Lesson' : 'Notes';
-
-          const valueEl = document.createElement('div');
-          valueEl.className = 'generated-shift-value';
-          valueEl.textContent = shift[key] || '-';
-
-          wide.append(labelEl, valueEl);
-          card.appendChild(wide);
-        });
-
-        wrap.appendChild(card);
-      });
+      renderGeneratedShiftCards(wrap, shifts);
     } else {
       summary.textContent = 'No generated shifts are linked to this absence.';
+      wrap.innerHTML = '';
       wrap.style.display = 'none';
     }
 
@@ -497,6 +529,49 @@
     const keepBtn = document.getElementById('keepGeneratedShiftsBtn');
     keepBtn.onclick = () => {
       keepInput.value = '1';
+      modal.hide();
+      form.submit();
+    };
+  });
+
+  document.addEventListener('submit', (e) => {
+    const form = e.target.closest('form.js-leave-form');
+    if (!form) return;
+
+    const actionInput = form.querySelector('input[name="inactive_generated_shift_action"]');
+    if (actionInput?.value) return;
+
+    const status = form.querySelector('select[name="status"]')?.value || '';
+    if (!['rejected', 'cancelled'].includes(status)) return;
+
+    const sourceId = form.querySelector('.js-delete')?.dataset.shiftsSource;
+    const shifts = generatedShiftsFromSource(sourceId);
+    if (shifts.length === 0) return;
+
+    e.preventDefault();
+
+    const text = document.getElementById('inactiveStatusConfirmText');
+    text.textContent = `You are changing this absence to ${status}. Please choose what to do with the linked generated shift(s).`;
+
+    const summary = document.getElementById('inactiveGeneratedShiftSummary');
+    summary.textContent = `${shifts.length} generated shift(s) are linked to this absence.`;
+
+    const wrap = document.getElementById('inactiveGeneratedShiftWrap');
+    wrap.style.display = '';
+    renderGeneratedShiftCards(wrap, shifts);
+
+    const modalEl = document.getElementById('inactiveStatusConfirmModal');
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+
+    document.getElementById('inactiveKeepGeneratedShiftsBtn').onclick = () => {
+      actionInput.value = 'detach';
+      modal.hide();
+      form.submit();
+    };
+
+    document.getElementById('inactiveDeleteGeneratedShiftsBtn').onclick = () => {
+      actionInput.value = 'delete';
       modal.hide();
       form.submit();
     };
