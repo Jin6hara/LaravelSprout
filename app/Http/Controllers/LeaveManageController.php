@@ -11,6 +11,7 @@ use App\Http\Requests\LeaveManage\UpdateLeaveManageRequest;
 use App\Models\Leave;
 use App\Services\CurrentScopeService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 
@@ -68,7 +69,16 @@ class LeaveManageController extends Controller
 
         // 4) クエリ（Event版と同順序・構成）
         $leaves = Leave::query()
-            ->with(['user:id,first_name,family_name,employee_code'])
+            ->with([
+                'user:id,first_name,family_name,employee_code',
+                'generatedEvents' => fn($q) => $q
+                    ->with([
+                        'originalUser:id,first_name,family_name,employee_code',
+                        'assignedUser:id,first_name,family_name,employee_code',
+                    ])
+                    ->orderBy('event_date')
+                    ->orderBy('start_time'),
+            ])
             ->where('district_id', $this->scopeService->currentDistrictId())
             ->where('department_id', $this->scopeService->currentDepartmentId())
             ->when($leaveId,     fn($q) => $q->where('id', $leaveId)) // ★個別編集用パラメータ: leave_id があれば最優先で一意絞り込み
@@ -213,7 +223,20 @@ class LeaveManageController extends Controller
     {
         $this->authorize('delete', $leave);
 
-        $leave->delete();
+        $keepGeneratedShifts = $request->boolean('keep_generated_shifts');
+        $generatedShiftCount = $leave->generatedEvents()->count();
+
+        DB::transaction(function () use ($leave, $keepGeneratedShifts) {
+            if ($keepGeneratedShifts) {
+                $leave->generatedEvents()->update(['source_leave_id' => null]);
+            }
+
+            $leave->delete();
+        });
+
+        if ($keepGeneratedShifts && $generatedShiftCount > 0) {
+            return back()->with('toast', "Leave deleted. Kept {$generatedShiftCount} generated shift(s).");
+        }
 
         return back()->with('toast', 'Leave deleted.');
     }

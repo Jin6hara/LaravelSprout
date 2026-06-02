@@ -247,11 +247,33 @@
 
             {{-- フッタ操作 --}}
             <div class="card-footer bg-white d-flex justify-content-between align-items-center py-2 px-2 gap-1">
+              @php
+                $deleteShifts = $leave->generatedEvents->map(function ($event) use ($fmtDate, $fmtTime) {
+                    $original = trim(($event->originalUser?->first_name ?? '') . ' ' . ($event->originalUser?->family_name ?? ''));
+                    $assigned = trim(($event->assignedUser?->first_name ?? '') . ' ' . ($event->assignedUser?->family_name ?? ''));
+
+                    return [
+                        'id' => $event->id,
+                        'date' => $fmtDate($event->event_date),
+                        'original' => $original !== '' ? $original : '-',
+                        'assigned' => $assigned !== '' ? $assigned : '-',
+                        'school' => $event->school_name ?: '-',
+                        'time' => trim($fmtTime($event->start_time) . ' - ' . $fmtTime($event->end_time), ' -') ?: '-',
+                        'lesson' => $event->Lesson ?: '-',
+                        'status' => $event->status ?: '-',
+                        'notes' => $event->notes ?: '-',
+                    ];
+                })->values();
+                $deleteShiftPayloadId = 'leave-delete-shifts-' . $leave->id;
+              @endphp
+              <script type="application/json" id="{{ $deleteShiftPayloadId }}">@json($deleteShifts)</script>
+
               {{-- 削除ボタン：クラスとdata属性をJSに合わせる --}}
               <button type="button"
                       class="btn btn-sm btn-outline-danger js-delete"
                       data-url="{{ route('leaves.destroy', $leave) }}"
-                      data-date="{{ $leave->start_date?->format('Y-m-d') ?? 'この休暇' }}">
+                      data-date="{{ $leave->start_date?->format('Y-m-d') ?? 'this absence' }}"
+                      data-shifts-source="{{ $deleteShiftPayloadId }}">
                 Delete
               </button>
 
@@ -271,6 +293,7 @@
   <form id="js-delete-form" method="POST" style="display:none;">
     @csrf
     @method('DELETE')
+    <input type="hidden" name="keep_generated_shifts" id="js-keep-generated-shifts" value="0">
   </form>
 
   <div class="mt-3">
@@ -286,18 +309,21 @@
 
 <!-- ✅ Delete Confirmation Modal -->
 <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content border-0 shadow-sm">
       <div class="modal-header bg-danger text-white py-2">
         <h6 class="modal-title" id="deleteConfirmLabel">Delete Confirmation</h6>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <p class="mb-0" id="deleteConfirmText">Are you sure you want to delete this leave?</p>
+        <p class="mb-2" id="deleteConfirmText">Are you sure you want to delete this absence?</p>
+        <div class="small text-muted mb-2" id="deleteGeneratedShiftSummary"></div>
+        <div class="generated-shift-list" id="deleteGeneratedShiftWrap" style="display:none;"></div>
       </div>
       <div class="modal-footer py-2">
         <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-danger btn-sm" id="confirmDeleteBtn">Delete</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" id="keepGeneratedShiftsBtn">Keep Shift</button>
+        <button type="button" class="btn btn-danger btn-sm" id="confirmDeleteBtn">Delete Absence & Shift</button>
       </div>
     </div>
   </div>
@@ -313,6 +339,59 @@
   border: 1px solid #c1c5caff;
   border-radius: 6px;
 }
+
+.generated-shift-list {
+  max-height: min(52vh, 31rem);
+  overflow-y: auto;
+  padding-right: .25rem;
+}
+
+.generated-shift-card {
+  background: #f8fbff;
+  border: 1px solid #c8d8ec;
+  border-radius: 6px;
+  padding: .75rem;
+}
+
+.generated-shift-card + .generated-shift-card {
+  margin-top: .5rem;
+}
+
+.generated-shift-meta {
+  display: grid;
+  gap: .5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.generated-shift-field {
+  min-width: 0;
+}
+
+.generated-shift-label {
+  color: #6c757d;
+  display: block;
+  font-size: .75rem;
+  line-height: 1.1;
+}
+
+.generated-shift-value {
+  overflow-wrap: anywhere;
+}
+
+.generated-shift-wide {
+  background: #fff;
+  border: 1px solid #dce6f2;
+  border-radius: 4px;
+  margin-top: .5rem;
+  padding: .5rem;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 576px) {
+  .generated-shift-meta {
+    grid-template-columns: 1fr;
+  }
+}
 </style>
 @endpush
 
@@ -326,19 +405,98 @@
     // 対象休暇情報をモーダルに反映
     const date = btn.dataset.date || 'this leave';
     const modalText = document.getElementById('deleteConfirmText');
-    modalText.textContent = `Are you sure you want to delete ${date}?`;
+    modalText.textContent = `Are you sure you want to delete the absence for ${date}?`;
+
+    const shiftsSource = document.getElementById(btn.dataset.shiftsSource);
+    const shifts = shiftsSource ? JSON.parse(shiftsSource.textContent || '[]') : [];
+    const summary = document.getElementById('deleteGeneratedShiftSummary');
+    const wrap = document.getElementById('deleteGeneratedShiftWrap');
+    wrap.innerHTML = '';
+
+    if (shifts.length > 0) {
+      summary.textContent = `${shifts.length} generated shift(s) are linked to this absence. They will also be deleted unless you choose Keep Shift.`;
+      wrap.style.display = '';
+
+      shifts.forEach((shift) => {
+        const card = document.createElement('div');
+        card.className = 'generated-shift-card';
+
+        const title = document.createElement('div');
+        title.className = 'fw-semibold mb-2';
+        title.textContent = `Generated Shift #${shift.id || '-'}`;
+        card.appendChild(title);
+
+        const meta = document.createElement('div');
+        meta.className = 'generated-shift-meta';
+        [
+          ['Date', 'date'],
+          ['Original', 'original'],
+          ['Assigned', 'assigned'],
+          ['School', 'school'],
+          ['Time', 'time'],
+          ['Status', 'status'],
+        ].forEach(([label, key]) => {
+          const field = document.createElement('div');
+          field.className = 'generated-shift-field';
+
+          const labelEl = document.createElement('span');
+          labelEl.className = 'generated-shift-label';
+          labelEl.textContent = label;
+
+          const valueEl = document.createElement('div');
+          valueEl.className = 'generated-shift-value';
+          valueEl.textContent = shift[key] || '-';
+
+          field.append(labelEl, valueEl);
+          meta.appendChild(field);
+        });
+        card.appendChild(meta);
+
+        ['lesson', 'notes'].forEach((key) => {
+          const wide = document.createElement('div');
+          wide.className = 'generated-shift-wide';
+
+          const labelEl = document.createElement('span');
+          labelEl.className = 'generated-shift-label';
+          labelEl.textContent = key === 'lesson' ? 'Lesson' : 'Notes';
+
+          const valueEl = document.createElement('div');
+          valueEl.className = 'generated-shift-value';
+          valueEl.textContent = shift[key] || '-';
+
+          wide.append(labelEl, valueEl);
+          card.appendChild(wide);
+        });
+
+        wrap.appendChild(card);
+      });
+    } else {
+      summary.textContent = 'No generated shifts are linked to this absence.';
+      wrap.style.display = 'none';
+    }
 
     const form = document.getElementById('js-delete-form');
     form.action = btn.dataset.url;
+    const keepInput = document.getElementById('js-keep-generated-shifts');
+    keepInput.value = '0';
 
     // モーダル表示
     const modalEl = document.getElementById('deleteConfirmModal');
     const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
     modal.show();
 
-    // 削除ボタンで実行
+    // Shiftごと削除する通常ルート
     const confirmBtn = document.getElementById('confirmDeleteBtn');
     confirmBtn.onclick = () => {
+      keepInput.value = '0';
+      modal.hide();
+      form.submit();
+    };
+
+    // Shiftを手動シフトとして残す拡張ルート
+    const keepBtn = document.getElementById('keepGeneratedShiftsBtn');
+    keepBtn.onclick = () => {
+      keepInput.value = '1';
       modal.hide();
       form.submit();
     };

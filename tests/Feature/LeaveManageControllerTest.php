@@ -353,6 +353,105 @@ class LeaveManageControllerTest extends TestCase
         $this->assertDatabaseMissing('leaves', ['id' => $leave->id]);
     }
 
+    /**
+     * シナリオ 10b: Leave 削除時、デフォルトでは紐づく generated Event も削除される
+     */
+    public function test_admin_deletes_generated_event_with_leave_by_default(): void
+    {
+        [$admin, $scope, $district, $department] = $this->makeAdmin();
+
+        $targetUser = $this->makeUserInScope($district, $department);
+        $leave      = $this->makeLeaveInScope($district, $department, $targetUser);
+
+        $event = Event::factory()->create([
+            'district_id'       => $district->id,
+            'department_id'     => $department->id,
+            'event_date'        => $leave->start_date->toDateString(),
+            'original_user_id'  => $targetUser->id,
+            'school_name'       => 'Generated School',
+            'status'            => 'pending',
+            'type'              => 'regular_time',
+            'source_leave_id'   => $leave->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->withSession(['selected_scope_id' => $scope->id])
+            ->delete(route('leaves.destroy', $leave))
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('leaves', ['id' => $leave->id]);
+        $this->assertDatabaseMissing('events', ['id' => $event->id]);
+    }
+
+    /**
+     * シナリオ 10c: Keep Shift を選ぶと Leave だけ削除し、generated Event は手動シフトとして残る
+     */
+    public function test_admin_can_keep_generated_event_when_deleting_leave(): void
+    {
+        [$admin, $scope, $district, $department] = $this->makeAdmin();
+
+        $targetUser = $this->makeUserInScope($district, $department);
+        $leave      = $this->makeLeaveInScope($district, $department, $targetUser);
+
+        $event = Event::factory()->create([
+            'district_id'       => $district->id,
+            'department_id'     => $department->id,
+            'event_date'        => $leave->start_date->toDateString(),
+            'original_user_id'  => $targetUser->id,
+            'school_name'       => 'Generated School',
+            'status'            => 'pending',
+            'type'              => 'regular_time',
+            'source_leave_id'   => $leave->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->withSession(['selected_scope_id' => $scope->id])
+            ->delete(route('leaves.destroy', $leave), [
+                'keep_generated_shifts' => '1',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('leaves', ['id' => $leave->id]);
+        $this->assertDatabaseHas('events', [
+            'id'              => $event->id,
+            'source_leave_id' => null,
+        ]);
+    }
+
+    /**
+     * シナリオ 10d: Leave 削除モーダルで紐づく generated Event の確認情報を表示できる
+     */
+    public function test_leave_delete_modal_contains_generated_event_details(): void
+    {
+        [$admin, $scope, $district, $department] = $this->makeAdmin();
+
+        $targetUser = $this->makeUserInScope($district, $department);
+        $leave      = $this->makeLeaveInScope($district, $department, $targetUser);
+
+        Event::factory()->create([
+            'district_id'       => $district->id,
+            'department_id'     => $department->id,
+            'event_date'        => $leave->start_date->toDateString(),
+            'original_user_id'  => $targetUser->id,
+            'school_name'       => 'Generated School',
+            'start_time'        => '09:00',
+            'end_time'          => '10:00',
+            'Lesson'            => 'L1',
+            'status'            => 'pending',
+            'type'              => 'regular_time',
+            'source_leave_id'   => $leave->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->withSession(['selected_scope_id' => $scope->id])
+            ->get(route('leaves.edit', ['leave_id' => $leave->id]))
+            ->assertOk()
+            ->assertSee('Keep Shift')
+            ->assertSee('Delete Absence & Shift', false)
+            ->assertSee('Generated School')
+            ->assertSee('L1');
+    }
+
     // =========================================================================
     // 11. admin: bulkUpdate（一括更新）
     // =========================================================================
