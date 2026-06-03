@@ -76,7 +76,7 @@ class ApprovalControllerTest extends TestCase
             ->assertSee('Deny Confirmation')
             ->assertSee('Keep Shift')
             ->assertSee('Delete Shift')
-            ->assertSee('inactive_generated_shift_action')
+            ->assertSee('generated_shift_action')
             ->assertSee('Approval Generated School')
             ->assertSee('ALP L1');
     }

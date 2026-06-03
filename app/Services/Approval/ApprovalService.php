@@ -67,7 +67,7 @@ class ApprovalService
             ]);
             $approvalRequest->update(['current_state' => 'rejected']);
             if ($approvable instanceof Leave) {
-                $approvable->generatedShiftInactiveAction = $generatedShiftAction;
+                $approvable->generatedShiftAction = $generatedShiftAction;
             }
             $approvable->update([
                 'status' => $approvable instanceof Leave ? LeaveStatus::Rejected->value : 'rejected',
@@ -112,7 +112,7 @@ class ApprovalService
 
             $req->actions()->create(['actor_id' => $actorId, 'action' => 'rejected', 'comment' => $comment]);
             $req->update(['current_state' => 'rejected']);
-            $leave->generatedShiftInactiveAction = $generatedShiftAction;
+            $leave->generatedShiftAction = $generatedShiftAction;
             $leave->update(['status' => LeaveStatus::Rejected->value]);
         }
     }

@@ -144,7 +144,7 @@
 
           {{-- Add Bulk 用ID隠しフィールド (JS用？) --}}
           <input type="hidden" name="id" value="{{ $leave->id }}">
-          <input type="hidden" name="inactive_generated_shift_action" value="">
+          <input type="hidden" name="generated_shift_action" value="">
 
           <div class="card-body py-1 px-2">
             <div class="mb-0 d-grid gap-0">
@@ -250,22 +250,7 @@
             {{-- フッタ操作 --}}
             <div class="card-footer bg-white d-flex justify-content-between align-items-center py-2 px-2 gap-1">
               @php
-                $deleteShifts = $leave->generatedEvents->map(function ($event) use ($fmtDate, $fmtTime) {
-                    $original = trim(($event->originalUser?->first_name ?? '') . ' ' . ($event->originalUser?->family_name ?? ''));
-                    $assigned = trim(($event->assignedUser?->first_name ?? '') . ' ' . ($event->assignedUser?->family_name ?? ''));
-
-                    return [
-                        'id' => $event->id,
-                        'date' => $fmtDate($event->event_date),
-                        'original' => $original !== '' ? $original : '-',
-                        'assigned' => $assigned !== '' ? $assigned : '-',
-                        'school' => $event->school_name ?: '-',
-                        'time' => trim($fmtTime($event->start_time) . ' - ' . $fmtTime($event->end_time), ' -') ?: '-',
-                        'lesson' => $event->Lesson ?: '-',
-                        'status' => $event->status ?: '-',
-                        'notes' => $event->notes ?: '-',
-                    ];
-                })->values();
+                $deleteShifts = $generatedShiftDetailsByLeaveId[$leave->id] ?? collect();
                 $deleteShiftPayloadId = 'leave-delete-shifts-' . $leave->id;
               @endphp
               <script type="application/json" id="{{ $deleteShiftPayloadId }}">@json($deleteShifts)</script>
@@ -295,7 +280,7 @@
   <form id="js-delete-form" method="POST" style="display:none;">
     @csrf
     @method('DELETE')
-    <input type="hidden" name="keep_generated_shifts" id="js-keep-generated-shifts" value="0">
+    <input type="hidden" name="generated_shift_action" id="js-delete-generated-shift-action" value="delete">
   </form>
 
   <div class="mt-3">
@@ -509,8 +494,8 @@
 
     const form = document.getElementById('js-delete-form');
     form.action = btn.dataset.url;
-    const keepInput = document.getElementById('js-keep-generated-shifts');
-    keepInput.value = '0';
+    const actionInput = document.getElementById('js-delete-generated-shift-action');
+    actionInput.value = 'delete';
 
     // モーダル表示
     const modalEl = document.getElementById('deleteConfirmModal');
@@ -520,7 +505,7 @@
     // Shiftごと削除する通常ルート
     const confirmBtn = document.getElementById('confirmDeleteBtn');
     confirmBtn.onclick = () => {
-      keepInput.value = '0';
+      actionInput.value = 'delete';
       modal.hide();
       form.submit();
     };
@@ -528,7 +513,7 @@
     // Shiftを手動シフトとして残す拡張ルート
     const keepBtn = document.getElementById('keepGeneratedShiftsBtn');
     keepBtn.onclick = () => {
-      keepInput.value = '1';
+      actionInput.value = 'detach';
       modal.hide();
       form.submit();
     };
@@ -538,7 +523,7 @@
     const form = e.target.closest('form.js-leave-form');
     if (!form) return;
 
-    const actionInput = form.querySelector('input[name="inactive_generated_shift_action"]');
+    const actionInput = form.querySelector('input[name="generated_shift_action"]');
     if (actionInput?.value) return;
 
     const status = form.querySelector('select[name="status"]')?.value || '';

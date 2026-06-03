@@ -6,12 +6,16 @@ use App\Enums\LeaveKind;
 use App\Models\ApprovalRequest;
 use App\Models\Leave;
 use App\Services\Approval\ApprovalService;
+use App\Services\Leave\GeneratedShiftDecisionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ApprovalController extends Controller
 {
-    public function __construct(private ApprovalService $approvalService) {}
+    public function __construct(
+        private ApprovalService $approvalService,
+        private GeneratedShiftDecisionService $generatedShiftDecision
+    ) {}
 
     /**
      * 承認リクエスト詳細表示
@@ -66,7 +70,7 @@ class ApprovalController extends Controller
                 }
             }
 
-            $generatedShiftDetails = $this->generatedShiftDetailsForApproval($approvalRequest);
+            $generatedShiftDetails = $this->generatedShiftDecision->detailsForApprovalRequest($approvalRequest);
         }
 
         return view('approvals.show', [
@@ -97,10 +101,10 @@ class ApprovalController extends Controller
     {
         $this->authorize('act', $approvalRequest);
 
-        $generatedShiftAction = $request->input('inactive_generated_shift_action');
-        $generatedShiftCount = $this->generatedShiftDetailsForApproval($approvalRequest)->count();
+        $generatedShiftAction = $this->generatedShiftActionFromRequest($request);
+        $generatedShiftCount = $this->generatedShiftDecision->detailsForApprovalRequest($approvalRequest)->count();
 
-        if ($generatedShiftCount > 0 && !in_array($generatedShiftAction, ['detach', 'delete'], true)) {
+        if ($generatedShiftCount > 0 && $this->generatedShiftDecision->normalizeAction($generatedShiftAction) === null) {
             return back()->with('toast_errors', [
                 'Please confirm what to do with generated shift(s) before denying this leave request.',
             ]);
@@ -116,55 +120,9 @@ class ApprovalController extends Controller
         return back()->with('toast', '却下しました。');
     }
 
-    private function generatedShiftDetailsForApproval(ApprovalRequest $approvalRequest)
+    private function generatedShiftActionFromRequest(Request $request): ?string
     {
-        $approvalRequest->loadMissing('approvable');
-        $approvable = $approvalRequest->approvable;
-
-        if (!$approvable instanceof Leave) {
-            return collect();
-        }
-
-        $meta = $approvalRequest->metadata ?? [];
-        $batchId = $meta['batch_id'] ?? null;
-
-        $leaves = collect([$approvable]);
-
-        if ($batchId) {
-            $leaves = ApprovalRequest::query()
-                ->where('approvable_type', Leave::class)
-                ->where('metadata->batch_id', $batchId)
-                ->with('approvable')
-                ->get()
-                ->pluck('approvable')
-                ->filter(fn($leave) => $leave instanceof Leave)
-                ->unique('id')
-                ->values();
-        }
-
-        $leaves->each->load([
-            'generatedEvents.originalUser:id,first_name,family_name,employee_code',
-            'generatedEvents.assignedUser:id,first_name,family_name,employee_code',
-        ]);
-
-        return $leaves
-            ->flatMap(fn(Leave $leave) => $leave->generatedEvents->map(function ($event) use ($leave) {
-                $original = trim(($event->originalUser?->first_name ?? '') . ' ' . ($event->originalUser?->family_name ?? ''));
-                $assigned = trim(($event->assignedUser?->first_name ?? '') . ' ' . ($event->assignedUser?->family_name ?? ''));
-
-                return [
-                    'leave_id' => $leave->id,
-                    'id' => $event->id,
-                    'date' => optional($event->event_date)->format('Y-m-d') ?: '-',
-                    'original' => $original !== '' ? $original : '-',
-                    'assigned' => $assigned !== '' ? $assigned : '-',
-                    'school' => $event->school_name ?: '-',
-                    'time' => trim(optional($event->start_time)->format('H:i') . ' - ' . optional($event->end_time)->format('H:i'), ' -') ?: '-',
-                    'lesson' => $event->Lesson ?: '-',
-                    'status' => $event->status ?: '-',
-                    'notes' => $event->notes ?: '-',
-                ];
-            }))
-            ->values();
+        return $request->input('generated_shift_action')
+            ?? $request->input('inactive_generated_shift_action');
     }
 }

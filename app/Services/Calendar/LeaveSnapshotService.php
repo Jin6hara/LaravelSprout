@@ -9,12 +9,15 @@ use App\Models\Event;
 use App\Models\EventDetail;
 use App\Models\Leave;
 use App\Models\ScheduleLine;
+use App\Services\Leave\GeneratedShiftDecisionService;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 
 class LeaveSnapshotService
 {
+    public function __construct(private GeneratedShiftDecisionService $generatedShiftDecision) {}
+
     /**
      * Leaveに紐づくスナップショットを再生成
      */
@@ -22,12 +25,10 @@ class LeaveSnapshotService
     {
         DB::transaction(function () use ($leave) {
             if (!in_array($leave->status, LeaveStatus::snapshotValues(), true)) {
-                if ($leave->generatedShiftInactiveAction === 'delete') {
-                    $this->deleteSnapshotsForLeave($leave);
-                    return;
-                }
-
-                $this->detachSnapshotsForLeave($leave);
+                $this->generatedShiftDecision->applyAction(
+                    $leave,
+                    $leave->generatedShiftAction ?: GeneratedShiftDecisionService::ACTION_DETACH
+                );
                 return;
             }
 
@@ -50,10 +51,7 @@ class LeaveSnapshotService
      */
     public function deleteSnapshotsForLeave(Leave $leave): void
     {
-        // source_leave_id 紐付きイベントを物理削除（SoftDeletesなら ->forceDelete() でも可）
-        Event::query()
-            ->where('source_leave_id', $leave->id)
-            ->delete(); // EventDetail は FK cascade で自動削除
+        $this->generatedShiftDecision->applyAction($leave, GeneratedShiftDecisionService::ACTION_DELETE);
     }
 
     /**
@@ -61,9 +59,7 @@ class LeaveSnapshotService
      */
     public function detachSnapshotsForLeave(Leave $leave): void
     {
-        Event::query()
-            ->where('source_leave_id', $leave->id)
-            ->update(['source_leave_id' => null]);
+        $this->generatedShiftDecision->applyAction($leave, GeneratedShiftDecisionService::ACTION_DETACH);
     }
 
     /**

@@ -407,7 +407,7 @@ class LeaveManageControllerTest extends TestCase
         $this->actingAs($admin)
             ->withSession(['selected_scope_id' => $scope->id])
             ->delete(route('leaves.destroy', $leave), [
-                'keep_generated_shifts' => '1',
+                'generated_shift_action' => 'detach',
             ])
             ->assertRedirect();
 
@@ -449,7 +449,7 @@ class LeaveManageControllerTest extends TestCase
             ->assertSee('Keep Shift')
             ->assertSee('Delete Absence & Shift', false)
             ->assertSee('Status Change Confirmation')
-            ->assertSee('inactive_generated_shift_action')
+            ->assertSee('generated_shift_action')
             ->assertSee('Delete Shift')
             ->assertSee('Generated School')
             ->assertSee('L1');
@@ -868,7 +868,7 @@ class LeaveManageControllerTest extends TestCase
         ]);
 
         $leave->status = 'cancelled';
-        $leave->generatedShiftInactiveAction = 'delete';
+        $leave->generatedShiftAction = 'delete';
         app(LeaveSnapshotService::class)->rebuildSnapshotsForLeave($leave);
 
         $this->assertDatabaseMissing('events', ['id' => $event->id]);

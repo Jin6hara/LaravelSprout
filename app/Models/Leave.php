@@ -17,7 +17,7 @@ class Leave extends Model
 {
     use HasFactory;
 
-    public ?string $generatedShiftInactiveAction = null;
+    public ?string $generatedShiftAction = null;
 
     protected $fillable = [
         'user_id',

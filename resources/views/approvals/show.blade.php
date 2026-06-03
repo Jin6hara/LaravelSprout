@@ -179,7 +179,7 @@
 
             <form action="{{ route('approvals.deny', $approvalRequest) }}" method="POST" class="d-inline ms-2 js-approval-deny-form">
                 @csrf
-                <input type="hidden" name="inactive_generated_shift_action" value="">
+                <input type="hidden" name="generated_shift_action" value="">
                 <input type="text" name="comment" class="form-control mb-2" placeholder="Denial reason (optional)">
                 <button type="submit" class="btn btn-danger mb-2">Deny</button>
             </form>
@@ -343,7 +343,7 @@ document.addEventListener('submit', (e) => {
     const form = e.target.closest('.js-approval-deny-form');
     if (!form) return;
 
-    const actionInput = form.querySelector('input[name="inactive_generated_shift_action"]');
+    const actionInput = form.querySelector('input[name="generated_shift_action"]');
     if (actionInput?.value) return;
 
     const source = document.getElementById('approval-generated-shifts');

@@ -10,6 +10,7 @@ use App\Http\Requests\LeaveManage\StoreLeaveManageRequest;
 use App\Http\Requests\LeaveManage\UpdateLeaveManageRequest;
 use App\Models\Leave;
 use App\Services\CurrentScopeService;
+use App\Services\Leave\GeneratedShiftDecisionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -17,7 +18,10 @@ use Carbon\Carbon;
 
 class LeaveManageController extends Controller
 {
-    public function __construct(private CurrentScopeService $scopeService) {}
+    public function __construct(
+        private CurrentScopeService $scopeService,
+        private GeneratedShiftDecisionService $generatedShiftDecision
+    ) {}
 
     /**
      * Leaveの月次一覧（管理者用）
@@ -105,6 +109,11 @@ class LeaveManageController extends Controller
             ->paginate(24)
             ->withQueryString();
 
+        $generatedShiftDetailsByLeaveId = $leaves->getCollection()
+            ->mapWithKeys(fn(Leave $leave) => [
+                $leave->id => $this->generatedShiftDecision->detailsForLeave($leave),
+            ]);
+
         // 5) オプション
         $statusOptions = LeaveStatus::manageLabels();
         $kindOptions = LeaveKind::labels();
@@ -118,7 +127,8 @@ class LeaveManageController extends Controller
             'kindOptions',
             'excusedOptions',
             'fmtDate',
-            'fmtTime'
+            'fmtTime',
+            'generatedShiftDetailsByLeaveId'
         ));
     }
 
@@ -159,23 +169,22 @@ class LeaveManageController extends Controller
         $this->authorize('update', $leave);
 
         $data = $request->validated();
-        $inactiveGeneratedShiftAction = $data['inactive_generated_shift_action'] ?? null;
+        $generatedShiftAction = $data['generated_shift_action']
+            ?? $data['inactive_generated_shift_action']
+            ?? null;
+        unset($data['generated_shift_action']);
         unset($data['inactive_generated_shift_action']);
 
         $targetUser = \App\Models\User::findOrFail((int) $data['user_id']);
         $this->authorize('manage', $targetUser);
 
-        if (
-            !in_array($data['status'], LeaveStatus::snapshotValues(), true)
-            && $leave->generatedEvents()->exists()
-            && !in_array($inactiveGeneratedShiftAction, ['detach', 'delete'], true)
-        ) {
+        if ($this->generatedShiftDecision->requiresActionForStatus($leave, $data['status'], $generatedShiftAction)) {
             return back()->with('toast_errors', [
                 'Please confirm what to do with the generated shift(s) before changing this absence status.',
             ]);
         }
 
-        $leave->generatedShiftInactiveAction = $inactiveGeneratedShiftAction;
+        $leave->generatedShiftAction = $this->generatedShiftDecision->normalizeAction($generatedShiftAction);
         $leave->fill($data);
         $leave->save();
 
@@ -193,15 +202,12 @@ class LeaveManageController extends Controller
         $validated = $request->validated();
 
         foreach ($validated['items'] as $it) {
-            if (in_array($it['status'], LeaveStatus::snapshotValues(), true)) {
-                continue;
-            }
-
             $leave = Leave::findOrFail($it['id']);
-            if (
-                $leave->generatedEvents()->exists()
-                && !in_array($it['inactive_generated_shift_action'] ?? null, ['detach', 'delete'], true)
-            ) {
+            $generatedShiftAction = $it['generated_shift_action']
+                ?? $it['inactive_generated_shift_action']
+                ?? null;
+
+            if ($this->generatedShiftDecision->requiresActionForStatus($leave, $it['status'], $generatedShiftAction)) {
                 return response()->json([
                     'ok'      => false,
                     'updated' => 0,
@@ -219,7 +225,10 @@ class LeaveManageController extends Controller
             $targetUser = \App\Models\User::findOrFail((int) $it['user_id']);
             $this->authorize('manage', $targetUser);
 
-            $leave->generatedShiftInactiveAction = $it['inactive_generated_shift_action'] ?? null;
+            $generatedShiftAction = $it['generated_shift_action']
+                ?? $it['inactive_generated_shift_action']
+                ?? null;
+            $leave->generatedShiftAction = $this->generatedShiftDecision->normalizeAction($generatedShiftAction);
             $leave->fill([
                 'user_id'     => $it['user_id'],
                 'start_date'  => $it['start_date'],
@@ -257,18 +266,20 @@ class LeaveManageController extends Controller
     {
         $this->authorize('delete', $leave);
 
-        $keepGeneratedShifts = $request->boolean('keep_generated_shifts');
+        $generatedShiftAction = $request->input('generated_shift_action');
+        if (!$generatedShiftAction && $request->boolean('keep_generated_shifts')) {
+            $generatedShiftAction = GeneratedShiftDecisionService::ACTION_DETACH;
+        }
+        $generatedShiftAction = $this->generatedShiftDecision->normalizeAction($generatedShiftAction)
+            ?? GeneratedShiftDecisionService::ACTION_DELETE;
         $generatedShiftCount = $leave->generatedEvents()->count();
 
-        DB::transaction(function () use ($leave, $keepGeneratedShifts) {
-            if ($keepGeneratedShifts) {
-                $leave->generatedEvents()->update(['source_leave_id' => null]);
-            }
-
+        DB::transaction(function () use ($leave, $generatedShiftAction) {
+            $this->generatedShiftDecision->applyAction($leave, $generatedShiftAction);
             $leave->delete();
         });
 
-        if ($keepGeneratedShifts && $generatedShiftCount > 0) {
+        if ($generatedShiftAction === GeneratedShiftDecisionService::ACTION_DETACH && $generatedShiftCount > 0) {
             return back()->with('toast', "Leave deleted. Kept {$generatedShiftCount} generated shift(s).");
         }
 
