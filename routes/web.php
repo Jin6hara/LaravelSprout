@@ -15,6 +15,7 @@ use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CalendarPatternController;
 use App\Http\Controllers\LeaveApplyController;
 use App\Http\Controllers\LeaveAttachmentController;
+use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\CurrentScopeController;
 use App\Http\Controllers\UserAttendanceSearchController;
 
@@ -103,6 +104,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/leaves/{leave}/attachments/{attachment}', [LeaveAttachmentController::class, 'show'])
         ->name('leaves.attachments.show');
+    Route::post('/leaves/{leave}/cancel', [LeaveController::class, 'cancel'])
+        ->name('leaves.cancel');
 });
 
 
@@ -223,7 +226,6 @@ Route::middleware(['auth', 'role:admin|super_admin']) // 権限ミドルウェ�
     ->name('expenses.admin.report');
 
 use App\Http\Controllers\EventAssignController;
-use App\Http\Controllers\LeaveController;
 
 Route::middleware(['auth', 'role:admin|super_admin'])->group(function () {
     Route::get('/forecast/day-assigner', [EventAssignController::class, 'dailyBoard'])->name('calendar.daily_assigner');

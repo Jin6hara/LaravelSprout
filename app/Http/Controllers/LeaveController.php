@@ -13,8 +13,10 @@ use App\Services\Leave\CancelLeaveService;
 use App\Services\Leave\ReportLeaveService;
 use App\Enums\LeaveExcused;
 use App\Enums\LeaveStatus;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use InvalidArgumentException;
 
 class LeaveController extends Controller
 {
@@ -123,11 +125,15 @@ class LeaveController extends Controller
      * 休暇申請の取消
      * 承認済みの場合は LeaveBalanceService で有給残を返戻する
      */
-    public function cancel(Leave $leave)
+    public function cancel(Request $request, Leave $leave)
     {
         $this->authorize('cancel', $leave);
 
-        $this->cancelService->handle($leave);
+        try {
+            $this->cancelService->handle($leave, $request->input('generated_shift_action'));
+        } catch (InvalidArgumentException $e) {
+            return back()->with('toast_errors', [$e->getMessage()]);
+        }
 
         return back()->with('toast', '申請を取り消しました。');
     }

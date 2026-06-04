@@ -192,27 +192,14 @@
 @if($isLeave)
 <script type="application/json" id="approval-generated-shifts">@json($generatedShiftDetails)</script>
 
-<div class="modal fade" id="denyGeneratedShiftConfirmModal" tabindex="-1" aria-labelledby="denyGeneratedShiftConfirmLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content border-0 shadow-sm">
-            <div class="modal-header bg-warning py-2">
-                <h6 class="modal-title" id="denyGeneratedShiftConfirmLabel">Deny Confirmation</h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p class="mb-2">This leave request has generated shift(s). Please choose what to do before denying it.</p>
-                <div class="small text-muted mb-2" id="denyGeneratedShiftSummary"></div>
-                <div class="generated-shift-list" id="denyGeneratedShiftWrap"></div>
-            </div>
-            <div class="modal-footer py-2">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-outline-secondary btn-sm" id="denyKeepGeneratedShiftsBtn">Keep Shift</button>
-                <button type="button" class="btn btn-danger btn-sm" id="denyDeleteGeneratedShiftsBtn">Delete Shift</button>
-            </div>
-        </div>
-    </div>
-</div>
+<x-generated-shift-confirm-modal
+    id="denyGeneratedShiftConfirmModal"
+    title="Deny Confirmation"
+    message="This leave request has generated shift(s). Please choose what to do before denying it."
+/>
 @endif
+
+<link href="{{ asset('css/generated-shift-confirmation.css') }}?v={{ filemtime(public_path('css/generated-shift-confirmation.css')) }}" rel="stylesheet">
 
 <style>
 .approval-show-panel {
@@ -223,153 +210,17 @@
 .approval-show-panel .form-select {
     background-color: #fff;
 }
-
-.generated-shift-list {
-    max-height: min(52vh, 31rem);
-    overflow-y: auto;
-    padding-right: .25rem;
-}
-
-.generated-shift-card {
-    background: #f8fbff;
-    border: 1px solid #c8d8ec;
-    border-radius: 6px;
-    padding: .75rem;
-}
-
-.generated-shift-card + .generated-shift-card {
-    margin-top: .5rem;
-}
-
-.generated-shift-meta {
-    display: grid;
-    gap: .5rem;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.generated-shift-field {
-    min-width: 0;
-}
-
-.generated-shift-label {
-    color: #6c757d;
-    display: block;
-    font-size: .75rem;
-    line-height: 1.1;
-}
-
-.generated-shift-value {
-    overflow-wrap: anywhere;
-}
-
-.generated-shift-wide {
-    background: #fff;
-    border: 1px solid #dce6f2;
-    border-radius: 4px;
-    margin-top: .5rem;
-    padding: .5rem;
-    white-space: pre-wrap;
-}
-
-@media (max-width: 576px) {
-    .generated-shift-meta {
-        grid-template-columns: 1fr;
-    }
-}
 </style>
 
 @if($isLeave)
+<script src="{{ asset('js/generated-shift-confirmation.js') }}?v={{ filemtime(public_path('js/generated-shift-confirmation.js')) }}"></script>
 <script>
-function renderApprovalGeneratedShiftCards(wrap, shifts) {
-    wrap.innerHTML = '';
-
-    shifts.forEach((shift) => {
-        const card = document.createElement('div');
-        card.className = 'generated-shift-card';
-
-        const title = document.createElement('div');
-        title.className = 'fw-semibold mb-2';
-        title.textContent = `Generated Shift #${shift.id || '-'}`;
-        card.appendChild(title);
-
-        const meta = document.createElement('div');
-        meta.className = 'generated-shift-meta';
-        [
-            ['Leave ID', 'leave_id'],
-            ['Date', 'date'],
-            ['Original', 'original'],
-            ['Assigned', 'assigned'],
-            ['School', 'school'],
-            ['Time', 'time'],
-            ['Status', 'status'],
-        ].forEach(([label, key]) => {
-            const field = document.createElement('div');
-            field.className = 'generated-shift-field';
-
-            const labelEl = document.createElement('span');
-            labelEl.className = 'generated-shift-label';
-            labelEl.textContent = label;
-
-            const valueEl = document.createElement('div');
-            valueEl.className = 'generated-shift-value';
-            valueEl.textContent = shift[key] || '-';
-
-            field.append(labelEl, valueEl);
-            meta.appendChild(field);
-        });
-        card.appendChild(meta);
-
-        ['lesson', 'notes'].forEach((key) => {
-            const wide = document.createElement('div');
-            wide.className = 'generated-shift-wide';
-
-            const labelEl = document.createElement('span');
-            labelEl.className = 'generated-shift-label';
-            labelEl.textContent = key === 'lesson' ? 'Lesson' : 'Notes';
-
-            const valueEl = document.createElement('div');
-            valueEl.className = 'generated-shift-value';
-            valueEl.textContent = shift[key] || '-';
-
-            wide.append(labelEl, valueEl);
-            card.appendChild(wide);
-        });
-
-        wrap.appendChild(card);
-    });
-}
-
-document.addEventListener('submit', (e) => {
-    const form = e.target.closest('.js-approval-deny-form');
-    if (!form) return;
-
-    const actionInput = form.querySelector('input[name="generated_shift_action"]');
-    if (actionInput?.value) return;
-
-    const source = document.getElementById('approval-generated-shifts');
-    const shifts = source ? JSON.parse(source.textContent || '[]') : [];
-    if (shifts.length === 0) return;
-
-    e.preventDefault();
-
-    document.getElementById('denyGeneratedShiftSummary').textContent = `${shifts.length} generated shift(s) are linked to this request.`;
-    renderApprovalGeneratedShiftCards(document.getElementById('denyGeneratedShiftWrap'), shifts);
-
-    const modalEl = document.getElementById('denyGeneratedShiftConfirmModal');
-    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-    modal.show();
-
-    document.getElementById('denyKeepGeneratedShiftsBtn').onclick = () => {
-        actionInput.value = 'detach';
-        modal.hide();
-        form.submit();
-    };
-
-    document.getElementById('denyDeleteGeneratedShiftsBtn').onclick = () => {
-        actionInput.value = 'delete';
-        modal.hide();
-        form.submit();
-    };
+GeneratedShiftConfirmation.bindApprovalDenyForm({
+    formSelector: '.js-approval-deny-form',
+    sourceId: 'approval-generated-shifts',
+    modalId: 'denyGeneratedShiftConfirmModal',
+    text: 'This leave request has generated shift(s). Please choose what to do before denying it.',
+    summaryBuilder: ({ shifts }) => `${shifts.length} generated shift(s) are linked to this request.`,
 });
 </script>
 @endif

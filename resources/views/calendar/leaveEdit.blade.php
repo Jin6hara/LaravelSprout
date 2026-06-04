@@ -294,52 +294,24 @@
 
 </div>
 
-<!-- ✅ Delete Confirmation Modal -->
-<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content border-0 shadow-sm">
-      <div class="modal-header bg-danger text-white py-2">
-        <h6 class="modal-title" id="deleteConfirmLabel">Delete Confirmation</h6>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <p class="mb-2" id="deleteConfirmText">Are you sure you want to delete this absence?</p>
-        <div class="small text-muted mb-2" id="deleteGeneratedShiftSummary"></div>
-        <div class="generated-shift-list" id="deleteGeneratedShiftWrap" style="display:none;"></div>
-      </div>
-      <div class="modal-footer py-2">
-        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-outline-secondary btn-sm" id="keepGeneratedShiftsBtn">Keep Shift</button>
-        <button type="button" class="btn btn-danger btn-sm" id="confirmDeleteBtn">Delete Absence & Shift</button>
-      </div>
-    </div>
-  </div>
-</div>
+<x-generated-shift-confirm-modal
+  id="deleteConfirmModal"
+  title="Delete Confirmation"
+  header-class="bg-danger text-white"
+  message="Are you sure you want to delete this absence?"
+  delete-label="Delete Absence & Shift"
+/>
 
-<div class="modal fade" id="inactiveStatusConfirmModal" tabindex="-1" aria-labelledby="inactiveStatusConfirmLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content border-0 shadow-sm">
-      <div class="modal-header bg-warning py-2">
-        <h6 class="modal-title" id="inactiveStatusConfirmLabel">Status Change Confirmation</h6>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <p class="mb-2" id="inactiveStatusConfirmText">This absence has generated shift(s).</p>
-        <div class="small text-muted mb-2" id="inactiveGeneratedShiftSummary"></div>
-        <div class="generated-shift-list" id="inactiveGeneratedShiftWrap" style="display:none;"></div>
-      </div>
-      <div class="modal-footer py-2">
-        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-outline-secondary btn-sm" id="inactiveKeepGeneratedShiftsBtn">Keep Shift</button>
-        <button type="button" class="btn btn-danger btn-sm" id="inactiveDeleteGeneratedShiftsBtn">Delete Shift</button>
-      </div>
-    </div>
-  </div>
-</div>
+<x-generated-shift-confirm-modal
+  id="inactiveStatusConfirmModal"
+  title="Status Change Confirmation"
+  message="This absence has generated shift(s)."
+/>
 
 @endsection
 
 @push('styles')
+<link href="{{ asset('css/generated-shift-confirmation.css') }}?v={{ filemtime(public_path('css/generated-shift-confirmation.css')) }}" rel="stylesheet">
 <style>
 /* Leaveカード・検索フォームカード共通デザイン */
 .card {
@@ -347,127 +319,12 @@
   border: 1px solid #c1c5caff;
   border-radius: 6px;
 }
-
-.generated-shift-list {
-  max-height: min(52vh, 31rem);
-  overflow-y: auto;
-  padding-right: .25rem;
-}
-
-.generated-shift-card {
-  background: #f8fbff;
-  border: 1px solid #c8d8ec;
-  border-radius: 6px;
-  padding: .75rem;
-}
-
-.generated-shift-card + .generated-shift-card {
-  margin-top: .5rem;
-}
-
-.generated-shift-meta {
-  display: grid;
-  gap: .5rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.generated-shift-field {
-  min-width: 0;
-}
-
-.generated-shift-label {
-  color: #6c757d;
-  display: block;
-  font-size: .75rem;
-  line-height: 1.1;
-}
-
-.generated-shift-value {
-  overflow-wrap: anywhere;
-}
-
-.generated-shift-wide {
-  background: #fff;
-  border: 1px solid #dce6f2;
-  border-radius: 4px;
-  margin-top: .5rem;
-  padding: .5rem;
-  white-space: pre-wrap;
-}
-
-@media (max-width: 576px) {
-  .generated-shift-meta {
-    grid-template-columns: 1fr;
-  }
-}
 </style>
 @endpush
 
 @push('scripts')
+<script src="{{ asset('js/generated-shift-confirmation.js') }}?v={{ filemtime(public_path('js/generated-shift-confirmation.js')) }}"></script>
 <script>
-  function renderGeneratedShiftCards(wrap, shifts) {
-    wrap.innerHTML = '';
-
-    shifts.forEach((shift) => {
-      const card = document.createElement('div');
-      card.className = 'generated-shift-card';
-
-      const title = document.createElement('div');
-      title.className = 'fw-semibold mb-2';
-      title.textContent = `Generated Shift #${shift.id || '-'}`;
-      card.appendChild(title);
-
-      const meta = document.createElement('div');
-      meta.className = 'generated-shift-meta';
-      [
-        ['Date', 'date'],
-        ['Original', 'original'],
-        ['Assigned', 'assigned'],
-        ['School', 'school'],
-        ['Time', 'time'],
-        ['Status', 'status'],
-      ].forEach(([label, key]) => {
-        const field = document.createElement('div');
-        field.className = 'generated-shift-field';
-
-        const labelEl = document.createElement('span');
-        labelEl.className = 'generated-shift-label';
-        labelEl.textContent = label;
-
-        const valueEl = document.createElement('div');
-        valueEl.className = 'generated-shift-value';
-        valueEl.textContent = shift[key] || '-';
-
-        field.append(labelEl, valueEl);
-        meta.appendChild(field);
-      });
-      card.appendChild(meta);
-
-      ['lesson', 'notes'].forEach((key) => {
-        const wide = document.createElement('div');
-        wide.className = 'generated-shift-wide';
-
-        const labelEl = document.createElement('span');
-        labelEl.className = 'generated-shift-label';
-        labelEl.textContent = key === 'lesson' ? 'Lesson' : 'Notes';
-
-        const valueEl = document.createElement('div');
-        valueEl.className = 'generated-shift-value';
-        valueEl.textContent = shift[key] || '-';
-
-        wide.append(labelEl, valueEl);
-        card.appendChild(wide);
-      });
-
-      wrap.appendChild(card);
-    });
-  }
-
-  function generatedShiftsFromSource(sourceId) {
-    const source = document.getElementById(sourceId);
-    return source ? JSON.parse(source.textContent || '[]') : [];
-  }
-
   // 削除確認ダイアログ（日付表示） → Bootstrap Modal に置き換え（英語UI）
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('.js-delete');
@@ -475,91 +332,37 @@
 
     // 対象休暇情報をモーダルに反映
     const date = btn.dataset.date || 'this leave';
-    const modalText = document.getElementById('deleteConfirmText');
-    modalText.textContent = `Are you sure you want to delete the absence for ${date}?`;
-
-    const shifts = generatedShiftsFromSource(btn.dataset.shiftsSource);
-    const summary = document.getElementById('deleteGeneratedShiftSummary');
-    const wrap = document.getElementById('deleteGeneratedShiftWrap');
-
-    if (shifts.length > 0) {
-      summary.textContent = `${shifts.length} generated shift(s) are linked to this absence. They will also be deleted unless you choose Keep Shift.`;
-      wrap.style.display = '';
-      renderGeneratedShiftCards(wrap, shifts);
-    } else {
-      summary.textContent = 'No generated shifts are linked to this absence.';
-      wrap.innerHTML = '';
-      wrap.style.display = 'none';
-    }
+    const shifts = GeneratedShiftConfirmation.generatedShiftsFromSource(btn.dataset.shiftsSource);
 
     const form = document.getElementById('js-delete-form');
     form.action = btn.dataset.url;
     const actionInput = document.getElementById('js-delete-generated-shift-action');
     actionInput.value = 'delete';
 
-    // モーダル表示
-    const modalEl = document.getElementById('deleteConfirmModal');
-    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-    modal.show();
-
-    // Shiftごと削除する通常ルート
-    const confirmBtn = document.getElementById('confirmDeleteBtn');
-    confirmBtn.onclick = () => {
-      actionInput.value = 'delete';
-      modal.hide();
-      form.submit();
-    };
-
-    // Shiftを手動シフトとして残す拡張ルート
-    const keepBtn = document.getElementById('keepGeneratedShiftsBtn');
-    keepBtn.onclick = () => {
-      actionInput.value = 'detach';
-      modal.hide();
-      form.submit();
-    };
+    GeneratedShiftConfirmation.open({
+      modalId: 'deleteConfirmModal',
+      shifts,
+      text: `Are you sure you want to delete the absence for ${date}?`,
+      summary: shifts.length > 0
+        ? `${shifts.length} generated shift(s) are linked to this absence. They will also be deleted unless you choose Keep Shift.`
+        : 'No generated shifts are linked to this absence.',
+      onKeep: () => {
+        actionInput.value = 'detach';
+        form.submit();
+      },
+      onDelete: () => {
+        actionInput.value = 'delete';
+        form.submit();
+      },
+    });
   });
 
-  document.addEventListener('submit', (e) => {
-    const form = e.target.closest('form.js-leave-form');
-    if (!form) return;
-
-    const actionInput = form.querySelector('input[name="generated_shift_action"]');
-    if (actionInput?.value) return;
-
-    const status = form.querySelector('select[name="status"]')?.value || '';
-    if (!['rejected', 'cancelled'].includes(status)) return;
-
-    const sourceId = form.querySelector('.js-delete')?.dataset.shiftsSource;
-    const shifts = generatedShiftsFromSource(sourceId);
-    if (shifts.length === 0) return;
-
-    e.preventDefault();
-
-    const text = document.getElementById('inactiveStatusConfirmText');
-    text.textContent = `You are changing this absence to ${status}. Please choose what to do with the linked generated shift(s).`;
-
-    const summary = document.getElementById('inactiveGeneratedShiftSummary');
-    summary.textContent = `${shifts.length} generated shift(s) are linked to this absence.`;
-
-    const wrap = document.getElementById('inactiveGeneratedShiftWrap');
-    wrap.style.display = '';
-    renderGeneratedShiftCards(wrap, shifts);
-
-    const modalEl = document.getElementById('inactiveStatusConfirmModal');
-    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-    modal.show();
-
-    document.getElementById('inactiveKeepGeneratedShiftsBtn').onclick = () => {
-      actionInput.value = 'detach';
-      modal.hide();
-      form.submit();
-    };
-
-    document.getElementById('inactiveDeleteGeneratedShiftsBtn').onclick = () => {
-      actionInput.value = 'delete';
-      modal.hide();
-      form.submit();
-    };
+  GeneratedShiftConfirmation.bindInactiveStatusForm({
+    formSelector: 'form.js-leave-form',
+    sourceSelector: '.js-delete',
+    modalId: 'inactiveStatusConfirmModal',
+    textBuilder: ({ status }) => `You are changing this absence to ${status}. Please choose what to do with the linked generated shift(s).`,
+    summaryBuilder: ({ shifts }) => `${shifts.length} generated shift(s) are linked to this absence.`,
   });
 </script>
 
