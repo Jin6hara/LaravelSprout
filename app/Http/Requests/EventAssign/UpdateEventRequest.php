@@ -18,6 +18,7 @@ class UpdateEventRequest extends FormRequest
     {
         return [
             'event_date'       => ['required', 'date'],
+            'updated_at'       => ['nullable', 'date_format:Y-m-d H:i:s'],
             'original_user_id' => ['nullable', 'exists:users,id'],
             'Leave_type'       => ['nullable', 'string'],
             'title'            => ['nullable', 'string', 'max:255'],

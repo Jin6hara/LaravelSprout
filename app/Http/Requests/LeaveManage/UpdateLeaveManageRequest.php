@@ -30,6 +30,8 @@ class UpdateLeaveManageRequest extends FormRequest
             'time_end'     => ['nullable', 'date_format:H:i', 'required_with:time_start'],
             'handle_type'  => ['nullable', 'string'],
             'status'       => ['required', Rule::in(LeaveStatus::values())],
+            'generated_shift_action' => ['nullable', Rule::in(['detach', 'delete'])],
+            'inactive_generated_shift_action' => ['nullable', Rule::in(['detach', 'delete'])],
         ];
     }
 

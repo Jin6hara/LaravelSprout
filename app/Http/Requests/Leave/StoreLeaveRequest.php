@@ -18,7 +18,8 @@ class StoreLeaveRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id'      => ['required', 'exists:users,id'],
+            'user_id'      => ['nullable', 'integer'],
+            'user_lookup'  => ['nullable', 'string', 'max:255'],
             'start_date'   => ['required', 'date'],
             'end_date'     => ['nullable', 'date', 'after_or_equal:start_date'],
             'kind'         => ['required', Rule::in(LeaveKind::storeValues())],
@@ -28,6 +29,7 @@ class StoreLeaveRequest extends FormRequest
             'time_start'   => ['nullable', 'date_format:H:i'],
             'time_end'     => ['nullable', 'date_format:H:i', 'after:time_start'],
             'status'       => ['nullable', Rule::in(LeaveStatus::storeValues())],
+            'redirect_to'  => ['nullable', 'string', 'max:2048'],
         ];
     }
 }

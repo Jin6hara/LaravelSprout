@@ -6,12 +6,16 @@ use App\Enums\LeaveKind;
 use App\Models\ApprovalRequest;
 use App\Models\Leave;
 use App\Services\Approval\ApprovalService;
+use App\Services\Leave\GeneratedShiftDecisionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ApprovalController extends Controller
 {
-    public function __construct(private ApprovalService $approvalService) {}
+    public function __construct(
+        private ApprovalService $approvalService,
+        private GeneratedShiftDecisionService $generatedShiftDecision
+    ) {}
 
     /**
      * 承認リクエスト詳細表示
@@ -24,6 +28,7 @@ class ApprovalController extends Controller
         $meta       = $approvalRequest->metadata ?? [];
         $approvable = $approvalRequest->approvable;
         $dateSummary = null;
+        $generatedShiftDetails = collect();
 
         if ($approvable instanceof Leave) {
             $kind = $meta['kind'] ?? $approvable->kind ?? null;
@@ -64,11 +69,14 @@ class ApprovalController extends Controller
                     $dateSummary = $meta['date'] ?? optional($approvable->start_date)->format('Y-m-d') ?? '-';
                 }
             }
+
+            $generatedShiftDetails = $this->generatedShiftDecision->detailsForApprovalRequest($approvalRequest);
         }
 
         return view('approvals.show', [
-            'approvalRequest' => $approvalRequest,
-            'dateSummary'     => $dateSummary,
+            'approvalRequest'       => $approvalRequest,
+            'dateSummary'           => $dateSummary,
+            'generatedShiftDetails' => $generatedShiftDetails,
         ]);
     }
 
@@ -93,8 +101,28 @@ class ApprovalController extends Controller
     {
         $this->authorize('act', $approvalRequest);
 
-        $this->approvalService->deny($approvalRequest, Auth::id(), $request->input('comment'));
+        $generatedShiftAction = $this->generatedShiftActionFromRequest($request);
+        $generatedShiftCount = $this->generatedShiftDecision->detailsForApprovalRequest($approvalRequest)->count();
+
+        if ($generatedShiftCount > 0 && $this->generatedShiftDecision->normalizeAction($generatedShiftAction) === null) {
+            return back()->with('toast_errors', [
+                'Please confirm what to do with generated shift(s) before denying this leave request.',
+            ]);
+        }
+
+        $this->approvalService->deny(
+            $approvalRequest,
+            Auth::id(),
+            $request->input('comment'),
+            $generatedShiftAction
+        );
 
         return back()->with('toast', '却下しました。');
+    }
+
+    private function generatedShiftActionFromRequest(Request $request): ?string
+    {
+        return $request->input('generated_shift_action')
+            ?? $request->input('inactive_generated_shift_action');
     }
 }

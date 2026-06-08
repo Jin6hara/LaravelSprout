@@ -137,12 +137,14 @@
         <form method="POST"
               action="{{ route('leaves.update', $leave) }}"
               class="h-100 d-flex flex-column js-leave-form"
-              data-user-id="{{ $leave->user_id }}">
+              data-user-id="{{ $leave->user_id }}"
+              data-current-status="{{ $leave->status }}">
           @csrf
           @method('PUT')
 
           {{-- Add Bulk 用ID隠しフィールド (JS用？) --}}
           <input type="hidden" name="id" value="{{ $leave->id }}">
+          <input type="hidden" name="generated_shift_action" value="">
 
           <div class="card-body py-1 px-2">
             <div class="mb-0 d-grid gap-0">
@@ -247,11 +249,18 @@
 
             {{-- フッタ操作 --}}
             <div class="card-footer bg-white d-flex justify-content-between align-items-center py-2 px-2 gap-1">
+              @php
+                $deleteShifts = $generatedShiftDetailsByLeaveId[$leave->id] ?? collect();
+                $deleteShiftPayloadId = 'leave-delete-shifts-' . $leave->id;
+              @endphp
+              <script type="application/json" id="{{ $deleteShiftPayloadId }}">@json($deleteShifts)</script>
+
               {{-- 削除ボタン：クラスとdata属性をJSに合わせる --}}
               <button type="button"
                       class="btn btn-sm btn-outline-danger js-delete"
                       data-url="{{ route('leaves.destroy', $leave) }}"
-                      data-date="{{ $leave->start_date?->format('Y-m-d') ?? 'この休暇' }}">
+                      data-date="{{ $leave->start_date?->format('Y-m-d') ?? 'this absence' }}"
+                      data-shifts-source="{{ $deleteShiftPayloadId }}">
                 Delete
               </button>
 
@@ -271,6 +280,7 @@
   <form id="js-delete-form" method="POST" style="display:none;">
     @csrf
     @method('DELETE')
+    <input type="hidden" name="generated_shift_action" id="js-delete-generated-shift-action" value="delete">
   </form>
 
   <div class="mt-3">
@@ -284,28 +294,12 @@
 
 </div>
 
-<!-- ✅ Delete Confirmation Modal -->
-<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow-sm">
-      <div class="modal-header bg-danger text-white py-2">
-        <h6 class="modal-title" id="deleteConfirmLabel">Delete Confirmation</h6>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <p class="mb-0" id="deleteConfirmText">Are you sure you want to delete this leave?</p>
-      </div>
-      <div class="modal-footer py-2">
-        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-danger btn-sm" id="confirmDeleteBtn">Delete</button>
-      </div>
-    </div>
-  </div>
-</div>
+<x-generated-shift-confirm-modal />
 
 @endsection
 
 @push('styles')
+<link href="{{ asset('css/generated-shift-confirmation.css') }}?v={{ filemtime(public_path('css/generated-shift-confirmation.css')) }}" rel="stylesheet">
 <style>
 /* Leaveカード・検索フォームカード共通デザイン */
 .card {
@@ -317,6 +311,7 @@
 @endpush
 
 @push('scripts')
+<script src="{{ asset('js/generated-shift-confirmation.js') }}?v={{ filemtime(public_path('js/generated-shift-confirmation.js')) }}"></script>
 <script>
   // 削除確認ダイアログ（日付表示） → Bootstrap Modal に置き換え（英語UI）
   document.addEventListener('click', (e) => {
@@ -325,23 +320,37 @@
 
     // 対象休暇情報をモーダルに反映
     const date = btn.dataset.date || 'this leave';
-    const modalText = document.getElementById('deleteConfirmText');
-    modalText.textContent = `Are you sure you want to delete ${date}?`;
+    const shifts = GeneratedShiftConfirmation.generatedShiftsFromSource(btn.dataset.shiftsSource);
 
     const form = document.getElementById('js-delete-form');
     form.action = btn.dataset.url;
+    const actionInput = document.getElementById('js-delete-generated-shift-action');
+    actionInput.value = 'delete';
 
-    // モーダル表示
-    const modalEl = document.getElementById('deleteConfirmModal');
-    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-    modal.show();
+    GeneratedShiftConfirmation.open({
+      modalId: 'generatedShiftConfirmModal',
+      shifts,
+      text: `Are you sure you want to delete the absence for ${date}?`,
+      summary: shifts.length > 0
+        ? `${shifts.length} generated shift(s) are linked to this absence. They will also be deleted unless you choose Keep Shift.`
+        : 'No generated shifts are linked to this absence.',
+      onKeep: () => {
+        actionInput.value = 'detach';
+        form.submit();
+      },
+      onDelete: () => {
+        actionInput.value = 'delete';
+        form.submit();
+      },
+    });
+  });
 
-    // 削除ボタンで実行
-    const confirmBtn = document.getElementById('confirmDeleteBtn');
-    confirmBtn.onclick = () => {
-      modal.hide();
-      form.submit();
-    };
+  GeneratedShiftConfirmation.bindInactiveStatusForm({
+    formSelector: 'form.js-leave-form',
+    sourceSelector: '.js-delete',
+    modalId: 'generatedShiftConfirmModal',
+    textBuilder: ({ status }) => `You are changing this absence to ${status}. Please choose what to do with the linked generated shift(s).`,
+    summaryBuilder: ({ shifts }) => `${shifts.length} generated shift(s) are linked to this absence.`,
   });
 </script>
 

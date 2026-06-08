@@ -32,6 +32,8 @@ class BulkUpdateLeaveManageRequest extends FormRequest
             'items.*.time_end'     => ['nullable', 'date_format:H:i', 'required_with:items.*.time_start'],
             'items.*.handle_type'  => ['nullable', 'string'],
             'items.*.status'       => ['required', Rule::in(LeaveStatus::values())],
+            'items.*.generated_shift_action' => ['nullable', Rule::in(['detach', 'delete'])],
+            'items.*.inactive_generated_shift_action' => ['nullable', Rule::in(['detach', 'delete'])],
         ];
     }
 

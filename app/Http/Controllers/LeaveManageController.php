@@ -10,13 +10,18 @@ use App\Http\Requests\LeaveManage\StoreLeaveManageRequest;
 use App\Http\Requests\LeaveManage\UpdateLeaveManageRequest;
 use App\Models\Leave;
 use App\Services\CurrentScopeService;
+use App\Services\Leave\GeneratedShiftDecisionService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 
 class LeaveManageController extends Controller
 {
-    public function __construct(private CurrentScopeService $scopeService) {}
+    public function __construct(
+        private CurrentScopeService $scopeService,
+        private GeneratedShiftDecisionService $generatedShiftDecision
+    ) {}
 
     /**
      * Leaveの月次一覧（管理者用）
@@ -68,7 +73,16 @@ class LeaveManageController extends Controller
 
         // 4) クエリ（Event版と同順序・構成）
         $leaves = Leave::query()
-            ->with(['user:id,first_name,family_name,employee_code'])
+            ->with([
+                'user:id,first_name,family_name,employee_code',
+                'generatedEvents' => fn($q) => $q
+                    ->with([
+                        'originalUser:id,first_name,family_name,employee_code',
+                        'assignedUser:id,first_name,family_name,employee_code',
+                    ])
+                    ->orderBy('event_date')
+                    ->orderBy('start_time'),
+            ])
             ->where('district_id', $this->scopeService->currentDistrictId())
             ->where('department_id', $this->scopeService->currentDepartmentId())
             ->when($leaveId,     fn($q) => $q->where('id', $leaveId)) // ★個別編集用パラメータ: leave_id があれば最優先で一意絞り込み
@@ -95,6 +109,11 @@ class LeaveManageController extends Controller
             ->paginate(24)
             ->withQueryString();
 
+        $generatedShiftDetailsByLeaveId = $leaves->getCollection()
+            ->mapWithKeys(fn(Leave $leave) => [
+                $leave->id => $this->generatedShiftDecision->detailsForLeave($leave),
+            ]);
+
         // 5) オプション
         $statusOptions = LeaveStatus::manageLabels();
         $kindOptions = LeaveKind::labels();
@@ -108,7 +127,8 @@ class LeaveManageController extends Controller
             'kindOptions',
             'excusedOptions',
             'fmtDate',
-            'fmtTime'
+            'fmtTime',
+            'generatedShiftDetailsByLeaveId'
         ));
     }
 
@@ -149,9 +169,22 @@ class LeaveManageController extends Controller
         $this->authorize('update', $leave);
 
         $data = $request->validated();
+        $generatedShiftAction = $data['generated_shift_action']
+            ?? $data['inactive_generated_shift_action']
+            ?? null;
+        unset($data['generated_shift_action']);
+        unset($data['inactive_generated_shift_action']);
+
         $targetUser = \App\Models\User::findOrFail((int) $data['user_id']);
         $this->authorize('manage', $targetUser);
 
+        if ($this->generatedShiftDecision->requiresActionForStatus($leave, $data['status'], $generatedShiftAction)) {
+            return back()->with('toast_errors', [
+                'Please confirm what to do with the generated shift(s) before changing this absence status.',
+            ]);
+        }
+
+        $leave->generatedShiftAction = $this->generatedShiftDecision->normalizeAction($generatedShiftAction);
         $leave->fill($data);
         $leave->save();
 
@@ -168,6 +201,22 @@ class LeaveManageController extends Controller
 
         $validated = $request->validated();
 
+        foreach ($validated['items'] as $it) {
+            $leave = Leave::findOrFail($it['id']);
+            $generatedShiftAction = $it['generated_shift_action']
+                ?? $it['inactive_generated_shift_action']
+                ?? null;
+
+            if ($this->generatedShiftDecision->requiresActionForStatus($leave, $it['status'], $generatedShiftAction)) {
+                return response()->json([
+                    'ok'      => false,
+                    'updated' => 0,
+                    'failed'  => 1,
+                    'message' => 'Please use individual Save and confirm what to do with generated shift(s) before changing an absence to Rejected or Cancelled.',
+                ], 422);
+            }
+        }
+
         // 一括反映
         foreach ($validated['items'] as $it) {
             $leave = Leave::findOrFail($it['id']);
@@ -176,6 +225,10 @@ class LeaveManageController extends Controller
             $targetUser = \App\Models\User::findOrFail((int) $it['user_id']);
             $this->authorize('manage', $targetUser);
 
+            $generatedShiftAction = $it['generated_shift_action']
+                ?? $it['inactive_generated_shift_action']
+                ?? null;
+            $leave->generatedShiftAction = $this->generatedShiftDecision->normalizeAction($generatedShiftAction);
             $leave->fill([
                 'user_id'     => $it['user_id'],
                 'start_date'  => $it['start_date'],
@@ -213,7 +266,22 @@ class LeaveManageController extends Controller
     {
         $this->authorize('delete', $leave);
 
-        $leave->delete();
+        $generatedShiftAction = $request->input('generated_shift_action');
+        if (!$generatedShiftAction && $request->boolean('keep_generated_shifts')) {
+            $generatedShiftAction = GeneratedShiftDecisionService::ACTION_DETACH;
+        }
+        $generatedShiftAction = $this->generatedShiftDecision->normalizeAction($generatedShiftAction)
+            ?? GeneratedShiftDecisionService::ACTION_DELETE;
+        $generatedShiftCount = $leave->generatedEvents()->count();
+
+        DB::transaction(function () use ($leave, $generatedShiftAction) {
+            $this->generatedShiftDecision->applyAction($leave, $generatedShiftAction);
+            $leave->delete();
+        });
+
+        if ($generatedShiftAction === GeneratedShiftDecisionService::ACTION_DETACH && $generatedShiftCount > 0) {
+            return back()->with('toast', "Leave deleted. Kept {$generatedShiftCount} generated shift(s).");
+        }
 
         return back()->with('toast', 'Leave deleted.');
     }

@@ -1,0 +1,52 @@
+.generated-shift-list {
+  max-height: min(52vh, 31rem);
+  overflow-y: auto;
+  padding-right: .25rem;
+}
+
+.generated-shift-card {
+  background: #f8fbff;
+  border: 1px solid #c8d8ec;
+  border-radius: 6px;
+  padding: .75rem;
+}
+
+.generated-shift-card + .generated-shift-card {
+  margin-top: .5rem;
+}
+
+.generated-shift-meta {
+  display: grid;
+  gap: .5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.generated-shift-field {
+  min-width: 0;
+}
+
+.generated-shift-label {
+  color: #6c757d;
+  display: block;
+  font-size: .75rem;
+  line-height: 1.1;
+}
+
+.generated-shift-value {
+  overflow-wrap: anywhere;
+}
+
+.generated-shift-wide {
+  background: #fff;
+  border: 1px solid #dce6f2;
+  border-radius: 4px;
+  margin-top: .5rem;
+  padding: .5rem;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 576px) {
+  .generated-shift-meta {
+    grid-template-columns: 1fr;
+  }
+}

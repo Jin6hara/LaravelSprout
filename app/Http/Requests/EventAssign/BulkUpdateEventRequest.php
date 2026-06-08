@@ -25,6 +25,7 @@ class BulkUpdateEventRequest extends FormRequest
     {
         return [
             'id'               => ['required', 'integer', 'exists:events,id'],
+            'updated_at'       => ['required', 'date_format:Y-m-d H:i:s'],
             'event_date'       => ['required', 'date'],
             'original_user_id' => ['nullable', 'exists:users,id'],
             'Leave_type'       => ['nullable', 'string'],

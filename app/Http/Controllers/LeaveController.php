@@ -13,8 +13,10 @@ use App\Services\Leave\CancelLeaveService;
 use App\Services\Leave\ReportLeaveService;
 use App\Enums\LeaveExcused;
 use App\Enums\LeaveStatus;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use InvalidArgumentException;
 
 class LeaveController extends Controller
 {
@@ -43,12 +45,17 @@ class LeaveController extends Controller
     public function store(StoreLeaveRequest $request)
     {
         // 承認フローがある場合は pending から始めるなど調整してください
-        $targetUser = \App\Models\User::find((int) $request->input('user_id'));
-        abort_if(! $targetUser, 404);
+        $redirectUrl = $this->leaveStoreRedirectUrl($request, $request->input('start_date'));
+        $targetUser = $this->resolveLeaveTargetUser($request);
+        if (! $targetUser) {
+            return redirect()->to($redirectUrl)
+                ->withInput()
+                ->with('toast_errors', ['Target not found. Please select a user from the suggestions.']);
+        }
         $this->authorize('manage', $targetUser);
 
         $leave = Leave::create([
-            'user_id'       => (int)$request->input('user_id'),
+            'user_id'       => $targetUser->id,
             'start_date'    => $request->date('start_date'),
             'end_date'      => $request->input('end_date') ? $request->date('end_date') : null,
             'kind'          => $request->input('kind'),
@@ -67,8 +74,50 @@ class LeaveController extends Controller
         $date = optional($leave->start_date)->format('Y-m-d');
 
         // Observer が自動でスナップショット生成
-        return redirect()->to(route('calendar.edit') . '?event_date=' . urlencode($date))
+        return redirect()->to($this->leaveStoreRedirectUrl($request, $date))
             ->with('toast', 'Absence successfully registered. If a regular shift exists for that day, an Event will be created automatically.');
+    }
+
+    private function leaveStoreRedirectUrl(StoreLeaveRequest $request, ?string $date): string
+    {
+        $redirectTo = (string) $request->input('redirect_to', '');
+        if ($redirectTo !== '' && str_starts_with($redirectTo, url('/'))) {
+            return $redirectTo;
+        }
+
+        return route('calendar.edit') . '?event_date=' . urlencode((string) $date);
+    }
+
+    private function resolveLeaveTargetUser(StoreLeaveRequest $request): ?User
+    {
+        $userId = (int) $request->input('user_id');
+        if ($userId > 0) {
+            return $this->scopeService->targetUserQuery()->whereKey($userId)->first();
+        }
+
+        $lookup = trim((string) $request->input('user_lookup', ''));
+        if ($lookup === '') {
+            return null;
+        }
+
+        if (preg_match('/\[([^\]]+)\]\s*$/', $lookup, $m)) {
+            return $this->scopeService->targetUserQuery()
+                ->where('employee_code', trim($m[1]))
+                ->first();
+        }
+
+        $matches = $this->scopeService->targetUserQuery()
+            ->where(function ($q) use ($lookup) {
+                $q->whereLikeInsensitive('first_name', $lookup)
+                    ->orWhereLikeInsensitive('family_name', $lookup)
+                    ->orWhereLikeInsensitive('name', $lookup)
+                    ->orWhereLikeInsensitive('employee_code', $lookup)
+                    ->orWhereLikeInsensitive('email', $lookup);
+            })
+            ->limit(2)
+            ->get();
+
+        return $matches->count() === 1 ? $matches->first() : null;
     }
 
 
@@ -76,11 +125,15 @@ class LeaveController extends Controller
      * 休暇申請の取消
      * 承認済みの場合は LeaveBalanceService で有給残を返戻する
      */
-    public function cancel(Leave $leave)
+    public function cancel(Request $request, Leave $leave)
     {
         $this->authorize('cancel', $leave);
 
-        $this->cancelService->handle($leave);
+        try {
+            $this->cancelService->handle($leave, $request->input('generated_shift_action'));
+        } catch (InvalidArgumentException $e) {
+            return back()->with('toast_errors', [$e->getMessage()]);
+        }
 
         return back()->with('toast', '申請を取り消しました。');
     }

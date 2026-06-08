@@ -10,6 +10,7 @@
             $meta       = $approvalRequest->metadata ?? [];
             $approvable = $approvalRequest->approvable;
             $isLeave    = $approvable instanceof \App\Models\Leave;
+            $generatedShiftDetails = collect($generatedShiftDetails ?? []);
             @endphp
 
             <table class="table table-bordered">
@@ -176,8 +177,9 @@
                 <button type="submit" class="btn btn-success mb-2">Approve</button>
             </form>
 
-            <form action="{{ route('approvals.deny', $approvalRequest) }}" method="POST" class="d-inline ms-2">
+            <form action="{{ route('approvals.deny', $approvalRequest) }}" method="POST" class="d-inline ms-2 js-approval-deny-form">
                 @csrf
+                <input type="hidden" name="generated_shift_action" value="">
                 <input type="text" name="comment" class="form-control mb-2" placeholder="Denial reason (optional)">
                 <button type="submit" class="btn btn-danger mb-2">Deny</button>
             </form>
@@ -186,6 +188,14 @@
         </div>
     </div>
 </div>
+
+@if($isLeave)
+<script type="application/json" id="approval-generated-shifts">@json($generatedShiftDetails)</script>
+
+<x-generated-shift-confirm-modal />
+@endif
+
+<link href="{{ asset('css/generated-shift-confirmation.css') }}?v={{ filemtime(public_path('css/generated-shift-confirmation.css')) }}" rel="stylesheet">
 
 <style>
 .approval-show-panel {
@@ -197,4 +207,17 @@
     background-color: #fff;
 }
 </style>
+
+@if($isLeave)
+<script src="{{ asset('js/generated-shift-confirmation.js') }}?v={{ filemtime(public_path('js/generated-shift-confirmation.js')) }}"></script>
+<script>
+GeneratedShiftConfirmation.bindApprovalDenyForm({
+    formSelector: '.js-approval-deny-form',
+    sourceId: 'approval-generated-shifts',
+    modalId: 'generatedShiftConfirmModal',
+    text: 'This leave request has generated shift(s). Please choose what to do before denying it.',
+    summaryBuilder: ({ shifts }) => `${shifts.length} generated shift(s) are linked to this request.`,
+});
+</script>
+@endif
 @endsection

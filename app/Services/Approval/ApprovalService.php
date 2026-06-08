@@ -44,14 +44,19 @@ class ApprovalService
         });
     }
 
-    public function deny(ApprovalRequest $approvalRequest, int $actorId, ?string $comment): void
+    public function deny(
+        ApprovalRequest $approvalRequest,
+        int $actorId,
+        ?string $comment,
+        ?string $generatedShiftAction = null
+    ): void
     {
-        DB::transaction(function () use ($approvalRequest, $actorId, $comment) {
+        DB::transaction(function () use ($approvalRequest, $actorId, $comment, $generatedShiftAction) {
             $meta       = $approvalRequest->metadata ?? [];
             $approvable = $approvalRequest->approvable;
 
             if ($approvable instanceof Leave && !empty($meta['batch_id'])) {
-                $this->denyBatch($meta['batch_id'], $actorId, $comment);
+                $this->denyBatch($meta['batch_id'], $actorId, $comment, $generatedShiftAction);
                 return;
             }
 
@@ -61,7 +66,10 @@ class ApprovalService
                 'comment'  => $comment,
             ]);
             $approvalRequest->update(['current_state' => 'rejected']);
-            $approvalRequest->approvable->update([
+            if ($approvable instanceof Leave) {
+                $approvable->generatedShiftAction = $generatedShiftAction;
+            }
+            $approvable->update([
                 'status' => $approvable instanceof Leave ? LeaveStatus::Rejected->value : 'rejected',
             ]);
         });
@@ -88,7 +96,7 @@ class ApprovalService
         }
     }
 
-    private function denyBatch(string $batchId, int $actorId, ?string $comment): void
+    private function denyBatch(string $batchId, int $actorId, ?string $comment, ?string $generatedShiftAction = null): void
     {
         $allRequests = ApprovalRequest::query()
             ->where('approvable_type', Leave::class)
@@ -104,6 +112,7 @@ class ApprovalService
 
             $req->actions()->create(['actor_id' => $actorId, 'action' => 'rejected', 'comment' => $comment]);
             $req->update(['current_state' => 'rejected']);
+            $leave->generatedShiftAction = $generatedShiftAction;
             $leave->update(['status' => LeaveStatus::Rejected->value]);
         }
     }

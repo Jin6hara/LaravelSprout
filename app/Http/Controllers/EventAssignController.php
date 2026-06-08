@@ -6,6 +6,7 @@ use App\Enums\EventStatus;
 use App\Enums\ShiftType;
 use App\Http\Requests\EventAssign\BulkUpdateEventRequest;
 use App\Http\Requests\EventAssign\CopyEventRequest;
+use App\Http\Requests\EventAssign\StoreEventRequest;
 use App\Http\Requests\EventAssign\UpdateEventRequest;
 use App\Models\Event;
 use App\Models\User;
@@ -138,6 +139,67 @@ class EventAssignController extends Controller
     }
 
     /**
+     * 単日カレンダーとイベント編集テーブルを同一画面で表示する
+     * GET /forecast/day-assigner — 指定日の Forecast List と Shift 編集行を同期して扱う
+     */
+    public function dailyBoard(Request $request)
+    {
+        $this->authorize('viewAny', Event::class);
+
+        try {
+            $selectedDate = Carbon::parse($request->input('date', now()->toDateString()))->toDateString();
+        } catch (\Throwable $e) {
+            $selectedDate = now()->toDateString();
+        }
+
+        $userOptions = $this->scopeService->targetUserQuery()
+            ->select('id', 'first_name', 'family_name', 'employee_code')
+            ->orderBy('employee_code')
+            ->limit(500)
+            ->get();
+
+        $schoolNames = $this->scopeService->schoolQuery()
+            ->where('is_active', true)
+            ->orderBy('school_name')
+            ->distinct()
+            ->pluck('school_name');
+
+        $events = Event::query()
+            ->where('district_id', $this->scopeService->currentDistrictId())
+            ->where('department_id', $this->scopeService->currentDepartmentId())
+            ->whereDate('event_date', $selectedDate)
+            ->with(['assignedUser:id,name,employee_code', 'originalUser:id,name,employee_code'])
+            ->orderBy('school_name')
+            ->orderBy('start_time')
+            ->orderBy('assigned_user_id')
+            ->get();
+
+        $statusOptions = [
+            EventStatus::Filled->value => EventStatus::Filled->label(),
+            EventStatus::Fixed->value => EventStatus::Fixed->label(),
+            EventStatus::Pending->value => EventStatus::Pending->label(),
+            EventStatus::InProcess->value => EventStatus::InProcess->label(),
+        ];
+        $typeOptions = [
+            ShiftType::RegularTime->value => ShiftType::RegularTime->short(),
+            ShiftType::Overtime->value => ShiftType::Overtime->short(),
+            ShiftType::ScheduleChange->value => ShiftType::ScheduleChange->short(),
+            ShiftType::Special->value => ShiftType::Special->short(),
+            ShiftType::RosteredWorkingDay->value => ShiftType::RosteredWorkingDay->short(),
+            ShiftType::NoneRequired->value => ShiftType::NoneRequired->short(),
+        ];
+
+        return view('calendar.dailyBoard', compact(
+            'events',
+            'userOptions',
+            'statusOptions',
+            'typeOptions',
+            'schoolNames',
+            'selectedDate'
+        ));
+    }
+
+    /**
      * イベントを複製して新規作成
      * POST /calendar/events/copy — バリデーション済みデータを元に時刻を正規化し、同スコープで新規 Event を作成
      */
@@ -178,23 +240,61 @@ class EventAssignController extends Controller
      * 空の新規イベントを作成
      * POST /calendar/events — 指定日に pending・regular_time の空白イベントを生成して管理画面へ戻す
      */
-    public function store(Request $request)
+    public function store(StoreEventRequest $request)
     {
         $this->authorize('create', Event::class);
 
-        // リクエストやURLクエリから event_date を取得（POSTでもGETでも対応）
-        $date = $request->input('event_date', now()->toDateString());
+        $validated = $request->validated();
+        $date = $validated['event_date'];
+        $redirectUrl = $this->eventStoreRedirectUrl($request, $date);
 
-        // 空白イベントを作成
-        $event = Event::create([
-            'event_date'    => $date,
-            'status'        => EventStatus::Pending->value,
-            'type'          => ShiftType::RegularTime->value,
-            'district_id'   => $this->scopeService->currentDistrictId(),
-            'department_id' => $this->scopeService->currentDepartmentId(),
-        ]);
+        $originalUser = $this->resolveEventUser($request, 'original');
+        if (($request->filled('original_user_id') || $request->filled('original_user_lookup')) && ! $originalUser) {
+            return redirect()->to($redirectUrl)
+                ->withInput()
+                ->with('toast_errors', ['Original user not found. Please select a user from the suggestions.']);
+        }
 
-        return back()->with('toast', "Created shift at {$date}.");
+        $assignedUser = $this->resolveEventUser($request, 'assigned');
+        if (($request->filled('assigned_user_id') || $request->filled('assigned_user_lookup')) && ! $assignedUser) {
+            return redirect()->to($redirectUrl)
+                ->withInput()
+                ->with('toast_errors', ['Assigned user not found. Please select a user from the suggestions.']);
+        }
+
+        unset(
+            $validated['original_user_lookup'],
+            $validated['assigned_user_lookup'],
+            $validated['redirect_to']
+        );
+
+        $validated['original_user_id'] = $originalUser?->id;
+        $validated['assigned_user_id'] = $assignedUser?->id;
+        $validated['status'] = $validated['status'] ?? EventStatus::Pending->value;
+        $validated['type'] = $validated['type'] ?? ShiftType::RegularTime->value;
+
+        foreach (['start_time', 'end_time'] as $k) {
+            if (!empty($validated[$k])) {
+                $validated[$k] = Carbon::createFromFormat('H:i', $validated[$k])->format('H:i:s');
+            } else {
+                $validated[$k] = null;
+            }
+        }
+
+        if (empty($validated['total_duration']) && $validated['start_time'] && $validated['end_time']) {
+            $start = Carbon::createFromFormat('H:i:s', $validated['start_time']);
+            $end   = Carbon::createFromFormat('H:i:s', $validated['end_time']);
+            if ($end->lt($start)) $end->addDay();
+            $mins = $start->diffInMinutes($end);
+            $validated['total_duration'] = sprintf('%d:%02d', intdiv($mins, 60), $mins % 60);
+        }
+
+        $this->authorizeReferencedUsers($validated);
+        $validated['district_id']   = $this->scopeService->currentDistrictId();
+        $validated['department_id'] = $this->scopeService->currentDepartmentId();
+        Event::create($validated);
+
+        return redirect()->to($redirectUrl)->with('toast', "Created shift at {$date}.");
     }
 
     /**
@@ -206,6 +306,12 @@ class EventAssignController extends Controller
         $this->authorize('update', $event);
 
         $validated = $request->validated();
+        if ($this->hasUpdateConflict($event, $validated['updated_at'] ?? null)) {
+            return back()
+                ->withInput()
+                ->with('toast', 'Already updated by others. Please reload before saving.');
+        }
+        unset($validated['updated_at']);
 
         // ⬇︎ H:i または H:i:s を安全に H:i:s へ正規化（例外を出さない）
         $normalizeTime = function ($val) {
@@ -268,6 +374,17 @@ class EventAssignController extends Controller
             }
             $this->authorize('update', $event);
             $this->authorizeReferencedUsers($data);
+            if ($this->hasUpdateConflict($event, $data['updated_at'] ?? null)) {
+                $results[] = [
+                    'id' => $event->id,
+                    'ok' => false,
+                    'conflict' => true,
+                    'message' => 'Already updated by others. Please reload before saving.',
+                    'current_updated_at' => $this->eventUpdateToken($event),
+                ];
+                continue;
+            }
+            unset($data['updated_at']);
 
             // H:i → H:i:s に正規化
             foreach (['start_time', 'end_time'] as $k) {
@@ -289,22 +406,34 @@ class EventAssignController extends Controller
 
             $event->fill($data)->save(); // Observerがあれば最終整合を取ってくれます
 
-            $results[] = ['id' => $event->id, 'ok' => true];
+            $results[] = [
+                'id' => $event->id,
+                'ok' => true,
+                'updated_at' => $this->eventUpdateToken($event),
+            ];
         }
 
         $okCount = collect($results)->where('ok', true)->count();
         $ngCount = count($results) - $okCount;
+        $conflictCount = collect($results)->where('conflict', true)->count();
 
         // ✅ JSON返却でもフラッシュを仕込む
-        $flash = $ngCount ? "一部保存に失敗しました（保存: {$okCount} / 失敗: {$ngCount}）" : "Updated {$okCount} shift(s).";
-        session()->flash('toast', $flash);
+        $failureMessage = $conflictCount
+            ? 'Some shifts were already updated by others. Please reload before saving.'
+            : 'Some shifts failed to save.';
+        $flash = $ngCount
+            ? "{$failureMessage} (saved: {$okCount} / failed: {$ngCount})."
+            : "Updated {$okCount} shift(s).";
+        if (! $request->headers->has('X-Daily-Board')) {
+            session()->flash('toast', $flash);
+        }
 
         return response()->json([
             'ok'      => $ngCount === 0,
             'updated' => $okCount,
             'failed'  => $ngCount,
             'results' => $results,
-            'message' => $ngCount ? '一部保存に失敗しました' : 'すべて保存しました',
+            'message' => $ngCount ? $failureMessage : "Updated {$okCount} shift(s).",
         ]);
     }
 
@@ -315,6 +444,13 @@ class EventAssignController extends Controller
     public function destroy(Request $request, Event $event)
     {
         $this->authorize('delete', $event);
+
+        if ($event->source_leave_id) {
+            return back()->with('toast_errors', [
+                'This shift is managed by an absence. Please edit the absence instead.',
+            ]);
+        }
+
         $event->delete();
         return back()->with('toast', 'Deleted');
     }
@@ -601,5 +737,64 @@ class EventAssignController extends Controller
             $targetUser = User::findOrFail((int) $userId);
             $this->authorize('view', $targetUser);
         }
+    }
+
+    private function eventStoreRedirectUrl(StoreEventRequest $request, string $date): string
+    {
+        $redirectTo = (string) $request->input('redirect_to', '');
+        if ($redirectTo !== '' && str_starts_with($redirectTo, url('/'))) {
+            return $redirectTo;
+        }
+
+        return route('calendar.edit', ['event_date' => $date]);
+    }
+
+    private function resolveEventUser(StoreEventRequest $request, string $prefix): ?User
+    {
+        $userId = (int) $request->input("{$prefix}_user_id");
+        if ($userId > 0) {
+            return $this->scopeService->targetUserQuery()->whereKey($userId)->first();
+        }
+
+        $lookup = trim((string) $request->input("{$prefix}_user_lookup", ''));
+        if ($lookup === '') {
+            return null;
+        }
+
+        if (preg_match('/\[([^\]]+)\]\s*$/', $lookup, $m)) {
+            return $this->scopeService->targetUserQuery()
+                ->where('employee_code', trim($m[1]))
+                ->first();
+        }
+
+        $matches = $this->scopeService->targetUserQuery()
+            ->where(function ($q) use ($lookup) {
+                $q->whereLikeInsensitive('first_name', $lookup)
+                    ->orWhereLikeInsensitive('family_name', $lookup)
+                    ->orWhereLikeInsensitive('name', $lookup)
+                    ->orWhereLikeInsensitive('employee_code', $lookup)
+                    ->orWhereLikeInsensitive('email', $lookup);
+            })
+            ->limit(2)
+            ->get();
+
+        return $matches->count() === 1 ? $matches->first() : null;
+    }
+
+    /**
+     * 画面表示時の更新時刻と現在の更新時刻が違う場合は、古い画面からの保存として扱う
+     */
+    private function hasUpdateConflict(Event $event, ?string $submittedUpdatedAt): bool
+    {
+        if ($submittedUpdatedAt === null || $submittedUpdatedAt === '' || $event->updated_at === null) {
+            return false;
+        }
+
+        return $this->eventUpdateToken($event) !== Carbon::parse($submittedUpdatedAt)->format('Y-m-d H:i:s');
+    }
+
+    private function eventUpdateToken(Event $event): ?string
+    {
+        return $event->updated_at?->format('Y-m-d H:i:s');
     }
 }

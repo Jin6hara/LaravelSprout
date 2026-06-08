@@ -9,23 +9,31 @@ use App\Models\Event;
 use App\Models\EventDetail;
 use App\Models\Leave;
 use App\Models\ScheduleLine;
+use App\Services\Leave\GeneratedShiftDecisionService;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 
 class LeaveSnapshotService
 {
+    public function __construct(private GeneratedShiftDecisionService $generatedShiftDecision) {}
+
     /**
      * Leaveに紐づくスナップショットを再生成
      */
     public function rebuildSnapshotsForLeave(Leave $leave): void
     {
         DB::transaction(function () use ($leave) {
+            if (!in_array($leave->status, LeaveStatus::snapshotValues(), true)) {
+                $this->generatedShiftDecision->applyAction(
+                    $leave,
+                    $leave->generatedShiftAction ?: GeneratedShiftDecisionService::ACTION_DETACH
+                );
+                return;
+            }
+
             // まず既存のスナップショットを消す（冪等性）
             $this->deleteSnapshotsForLeave($leave);
-
-            // Approved, Pendingの場合生成（ポリシーは要件に合わせて）
-            if (!in_array($leave->status, LeaveStatus::snapshotValues(), true)) return;
 
             // 期間生成（end_date が null の場合は単日）
             $start = Carbon::parse($leave->start_date);
@@ -43,10 +51,15 @@ class LeaveSnapshotService
      */
     public function deleteSnapshotsForLeave(Leave $leave): void
     {
-        // source_leave_id 紐付きイベントを物理削除（SoftDeletesなら ->forceDelete() でも可）
-        Event::query()
-            ->where('source_leave_id', $leave->id)
-            ->delete(); // EventDetail は FK cascade で自動削除
+        $this->generatedShiftDecision->applyAction($leave, GeneratedShiftDecisionService::ACTION_DELETE);
+    }
+
+    /**
+     * Leave が Rejected / Cancelled などになった場合、紐づく Event は削除せず手動シフトとして残す
+     */
+    public function detachSnapshotsForLeave(Leave $leave): void
+    {
+        $this->generatedShiftDecision->applyAction($leave, GeneratedShiftDecisionService::ACTION_DETACH);
     }
 
     /**

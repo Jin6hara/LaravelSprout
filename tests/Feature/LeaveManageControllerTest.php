@@ -353,6 +353,149 @@ class LeaveManageControllerTest extends TestCase
         $this->assertDatabaseMissing('leaves', ['id' => $leave->id]);
     }
 
+    /**
+     * シナリオ 10b: Leave 削除時、デフォルトでは紐づく generated Event も削除される
+     */
+    public function test_admin_deletes_generated_event_with_leave_by_default(): void
+    {
+        [$admin, $scope, $district, $department] = $this->makeAdmin();
+
+        $targetUser = $this->makeUserInScope($district, $department);
+        $leave      = $this->makeLeaveInScope($district, $department, $targetUser);
+
+        $event = Event::factory()->create([
+            'district_id'       => $district->id,
+            'department_id'     => $department->id,
+            'event_date'        => $leave->start_date->toDateString(),
+            'original_user_id'  => $targetUser->id,
+            'school_name'       => 'Generated School',
+            'status'            => 'pending',
+            'type'              => 'regular_time',
+            'source_leave_id'   => $leave->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->withSession(['selected_scope_id' => $scope->id])
+            ->delete(route('leaves.destroy', $leave))
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('leaves', ['id' => $leave->id]);
+        $this->assertDatabaseMissing('events', ['id' => $event->id]);
+    }
+
+    /**
+     * シナリオ 10c: Keep Shift を選ぶと Leave だけ削除し、generated Event は手動シフトとして残る
+     */
+    public function test_admin_can_keep_generated_event_when_deleting_leave(): void
+    {
+        [$admin, $scope, $district, $department] = $this->makeAdmin();
+
+        $targetUser = $this->makeUserInScope($district, $department);
+        $leave      = $this->makeLeaveInScope($district, $department, $targetUser);
+
+        $event = Event::factory()->create([
+            'district_id'       => $district->id,
+            'department_id'     => $department->id,
+            'event_date'        => $leave->start_date->toDateString(),
+            'original_user_id'  => $targetUser->id,
+            'school_name'       => 'Generated School',
+            'status'            => 'pending',
+            'type'              => 'regular_time',
+            'source_leave_id'   => $leave->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->withSession(['selected_scope_id' => $scope->id])
+            ->delete(route('leaves.destroy', $leave), [
+                'generated_shift_action' => 'detach',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('leaves', ['id' => $leave->id]);
+        $this->assertDatabaseHas('events', [
+            'id'              => $event->id,
+            'source_leave_id' => null,
+        ]);
+    }
+
+    /**
+     * シナリオ 10d: Leave 削除モーダルで紐づく generated Event の確認情報を表示できる
+     */
+    public function test_leave_delete_modal_contains_generated_event_details(): void
+    {
+        [$admin, $scope, $district, $department] = $this->makeAdmin();
+
+        $targetUser = $this->makeUserInScope($district, $department);
+        $leave      = $this->makeLeaveInScope($district, $department, $targetUser);
+
+        Event::factory()->create([
+            'district_id'       => $district->id,
+            'department_id'     => $department->id,
+            'event_date'        => $leave->start_date->toDateString(),
+            'original_user_id'  => $targetUser->id,
+            'school_name'       => 'Generated School',
+            'start_time'        => '09:00',
+            'end_time'          => '10:00',
+            'Lesson'            => 'L1',
+            'status'            => 'pending',
+            'type'              => 'regular_time',
+            'source_leave_id'   => $leave->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->withSession(['selected_scope_id' => $scope->id])
+            ->get(route('leaves.edit', ['leave_id' => $leave->id]))
+            ->assertOk()
+            ->assertSee('Keep Shift')
+            ->assertSee('Delete Shift')
+            ->assertSee('Generated Shift Confirmation')
+            ->assertSee('generated_shift_action')
+            ->assertSee('Generated School')
+            ->assertSee('L1');
+    }
+
+    /**
+     * シナリオ 10e: generated Event がある Leave を inactive status にする場合は処理選択が必須
+     */
+    public function test_admin_must_confirm_generated_event_action_before_setting_leave_inactive(): void
+    {
+        [$admin, $scope, $district, $department] = $this->makeAdmin();
+
+        $targetUser = $this->makeUserInScope($district, $department);
+        $leave      = $this->makeLeaveInScope($district, $department, $targetUser);
+
+        $event = Event::factory()->create([
+            'district_id'      => $district->id,
+            'department_id'    => $department->id,
+            'event_date'       => $leave->start_date->toDateString(),
+            'original_user_id' => $targetUser->id,
+            'status'           => 'pending',
+            'type'             => 'regular_time',
+            'source_leave_id'  => $leave->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->withSession(['selected_scope_id' => $scope->id])
+            ->put(route('leaves.update', $leave), [
+                'user_id'    => $targetUser->id,
+                'start_date' => $leave->start_date->toDateString(),
+                'kind'       => 'paid',
+                'excused'    => 'excused',
+                'status'     => 'rejected',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('toast_errors');
+
+        $this->assertDatabaseHas('leaves', [
+            'id'     => $leave->id,
+            'status' => 'approved',
+        ]);
+        $this->assertDatabaseHas('events', [
+            'id'              => $event->id,
+            'source_leave_id' => $leave->id,
+        ]);
+    }
+
     // =========================================================================
     // 11. admin: bulkUpdate（一括更新）
     // =========================================================================
@@ -389,6 +532,47 @@ class LeaveManageControllerTest extends TestCase
             'id'     => $leave->id,
             'kind'   => 'special',
             'status' => 'pending',
+        ]);
+    }
+
+    /**
+     * シナリオ 11b: generated Event がある inactive 変更は Bulk 更新ではなく個別Save確認へ誘導する
+     */
+    public function test_bulk_update_rejects_inactive_status_without_generated_event_action(): void
+    {
+        [$admin, $scope, $district, $department] = $this->makeAdmin();
+
+        $targetUser = $this->makeUserInScope($district, $department);
+        $leave      = $this->makeLeaveInScope($district, $department, $targetUser);
+
+        Event::factory()->create([
+            'district_id'      => $district->id,
+            'department_id'    => $department->id,
+            'event_date'       => $leave->start_date->toDateString(),
+            'original_user_id' => $targetUser->id,
+            'status'           => 'pending',
+            'type'             => 'regular_time',
+            'source_leave_id'  => $leave->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->withSession(['selected_scope_id' => $scope->id])
+            ->postJson(route('leaves.bulk_update'), [
+                'items' => [[
+                    'id'         => $leave->id,
+                    'user_id'    => $targetUser->id,
+                    'start_date' => $leave->start_date->toDateString(),
+                    'kind'       => 'paid',
+                    'excused'    => 'excused',
+                    'status'     => 'cancelled',
+                ]],
+            ])
+            ->assertStatus(422)
+            ->assertJson(['ok' => false]);
+
+        $this->assertDatabaseHas('leaves', [
+            'id'     => $leave->id,
+            'status' => 'approved',
         ]);
     }
 
@@ -607,5 +791,85 @@ class LeaveManageControllerTest extends TestCase
         app(LeaveSnapshotService::class)->rebuildSnapshotsForLeave($leave);
 
         $this->assertDatabaseMissing('events', ['source_leave_id' => $leave->id]);
+    }
+
+    /**
+     * シナリオ 18: Leave が rejected / cancelled になる場合、既存 generated Event は削除せず手動シフトとして残す
+     */
+    public function test_snapshot_detaches_existing_events_when_leave_becomes_inactive(): void
+    {
+        foreach (['rejected', 'cancelled'] as $status) {
+            $district   = District::factory()->create();
+            $department = Department::factory()->create();
+
+            $user = User::factory()->create([
+                'district_id'   => $district->id,
+                'department_id' => $department->id,
+            ]);
+
+            $leave = Leave::factory()->create([
+                'user_id'       => $user->id,
+                'start_date'    => now()->toDateString(),
+                'status'        => 'approved',
+                'district_id'   => $district->id,
+                'department_id' => $department->id,
+            ]);
+
+            $event = Event::factory()->create([
+                'district_id'      => $district->id,
+                'department_id'    => $department->id,
+                'event_date'       => $leave->start_date->toDateString(),
+                'original_user_id' => $user->id,
+                'status'           => 'pending',
+                'type'             => 'regular_time',
+                'source_leave_id'  => $leave->id,
+            ]);
+
+            $leave->status = $status;
+            app(LeaveSnapshotService::class)->rebuildSnapshotsForLeave($leave);
+
+            $this->assertDatabaseHas('events', [
+                'id'              => $event->id,
+                'source_leave_id' => null,
+            ]);
+        }
+    }
+
+    /**
+     * シナリオ 19: inactive status 変更時に delete を選択した場合、既存 generated Event は削除される
+     */
+    public function test_snapshot_deletes_existing_events_when_inactive_action_is_delete(): void
+    {
+        $district   = District::factory()->create();
+        $department = Department::factory()->create();
+
+        $user = User::factory()->create([
+            'district_id'   => $district->id,
+            'department_id' => $department->id,
+        ]);
+
+        $leave = Leave::factory()->create([
+            'user_id'       => $user->id,
+            'start_date'    => now()->toDateString(),
+            'status'        => 'approved',
+            'district_id'   => $district->id,
+            'department_id' => $department->id,
+        ]);
+
+        $event = Event::factory()->create([
+            'district_id'      => $district->id,
+            'department_id'    => $department->id,
+            'event_date'       => $leave->start_date->toDateString(),
+            'original_user_id' => $user->id,
+            'status'           => 'pending',
+            'type'             => 'regular_time',
+            'source_leave_id'  => $leave->id,
+        ]);
+
+        $leave->status = 'cancelled';
+        $leave->generatedShiftAction = 'delete';
+        app(LeaveSnapshotService::class)->rebuildSnapshotsForLeave($leave);
+
+        $this->assertDatabaseMissing('events', ['id' => $event->id]);
     }
 }
