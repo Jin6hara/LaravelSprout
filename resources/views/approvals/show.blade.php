@@ -192,11 +192,7 @@
 @if($isLeave)
 <script type="application/json" id="approval-generated-shifts">@json($generatedShiftDetails)</script>
 
-<x-generated-shift-confirm-modal
-    id="denyGeneratedShiftConfirmModal"
-    title="Deny Confirmation"
-    message="This leave request has generated shift(s). Please choose what to do before denying it."
-/>
+<x-generated-shift-confirm-modal />
 @endif
 
 <link href="{{ asset('css/generated-shift-confirmation.css') }}?v={{ filemtime(public_path('css/generated-shift-confirmation.css')) }}" rel="stylesheet">
@@ -218,7 +214,7 @@
 GeneratedShiftConfirmation.bindApprovalDenyForm({
     formSelector: '.js-approval-deny-form',
     sourceId: 'approval-generated-shifts',
-    modalId: 'denyGeneratedShiftConfirmModal',
+    modalId: 'generatedShiftConfirmModal',
     text: 'This leave request has generated shift(s). Please choose what to do before denying it.',
     summaryBuilder: ({ shifts }) => `${shifts.length} generated shift(s) are linked to this request.`,
 });

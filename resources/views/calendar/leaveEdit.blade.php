@@ -294,19 +294,7 @@
 
 </div>
 
-<x-generated-shift-confirm-modal
-  id="deleteConfirmModal"
-  title="Delete Confirmation"
-  header-class="bg-danger text-white"
-  message="Are you sure you want to delete this absence?"
-  delete-label="Delete Absence & Shift"
-/>
-
-<x-generated-shift-confirm-modal
-  id="inactiveStatusConfirmModal"
-  title="Status Change Confirmation"
-  message="This absence has generated shift(s)."
-/>
+<x-generated-shift-confirm-modal />
 
 @endsection
 
@@ -340,7 +328,7 @@
     actionInput.value = 'delete';
 
     GeneratedShiftConfirmation.open({
-      modalId: 'deleteConfirmModal',
+      modalId: 'generatedShiftConfirmModal',
       shifts,
       text: `Are you sure you want to delete the absence for ${date}?`,
       summary: shifts.length > 0
@@ -360,7 +348,7 @@
   GeneratedShiftConfirmation.bindInactiveStatusForm({
     formSelector: 'form.js-leave-form',
     sourceSelector: '.js-delete',
-    modalId: 'inactiveStatusConfirmModal',
+    modalId: 'generatedShiftConfirmModal',
     textBuilder: ({ status }) => `You are changing this absence to ${status}. Please choose what to do with the linked generated shift(s).`,
     summaryBuilder: ({ shifts }) => `${shifts.length} generated shift(s) are linked to this absence.`,
   });

@@ -73,7 +73,7 @@ class ApprovalControllerTest extends TestCase
         $this->actingAs($superAdmin)
             ->get(route('approvals.show', $approval))
             ->assertOk()
-            ->assertSee('Deny Confirmation')
+            ->assertSee('Generated Shift Confirmation')
             ->assertSee('Keep Shift')
             ->assertSee('Delete Shift')
             ->assertSee('generated_shift_action')

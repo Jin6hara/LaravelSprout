@@ -447,10 +447,9 @@ class LeaveManageControllerTest extends TestCase
             ->get(route('leaves.edit', ['leave_id' => $leave->id]))
             ->assertOk()
             ->assertSee('Keep Shift')
-            ->assertSee('Delete Absence &amp; Shift', false)
-            ->assertSee('Status Change Confirmation')
-            ->assertSee('generated_shift_action')
             ->assertSee('Delete Shift')
+            ->assertSee('Generated Shift Confirmation')
+            ->assertSee('generated_shift_action')
             ->assertSee('Generated School')
             ->assertSee('L1');
     }
