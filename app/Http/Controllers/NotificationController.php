@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ApprovalRequest;
+use App\Services\Notifications\ScopedNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
-use App\Models\ApprovalRequest;
 
 class NotificationController extends Controller
 {
+    public function __construct(private ScopedNotificationService $scopedNotifications) {}
+
     /**
      * 通知一覧画面
      * GET /notifications — 最新100件を「承認待ち」と「処理済み」に分けて表示。各承認申請の現在の状態も付与
@@ -16,11 +19,10 @@ class NotificationController extends Controller
     {
         $user = $request->user();
 
-        // 最新100件を対象（必要に応じて増減）
-        $all = $user->notifications()->latest()->take(100)->get();
+        $all = $this->scopedNotifications->visibleNotifications($user);
 
         // 通知に含まれる approval_request_id を一括取得
-        $arIds = $all->map(fn($n) => $n->data['approval_request_id'] ?? null)
+        $arIds = $all->map(fn ($n) => $n->data['approval_request_id'] ?? null)
             ->filter()->unique()->values();
 
         // id => current_state のマップ: pending|approved|denied
@@ -35,12 +37,12 @@ class NotificationController extends Controller
 
             // 未承認の定義：explicit に pending。state 不明（別種の通知）は上側に寄せる運用
             $isPending = ($state === 'pending') || is_null($state);
-            $isUnread  = is_null($n->read_at);
+            $isUnread = is_null($n->read_at);
 
             // Blade で使いやすいよう動的プロパティ付与
             $n->computed_state = $state;     // 'pending' | 'approved' | 'denied' | null
-            $n->is_pending     = $isPending; // 上
-            $n->is_unread      = $isUnread;
+            $n->is_pending = $isPending; // 上
+            $n->is_unread = $isUnread;
 
             return $n;
         });
@@ -48,19 +50,19 @@ class NotificationController extends Controller
         // 上（未承認）グループ：未読を先に、同順なら新しい順
         $top = $decorated->where('is_pending', true)
             ->sortBy([
-                fn($n) => $n->is_unread ? 0 : 1,
-                fn($n) => -$n->created_at->getTimestamp(),
+                fn ($n) => $n->is_unread ? 0 : 1,
+                fn ($n) => -$n->created_at->getTimestamp(),
             ])->values();
 
         // 下（承認済み/却下済み）グループ：未読を先に、同順なら新しい順
         $bottom = $decorated->where('is_pending', false)
             ->sortBy([
-                fn($n) => $n->is_unread ? 0 : 1,
-                fn($n) => -$n->created_at->getTimestamp(),
+                fn ($n) => $n->is_unread ? 0 : 1,
+                fn ($n) => -$n->created_at->getTimestamp(),
             ])->values();
 
         return view('notifications.index', [
-            'topNotifications'    => $top,
+            'topNotifications' => $top,
             'bottomNotifications' => $bottom,
         ]);
     }
@@ -73,6 +75,7 @@ class NotificationController extends Controller
     {
         $this->authorize('view-notification', $notification);
         $notification->markAsRead();
+
         return back();
     }
 
@@ -82,7 +85,8 @@ class NotificationController extends Controller
      */
     public function markAllAsRead(Request $request)
     {
-        $request->user()->unreadNotifications->markAsRead();
+        $this->scopedNotifications->markVisibleUnreadAsRead($request->user());
+
         return back();
     }
 

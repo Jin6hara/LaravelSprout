@@ -2,26 +2,26 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
-use Illuminate\Pagination\Paginator;
-use Illuminate\Support\Facades\View;
-use App\Services\Calendar\CalendarResolver;
-use App\Services\Calendar\Contracts\CalendarEventProvider;
-use App\Models\Leave;
 use App\Models\Event;
-use App\Observers\LeaveObserver;
+use App\Models\Leave;
 use App\Observers\EventObserver;
+use App\Observers\LeaveObserver;
+use App\Services\Calendar\CalendarResolver;
 use App\Services\Calendar\ForecastResolver;
 use App\Services\Calendar\LeaveResolver;
-use App\Services\Calendar\Providers\HolidayProvider;
-use App\Services\Calendar\Providers\ClosureProvider;
-use App\Services\Calendar\Providers\SubCountProvider;
 use App\Services\Calendar\Providers\AllEventProvider;
 use App\Services\Calendar\Providers\AllLeaveProvider;
+use App\Services\Calendar\Providers\ClosureProvider;
+use App\Services\Calendar\Providers\HolidayProvider;
+use App\Services\Calendar\Providers\SubCountProvider;
+use App\Services\Notifications\ScopedNotificationService;
 use App\Support\DatabaseText;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -47,6 +47,7 @@ class AppServiceProvider extends ServiceProvider
         // Resolver をシングルトンで用意し、タグ経由で Provider 群を注入
         $this->app->singleton(CalendarResolver::class, function ($app) {
             $providers = $app->tagged('calendar.providers');
+
             return new CalendarResolver($providers);
         });
 
@@ -58,6 +59,7 @@ class AppServiceProvider extends ServiceProvider
                 $app->make(SubCountProvider::class),
                 $app->make(AllEventProvider::class),
             ];
+
             return new ForecastResolver($providers);
         });
 
@@ -68,6 +70,7 @@ class AppServiceProvider extends ServiceProvider
                 $app->make(ClosureProvider::class),
                 $app->make(AllLeaveProvider::class),
             ];
+
             return new LeaveResolver($providers);
         });
     }
@@ -79,36 +82,34 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->bootQueryTextMacros();
 
-        Paginator::useBootstrapFive(); //user.userListのpagination用に
+        Paginator::useBootstrapFive(); // user.userListのpagination用に
         Leave::observe(LeaveObserver::class);
         Event::observe(EventObserver::class);
 
         View::composer('layouts.app', function ($view) {
             $user = auth()->user();
-            if (!$user) {
+            if (! $user) {
                 return;
             }
 
             // 代理閲覧中でもヘッダーは「自分の未確認」を出す想定
             $inboxUnconfirmed = $user->inboxUnconfirmedCount();
 
-            $unreadNotificationsCount = $user->hasRole(['admin', 'super_admin'])
-                ? $user->unreadNotifications()->count()
-                : 0;
+            $unreadNotificationsCount = app(ScopedNotificationService::class)->unreadCount($user);
 
             // scope selector 用データ（admin / super_admin のみ）
             $scopeSelectorData = null;
             if ($user->isAdmin()) {
-                $scopeService    = app(\App\Services\CurrentScopeService::class);
-                $adminScopes     = $user->managementScopes()->with(['district', 'department'])->get();
+                $scopeService = app(\App\Services\CurrentScopeService::class);
+                $adminScopes = $user->managementScopes()->with(['district', 'department'])->get();
                 $selectedScopeId = $scopeService->currentScope()?->id;
                 $scopeSelectorData = compact('adminScopes', 'selectedScopeId');
             }
 
             $view->with([
-                'inboxUnconfirmed'         => $inboxUnconfirmed,
+                'inboxUnconfirmed' => $inboxUnconfirmed,
                 'unreadNotificationsCount' => $unreadNotificationsCount,
-                'scopeSelectorData'        => $scopeSelectorData,
+                'scopeSelectorData' => $scopeSelectorData,
             ]);
         });
 
@@ -119,25 +120,25 @@ class AppServiceProvider extends ServiceProvider
 
     private function bootQueryTextMacros(): void
     {
-        if (!QueryBuilder::hasMacro('whereLikeInsensitive')) {
+        if (! QueryBuilder::hasMacro('whereLikeInsensitive')) {
             QueryBuilder::macro('whereLikeInsensitive', function (string $column, ?string $value, string $boolean = 'and') {
                 return DatabaseText::whereContainsInsensitive($this, $column, $value, $boolean);
             });
         }
 
-        if (!QueryBuilder::hasMacro('orWhereLikeInsensitive')) {
+        if (! QueryBuilder::hasMacro('orWhereLikeInsensitive')) {
             QueryBuilder::macro('orWhereLikeInsensitive', function (string $column, ?string $value) {
                 return DatabaseText::whereContainsInsensitive($this, $column, $value, 'or');
             });
         }
 
-        if (!QueryBuilder::hasMacro('whereEqualsInsensitive')) {
+        if (! QueryBuilder::hasMacro('whereEqualsInsensitive')) {
             QueryBuilder::macro('whereEqualsInsensitive', function (string $column, ?string $value, string $boolean = 'and') {
                 return DatabaseText::whereEqualsInsensitive($this, $column, $value, $boolean);
             });
         }
 
-        if (!QueryBuilder::hasMacro('orWhereEqualsInsensitive')) {
+        if (! QueryBuilder::hasMacro('orWhereEqualsInsensitive')) {
             QueryBuilder::macro('orWhereEqualsInsensitive', function (string $column, ?string $value) {
                 return DatabaseText::whereEqualsInsensitive($this, $column, $value, 'or');
             });

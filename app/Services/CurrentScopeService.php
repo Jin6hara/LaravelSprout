@@ -11,7 +11,12 @@ class CurrentScopeService
 {
     /** リクエスト内でキャッシュ済みかどうか */
     private ?UserManagementScope $resolvedScope = null;
+
     private bool $scopeLoaded = false;
+
+    private ?int $resolvedUserId = null;
+
+    private mixed $resolvedScopeId = null;
 
     /**
      * ログインユーザーの現在の管理スコープを返す。
@@ -23,18 +28,25 @@ class CurrentScopeService
      */
     public function currentScope(): ?UserManagementScope
     {
-        if ($this->scopeLoaded) {
+        $user = auth()->user();
+        $scopeId = session('selected_scope_id');
+
+        if (
+            $this->scopeLoaded
+            && $this->resolvedUserId === $user?->id
+            && $this->resolvedScopeId === $scopeId
+        ) {
             return $this->resolvedScope;
         }
 
         $this->scopeLoaded = true;
+        $this->resolvedUserId = $user?->id;
+        $this->resolvedScopeId = $scopeId;
+        $this->resolvedScope = null;
 
-        $user = auth()->user();
-        if (!$user || !$user->isAdmin()) {
+        if (! $user || ! $user->isAdmin()) {
             return null;
         }
-
-        $scopeId = session('selected_scope_id');
 
         $query = UserManagementScope::where('user_id', $user->id)
             ->with(['district', 'department']);
@@ -55,7 +67,7 @@ class CurrentScopeService
     public function currentDistrictId(): ?int
     {
         $user = auth()->user();
-        if (!$user) {
+        if (! $user) {
             return null;
         }
 
@@ -73,7 +85,7 @@ class CurrentScopeService
     public function currentDepartmentId(): ?int
     {
         $user = auth()->user();
-        if (!$user) {
+        if (! $user) {
             return null;
         }
 
@@ -94,7 +106,7 @@ class CurrentScopeService
      */
     public function targetUserQuery(): Builder
     {
-        $user   = auth()->user();
+        $user = auth()->user();
         $selfId = $user?->id;
 
         if ($user && $user->isAdmin()) {
@@ -103,7 +115,7 @@ class CurrentScopeService
 
             if ($did !== null && $dep !== null) {
                 return User::where('district_id', $did)
-                           ->where('department_id', $dep);
+                    ->where('department_id', $dep);
             }
         }
 
