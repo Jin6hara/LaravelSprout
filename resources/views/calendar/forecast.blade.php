@@ -1,3 +1,4 @@
+{{-- 月別のシフト予測・稼働見込みを管理者向けに表示するカレンダービュー --}}
 @extends('layouts.app')
 
 @section('content')

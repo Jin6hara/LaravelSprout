@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 通知の一覧表示・既読処理を担当するコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Models\ApprovalRequest;

@@ -1,3 +1,4 @@
+<!-- 未読メッセージ数をポーリングでリアルタイムに表示するバッジコンポーネント -->
 <template>
     <span v-if="count > 0" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
         {{ count }}

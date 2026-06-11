@@ -1,3 +1,4 @@
+// 月別フォーキャストカレンダーの初期化・イベント表示・詳細モーダルを制御するスクリプト
 document.addEventListener('DOMContentLoaded', function () {
     const storedView = localStorage.getItem('forecastCalendarView');
     const savedView = ['dayGridMonth', 'listWeek'].includes(storedView)

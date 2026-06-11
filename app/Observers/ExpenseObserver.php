@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 経費明細の保存・削除時に精算レポートの合計金額を再集計するオブザーバー。
+ */
 namespace App\Observers;
 
 use App\Models\Expense;

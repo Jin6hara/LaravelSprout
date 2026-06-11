@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * スケジュール詳細の閲覧・更新・削除に対するスコープ付きアクセス制御を定義するポリシー。
+ */
 namespace App\Policies;
 
 use App\Models\ScheduleDetail;

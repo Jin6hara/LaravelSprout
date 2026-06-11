@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 欠勤・休暇レコードの閲覧・編集・管理に対するアクセス制御を定義するポリシー。
+ */
 namespace App\Policies;
 
 use App\Models\Leave;

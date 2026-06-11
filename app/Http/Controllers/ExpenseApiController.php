@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * 経費明細（Expense）の一括保存・個別登録・更新・削除を行うJSON API コントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ExpenseApi\BatchSaveExpenseRequest;

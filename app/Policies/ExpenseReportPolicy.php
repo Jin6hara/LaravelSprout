@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 経費精算レポートの閲覧・更新・提出に対するアクセス制御を定義するポリシー。
+ */
 namespace App\Policies;
 
 use App\Models\ExpenseReport;

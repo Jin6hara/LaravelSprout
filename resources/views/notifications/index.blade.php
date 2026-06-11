@@ -1,3 +1,4 @@
+{{-- ユーザー宛の通知（承認依頼・承認結果等）を一覧表示するビュー --}}
 @extends('layouts.app')
 
 @section('content')

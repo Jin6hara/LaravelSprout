@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * ユーザーの休日パターンに基づき法定・所定休日をカレンダーイベントとして提供するプロバイダ。
+ */
 namespace App\Services\Calendar\Providers;
 
 use App\Enums\RestPatternRuleKind;

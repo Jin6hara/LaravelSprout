@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 欠勤報告（事後届）提出リクエストのバリデーションを定義する。
+ */
 namespace App\Http\Requests\Leave;
 
 use Illuminate\Foundation\Http\FormRequest;

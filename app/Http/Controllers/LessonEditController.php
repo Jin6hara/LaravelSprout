@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * レッスンマスタの一覧表示・検索・新規登録・編集・削除を担うコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Models\Lesson;

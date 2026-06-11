@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * コンソールコマンドのスケジュール登録と読み込みを管理するコンソールカーネル。
+ */
 namespace App\Console;
 
 use Illuminate\Console\Scheduling\Schedule;

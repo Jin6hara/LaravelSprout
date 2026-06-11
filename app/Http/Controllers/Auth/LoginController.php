@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * ログインフォームの表示・認証処理・ログアウト処理を担うコントローラ。
+ */
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;

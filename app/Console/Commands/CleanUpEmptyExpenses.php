@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 指定月の空行（備考なし・金額0円）の経費レコードを一括削除するコマンド。
+ */
 namespace App\Console\Commands;
 
 use App\Models\Expense;

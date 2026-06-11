@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 地区（エリア）情報と親子階層を管理するモデル。
+ */
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;

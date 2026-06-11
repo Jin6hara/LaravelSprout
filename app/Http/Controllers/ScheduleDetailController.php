@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * スケジュール詳細（ScheduleDetail）の編集・一括更新・コピーを担当するコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ScheduleDetail\BulkUpdateScheduleDetailRequest;

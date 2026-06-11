@@ -1,3 +1,4 @@
+{{-- 管理者がスタッフのシフトイベントを編集・割り当てするカレンダービュー --}}
 {{-- resources/views/calendar/edit.blade.php --}}
 
 @extends('layouts.app')

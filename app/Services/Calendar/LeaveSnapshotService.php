@@ -1,4 +1,8 @@
 <?php
+
+/**
+ * 休暇に紐づくカレンダースナップショット（イベント詳細）の生成・削除を管理するサービス。
+ */
 // app/Services/Calendar/LeaveSnapshotService.php
 namespace App\Services\Calendar;
 

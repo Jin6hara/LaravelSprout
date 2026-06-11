@@ -1,3 +1,4 @@
+{{-- 特定日の全スタッフのシフト状況をボード形式で表示・管理するビュー --}}
 {{-- resources/views/calendar/dailyBoard.blade.php --}}
 
 @extends('layouts.app')

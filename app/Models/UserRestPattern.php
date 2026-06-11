@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * ユーザーへの休日パターン割り当て（有効期間付き）を管理するモデル。
+ */
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;

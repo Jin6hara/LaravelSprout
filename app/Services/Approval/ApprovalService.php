@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 申請の承認・却下・バッチ承認処理を行うサービス。
+ */
 namespace App\Services\Approval;
 
 use App\Enums\LeaveStatus;

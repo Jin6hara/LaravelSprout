@@ -1,3 +1,4 @@
+// ユーザー個人のスケジュールカレンダーをFullCalendarで初期化・操作するスクリプト
 document.addEventListener('DOMContentLoaded', function () {
     const storedView = localStorage.getItem('userCalendarView');
     const savedView = ['dayGridMonth', 'listWeek'].includes(storedView)

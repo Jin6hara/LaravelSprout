@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 経費明細の更新・削除に対するアクセス制御を定義するポリシー。
+ */
 namespace App\Policies;
 
 use App\Models\Expense;

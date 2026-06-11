@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 休日パターン調整（調整休日・調整出勤）をカレンダーイベントとして提供するプロバイダ。
+ */
 namespace App\Services\Calendar\Providers;
 
 use App\Enums\RestPatternAdjustmentKind;

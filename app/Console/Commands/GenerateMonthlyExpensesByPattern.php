@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 通勤パターンを参照して、指定月の経費レポートと経費行を自動生成するコマンド。
+ */
 namespace App\Console\Commands;
 
 use App\Enums\ExpenseCategory;

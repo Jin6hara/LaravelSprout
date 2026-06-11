@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 有給休暇の残日数管理（消化・返戻・年度付与）を担うサービス。
+ */
 namespace App\Services;
 
 use App\Enums\LeaveCreditTransactionType;

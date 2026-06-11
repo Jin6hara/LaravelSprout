@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 経費精算レポートの更新時に提出ステータスを自動変更するオブザーバー。
+ */
 namespace App\Observers;
 
 use App\Enums\ExpenseReportStatus;

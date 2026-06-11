@@ -1,3 +1,4 @@
+<!-- 月単位で日付を表示しパターンの色分けを反映するミニカレンダーコンポーネント -->
 <template>
   <div class="mini-cal border rounded p-1">
     <div class="mini-cal__header text-center fw-semibold small mb-1">

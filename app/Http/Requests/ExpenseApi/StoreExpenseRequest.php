@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 経費の新規登録フォームのバリデーションリクエスト。
+ */
 namespace App\Http\Requests\ExpenseApi;
 
 use App\Enums\ExpenseCategory;

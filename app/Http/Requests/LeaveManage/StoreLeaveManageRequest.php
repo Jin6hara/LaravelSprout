@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 管理者による欠勤・休暇の新規作成リクエストのバリデーションを定義する。
+ */
 namespace App\Http\Requests\LeaveManage;
 
 use Illuminate\Foundation\Http\FormRequest;

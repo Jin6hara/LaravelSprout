@@ -1,3 +1,4 @@
+<!-- メッセージへの返信フォームをテレポートで任意の位置に描画するコンポーネント -->
 <template>
     <teleport :to="teleportTo">
         <form :action="actionUrl" method="POST" class="mb-3">

@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 雇用期間（種別・開始日・終了日）の登録・更新フォームのバリデーションリクエスト。
+ */
 namespace App\Http\Requests\EmploymentTerm;
 
 use Illuminate\Foundation\Http\FormRequest;

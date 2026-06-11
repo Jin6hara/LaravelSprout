@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 定期券情報の新規作成・更新を担うサービス。
+ */
 namespace App\Services\CommutingExpenses;
 
 use App\Models\CommuterPass;

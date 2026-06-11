@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 休暇カレンダー用に複数プロバイダを集約し、背景・休暇イベントを優先度順に構築するリゾルバ。
+ */
 namespace App\Services\Calendar;
 
 use App\Models\User;

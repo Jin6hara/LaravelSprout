@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 全ユーザーの欠勤レポート一覧取得リクエストのバリデーションを定義する。
+ */
 namespace App\Http\Requests\Leave;
 
 use App\Enums\LeaveKind;

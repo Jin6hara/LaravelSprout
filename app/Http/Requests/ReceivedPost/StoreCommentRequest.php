@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 受信投稿へのコメント新規作成リクエストのバリデーションを定義する。
+ */
 namespace App\Http\Requests\ReceivedPost;
 
 use Illuminate\Foundation\Http\FormRequest;

@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 休日パターンルールの種別（勤務日／所定休日／法定休日）を表すEnum。
+ */
 namespace App\Enums;
 
 use App\Enums\Concerns\HasValues;

@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * ユーザーのカレンダー画面（月別イベント・シフト一覧）の表示を担うコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;

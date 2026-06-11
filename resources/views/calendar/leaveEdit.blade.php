@@ -1,3 +1,4 @@
+{{-- 管理者が休暇レコードを検索・編集・削除するためのLeave管理ビュー --}}
 @extends('layouts.app')
 
 @section('content')

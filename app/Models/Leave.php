@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 欠勤・休暇レコードを管理するモデル。
+ */
 namespace App\Models;
 
 use App\Enums\LeaveKind;

@@ -1,3 +1,4 @@
+{{-- ユーザーのプロフィール情報（基本情報・雇用・権限等）を表示するビュー --}}
 @extends('layouts.app')
 
 @section('content')

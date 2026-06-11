@@ -1,3 +1,4 @@
+{{-- 特定ユーザーの欠勤・休暇レポートを一覧表示するビュー --}}
 {{-- resources/views/calendar/absenceReport.blade.php --}}
 @extends('layouts.app')
 

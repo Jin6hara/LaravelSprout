@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 休暇残高の取引種別（付与／消費／差戻し／調整）を表すEnum。
+ */
 namespace App\Enums;
 
 use App\Enums\Concerns\HasValues;

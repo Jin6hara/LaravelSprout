@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * 管理者向けの月別経費申請一覧（ExpenseReport）の表示・ステータス管理を担うコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Enums\ExpenseReportStatus;

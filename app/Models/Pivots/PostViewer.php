@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 投稿の閲覧者（既読・未読）を管理するピボットモデル。
+ */
 namespace App\Models\Pivots;
 
 use Illuminate\Database\Eloquent\Relations\Pivot;

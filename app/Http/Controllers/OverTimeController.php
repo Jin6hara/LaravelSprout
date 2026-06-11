@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 残業イベントの一覧表示を担当するコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Enums\EventStatus;

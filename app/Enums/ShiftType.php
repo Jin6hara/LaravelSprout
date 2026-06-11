@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * シフトの種別（通常勤務／残業／スケジュール変更／特別／ローテーション勤務等）を表すEnum。
+ */
 // 廃棄(protected $casts = ['type' => ShiftType::class,]はちょっと危ない)。
 // getTypeLabelAttribute()で対応する。
 

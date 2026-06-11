@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * ログインユーザーの現在の管理スコープ（地区・部門・対象ユーザー）を解決するサービス。
+ */
 namespace App\Services;
 
 use App\Models\School;

@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * スケジュール詳細（ScheduleDetail）を重複しない日付で複製するサービス。
+ */
 namespace App\Services\ScheduleDetail;
 
 use App\Models\ScheduleDetail;

@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 定期券の新規登録フォームのバリデーションリクエスト。
+ */
 namespace App\Http\Requests\CommuterPass;
 
 use Illuminate\Foundation\Http\FormRequest;

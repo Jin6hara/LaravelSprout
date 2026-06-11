@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * スケジュールラインのCRUD操作に対するスコープ付きアクセス制御を定義するポリシー。
+ */
 namespace App\Policies;
 
 use App\Models\ScheduleLine;

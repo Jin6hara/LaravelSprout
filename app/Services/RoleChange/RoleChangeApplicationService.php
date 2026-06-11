@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * ロール変更申請（RoleChange）の登録・承認者への通知送信を担うサービス。
+ */
 namespace App\Services\RoleChange;
 
 use App\Models\Department;

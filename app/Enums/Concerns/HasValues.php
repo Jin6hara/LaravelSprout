@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * Enumの全ケースのvalue一覧を配列で取得するvalues()メソッドを提供するトレイト。
+ */
 namespace App\Enums\Concerns;
 
 trait HasValues

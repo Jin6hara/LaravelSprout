@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 学校名文字列の正規化（前後空白除去・大文字統一など）を行うユーティリティクラス。
+ */
 namespace App\Support;
 
 final class SchoolName

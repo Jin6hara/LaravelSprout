@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * 指定期間に同一学校へ頻繁に訪問するユーザーへ通勤定期券取得を促すアドバイザー画面を担うコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Models\ScheduleLine;

@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * 通勤経路パターン（CommutePattern）の表示・保存・削除を担うコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Enums\ExpenseTripType;

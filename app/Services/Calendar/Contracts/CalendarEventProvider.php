@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * カレンダーイベントを提供するプロバイダの共通インターフェース。
+ */
 namespace App\Services\Calendar\Contracts;
 
 use App\Models\User;

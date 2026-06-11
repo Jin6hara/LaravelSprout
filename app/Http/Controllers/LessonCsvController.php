@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * レッスンデータの CSV インポート・エクスポート画面と処理を担うコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Models\Lesson;

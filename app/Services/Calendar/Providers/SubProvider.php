@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * ユーザーに紐づく代行（Sub）勤務をカレンダーイベントとして提供するプロバイダ。
+ */
 namespace App\Services\Calendar\Providers;
 
 use App\Models\Sub;

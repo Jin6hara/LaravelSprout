@@ -1,3 +1,4 @@
+<!-- カレンダーパターン内の調整日をCRUD操作するパネルコンポーネント -->
 <template>
   <div>
     <div v-if="!restPatternId" class="text-muted small py-3 text-center">

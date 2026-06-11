@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 学校プロフィールの検索・表示・編集を担当するコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Models\School;

@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 休日パターンの特定日付に対する例外調整（振替・臨時休業など）を管理するモデル。
+ */
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;

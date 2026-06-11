@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * ユーザーの個別フィールド更新リクエストのバリデーションとエラーレスポンスを定義する。
+ */
 namespace App\Http\Requests\Users;
 
 use Illuminate\Foundation\Http\FormRequest;

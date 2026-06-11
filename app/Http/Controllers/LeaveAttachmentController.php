@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * 休暇申請に紐づく添付ファイルの認可確認とインライン表示を担うコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Models\Leave;

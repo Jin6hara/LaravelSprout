@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 経費レポートの申請ステータス（draft/submitted/approved/paid）を表すEnum。
+ */
 namespace App\Enums;
 
 use App\Enums\Concerns\HasValues;

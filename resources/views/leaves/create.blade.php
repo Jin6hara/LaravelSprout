@@ -1,3 +1,4 @@
+{{-- 管理者が新規Leave（休暇）レコードを作成するフォームビュー --}}
 {{-- resources/views/leaves/create.blade.php --}}
 @extends('layouts.app')
 @section('content')

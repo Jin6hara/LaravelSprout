@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * 休暇・シフトなどの承認リクエストの詳細表示・承認・却下操作を担うコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Enums\LeaveKind;

@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * スケジュール詳細の一括更新リクエストのバリデーションを定義する。
+ */
 namespace App\Http\Requests\ScheduleDetail;
 
 use Illuminate\Foundation\Http\FormRequest;

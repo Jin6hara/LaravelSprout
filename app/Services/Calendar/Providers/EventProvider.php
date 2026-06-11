@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * ログインユーザーに割り当てられた確定済みイベントをカレンダー用に提供するプロバイダ。
+ */
 namespace App\Services\Calendar\Providers;
 
 use App\Enums\EventStatus;

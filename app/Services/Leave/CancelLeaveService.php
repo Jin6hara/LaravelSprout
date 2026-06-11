@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 休暇のキャンセル処理（紐づくシフト対応・残高戻しを含む）を担うサービス。
+ */
 namespace App\Services\Leave;
 
 use App\Enums\LeaveStatus;

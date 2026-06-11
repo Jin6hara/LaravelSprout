@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * ロールに付与されたパーミッション削除リクエストの認可とバリデーションを定義する。
+ */
 namespace App\Http\Requests\RoleManage;
 
 use Illuminate\Foundation\Http\FormRequest;

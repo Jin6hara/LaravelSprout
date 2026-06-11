@@ -1,3 +1,4 @@
+{{-- 通勤交通費パターン（経路・費用）の登録・編集を行うビュー --}}
 {{-- resources/views/expenses/pattern.blade.php --}}
 @extends('layouts.app')
 

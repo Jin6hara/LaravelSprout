@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * スケジュールライン（ScheduleLine）を新しい期間・対象ユーザーへ複製するサービス。
+ */
 namespace App\Services\ScheduleLine;
 
 use App\Models\ScheduleLine;

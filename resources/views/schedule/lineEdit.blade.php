@@ -1,3 +1,4 @@
+{{-- スケジュールラインの追加・編集・削除を行う管理者向けビュー --}}
 {{-- resources/views/schedule/lineEdit.blade.php --}}
 @extends('layouts.app')
 

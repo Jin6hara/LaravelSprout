@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 休暇・欠勤の種別（有給／特休／欠勤／遅刻／早退等）を表すEnum。
+ */
 namespace App\Enums;
 
 use App\Enums\Concerns\HasValues;

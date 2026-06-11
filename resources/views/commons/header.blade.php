@@ -1,3 +1,4 @@
+{{-- 全ページ共通のナビゲーションヘッダーコンポーネント --}}
 <link rel="stylesheet" href="{{ asset('css/header.css') }}?v={{ filemtime(public_path('css/header.css')) }}">
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark py-3">

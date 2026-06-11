@@ -1,4 +1,8 @@
 <?php
+
+/**
+ * 全ユーザーに対して指定日数の有給休暇を一括付与するコマンド。
+ */
 // app/Console/Commands/GrantLeaveDays.php
 namespace App\Console\Commands;
 

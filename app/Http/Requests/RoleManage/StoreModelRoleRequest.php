@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * ユーザーへのロール付与リクエストの認可とバリデーションを定義する。
+ */
 namespace App\Http\Requests\RoleManage;
 
 use Illuminate\Foundation\Http\FormRequest;

@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 管理者による欠勤・休暇の一括更新リクエストのバリデーションを定義する。
+ */
 namespace App\Http\Requests\LeaveManage;
 
 use App\Enums\LeaveExcused;

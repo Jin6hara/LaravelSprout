@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * スケジュールデータのCSVインポート・エクスポートを担当するコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Models\ScheduleLine;

@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * ユーザーの雇用期間（EmploymentTerm）の一覧表示・編集・更新を担うコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Models\EmploymentTerm;

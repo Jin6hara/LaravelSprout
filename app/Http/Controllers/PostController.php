@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 投稿の作成・送信を担当するコントローラ（管理者向け）。
+ */
 namespace App\Http\Controllers;
 
 use App\Enums\PostType;

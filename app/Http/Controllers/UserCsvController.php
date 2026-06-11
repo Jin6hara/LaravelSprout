@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * ユーザーデータのCSVエクスポート・インポートを担当するコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Enums\Gender;

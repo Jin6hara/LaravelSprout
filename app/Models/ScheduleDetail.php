@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * スケジュールラインに紐づくレッスン単位の詳細（開始時刻・有効期間）を管理するモデル。
+ */
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;

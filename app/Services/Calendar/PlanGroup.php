@@ -1,4 +1,8 @@
 <?php
+
+/**
+ * カレンダーイベントのプラングループ（通常勤務・イベント）を定義する定数クラス。
+ */
 // 元Enum 2/3
 namespace App\Services\Calendar;
 

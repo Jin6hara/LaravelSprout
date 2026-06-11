@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * ユーザーの雇用期間（入退職・在籍区分）を管理するモデル。
+ */
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;

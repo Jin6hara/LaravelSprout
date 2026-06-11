@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 招待・パスワードリセット用のセットアップリンクをメール送信する通知クラス。
+ */
 namespace App\Notifications;
 
 use App\Models\PasswordSetupToken;

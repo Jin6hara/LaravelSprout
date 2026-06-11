@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 有給残高の変動トランザクション（付与・消化・取消）を管理するモデル。
+ */
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;

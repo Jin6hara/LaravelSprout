@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 欠勤・休暇の新規登録リクエストのバリデーションを定義する。
+ */
 namespace App\Http\Requests\Leave;
 
 use App\Enums\LeaveExcused;

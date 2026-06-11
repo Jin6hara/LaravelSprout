@@ -1,3 +1,4 @@
+{{-- ユーザーの交通費データを表形式で閲覧・編集するビュー --}}
 {{-- resources/views/expenses/edit.blade.php --}}
 @extends('layouts.app')
 

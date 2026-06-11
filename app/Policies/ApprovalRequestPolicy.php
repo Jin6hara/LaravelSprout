@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 承認依頼の閲覧・承認操作に対するアクセス制御を定義するポリシー。
+ */
 namespace App\Policies;
 
 use App\Models\ApprovalRequest;

@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * レッスンマスターのCRUD操作に対するアクセス制御を定義するポリシー。
+ */
 namespace App\Policies;
 
 use App\Models\Lesson;

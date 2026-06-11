@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 招待・パスワードリセット用のトークンを管理するモデル。
+ */
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;

@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 掲示板投稿の種別（お知らせ／問い合わせ／DM／緊急通知／メンテナンス等）を表すEnum。
+ */
 namespace App\Enums;
 
 use App\Enums\Concerns\HasValues;

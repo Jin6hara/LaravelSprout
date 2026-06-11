@@ -1,3 +1,4 @@
+{{-- 期間を指定して定期券の候補区間・費用をアドバイスするビュー --}}
 @extends('layouts.app')
 
 @section('content')

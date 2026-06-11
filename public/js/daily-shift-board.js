@@ -1,3 +1,4 @@
+// 日次シフトボードの担当者ドラッグ&ドロップ割り当てとAPI保存を制御するスクリプト
 document.addEventListener('DOMContentLoaded', function () {
   const config = window.dailyShiftBoard || {};
   const selectedDate = config.selectedDate;

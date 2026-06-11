@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * イベントのコピー作成フォームのバリデーションリクエスト。
+ */
 namespace App\Http\Requests\EventAssign;
 
 use App\Enums\EventStatus;

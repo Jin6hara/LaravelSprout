@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 通勤パターンと既存定期券の情報をもとに、定期券の新規取得が必要か判定するユーティリティクラス。
+ */
 namespace App\Support;
 
 use Carbon\Carbon;

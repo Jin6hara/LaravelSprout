@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 祝日マスタの情報をカレンダーイベントとして提供するプロバイダ。
+ */
 namespace App\Services\Calendar\Providers;
 
 use App\Models\Holiday;

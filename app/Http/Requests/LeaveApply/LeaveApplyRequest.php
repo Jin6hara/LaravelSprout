@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 有給・特別休暇の申請リクエストのバリデーションを定義する。
+ */
 namespace App\Http\Requests\LeaveApply;
 
 use App\Enums\LeaveKind;

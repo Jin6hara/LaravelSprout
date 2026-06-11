@@ -1,3 +1,4 @@
+{{-- 管理者向けに全スタッフの欠勤状況をカレンダー形式で表示するビュー --}}
 @extends('layouts.app')
 
 @section('content')

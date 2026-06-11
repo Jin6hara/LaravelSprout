@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * 各種 CSV インポート・エクスポート機能へのリンク一覧画面を担うコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Models\User;

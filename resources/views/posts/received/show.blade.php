@@ -1,3 +1,4 @@
+{{-- 受信メッセージの詳細とコメントスレッドを表示するビュー --}}
 {{-- resources/views/posts/received/show.blade.php --}}
 @extends('layouts.app')
 

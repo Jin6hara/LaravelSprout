@@ -1,3 +1,4 @@
+{{-- 学校名・地区等の条件で学校を検索・一覧表示するビュー --}}
 {{-- resources/views/schools/search.blade.php --}}
 @extends('layouts.app')
 

@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * スケジュールラインに空のスケジュール詳細（ScheduleDetail）を初期作成するサービス。
+ */
 namespace App\Services\ScheduleDetail;
 
 use App\Models\Lesson;

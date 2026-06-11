@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 通勤経路パターンの各区間（乗車区間・費用）を管理するモデル。
+ */
 namespace App\Models;
 
 use App\Enums\DayOfWeek;

@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * 初回パスワード設定およびパスワードリセットのトークン発行・設定処理を担うコントローラ。
+ */
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;

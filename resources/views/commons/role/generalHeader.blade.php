@@ -1,3 +1,4 @@
+{{-- 一般ユーザー向けのナビゲーションメニュー項目パーシャル --}}
 @unlessrole('admin|super_admin')
 
 <li class="nav-item">

@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * 通勤定期券（CommuterPass）の新規登録・編集・削除を担うコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CommuterPass\StoreCommuterPassRequest;

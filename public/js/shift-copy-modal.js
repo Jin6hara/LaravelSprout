@@ -1,3 +1,4 @@
+// シフトコピーモーダルのフォーム入力・送信制御を行うスクリプト
 (function () {
   const fieldNames = [
     'event_date',

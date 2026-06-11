@@ -1,3 +1,4 @@
+<!-- ロール・権限・モデル割り当てをGUI上でCRUD操作する管理エディタコンポーネント -->
 <template>
   <div>
     <div class="alert alert-info py-2 small">

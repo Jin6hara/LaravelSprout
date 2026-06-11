@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 通勤経路パターンの管理・更新・削除に対するアクセス制御を定義するポリシー。
+ */
 namespace App\Policies;
 
 use App\Models\CommutePattern;

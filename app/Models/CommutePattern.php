@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * ユーザーの通勤経路パターンを管理するモデル。
+ */
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
