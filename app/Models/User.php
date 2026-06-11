@@ -4,23 +4,24 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\Gender;
+use App\Models\Pivots\PostViewer;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Carbon\Carbon;
-use Spatie\Permission\Traits\HasRoles;
-use App\Models\Pivots\PostViewer;
 use Illuminate\Support\Facades\DB;
+use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
 /**
  * @mixin \Spatie\Permission\Traits\HasRoles
  */
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, SoftDeletes, HasRoles;
+    use HasApiTokens, HasFactory, HasRoles, Notifiable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -70,7 +71,6 @@ class User extends Authenticatable
      * The name of the guard used by this model.
      * This is used by Spatie's Permission package to determine the guard for roles and permissions.
      *
-     * @var string
      * @see https://spatie.be/docs/laravel-permission/v5/basic-usage/guards-and-multi-auth#guard_name
      */
     protected string $guard_name = 'web';
@@ -99,8 +99,8 @@ class User extends Authenticatable
      */
     protected function updateFullName(): void
     {
-        $last   = $this->attributes['family_name'] ?? '';
-        $first  = $this->attributes['first_name'] ?? '';
+        $last = $this->attributes['family_name'] ?? '';
+        $first = $this->attributes['first_name'] ?? '';
         $middle = $this->attributes['middle_name'] ?? '';
 
         // 順番: Last → First → Middle
@@ -118,7 +118,8 @@ class User extends Authenticatable
     {
         $defaults = config('user.default_profile_pictures');
         $file = $this->profile_picture ?: $defaults[$this->gender];
-        return asset('image/' . ltrim($file, '/'));
+
+        return asset('image/'.ltrim($file, '/'));
     }
 
     public function getGenderLabelAttribute(): string
@@ -136,19 +137,32 @@ class User extends Authenticatable
         return $this->hasRole('super_admin');
     }
 
+    public function scopeApprovalRecipientsForScope(Builder $query, ?int $districtId, ?int $departmentId): Builder
+    {
+        if ($districtId === null || $departmentId === null) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->role('super_admin')
+            ->whereHas('managementScopes', function (Builder $q) use ($districtId, $departmentId) {
+                $q->where('district_id', $districtId)
+                    ->where('department_id', $departmentId);
+            });
+    }
+
     public function getRoleLabelAttribute(): string
     {
         $role = $this->getRoleNames()->first();
 
-        if (!$role) {
+        if (! $role) {
             return '未設定';
         }
 
         $map = [
-            'general'      => '一般',
-            'trainer'      => 'トレーナー',
-            'admin'        => '管理者',
-            'super_admin'  => 'スーパー管理者',
+            'general' => '一般',
+            'trainer' => 'トレーナー',
+            'admin' => '管理者',
+            'super_admin' => 'スーパー管理者',
         ];
 
         return $map[$role] ?? $role; // 未定義ロールは英字のまま表示
@@ -173,6 +187,7 @@ class User extends Authenticatable
     public function currentEmploymentTerm(?Carbon $date = null)
     {
         $d = ($date ?? now())->toDateString();
+
         return $this->employmentTerms()
             ->whereDate('start_date', '<=', $d)
             ->where(function ($q) use ($d) {
@@ -190,7 +205,7 @@ class User extends Authenticatable
 
         return $q->whereHas('employmentTerms', function ($term) use ($d) {
             $term->currentAt($d)
-                ->whereDoesntHave('leavePeriods', fn($leave) => $leave->coversDate($d));
+                ->whereDoesntHave('leavePeriods', fn ($leave) => $leave->coversDate($d));
         });
     }
 
@@ -201,7 +216,7 @@ class User extends Authenticatable
 
         return $q->whereHas('employmentTerms', function ($term) use ($d) {
             $term->currentAt($d)
-                ->whereHas('leavePeriods', fn($leave) => $leave->coversDate($d));
+                ->whereHas('leavePeriods', fn ($leave) => $leave->coversDate($d));
         });
     }
 
@@ -209,17 +224,18 @@ class User extends Authenticatable
     public function scopePrehire($q, ?Carbon $date = null)
     {
         $d = ($date ?? today())->toDateString();
-        return $q->whereHas('employmentTerms', fn($t) => $t->whereDate('start_date', '>', $d));
+
+        return $q->whereHas('employmentTerms', fn ($t) => $t->whereDate('start_date', '>', $d));
     }
 
     /** 退職済（今日有効な雇用期間なし＆将来の開始もなし） */
     public function scopeTerminated($q, ?Carbon $date = null)
     {
         $d = ($date ?? today())->toDateString();
+
         return $q->whereDoesntHave(
             'employmentTerms',
-            fn($t) =>
-            $t->whereDate('start_date', '>', $d)
+            fn ($t) => $t->whereDate('start_date', '>', $d)
                 ->orWhere(function ($tt) use ($d) {
                     $tt->whereDate('start_date', '<=', $d)
                         ->where(function ($qq) use ($d) {
@@ -241,7 +257,7 @@ class User extends Authenticatable
 
         // 現在有効な雇用期間
         $term = $this->currentEmploymentTerm(today())->first();
-        if (!$term) {
+        if (! $term) {
             return '退職済み/terminated';
         }
 
@@ -257,6 +273,7 @@ class User extends Authenticatable
     public function shouldReceiveOperationalEmails(?Carbon $date = null): bool
     {
         $state = $this->employment_state; // 上のアクセサで取得
+
         return $state === 'active';
     }
 
@@ -294,6 +311,7 @@ class User extends Authenticatable
     {
         return $this->hasMany(Post::class, 'user_id');
     }
+
     public function postsVisible()
     {
         return $this->belongsToMany(Post::class, 'post_user')

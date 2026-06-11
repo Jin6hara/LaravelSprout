@@ -4,7 +4,7 @@
 <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2 class="mb-0">通知</h2>
-        @if(auth()->user()->unreadNotifications()->count() > 0)
+        @if(($unreadNotificationsCount ?? 0) > 0)
         <form method="POST" action="{{ route('notifications.readAll') }}">
             @csrf
             <button class="btn btn-sm btn-outline-primary">すべて既読にする</button>
