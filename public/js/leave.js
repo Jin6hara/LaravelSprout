@@ -3,7 +3,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const savedView = ['dayGridMonth', 'listMonth'].includes(storedView)
         ? storedView
         : 'dayGridMonth';
-    const savedDate = localStorage.getItem('leaveCalendarDate') || window.initialDate;
+    const urlMonth = new URLSearchParams(location.search).get('month');
+    const savedDate = urlMonth ? window.initialDate : (localStorage.getItem('leaveCalendarDate') || window.initialDate);
     const calendarEl = document.getElementById('calendar');
     console.log('[] loaded - leave.js:3');
 

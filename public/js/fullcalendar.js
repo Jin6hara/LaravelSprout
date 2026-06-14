@@ -3,7 +3,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const savedView = ['dayGridMonth', 'listWeek'].includes(storedView)
         ? storedView
         : 'dayGridMonth';
-    const savedDate = localStorage.getItem('userCalendarDate') || window.initialDate;
+    const urlMonth = new URLSearchParams(location.search).get('month');
+    const savedDate = urlMonth ? window.initialDate : (localStorage.getItem('userCalendarDate') || window.initialDate);
 
     // ▼▼ これによりLessonの終了時間を計算 ▼▼
     // HH:MM 形式の文字列に分数を加算して HH:MM 形式で返す
