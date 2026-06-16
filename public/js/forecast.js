@@ -3,7 +3,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const savedView = ['dayGridMonth', 'listWeek'].includes(storedView)
         ? storedView
         : 'dayGridMonth';
-    const savedDate = localStorage.getItem('forecastCalendarDate') || window.initialDate;
+    const urlMonth = new URLSearchParams(location.search).get('month');
+    const savedDate = urlMonth ? window.initialDate : (localStorage.getItem('forecastCalendarDate') || window.initialDate);
     const calendarEl = document.getElementById('calendar');
     // ▼▼ Total Subs 明細モーダル ▼▼
     function openSubModal(ev) {
