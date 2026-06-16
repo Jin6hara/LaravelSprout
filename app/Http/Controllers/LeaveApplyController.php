@@ -101,7 +101,10 @@ class LeaveApplyController extends Controller
         }
 
         $file = $request->file('attachment');
-        $path = $file->store('attachments/' . now()->format('Y/m'), 'local');
+        $path = $file->store('attachments/' . now()->format('Y/m'), 's3');
+        if ($path === false) {
+            throw new \RuntimeException('ファイルのアップロードに失敗しました。');
+        }
 
         return [
             'path'          => $path,

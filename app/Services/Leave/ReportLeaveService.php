@@ -19,10 +19,13 @@ class ReportLeaveService
         if ($file) {
             DB::transaction(function () use ($file, $leave) {
                 if ($leave->attachment) {
-                    Storage::disk('local')->delete($leave->attachment->path);
+                    Storage::disk('s3')->delete($leave->attachment->path);
                     $leave->attachment->delete();
                 }
-                $path = $file->store('attachments/' . now()->format('Y/m'), 'local');
+                $path = $file->store('attachments/' . now()->format('Y/m'), 's3');
+                if ($path === false) {
+                    throw new \RuntimeException('ファイルのアップロードに失敗しました。');
+                }
                 $leave->attachment()->create([
                     'path'          => $path,
                     'original_name' => $file->getClientOriginalName(),
