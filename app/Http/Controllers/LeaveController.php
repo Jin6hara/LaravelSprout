@@ -356,8 +356,19 @@ class LeaveController extends Controller
             abort(404);
         }
 
+        $path = $attachment->path;
+        if (empty($path) || $path === '0') {
+            abort(404);
+        }
+
         $downloadName = $attachment->original_name ?: 'attachment';
 
-        return Storage::disk('local')->download($attachment->path, $downloadName);
+        try {
+            $url = Storage::disk('s3')->temporaryUrl($path, now()->addMinutes(5));
+        } catch (\League\Flysystem\UnableToRetrieveMetadata|\League\Flysystem\UnableToCheckFileExistence $e) {
+            abort(404);
+        }
+
+        return redirect($url);
     }
 }

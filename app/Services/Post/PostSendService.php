@@ -27,7 +27,10 @@ class PostSendService
 
             foreach ($files as $file) {
                 $folder = 'attachments/' . now()->format('Y/m');
-                $path   = $file->store($folder, 'local');
+                $path = $file->store($folder, 's3');
+                if ($path === false) {
+                    throw new \RuntimeException('ファイルのアップロードに失敗しました。');
+                }
 
                 $post->attachments()->create([
                     'path'          => $path,

@@ -193,19 +193,19 @@ class ReceivedPostController extends Controller
         // ② 認可
         $this->authorize('view', $post);
 
-        // ③ ファイルパス取得（local ディスク）
-        $disk = Storage::disk('local');
-
-        if (! $disk->exists($attachment->path)) {
+        // ③ パスが有効か確認
+        $path = $attachment->path;
+        if (empty($path) || $path === '0') {
             abort(404);
         }
 
-        // ④ ローカルパスに解決してブラウザに表示
-        $fullPath = $disk->path($attachment->path);
+        // ④ R2 から署名付き一時URLを生成してリダイレクト（5分間有効）
+        try {
+            $url = Storage::disk('s3')->temporaryUrl($path, now()->addMinutes(5));
+        } catch (\League\Flysystem\UnableToRetrieveMetadata|\League\Flysystem\UnableToCheckFileExistence $e) {
+            abort(404);
+        }
 
-        // inline 表示（PDF/画像ならブラウザでそのまま開く）
-        return response()->file($fullPath);
-        // ダウンロードさせたいなら ↓
-        // return response()->download($fullPath, $attachment->original_name ?? basename($fullPath));
+        return redirect($url);
     }
 }
