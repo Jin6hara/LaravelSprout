@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 受信した投稿の閲覧・コメント機能を担当するコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ReceivedPost\StoreCommentRequest;

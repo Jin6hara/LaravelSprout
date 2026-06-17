@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * フォーキャスト（見込み）カレンダー用に複数プロバイダを集約してイベント一覧を構築するリゾルバ。
+ */
 namespace App\Services\Calendar;
 
 use App\Models\User;

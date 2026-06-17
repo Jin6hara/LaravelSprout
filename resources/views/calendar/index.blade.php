@@ -1,3 +1,4 @@
+{{-- ユーザー個人のスケジュールをFullCalendarで表示する主要カレンダービュー --}}
 @extends('layouts.app')
 
 @section('content')

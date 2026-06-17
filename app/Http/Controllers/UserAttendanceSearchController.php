@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * ユーザーの勤務可能状況・出勤状況を日付指定で検索・表示するコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Models\User;

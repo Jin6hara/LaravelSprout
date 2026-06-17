@@ -1,3 +1,4 @@
+{{-- ユーザーのログインフォームを表示する認証ビュー --}}
 @extends('layouts.app')
 
 @section('content')

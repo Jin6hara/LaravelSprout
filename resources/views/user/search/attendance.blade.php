@@ -1,3 +1,4 @@
+{{-- ユーザーの出勤・勤怠実績を月単位で検索・一覧表示するビュー --}}
 @extends('layouts.app')
 
 @section('title', 'Attendance Search')

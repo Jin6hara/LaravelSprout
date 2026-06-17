@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 管理者ユーザーが担当する地区・部署の管理スコープを管理するモデル。
+ */
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;

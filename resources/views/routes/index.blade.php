@@ -1,3 +1,4 @@
+{{-- ユーザーの通勤経路（定期券・パターン）のサマリーを表示するビュー --}}
 @extends('layouts.app')
 
 @section('title', 'Commuting Route Summary')

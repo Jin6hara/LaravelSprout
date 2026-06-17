@@ -1,3 +1,4 @@
+{{-- ユーザーの雇用履歴（期間・雇用形態等）を一覧表示するビュー --}}
 @extends('layouts.app')
 
 @section('content')

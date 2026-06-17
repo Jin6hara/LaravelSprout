@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * アプリケーションのイベントとリスナーのマッピングを登録するサービスプロバイダー。
+ */
 namespace App\Providers;
 
 use Illuminate\Auth\Events\Registered;

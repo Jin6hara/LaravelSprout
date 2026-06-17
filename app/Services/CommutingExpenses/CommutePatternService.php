@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 通勤パターンの照会（全件・有効期間内・最新）を提供するサービス。
+ */
 namespace App\Services\CommutingExpenses;
 
 use App\Models\CommutePattern;

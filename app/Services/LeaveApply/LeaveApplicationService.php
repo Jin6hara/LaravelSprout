@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 有給・特別休暇の申請登録（バッチ管理・承認通知送信を含む）を担うサービス。
+ */
 namespace App\Services\LeaveApply;
 
 use App\Enums\LeaveExcused;

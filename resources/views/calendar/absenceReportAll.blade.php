@@ -1,3 +1,4 @@
+{{-- 全スタッフの欠勤・休暇レポートを管理者向けに一覧表示するビュー --}}
 @extends('layouts.app')
 
 @section('title', 'All Absence Reports')

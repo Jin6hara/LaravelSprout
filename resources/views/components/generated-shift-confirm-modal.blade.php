@@ -1,3 +1,4 @@
+{{-- 生成されたシフトの確認・操作（切り離し・削除）を行うモーダルコンポーネント --}}
 @props([
     'id' => 'generatedShiftConfirmModal',
 ])

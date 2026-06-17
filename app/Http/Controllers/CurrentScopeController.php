@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * ログインユーザーが操作対象スコープ（地区・部署）をセッションに保存する処理を担うコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CurrentScope\StoreCurrentScopeRequest;

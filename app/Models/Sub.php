@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 代講（代替授業）の実績を管理するモデル。
+ */
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;

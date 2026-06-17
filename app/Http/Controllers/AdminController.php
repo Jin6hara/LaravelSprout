@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * 管理者によるユーザー登録フォーム表示・登録処理を担うコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Admin\UserRequest;

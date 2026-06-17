@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 交通費・経費の明細1件を管理するモデル。
+ */
 namespace App\Models;
 
 use App\Enums\ExpenseCategory;

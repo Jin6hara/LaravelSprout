@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 部署情報を管理するモデル。
+ */
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;

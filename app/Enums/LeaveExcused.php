@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 欠勤の有無連絡区分（有連絡／無連絡／不明）を表すEnum。
+ */
 namespace App\Enums;
 
 use App\Enums\Concerns\HasValues;

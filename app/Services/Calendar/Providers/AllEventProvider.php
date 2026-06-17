@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 現在の管理スコープ内の全ユーザー分のイベントをカレンダー用に提供するプロバイダ。
+ */
 namespace App\Services\Calendar\Providers;
 
 use App\Enums\EventStatus;

@@ -1,3 +1,4 @@
+{{-- 定期券の新規登録・編集フォームを表示するビュー --}}
 @extends('layouts.app')
 
 @section('title', 'Register Commuter Pass')

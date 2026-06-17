@@ -1,3 +1,4 @@
+// 生成されたシフトの確認モーダル表示・切り離し・削除操作を制御するスクリプト
 (function () {
   const ACTION_DETACH = 'detach';
   const ACTION_DELETE = 'delete';

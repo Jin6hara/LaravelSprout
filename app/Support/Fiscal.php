@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 4月始まりの会計年度（FY）キーを算出するユーティリティクラス。
+ */
 namespace App\Support;
 
 use Carbon\Carbon;

@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 交通費の往復区分（往復／片道）を表すEnum。
+ */
 namespace App\Enums;
 
 use App\Enums\Concerns\HasValues;

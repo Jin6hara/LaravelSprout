@@ -1,3 +1,4 @@
+{{-- 管理者・スーパー管理者向けのナビゲーションメニュー項目パーシャル --}}
 @role('admin|super_admin')
 
 {{-- 1️⃣ Shift Assigner & Forecast --}}

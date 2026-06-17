@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * ユーザープロフィールの表示・フィールド更新を担当するコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\Auth;

@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * アプリケーション全体のサービス登録・起動設定（オブザーバー・カレンダーDI・クエリマクロ等）を行うプロバイダー。
+ */
 namespace App\Providers;
 
 use App\Models\Event;

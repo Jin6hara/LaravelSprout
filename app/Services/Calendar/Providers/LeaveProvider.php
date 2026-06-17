@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 対象ユーザーの承認済み休暇をカレンダーイベントとして提供するプロバイダ。
+ */
 namespace App\Services\Calendar\Providers;
 
 use App\Enums\LeaveExcused;

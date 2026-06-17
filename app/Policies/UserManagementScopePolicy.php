@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 管理スコープの選択操作に対するアクセス制御を定義するポリシー。
+ */
 namespace App\Policies;
 
 use App\Models\User;

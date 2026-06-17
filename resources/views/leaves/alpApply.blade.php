@@ -1,3 +1,4 @@
+{{-- 有給休暇（ALP）の申請フォームを表示するビュー --}}
 {{-- resources/views/leaves/alpApply.blade.php --}}
 @extends('layouts.app')
 

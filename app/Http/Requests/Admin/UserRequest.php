@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 管理者によるユーザー新規登録フォームのバリデーションリクエスト。
+ */
 namespace App\Http\Requests\Admin;
 
 use App\Enums\Gender;

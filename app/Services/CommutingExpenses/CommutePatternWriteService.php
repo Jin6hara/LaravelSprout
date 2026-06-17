@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 通勤パターン（経路明細を含む）の保存・更新を担うサービス。
+ */
 namespace App\Services\CommutingExpenses;
 
 use App\Enums\ExpenseTripType;

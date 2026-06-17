@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 曜日（月〜日）を表すEnumで、英略称の文字列値を保持する。
+ */
 namespace App\Enums;
 
 use App\Enums\Concerns\HasValues;

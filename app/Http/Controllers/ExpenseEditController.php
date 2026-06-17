@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * 本人および管理者による月別経費明細編集画面の表示を担うコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Models\Expense;

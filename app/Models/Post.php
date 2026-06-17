@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 掲示板の投稿（通達・お知らせ）を管理するモデル。
+ */
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;

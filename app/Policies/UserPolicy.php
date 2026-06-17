@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * ユーザーの閲覧・作成・更新・ロール変更に対するアクセス制御を定義するポリシー。
+ */
 namespace App\Policies;
 
 use App\Models\User;

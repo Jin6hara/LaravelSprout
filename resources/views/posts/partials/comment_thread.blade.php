@@ -1,3 +1,4 @@
+{{-- コメントをスレッド形式で再帰的に表示するパーシャルビュー --}}
 @php $wrapperClass = $depth > 0 ? 'mt-2 ms-2' : 'mb-3'; @endphp
 
 <div id="comment-{{ $comment->id }}" class="{{ $wrapperClass }}">

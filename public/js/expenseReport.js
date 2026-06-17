@@ -1,3 +1,4 @@
+// 管理者向け交通費レポートの表形式編集・集計・API保存を制御するスクリプト
 // === Ctrl+S / Cmd+S 完全ブロック（キャプチャで先取り） ===
 (function () {
     function blockSave(e) {

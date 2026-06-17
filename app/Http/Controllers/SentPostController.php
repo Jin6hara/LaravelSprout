@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 送信済み投稿の一覧表示を担当するコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Models\Post;

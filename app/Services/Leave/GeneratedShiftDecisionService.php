@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 休暇に紐づく自動生成シフトの存在確認・削除・切り離しアクションを管理するサービス。
+ */
 namespace App\Services\Leave;
 
 use App\Enums\LeaveStatus;

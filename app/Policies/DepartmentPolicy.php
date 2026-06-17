@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 部署情報のCRUD操作に対するアクセス制御を定義するポリシー。
+ */
 namespace App\Policies;
 
 use App\Models\Department;

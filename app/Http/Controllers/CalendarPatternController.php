@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * ユーザーへの休暇パターン（UserRestPattern）割り当ての取得・登録・更新・削除を担うコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Models\User;

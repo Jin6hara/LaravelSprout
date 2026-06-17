@@ -1,3 +1,4 @@
+// 欠勤・休暇カレンダーをFullCalendarで初期化しイベントを表示するスクリプト
 document.addEventListener('DOMContentLoaded', function () {
     const storedView = localStorage.getItem('leaveCalendarView');
     const savedView = ['dayGridMonth', 'listMonth'].includes(storedView)

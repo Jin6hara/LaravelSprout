@@ -1,3 +1,4 @@
+{{-- CSVインポート・エクスポート機能の一覧メニューを表示するビュー --}}
 @extends('layouts.app')
 
 @section('content')

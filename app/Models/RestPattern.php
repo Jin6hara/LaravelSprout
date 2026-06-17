@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 休日パターン（勤務カレンダーの曜日ルール）のマスターを管理するモデル。
+ */
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;

@@ -1,7 +1,8 @@
 <?php
 
-//Eventモデルのシフト合計時間を計算するため
-
+/**
+ * Eventモデル保存時にシフトの合計時間を自動計算するオブザーバー。
+ */
 namespace App\Observers;
 
 use App\Models\Event;

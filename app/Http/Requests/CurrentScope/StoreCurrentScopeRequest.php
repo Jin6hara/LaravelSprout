@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 現在の管理スコープ（scope_id）切り替え時のバリデーションリクエスト。
+ */
 namespace App\Http\Requests\CurrentScope;
 
 use Illuminate\Foundation\Http\FormRequest;

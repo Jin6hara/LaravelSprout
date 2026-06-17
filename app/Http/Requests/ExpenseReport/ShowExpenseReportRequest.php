@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 経費精算レポートの表示対象年月指定フォームのバリデーションリクエスト。
+ */
 namespace App\Http\Requests\ExpenseReport;
 
 use Illuminate\Foundation\Http\FormRequest;

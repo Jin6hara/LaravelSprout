@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * レッスン種別のマスターデータを管理するモデル。
+ */
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;

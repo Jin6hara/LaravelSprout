@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * スケジュールライン（ScheduleLine）の一覧・登録・更新・コピーを担当するコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ScheduleLine\BulkUpdateScheduleLineRequest;

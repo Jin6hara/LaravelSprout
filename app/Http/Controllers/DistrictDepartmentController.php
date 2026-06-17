@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * 地区（District）および部署（Department）のCRUD操作と一覧画面を担うコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Http\Requests\DistrictDepartment\StoreDepartmentRequest;

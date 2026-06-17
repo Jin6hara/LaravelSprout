@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * 休暇パターン（RestPattern）のルール・祝日・休業日などの編集画面と API エンドポイントを担うコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Enums\RestPatternAdjustmentKind;

@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * イベントに紐づくレッスン単位の詳細情報を管理するモデル。
+ */
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;

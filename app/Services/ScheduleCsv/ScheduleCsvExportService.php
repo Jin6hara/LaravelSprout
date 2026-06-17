@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * スケジュールデータを FileMaker 互換 CSV としてストリーミングエクスポートするサービス。
+ */
 namespace App\Services\ScheduleCsv;
 
 use App\Models\School;

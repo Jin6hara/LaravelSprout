@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * ロール・パーミッションのCRUD管理を担当するコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Http\Requests\RoleManage\DestroyModelPermissionRequest;

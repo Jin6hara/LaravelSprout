@@ -1,4 +1,8 @@
 <?php
+
+/**
+ * 在籍中の従業員全員に対して、指定月の経費レポートと日次経費行を一括生成するコマンド。
+ */
 //ここでphp artisan expenses:generate-monthly {year} {month} コマンドを定義
 
 namespace App\Console\Commands;

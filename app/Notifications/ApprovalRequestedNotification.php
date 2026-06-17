@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 承認依頼が作成された際にメールとDB通知を送信する通知クラス。
+ */
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;

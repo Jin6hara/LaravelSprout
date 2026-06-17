@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * スコープ内の代行（Sub）件数を日別に集計してカレンダーイベントとして提供するプロバイダ。
+ */
 namespace App\Services\Calendar\Providers;
 
 use App\Enums\LeaveStatus;

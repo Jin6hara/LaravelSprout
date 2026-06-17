@@ -1,3 +1,4 @@
+{{-- 送信済みメッセージの一覧を表示する送信箱ビュー --}}
 @extends('layouts.app')
 
 @section('content')

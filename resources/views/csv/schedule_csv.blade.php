@@ -1,3 +1,4 @@
+{{-- スケジュールデータのCSVインポート・エクスポートを行うビュー --}}
 @extends('layouts.app')
 
 @section('content')

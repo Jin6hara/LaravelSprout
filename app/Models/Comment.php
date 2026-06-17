@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 投稿に対するコメント（返信含む）を管理するモデル。
+ */
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;

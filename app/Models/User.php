@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 認証・ロール・雇用情報など全ユーザーデータを管理するコアモデル。
+ */
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;

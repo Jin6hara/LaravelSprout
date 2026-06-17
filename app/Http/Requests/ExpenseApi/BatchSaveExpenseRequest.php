@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 経費の一括保存（更新・追加・削除）フォームのバリデーションリクエスト。
+ */
 namespace App\Http\Requests\ExpenseApi;
 
 use App\Enums\ExpenseCategory;

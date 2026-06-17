@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * FileMaker 互換 CSV からスケジュールライン・詳細をインポートするサービス。
+ */
 namespace App\Services\ScheduleCsv;
 
 use App\Models\Department;

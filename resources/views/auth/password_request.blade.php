@@ -1,3 +1,4 @@
+{{-- パスワードリセット用のメール送信フォームを表示するビュー --}}
 @extends('layouts.app')
 
 @section('content')

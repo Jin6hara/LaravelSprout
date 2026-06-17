@@ -1,3 +1,4 @@
+{{-- ユーザー一覧をカード形式でページネーション付きに表示するパーシャルビュー --}}
 @if($users->count())
 <div class="d-flex justify-content-between align-items-center mb-2">
     <h5 class="mb-0">ユーザー一覧</h5>

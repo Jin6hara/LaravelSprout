@@ -1,3 +1,4 @@
+<!-- カレンダーパターン内の祝日をCRUD操作するパネルコンポーネント -->
 <template>
   <div>
     <div v-if="loading" class="text-center py-3"><div class="spinner-border spinner-border-sm text-secondary"></div></div>

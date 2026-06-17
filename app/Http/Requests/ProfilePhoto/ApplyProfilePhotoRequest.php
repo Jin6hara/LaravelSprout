@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * プロフィール写真のアップロード・削除リクエストのバリデーションを定義する。
+ */
 namespace App\Http\Requests\ProfilePhoto;
 
 use Illuminate\Foundation\Http\FormRequest;

@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * ユーザー名・社員コード・メールによるAJAX検索APIを担当するコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Models\User;

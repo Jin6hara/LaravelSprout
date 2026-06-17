@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * ユーザーのロール変更申請フォームの表示・処理を担当するコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Http\Requests\RoleChange\ApplyRoleChangeRequest;

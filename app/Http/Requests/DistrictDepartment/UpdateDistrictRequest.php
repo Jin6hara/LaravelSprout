@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 地区の更新フォームのバリデーションリクエスト。
+ */
 namespace App\Http\Requests\DistrictDepartment;
 
 use Illuminate\Foundation\Http\FormRequest;

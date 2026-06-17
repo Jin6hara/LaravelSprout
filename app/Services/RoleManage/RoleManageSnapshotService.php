@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * ロール・パーミッション・ユーザーのロール付与状況を一覧取得するスナップショットサービス。
+ */
 namespace App\Services\RoleManage;
 
 use App\Models\User;

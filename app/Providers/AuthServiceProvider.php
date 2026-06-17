@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * モデルとポリシーのマッピングおよびGateの追加定義を行う認可サービスプロバイダー。
+ */
 namespace App\Providers;
 
 use App\Models\ApprovalRequest;

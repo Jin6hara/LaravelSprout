@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * スケジュールラインの新規作成リクエストのバリデーションを定義する。
+ */
 namespace App\Http\Requests\ScheduleLine;
 
 use Illuminate\Foundation\Http\FormRequest;

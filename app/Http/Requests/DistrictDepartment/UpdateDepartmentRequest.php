@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 部署の更新フォームのバリデーションリクエスト。
+ */
 namespace App\Http\Requests\DistrictDepartment;
 
 use Illuminate\Foundation\Http\FormRequest;

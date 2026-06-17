@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 雇用期間に紐づく休職期間を管理するモデル。
+ */
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;

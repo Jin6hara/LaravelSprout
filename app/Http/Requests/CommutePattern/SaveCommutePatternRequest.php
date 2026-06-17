@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 通勤パターン（曜日別経路・交通費）の保存フォームのバリデーションリクエスト。
+ */
 namespace App\Http\Requests\CommutePattern;
 
 use App\Enums\DayOfWeek;

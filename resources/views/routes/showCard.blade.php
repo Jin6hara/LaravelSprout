@@ -1,3 +1,4 @@
+{{-- 通勤パターンの経路・費用をカード形式で表示するパーシャルビュー --}}
 @php
     $pattern = $commutePattern ?? null;
     $owner = $user ?? $pattern?->user;

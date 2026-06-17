@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * 管理者による休暇の登録・報告・キャンセル・一覧表示を担うコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Enums\LeaveKind;

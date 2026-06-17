@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * 管理者向けの月別休暇一覧の編集・新規登録・一括更新・削除を担うコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Enums\LeaveExcused;

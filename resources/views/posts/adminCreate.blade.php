@@ -1,3 +1,4 @@
+{{-- 管理者がスタッフ宛にメッセージを作成・送信するビュー --}}
 @extends('layouts.app')
 
 @section('content')

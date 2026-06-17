@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * パスワード設定用トークン（招待・リセット）の発行・検証を担うサービス。
+ */
 namespace App\Services\Auth;
 
 use App\Models\PasswordSetupToken;

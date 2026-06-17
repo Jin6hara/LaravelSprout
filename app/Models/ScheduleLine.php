@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * ユーザーの曜日別担当スケジュール（勤務先・時間帯・有効期間）を管理するモデル。
+ */
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;

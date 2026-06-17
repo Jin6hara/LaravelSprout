@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 月次の経費精算レポートを管理するモデル。
+ */
 namespace App\Models;
 
 use App\Enums\ExpenseReportStatus;

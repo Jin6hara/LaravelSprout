@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * シフト・欠勤などのカレンダーイベントを管理するモデル。
+ */
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;

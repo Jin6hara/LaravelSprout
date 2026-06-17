@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 様々な入力形式の時刻・日付文字列をHH:MMやY-m-d形式に正規化するユーティリティクラス。
+ */
 namespace App\Support;
 
 use Carbon\Carbon;

@@ -1,3 +1,4 @@
+{{-- 新規ユーザー登録フォームを表示するビュー --}}
 @extends('layouts.app')
 
 @section('content')

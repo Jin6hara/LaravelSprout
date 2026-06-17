@@ -1,3 +1,4 @@
+// 講師マスターリストのスプレッドシート編集・検索・API保存を制御するスクリプト
 // === Ctrl+S / Cmd+S block ===
 (function () {
     function blockSave(e) {

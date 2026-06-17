@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 休暇の事後報告（理由・対応種別・添付ファイルの登録）を担うサービス。
+ */
 namespace App\Services\Leave;
 
 use App\Models\Leave;

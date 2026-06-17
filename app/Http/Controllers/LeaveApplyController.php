@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * 一般ユーザーによる有給・特別休暇の申請フォーム表示・申請送信を担うコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Enums\LeaveKind;

@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * ユーザーの通勤ルート（定期券・経路パターン）一覧画面の表示を担うコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Models\CommuterPass;

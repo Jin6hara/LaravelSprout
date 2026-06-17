@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 性別（男性／女性／その他／不明）を表すEnum。
+ */
 namespace App\Enums;
 
 use App\Enums\Concerns\HasValues;

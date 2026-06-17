@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 管理者によるユーザー新規登録（雇用条件・ロール付与を含むトランザクション処理）を担うサービス。
+ */
 namespace App\Services\Admin;
 
 use App\Models\User;

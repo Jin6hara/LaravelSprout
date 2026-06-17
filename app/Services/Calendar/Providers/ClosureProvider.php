@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 会社休暇（CompanyClosure）の期間をカレンダーイベントとして提供するプロバイダ。
+ */
 namespace App\Services\Calendar\Providers;
 
 use App\Models\CompanyClosure;

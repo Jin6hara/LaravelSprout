@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * ロール変更・有給申請などの承認依頼を管理するモデル。
+ */
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;

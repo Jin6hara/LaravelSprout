@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * ロール変更申請リクエストのバリデーションと管理スコープの重複チェックを定義する。
+ */
 namespace App\Http\Requests\RoleChange;
 
 use Illuminate\Foundation\Http\FormRequest;

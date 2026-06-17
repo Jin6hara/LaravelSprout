@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 現在の管理スコープに絞り込んだ通知の取得・既読管理を担うサービス。
+ */
 namespace App\Services\Notifications;
 
 use App\Models\ApprovalRequest;

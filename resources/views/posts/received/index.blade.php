@@ -1,3 +1,4 @@
+{{-- ユーザーの受信メッセージ（Inbox）一覧を表示するビュー --}}
 {{-- resources/views/posts/received/index.blade.php --}}
 @extends('layouts.app')
 

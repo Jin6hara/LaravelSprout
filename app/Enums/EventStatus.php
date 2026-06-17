@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * イベント（シフト枠等）のステータス（pending/fixed/filled/in_process）を表すEnum。
+ */
 namespace App\Enums;
 
 use App\Enums\Concerns\HasValues;

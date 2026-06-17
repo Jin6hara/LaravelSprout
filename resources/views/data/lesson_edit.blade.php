@@ -1,3 +1,4 @@
+{{-- レッスン情報の一覧表示・追加・編集・削除を行うビュー --}}
 @extends('layouts.app')
 
 @section('content')

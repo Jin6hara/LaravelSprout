@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * DBドライバーを問わず大文字小文字・全半角を無視したテキスト検索クエリを組み立てるユーティリティクラス。
+ */
 namespace App\Support;
 
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;

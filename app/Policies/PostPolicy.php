@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 掲示板投稿の閲覧・作成・コメント・既読確認に対するアクセス制御を定義するポリシー。
+ */
 namespace App\Policies;
 
 use App\Models\Post;

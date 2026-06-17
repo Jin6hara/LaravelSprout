@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 休暇申請のステータス（下書き／申請中／承認済／却下／取消／アーカイブ）を表すEnum。
+ */
 namespace App\Enums;
 
 use App\Enums\Concerns\HasValues;

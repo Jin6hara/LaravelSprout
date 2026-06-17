@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * ロール変更申請の内容と承認後の反映処理を管理するモデル。
+ */
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;

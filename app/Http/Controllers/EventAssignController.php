@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * イベント（訪問・授業）の検索・登録・編集・複製・一括更新を担うコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Enums\EventStatus;

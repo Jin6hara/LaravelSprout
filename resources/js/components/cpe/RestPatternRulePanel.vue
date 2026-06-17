@@ -1,3 +1,4 @@
+<!-- レストパターンに紐づくルール（曜日・週次等）をCRUD操作するパネルコンポーネント -->
 <template>
   <div>
     <div v-if="!restPatternId" class="text-muted small p-2">

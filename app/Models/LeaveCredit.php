@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * ユーザーの有給残日数（付与・使用）を管理するモデル。
+ */
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;

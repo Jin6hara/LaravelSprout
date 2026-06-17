@@ -1,3 +1,4 @@
+// ユーザー名・社員番号のインクリメンタル検索とオートコンプリート入力を制御するスクリプト
 (function () {
   function labelFor(user) {
     const name = [user.first_name, user.family_name].filter(Boolean).join(' ').trim()

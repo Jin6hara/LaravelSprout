@@ -1,3 +1,4 @@
+{{-- ユーザーデータのCSVインポート・エクスポートを行うビュー --}}
 @extends('layouts.app')
 
 @section('content')

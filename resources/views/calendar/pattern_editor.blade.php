@@ -1,3 +1,4 @@
+{{-- カレンダーパターン（休日・休業日・調整日等）を編集するページビュー --}}
 @extends('layouts.app')
 
 @section('content')

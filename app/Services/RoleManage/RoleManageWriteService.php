@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * ロール・パーミッションの付け替えおよびユーザーへのロール変更を担うサービス。
+ */
 namespace App\Services\RoleManage;
 
 use App\Models\User;

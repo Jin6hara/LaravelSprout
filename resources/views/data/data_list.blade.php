@@ -1,3 +1,4 @@
+{{-- データ管理機能（CSV・学校・レッスン等）へのナビゲーション一覧ビュー --}}
 @extends('layouts.app')
 
 @section('content')

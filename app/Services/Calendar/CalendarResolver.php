@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 複数の CalendarEventProvider を集約し、優先度ルールに従いカレンダーイベント一覧を構築するリゾルバ。
+ */
 namespace App\Services\Calendar;
 
 use App\Models\User;

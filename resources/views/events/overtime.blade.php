@@ -1,3 +1,4 @@
+{{-- 処理中の残業イベント一覧を表示するビュー --}}
 @extends('layouts.app')
 
 @section('content')

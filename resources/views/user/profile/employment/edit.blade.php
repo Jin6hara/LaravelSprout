@@ -1,3 +1,4 @@
+{{-- ユーザーの雇用情報（雇用形態・期間等）を編集するフォームビュー --}}
 @extends('layouts.app')
 
 @section('content')

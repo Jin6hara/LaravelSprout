@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 投稿（Post）の作成・受信者への配布・添付ファイル保存を担うサービス。
+ */
 namespace App\Services\Post;
 
 use App\Models\Post;

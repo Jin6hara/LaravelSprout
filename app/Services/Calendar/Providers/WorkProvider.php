@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * ユーザーのスケジュールライン（通常勤務）をカレンダーイベントとして提供するプロバイダ。
+ */
 namespace App\Services\Calendar\Providers;
 
 use App\Models\User;

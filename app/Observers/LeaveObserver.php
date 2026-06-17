@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 欠勤・休暇の作成・更新・削除時にカレンダースナップショットを再構築するオブザーバー。
+ */
 namespace App\Observers;
 
 use App\Models\Leave;

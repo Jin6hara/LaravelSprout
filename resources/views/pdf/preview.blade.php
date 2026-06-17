@@ -1,3 +1,4 @@
+{{-- PDFプレビューを表示するVueコンポーネント埋め込みの専用ページビュー --}}
 <!doctype html>
 <html lang="ja">
 <head>

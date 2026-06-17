@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * スケジュール詳細（ScheduleDetail）を一括更新するサービス。
+ */
 namespace App\Services\ScheduleDetail;
 
 use Carbon\Carbon;

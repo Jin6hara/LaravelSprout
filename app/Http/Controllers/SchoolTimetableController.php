@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 学校別時間割の表示・管理を担当するコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Models\Department;

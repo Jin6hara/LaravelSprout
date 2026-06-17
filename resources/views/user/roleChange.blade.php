@@ -1,3 +1,4 @@
+{{-- ユーザーのロール変更申請の詳細を表示・処理するビュー --}}
 @extends('layouts.app')
 
 @section('content')

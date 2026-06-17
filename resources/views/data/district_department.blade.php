@@ -1,3 +1,4 @@
+{{-- 地区・部署のCRUD操作を行うVueコンポーネント埋め込みビュー --}}
 @extends('layouts.app')
 
 @section('content')

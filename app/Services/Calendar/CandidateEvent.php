@@ -1,4 +1,8 @@
 <?php
+
+/**
+ * カレンダーに表示する1件のイベント候補データを保持するクラス。
+ */
 // 元Enum 3/3
 namespace App\Services\Calendar;
 

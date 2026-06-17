@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * プロフィール写真のアップロード・削除を担当するコントローラ。
+ */
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfilePhoto\ApplyProfilePhotoRequest;

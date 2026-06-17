@@ -1,3 +1,4 @@
+{{-- 承認申請の詳細情報を表示し、承認・却下操作を行うビュー --}}
 @extends('layouts.app')
 
 @section('content')

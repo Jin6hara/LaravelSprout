@@ -1,3 +1,4 @@
+{{-- 講師のマスターデータをスプレッドシート形式で一覧表示・編集するビュー --}}
 @extends('layouts.app')
 
 @section('title', 'Teacher Master List')

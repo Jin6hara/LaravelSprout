@@ -1,3 +1,4 @@
+{{-- ロールと権限の管理を行うVueコンポーネント埋め込みビュー --}}
 @extends('layouts.app')
 
 @section('content')

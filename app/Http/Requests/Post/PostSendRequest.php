@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * 掲示板への投稿送信リクエストのバリデーションと認可を定義する。
+ */
 namespace App\Http\Requests\Post;
 
 use App\Enums\PostType;
