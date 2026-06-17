@@ -50,6 +50,12 @@
                       class="btn btn-sm btn-outline-secondary"
                       style="display:none; color:#6c757d;"
                       rel="noopener">Shift</a> {{--target="_blank" (タブの管理大変の為、削除)--}}
+                    <!-- ★追加：Daily Board へのリンク（関連シフトがある場合のみ表示） -->
+                    <a id="dayBoardLink"
+                      href="#"
+                      class="btn btn-sm btn-outline-secondary"
+                      style="display:none; color:#6c757d;"
+                      rel="noopener">Day Board</a>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
             </div>

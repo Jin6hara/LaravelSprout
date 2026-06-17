@@ -3,7 +3,11 @@
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="mb-0">Forecast Calendar</h2>
-    <span class="badge text-bg-info">Admin View</span>
+    <div class="d-flex align-items-center gap-2">
+        <a href="{{ route('calendar.daily_assigner', ['date' => now()->format('Y-m-d')]) }}"
+           class="btn btn-sm btn-outline-secondary">Day Board</a>
+        <span class="badge text-bg-info">Admin View</span>
+    </div>
 </div>
 
 {{-- ▼▼ 月選択フォーム（GET） ▼▼ --}}
