@@ -89,6 +89,16 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             // ★ end here
 
+            // ★Daily Board ボタン初期化
+            const dayBoardBtn = document.getElementById('dayBoardLink');
+            if (dayBoardBtn) {
+                dayBoardBtn.href = '#';
+                dayBoardBtn.style.display = 'none';
+                dayBoardBtn.classList.add('disabled');
+                dayBoardBtn.setAttribute('aria-disabled', 'true');
+            }
+            // ★ end here
+
             const title = e.title || 'Leave';
             const fmt = (d) => d ? d.toLocaleDateString('ja-JP') : '';
 
@@ -143,6 +153,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 relatedBtn.style.removeProperty('display');
                 relatedBtn.classList.remove('disabled');
                 relatedBtn.setAttribute('aria-disabled', 'false');
+            }
+            // ★ end here
+
+            // ★Daily Board へのリンク設定（関連シフト日付がある場合のみ）
+            if (dayBoardBtn && sDate2) {
+                dayBoardBtn.href = `/forecast/day-assigner?date=${encodeURIComponent(sDate2)}`;
+                dayBoardBtn.style.removeProperty('display');
+                dayBoardBtn.classList.remove('disabled');
+                dayBoardBtn.setAttribute('aria-disabled', 'false');
             }
             // ★ end here
 
