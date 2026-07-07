@@ -36,12 +36,17 @@ class LeaveSnapshotService
                 return;
             }
 
-            // まず既存のスナップショットを消す（冪等性）
-            $this->deleteSnapshotsForLeave($leave);
-
             // 期間生成（end_date が null の場合は単日）
             $start = Carbon::parse($leave->start_date);
             $end   = $leave->end_date ? Carbon::parse($leave->end_date) : Carbon::parse($leave->start_date);
+
+            // 不要になったスナップショットのみ削除（期間外・対象ユーザー変更）
+            // → 期間内の既存スナップショットは残し、assigned_user 等の手動編集を保持する
+            $this->deleteStaleSnapshotsForLeave($leave, $start, $end);
+
+            // kind 変更を既存スナップショットへ反映
+            $leave->generatedEvents()->update(['Leave_type' => (string) $leave->kind]);
+
             $period = CarbonPeriod::create($start, $end);
 
             foreach ($period as $date) {
@@ -56,6 +61,28 @@ class LeaveSnapshotService
     public function deleteSnapshotsForLeave(Leave $leave): void
     {
         $this->generatedShiftDecision->applyAction($leave, GeneratedShiftDecisionService::ACTION_DELETE);
+    }
+
+    /**
+     * 現在の Leave 内容と一致しなくなったスナップショットのみ削除
+     * （期間外の日付、または対象ユーザーが変わったもの）
+     */
+    private function deleteStaleSnapshotsForLeave(Leave $leave, Carbon $start, Carbon $end): void
+    {
+        $leave->generatedEvents()
+            ->where(function ($q) use ($leave, $start, $end) {
+                $q->whereDate('event_date', '<', $start->toDateString())
+                    ->orWhereDate('event_date', '>', $end->toDateString());
+
+                if ($leave->user_id === null) {
+                    $q->orWhereNotNull('original_user_id');
+                } else {
+                    $q->orWhere(fn($qq) => $qq
+                        ->where('original_user_id', '!=', $leave->user_id)
+                        ->orWhereNull('original_user_id'));
+                }
+            })
+            ->delete();
     }
 
     /**
@@ -83,9 +110,16 @@ class LeaveSnapshotService
             ->whereDate('effective_end', '>=', $ymd)
             ->where('dow', $dow)
             ->get()
+            // Subシフトはスナップショット対象外
+            ->reject(fn($line) => strcasecmp(trim((string)($line->school_name ?? '')), 'sub') === 0)
             ->values();
 
+        $dayEvents = fn() => Event::query()
+            ->whereDate('event_date', $ymd)
+            ->where('source_leave_id', $leave->id);
+
         if ($lines->isEmpty()) {
+            $dayEvents()->delete();
             return; // 割当なし → スナップショット対象なし
         }
 
@@ -96,24 +130,22 @@ class LeaveSnapshotService
                 ->exists();
 
             if ($existsInSubs) {
+                $dayEvents()->delete();
                 return;
             }
         }
 
-        $existingLineIds = Event::query()
-            ->whereDate('event_date', $ymd)
-            ->where('source_leave_id', $leave->id)
+        // スケジュール変更等で対象外になったラインのスナップショットを削除
+        $dayEvents()
+            ->whereNotIn('source_schedule_line_id', $lines->pluck('id')->all())
+            ->delete();
+
+        $existingLineIds = $dayEvents()
             ->whereIn('source_schedule_line_id', $lines->pluck('id')->all())
             ->pluck('source_schedule_line_id')
             ->flip();
 
         foreach ($lines as $line) {
-            // Subシフトはスナップショット対象外
-            $school = (string)($line->school_name ?? '');
-            if (strcasecmp(trim($school), 'sub') === 0) {
-                continue;
-            }
-
             if ($existingLineIds->has($line->id)) {
                 continue;
             }
